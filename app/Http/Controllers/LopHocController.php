@@ -250,8 +250,6 @@ class LopHocController extends Controller
             return redirect()->back()->withInput()->withErrors(['error' => 'Lỗi khi thêm mới lớp học: ' . $e->getMessage()]);
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->withErrors(['error' => 'Lỗi khi thêm mới lớp học: ' . $e->getMessage()]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withInput()->withErrors(['error' => 'Lỗi khi thêm mới lớp học: ' . $e->getMessage()]);
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\SinhVien;
 use Illuminate\Validation\Rule;
 
 class UpdateSinhVienRequest extends StoreSinhVienRequest
@@ -9,10 +10,14 @@ class UpdateSinhVienRequest extends StoreSinhVienRequest
     /**
      * Giống lúc thêm mới, chỉ khác: mã sinh viên và email được phép
      * trùng với chính sinh viên đang sửa.
+     *
+     * Route web dùng tham số {id}, route API dùng {sinh_vien} (đã bind model),
+     * nên cần lấy id theo cả hai cách.
      */
     public function rules(): array
     {
-        $id = $this->route('id');
+        $sinhVien = $this->route('sinh_vien') ?? $this->route('id');
+        $id = $sinhVien instanceof SinhVien ? $sinhVien->getKey() : $sinhVien;
 
         return array_merge(parent::rules(), [
             'ma_sv' => [

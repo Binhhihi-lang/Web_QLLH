@@ -6,11 +6,11 @@
     .form-box{ max-width: 520px; background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
     .form-group{ margin-bottom: 18px; }
     .form-group label{ display:block; font-size:13px; font-weight:600; margin-bottom:6px; color: var(--ink); }
-    .form-group input{
+    .form-group input, .form-group select{
         width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
         font-size:13.5px; font-family:'Inter', sans-serif; outline:none; transition:border-color .15s ease;
     }
-    .form-group input:focus{ border-color:var(--gold); }
+    .form-group input:focus, .form-group select:focus{ border-color:var(--gold); }
     .form-hint{ font-size:11.5px; color:var(--ink-muted); margin-top:4px; }
     .form-check{ display:flex; align-items:center; gap:8px; margin-bottom:22px; }
     .form-check input{ width:auto; }
@@ -58,6 +58,17 @@
                 <label for="nhom">Nhóm</label>
                 <input type="text" id="nhom" name="nhom"
                        value="{{ old('nhom', $menu->nhom) }}">
+            </div>
+
+            <div class="form-group">
+                <label for="vai_tro">Chỉ hiển thị với vai trò</label>
+                <select id="vai_tro" name="vai_tro">
+                    <option value="" {{ old('vai_tro', $menu->vai_tro) === null ? 'selected' : '' }}>Mọi vai trò</option>
+                    @foreach ($vaiTroOptions as $key => $label)
+                        <option value="{{ $key }}" {{ old('vai_tro', $menu->vai_tro) === $key ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="form-hint">Chọn «Mọi vai trò» nếu ai cũng thấy mục này.</p>
             </div>
 
             <div class="form-group">

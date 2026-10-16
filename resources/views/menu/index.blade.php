@@ -75,9 +75,16 @@
                 <option value="0" {{ request('trang_thai') === '0' ? 'selected' : '' }}>Đã ẩn</option>
             </select>
 
+            <select name="vai_tro">
+                <option value="">Mọi vai trò</option>
+                @foreach ($vaiTroOptions as $key => $label)
+                    <option value="{{ $key }}" {{ request('vai_tro') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+
             <button type="submit" class="btn-filter">Lọc</button>
 
-            @if(request()->hasAny(['search','trang_thai','vi_tri']))
+            @if(request()->hasAny(['search','trang_thai','vi_tri','vai_tro']))
                 <a href="{{ route('menu.index') }}" class="btn-reset">✕ Xóa lọc</a>
             @endif
         </form>
@@ -88,25 +95,33 @@
     @php
         $sortBy  = request('sort_by', 'id');
         $sortDir = request('sort_dir', 'asc');
-        function mnSortUrl(string $col, string $currentCol, string $currentDir): string {
-            $dir = ($currentCol === $col && $currentDir === 'asc') ? 'desc' : 'asc';
-            return request()->fullUrlWithQuery(['sort_by' => $col, 'sort_dir' => $dir, 'page' => 1]);
-        }
-        function mnSortClass(string $col, string $currentCol, string $currentDir): string {
-            if ($currentCol !== $col) return '';
-            return $currentDir === 'asc' ? 'active-asc' : 'active-desc';
-        }
+
+        // Dùng closure thay vì function có tên: view có thể được render
+        // nhiều lần trong cùng một tiến trình, khai báo function sẽ lỗi trùng tên.
+        $sortUrl = fn (string $col) => request()->fullUrlWithQuery([
+            'sort_by' => $col,
+            'sort_dir' => ($sortBy === $col && $sortDir === 'asc') ? 'desc' : 'asc',
+            'page' => 1,
+        ]);
+
+        $sortClass = function (string $col) use ($sortBy, $sortDir): string {
+            if ($sortBy !== $col) {
+                return '';
+            }
+            return $sortDir === 'asc' ? 'active-asc' : 'active-desc';
+        };
     @endphp
 
     <table>
         <tr>
-            <th><a href="{{ mnSortUrl('id', $sortBy, $sortDir) }}" class="sort-link {{ mnSortClass('id', $sortBy, $sortDir) }}">#<span class="arrow"></span></a></th>
-            <th><a href="{{ mnSortUrl('ten', $sortBy, $sortDir) }}" class="sort-link {{ mnSortClass('ten', $sortBy, $sortDir) }}">Tên menu <span class="arrow"></span></a></th>
-            <th><a href="{{ mnSortUrl('url', $sortBy, $sortDir) }}" class="sort-link {{ mnSortClass('url', $sortBy, $sortDir) }}">Đường dẫn <span class="arrow"></span></a></th>
-            <th><a href="{{ mnSortUrl('vi_tri', $sortBy, $sortDir) }}" class="sort-link {{ mnSortClass('vi_tri', $sortBy, $sortDir) }}">Vị trí <span class="arrow"></span></a></th>
+            <th><a href="{{ $sortUrl('id') }}" class="sort-link {{ $sortClass('id') }}">#<span class="arrow"></span></a></th>
+            <th><a href="{{ $sortUrl('ten') }}" class="sort-link {{ $sortClass('ten') }}">Tên menu <span class="arrow"></span></a></th>
+            <th><a href="{{ $sortUrl('url') }}" class="sort-link {{ $sortClass('url') }}">Đường dẫn <span class="arrow"></span></a></th>
+            <th><a href="{{ $sortUrl('vi_tri') }}" class="sort-link {{ $sortClass('vi_tri') }}">Vị trí <span class="arrow"></span></a></th>
             <th>Nhóm</th>
-            <th><a href="{{ mnSortUrl('thu_tu', $sortBy, $sortDir) }}" class="sort-link {{ mnSortClass('thu_tu', $sortBy, $sortDir) }}">Thứ tự <span class="arrow"></span></a></th>
-            <th><a href="{{ mnSortUrl('trang_thai', $sortBy, $sortDir) }}" class="sort-link {{ mnSortClass('trang_thai', $sortBy, $sortDir) }}">Trạng thái <span class="arrow"></span></a></th>
+            <th>Vai trò</th>
+            <th><a href="{{ $sortUrl('thu_tu') }}" class="sort-link {{ $sortClass('thu_tu') }}">Thứ tự <span class="arrow"></span></a></th>
+            <th><a href="{{ $sortUrl('trang_thai') }}" class="sort-link {{ $sortClass('trang_thai') }}">Trạng thái <span class="arrow"></span></a></th>
             <th>Thao tác</th>
         </tr>
 
@@ -117,6 +132,7 @@
             <td><span class="slug-chip">{{ $menu->url }}</span></td>
             <td>{{ $viTriOptions[$menu->vi_tri] ?? $menu->vi_tri }}</td>
             <td>{{ $menu->nhom ?: '—' }}</td>
+            <td>{{ $menu->vai_tro ? ($vaiTroOptions[$menu->vai_tro] ?? $menu->vai_tro) : 'Mọi vai trò' }}</td>
             <td>{{ $menu->thu_tu }}</td>
             <td>
                 @if ($menu->trang_thai)
@@ -139,7 +155,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="8" style="text-align:center; color:var(--ink-muted); padding:24px;">
+            <td colspan="9" style="text-align:center; color:var(--ink-muted); padding:24px;">
                 Không tìm thấy menu nào.
             </td>
         </tr>

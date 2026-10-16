@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,18 +11,12 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // Gọi tới các Seeder con
+        // Thứ tự quan trọng: user và lớp học trước, sinh viên sau (cần lop_hoc_id).
         $this->call([
+            UserSeeder::class,
+            LopHocSeeder::class,
             SinhVienSeeder::class,
+            MenuSeeder::class,
         ]);
-
-        // Tạo 1 user cố định để test đăng nhập
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => Hash::make('password'),
-            ]
-        );
     }
 }

@@ -123,7 +123,7 @@
                 <div class="form-group">
                     <label for="ngay_sinh">Ngày sinh</label>
                     <input type="date" id="ngay_sinh" name="ngay_sinh"
-                           value="{{ old('ngay_sinh', $sinhvien->ngay_sinh) }}">
+                           value="{{ old('ngay_sinh', $sinhvien->ngay_sinh?->format('Y-m-d')) }}">
                 </div>
                 <div class="form-group">
                     <label for="gioi_tinh">Giới tính</label>

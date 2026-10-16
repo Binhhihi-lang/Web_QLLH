@@ -8,9 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class LopHoc extends Model
 {
     use HasFactory;
-    // protected $table = 'lop_hocs';
-    // được phép 
-    // tự động bỏ các trường không có trong $fillable khi insert vào database
     protected $fillable = [
         'ten_lop',
         'ma_lop',

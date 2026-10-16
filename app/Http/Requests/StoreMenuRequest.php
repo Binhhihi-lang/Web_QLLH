@@ -38,6 +38,8 @@ class StoreMenuRequest extends FormRequest
             'url' => ['required', 'string', 'max:255', 'regex:/^(\/|#|https?:\/\/)/'],
             'vi_tri' => ['required', Rule::in(array_keys(Menu::VI_TRI))],
             'nhom' => 'nullable|string|max:100',
+            // Để trống = mọi vai trò đều thấy menu này.
+            'vai_tro' => ['nullable', Rule::in(array_keys(Menu::VAI_TRO))],
             'thu_tu' => 'required|integer|min:0',
             'trang_thai' => 'required|boolean',
         ];
@@ -55,6 +57,7 @@ class StoreMenuRequest extends FormRequest
             'integer' => ':attribute phải là số nguyên.',
             'boolean' => ':attribute không hợp lệ.',
             'in' => ':attribute không hợp lệ.',
+            'vai_tro.in' => 'Vai trò không hợp lệ.',
             'url.regex' => 'Đường dẫn phải bắt đầu bằng /, # hoặc http(s)://.',
             'thu_tu.min' => 'Thứ tự phải từ :min trở lên.',
         ];
@@ -70,6 +73,7 @@ class StoreMenuRequest extends FormRequest
             'url' => 'Đường dẫn',
             'vi_tri' => 'Vị trí',
             'nhom' => 'Nhóm',
+            'vai_tro' => 'Vai trò',
             'thu_tu' => 'Thứ tự',
             'trang_thai' => 'Trạng thái',
         ];

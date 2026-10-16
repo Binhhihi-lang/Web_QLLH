@@ -16,7 +16,7 @@ class UpdateLopHocRequest extends StoreLopHocRequest
                 'required',
                 'string',
                 'max:6',
-                Rule::unique('lop_hocs', 'ma_lop')->ignore($this->route('id')),
+                Rule::unique('lop_hocs', 'ma_lop')->ignore($this->route('lop_hoc')),
             ],
         ]);
     }

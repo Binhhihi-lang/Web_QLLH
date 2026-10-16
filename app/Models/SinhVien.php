@@ -23,6 +23,15 @@ class SinhVien extends Model
         'trang_thai',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'ngay_sinh' => 'date',
+            'gioi_tinh' => 'boolean',
+            'trang_thai' => 'boolean',
+        ];
+    }
+
     /**
      * Sinh viên thuộc về 1 lớp học
      */
