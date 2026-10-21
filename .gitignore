@@ -1,27 +1,43 @@
-*.log
-.DS_Store
+# Dependencies
+node_modules/
+/vendor/
+
+# Build output
+dist/
+build/
+public/build/
+.angular/
+out-tsc/
+
+# Environment
 .env
+.env.local
+.env.*.local
 .env.backup
 .env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/fonts-manifest.dev.json
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-_ide_helper.php
-Homestead.json
-Homestead.yaml
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# OS
+.DS_Store
 Thumbs.db
+
+# Logs & cache
+*.log
+.phpunit.result.cache
+.phpunit.cache/
+storage/pail/
+storage/*.key
+
+# Codebase memory artifacts (generated, machine-specific)
+.codebase-memory/
+
+# Scratch Angular project created by mistake
+/test/
