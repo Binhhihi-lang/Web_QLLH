@@ -32,15 +32,25 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 
 ## Tuần 2 — Xác thực, phân quyền, layout FE
 
-| Việc | Chi tiết |
-|---|---|
-| Auth API | Login, logout, me, change-password, `must_change_password` middleware, rate limit |
-| Policy khung | `LopHocPhanPolicy`, `SinhVienPolicy`, `DiemPolicy`, `DiemDanhPolicy` |
-| FE core | Auth service, interceptor (gắn token, xử lý 401/403), guard (auth, role, must-change-password), **bộ chuyển chế độ xem vai trò cho ADMIN (SCR-52/53)** |
-| FE layout | Layout chính, sidebar từ `/api/menus`, header, breadcrumb |
-| FE shared | `data-table`, `pagination`, `search-input`, `confirm-dialog`, `status-badge`, `empty-state`, `form-field` |
-| Test | TC-01, TC-02, ma trận phân quyền khung |
-| **Bàn giao** | Đăng nhập bằng 3 vai trò trên Angular; sidebar khác nhau; bắt đổi mật khẩu lần đầu |
+| Việc | Chi tiết | Trạng thái |
+|---|---|---|
+| Auth API | Login, logout, me, change-password, `must_change_password` middleware, rate limit | ✅ BE xong |
+| Policy khung | `LopHocPhanPolicy`, `SinhVienPolicy`, `DiemPolicy`, `DiemDanhPolicy` | ✅ BE xong |
+| FE core | Auth service, interceptor (gắn token, xử lý 401/403), guard (auth, role, must-change-password), **bộ chuyển chế độ xem vai trò cho ADMIN (SCR-52/53)** | ⬜ FE |
+| FE layout | Layout chính, sidebar từ `/api/menus`, header, breadcrumb | ⬜ FE |
+| FE shared | `data-table`, `pagination`, `search-input`, `confirm-dialog`, `status-badge`, `empty-state`, `form-field` | ⬜ FE |
+| Test | TC-01, TC-02, ma trận phân quyền khung | ✅ 16 case BE |
+| **Bàn giao** | Đăng nhập bằng 3 vai trò trên Angular; sidebar khác nhau; bắt đổi mật khẩu lần đầu | ⬜ chờ FE |
+
+**Kết quả BE Tuần 2 (2026-10-23):**
+- 4 endpoint auth: `POST /api/auth/login` (rate limit 5/phút), `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/change-password`.
+- `NguoiDungResource` trả kèm hồ sơ `sinh_vien`/`giang_vien`, ADMIN có `ho_so = null`.
+- Middleware `doi.mat.khau` chặn toàn bộ endpoint khác khi `must_change_password = true` (FR-01.05).
+- 4 Policy khung + `Gate::before` cho ADMIN.
+- Toàn bộ `/api/options/*` giờ yêu cầu đăng nhập.
+- `config/sanctum.php`: `guard => []` (chỉ Bearer token, không fallback session), `expiration` 7 ngày.
+- Postman collection 19 request + hướng dẫn test tại `docs/postman/`.
+- Test: `XacThucTest` 16 case, tổng 34 test pass.
 
 ---
 

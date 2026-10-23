@@ -12,8 +12,12 @@ class HocKyFactory extends Factory
 {
     public function definition(): array
     {
-        $nam = fake()->numberBetween(2025, 2027);
-        $ky = fake()->numberBetween(1, 2);
+        // ma_hoc_ky là unique, mà không gian giá trị chỉ có 6 tổ hợp
+        // (2025..2027 × 2 kỳ) nên fake() ngẫu nhiên sẽ trùng khi tạo nhiều
+        // bản ghi trong cùng một test. Dùng unique() để cấp phát tuần tự.
+        $chiSo = fake()->unique()->numberBetween(0, 5);
+        $nam = 2025 + intdiv($chiSo, 2);
+        $ky = ($chiSo % 2) + 1;
         $batDau = now()->setDate($nam, $ky === 1 ? 1 : 8, 15)->startOfDay();
 
         return [

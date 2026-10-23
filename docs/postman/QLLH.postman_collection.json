@@ -1,0 +1,682 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
+    "name": "QLLH API — Hệ thống quản lý lớp học",
+    "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chọn environment **QLLH Local** (đã đính kèm trong file).\n3. Chạy **Auth → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy các request khác.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 — Kiểm tra server",
+      "item": [
+        {
+          "name": "Health check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Server phản hồi 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Envelope có success=true', () => {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Kiểm tra backend có chạy không. Không cần token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 — Xác thực",
+      "item": [
+        {
+          "name": "Đăng nhập (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập thành công (200)', () => pm.response.to.have.status(200));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Có token trong data', () => {",
+                  "    pm.expect(body.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('Vai trò là ADMIN', () => {",
+                  "    pm.expect(body.data.nguoi_dung.vai_tro).to.eql('ADMIN');",
+                  "});",
+                  "",
+                  "// Lưu token cho các request sau.",
+                  "pm.collectionVariables.set('token', body.data.token);",
+                  "console.log('Đã lưu token:', body.data.token.substring(0, 20) + '...');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Đăng nhập bằng tài khoản ADMIN demo. Token tự động lưu vào biến collection `token`."
+          },
+          "response": []
+        },
+        {
+          "name": "Đăng nhập (GIẢNG VIÊN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Vai trò là GIANG_VIEN', () => {",
+                  "    pm.expect(body.data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN');",
+                  "});",
+                  "pm.test('Có hồ sơ giảng viên', () => {",
+                  "    pm.expect(body.data.nguoi_dung.ho_so.loai).to.eql('giang_vien');",
+                  "});",
+                  "pm.collectionVariables.set('token', body.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"giangvien@example.com\",\n    \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Đăng nhập bằng tài khoản giảng viên demo. Trả kèm hồ sơ `giang_vien`."
+          },
+          "response": []
+        },
+        {
+          "name": "Đăng nhập (SINH VIÊN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Vai trò là SINH_VIEN', () => {",
+                  "    pm.expect(body.data.nguoi_dung.vai_tro).to.eql('SINH_VIEN');",
+                  "});",
+                  "pm.test('Có hồ sơ sinh viên', () => {",
+                  "    pm.expect(body.data.nguoi_dung.ho_so.loai).to.eql('sinh_vien');",
+                  "});",
+                  "pm.collectionVariables.set('token', body.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"sinhvien@example.com\",\n    \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Đăng nhập bằng tài khoản sinh viên demo. Trả kèm hồ sơ `sinh_vien`."
+          },
+          "response": []
+        },
+        {
+          "name": "Sai mật khẩu → 401 AUTH_INVALID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mã lỗi AUTH_INVALID', () => {",
+                  "    pm.expect(pm.response.json().ma_loi).to.eql('AUTH_INVALID');",
+                  "});",
+                  "pm.test('success = false', () => {",
+                  "    pm.expect(pm.response.json().success).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"mat-khau-sai\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Kiểm tra nhánh lỗi đăng nhập. Không lưu token."
+          },
+          "response": []
+        },
+        {
+          "name": "Thiếu dữ liệu → 422 VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Mã lỗi VALIDATION_ERROR', () => {",
+                  "    pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR');",
+                  "});",
+                  "pm.test('Báo lỗi ở cả email và password', () => {",
+                  "    const errors = pm.response.json().errors;",
+                  "    pm.expect(errors).to.have.property('email');",
+                  "    pm.expect(errors).to.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Body rỗng — kiểm tra validation."
+          },
+          "response": []
+        },
+        {
+          "name": "Hồ sơ của tôi (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Có id và vai_tro', () => {",
+                  "    pm.expect(data).to.have.property('id');",
+                  "    pm.expect(data).to.have.property('vai_tro');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Trả thông tin tài khoản đang đăng nhập + hồ sơ sinh viên/giảng viên (ADMIN có ho_so = null)."
+          },
+          "response": []
+        },
+        {
+          "name": "Đổi mật khẩu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mat_khau_cu\": \"password\",\n    \"password\": \"matkhaumoi123\",\n    \"password_confirmation\": \"matkhaumoi123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "change-password"]
+            },
+            "description": "⚠️ Đổi mật khẩu THẬT trên DB. Sau khi chạy, mật khẩu tài khoản demo thành `matkhaumoi123`. Chạy lại seeder để khôi phục:\n`php artisan migrate:fresh --seed`"
+          },
+          "response": []
+        },
+        {
+          "name": "Đăng xuất",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token', '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Thu hồi token hiện tại. Token cũ sẽ trả 401 ở lần gọi sau."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 — Danh mục (options)",
+      "item": [
+        {
+          "name": "Môn học",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Là mảng', () => pm.expect(data).to.be.an('array'));",
+                  "pm.test('Mỗi phần tử có id, label, so_tin_chi', () => {",
+                  "    if (data.length > 0) {",
+                  "        pm.expect(data[0]).to.have.all.keys('id', 'label', 'so_tin_chi');",
+                  "    }",
+                  "});",
+                  "pm.collectionVariables.set('mon_hoc_id', data[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/subjects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "subjects"]
+            },
+            "description": "Danh sách môn học đang hoạt động, dùng cho ô chọn ở FE."
+          },
+          "response": []
+        },
+        {
+          "name": "Học kỳ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Có 3 học kỳ', () => pm.expect(data.length).to.eql(3));",
+                  "pm.test('Có đủ 3 trạng thái', () => {",
+                  "    const trangThais = data.map(h => h.trang_thai);",
+                  "    pm.expect(trangThais).to.include('CLOSED');",
+                  "    pm.expect(trangThais).to.include('ONGOING');",
+                  "    pm.expect(trangThais).to.include('UPCOMING');",
+                  "});",
+                  "const ongoing = data.find(h => h.trang_thai === 'ONGOING');",
+                  "pm.collectionVariables.set('hoc_ky_id', ongoing.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/semesters",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "semesters"]
+            },
+            "description": "3 học kỳ seed: 2025-2 CLOSED, 2026-1 ONGOING, 2026-2 UPCOMING."
+          },
+          "response": []
+        },
+        {
+          "name": "Giảng viên",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Có giảng viên', () => pm.expect(data.length).to.be.above(0));",
+                  "pm.collectionVariables.set('giang_vien_id', data[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/teachers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "teachers"]
+            },
+            "description": "Danh sách giảng viên đang hoạt động."
+          },
+          "response": []
+        },
+        {
+          "name": "Phòng học",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Có 25 phòng', () => pm.expect(data.length).to.eql(25));",
+                  "pm.test('Mỗi phòng có suc_chua', () => {",
+                  "    pm.expect(data[0]).to.have.property('suc_chua');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/rooms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "rooms"]
+            },
+            "description": "25 phòng học seed."
+          },
+          "response": []
+        },
+        {
+          "name": "Lớp hành chính",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Có 20 lớp', () => pm.expect(data.length).to.eql(20));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/admin-classes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "admin-classes"]
+            },
+            "description": "20 lớp hành chính seed."
+          },
+          "response": []
+        },
+        {
+          "name": "Lớp học phần (có chỗ trống)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.test('Mỗi lớp có con_cho', () => {",
+                  "    pm.expect(data[0]).to.have.property('con_cho');",
+                  "});",
+                  "const conCho = data.filter(l => l.con_cho > 0);",
+                  "pm.test('Có lớp còn chỗ để đăng ký', () => {",
+                  "    pm.expect(conCho.length).to.be.above(0);",
+                  "});",
+                  "const day = data.filter(l => l.con_cho === 0);",
+                  "console.log('Lớp đã đầy:', day.length, '/', data.length);",
+                  "if (conCho.length > 0) pm.collectionVariables.set('lop_hp_id', conCho[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/sections",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "sections"]
+            },
+            "description": "Lớp học phần đang OPEN. `con_cho = 0` nghĩa là đã đầy (dùng để test SECTION_FULL)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 — Kiểm tra lỗi & phân quyền",
+      "item": [
+        {
+          "name": "Không có token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mã lỗi UNAUTHENTICATED', () => {",
+                  "    pm.expect(pm.response.json().ma_loi).to.eql('UNAUTHENTICATED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/api/options/subjects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "subjects"]
+            },
+            "description": "Endpoint bảo vệ gọi mà không có Authorization header."
+          },
+          "response": []
+        },
+        {
+          "name": "Token sai → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer 999|token-gia-mao" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/options/subjects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "options", "subjects"]
+            },
+            "description": "Token không tồn tại trong bảng personal_access_tokens."
+          },
+          "response": []
+        },
+        {
+          "name": "Route không tồn tại → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mã lỗi NOT_FOUND', () => {",
+                  "    pm.expect(pm.response.json().ma_loi).to.eql('NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/khong-ton-tai",
+              "host": ["{{base_url}}"],
+              "path": ["api", "khong-ton-tai"]
+            },
+            "description": "Kiểm tra envelope 404 thay vì trang HTML mặc định của Laravel."
+          },
+          "response": []
+        },
+        {
+          "name": "Gọi API không kèm Accept header → vẫn JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 401 JSON, không redirect', () => {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Postman/trình duyệt có thể không gửi Accept. Backend phải trả JSON chứ không redirect về route login (đã xóa)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "token", "value": "" },
+    { "key": "mon_hoc_id", "value": "" },
+    { "key": "hoc_ky_id", "value": "" },
+    { "key": "giang_vien_id", "value": "" },
+    { "key": "lop_hp_id", "value": "" }
+  ]
+}

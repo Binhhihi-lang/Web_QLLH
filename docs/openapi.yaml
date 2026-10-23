@@ -41,47 +41,47 @@ paths:
                   type: string
                   example: password
       responses:
-        '200':
+        "200":
           description: Đăng nhập thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/DuLieuDangNhap'
-        '401':
-          $ref: '#/components/responses/Loi401'
-        '403':
-          $ref: '#/components/responses/Loi403'
-        '429':
-          $ref: '#/components/responses/Loi429'
+                        $ref: "#/components/schemas/DuLieuDangNhap"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "429":
+          $ref: "#/components/responses/Loi429"
 
   /auth/logout:
     post:
       tags: [Auth]
       summary: Thu hồi token hiện tại
       responses:
-        '204':
+        "204":
           description: Đã đăng xuất
-        '401':
-          $ref: '#/components/responses/Loi401'
+        "401":
+          $ref: "#/components/responses/Loi401"
 
   /auth/me:
     get:
       tags: [Auth]
       summary: Thông tin người dùng đang đăng nhập
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ThanhCong'
-        '401':
-          $ref: '#/components/responses/Loi401'
+                $ref: "#/components/schemas/ThanhCong"
+        "401":
+          $ref: "#/components/responses/Loi401"
 
   /auth/change-password:
     post:
@@ -103,132 +103,150 @@ paths:
                 password_confirmation:
                   type: string
       responses:
-        '200':
+        "200":
           description: Đổi mật khẩu thành công
-        '422':
-          $ref: '#/components/responses/Loi422'
-        '401':
-          $ref: '#/components/responses/Loi401'
+        "422":
+          $ref: "#/components/responses/Loi422"
+        "401":
+          $ref: "#/components/responses/Loi401"
 
   /options/subjects:
     get:
       tags: [Options]
       summary: Danh sách môn học cho ô chọn
-      security: []
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/OptionMonHoc'
+                          $ref: "#/components/schemas/OptionMonHoc"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
 
   /options/semesters:
     get:
       tags: [Options]
       summary: Danh sách học kỳ cho ô chọn
-      security: []
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/OptionHocKy'
+                          $ref: "#/components/schemas/OptionHocKy"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
 
   /options/teachers:
     get:
       tags: [Options]
       summary: Danh sách giảng viên cho ô chọn
-      security: []
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Option'
+                          $ref: "#/components/schemas/Option"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
 
   /options/rooms:
     get:
       tags: [Options]
       summary: Danh sách phòng học cho ô chọn
-      security: []
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/OptionPhongHoc'
+                          $ref: "#/components/schemas/OptionPhongHoc"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
 
   /options/admin-classes:
     get:
       tags: [Options]
       summary: Danh sách lớp hành chính cho ô chọn
-      security: []
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Option'
+                          $ref: "#/components/schemas/Option"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
 
   /options/sections:
     get:
       tags: [Options]
       summary: Danh sách lớp học phần đang mở cho ô chọn
-      security: []
       responses:
-        '200':
+        "200":
           description: Thành công
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ThanhCong'
+                  - $ref: "#/components/schemas/ThanhCong"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/OptionLopHocPhan'
+                          $ref: "#/components/schemas/OptionLopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
 
 components:
   securitySchemes:
@@ -331,7 +349,7 @@ components:
                 type: array
                 items:
                   type: string
-            - type: 'null'
+            - type: "null"
 
     Option:
       type: object
@@ -344,7 +362,7 @@ components:
 
     OptionMonHoc:
       allOf:
-        - $ref: '#/components/schemas/Option'
+        - $ref: "#/components/schemas/Option"
         - type: object
           required: [so_tin_chi]
           properties:
@@ -355,7 +373,7 @@ components:
 
     OptionHocKy:
       allOf:
-        - $ref: '#/components/schemas/Option'
+        - $ref: "#/components/schemas/Option"
         - type: object
           required: [trang_thai]
           properties:
@@ -365,7 +383,7 @@ components:
 
     OptionPhongHoc:
       allOf:
-        - $ref: '#/components/schemas/Option'
+        - $ref: "#/components/schemas/Option"
         - type: object
           required: [suc_chua]
           properties:
@@ -374,7 +392,7 @@ components:
 
     OptionLopHocPhan:
       allOf:
-        - $ref: '#/components/schemas/Option'
+        - $ref: "#/components/schemas/Option"
         - type: object
           required: [con_cho]
           properties:
@@ -410,9 +428,9 @@ components:
           example: 1|abc...
         het_han_luc:
           type: string
-          example: '2026-10-28 10:00:00'
+          example: "2026-10-28 10:00:00"
         nguoi_dung:
-          $ref: '#/components/schemas/NguoiDung'
+          $ref: "#/components/schemas/NguoiDung"
 
   responses:
     Loi401:
@@ -420,7 +438,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Loi'
+            $ref: "#/components/schemas/Loi"
           example:
             success: false
             message: Chưa đăng nhập hoặc phiên đã hết hạn.
@@ -432,32 +450,32 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Loi'
+            $ref: "#/components/schemas/Loi"
 
     Loi404:
       description: Không tìm thấy
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Loi'
+            $ref: "#/components/schemas/Loi"
 
     Loi409:
       description: Xung đột nghiệp vụ
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Loi'
+            $ref: "#/components/schemas/Loi"
 
     Loi422:
       description: Dữ liệu không hợp lệ
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Loi'
+            $ref: "#/components/schemas/Loi"
 
     Loi429:
       description: Quá giới hạn đăng nhập
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Loi'
+            $ref: "#/components/schemas/Loi"
