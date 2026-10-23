@@ -49,6 +49,10 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "test:mysql": [
+            "@php artisan config:clear --ansi",
+            "@php vendor/bin/phpunit -c phpunit-mysql.xml"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

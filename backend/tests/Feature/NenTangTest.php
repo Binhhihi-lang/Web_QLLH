@@ -159,8 +159,9 @@ class NenTangTest extends TestCase
     public function test_endpoint_options_tra_du_lieu_va_dung_envelope(): void
     {
         $this->seed(DanhMucSeeder::class);
+        $admin = User::factory()->admin()->create();
 
-        $phanHoi = $this->getJson('/api/options/subjects');
+        $phanHoi = $this->actingAs($admin, 'sanctum')->getJson('/api/options/subjects');
 
         $phanHoi->assertOk()
             ->assertJsonPath('success', true)
@@ -172,6 +173,13 @@ class NenTangTest extends TestCase
             ]);
 
         $this->assertCount(30, $phanHoi->json('data'));
+    }
+
+    public function test_endpoint_options_yeu_cau_dang_nhap(): void
+    {
+        $this->getJson('/api/options/subjects')
+            ->assertStatus(401)
+            ->assertJsonPath('ma_loi', 'UNAUTHENTICATED');
     }
 
     public function test_endpoint_options_sections_co_con_cho(): void
@@ -190,7 +198,8 @@ class NenTangTest extends TestCase
             'si_so_toi_da' => 40,
         ]);
 
-        $this->getJson('/api/options/sections')
+        $this->actingAs(User::factory()->admin()->create(), 'sanctum')
+            ->getJson('/api/options/sections')
             ->assertOk()
             ->assertJsonPath('data.0.con_cho', 40);
     }

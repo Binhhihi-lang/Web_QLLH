@@ -1,0 +1,36 @@
+# MySQL dùng riêng cho test — không dùng cho development.
+#
+# Dựng lại môi trường gần với Aiven (MySQL 8.4, utf8mb4_0900_ai_ci,
+# sql_require_primary_key=ON) nhưng chạy local nên không có độ trễ mạng.
+#
+# Dùng: docker compose -f docker-compose.test.yml up -d
+# Xoá:  docker compose -f docker-compose.test.yml down -v
+
+services:
+  mysql-test:
+    image: mysql:8.4
+    container_name: qllh-mysql-test
+    ports:
+      # 3307 vì 3306 đã bị MySQL80 service trên máy chiếm.
+      - "127.0.0.1:3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: QLLopHoc_Test
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      # Aiven bật biến này; giữ cho giống để test bắt được cùng loại lỗi.
+      - --sql-require-primary-key=ON
+      - --max-connections=200
+      - --innodb-flush-log-at-trx-commit=0
+      - --innodb-doublewrite=OFF
+      - --skip-log-bin
+    # Dữ liệu nằm trong RAM: nhanh nhất có thể và tự sạch khi container dừng.
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s

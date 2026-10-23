@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Chạy test trên MySQL thật (Aiven MySQL 8.4) để bắt các lỗi mà
+    SQLite in-memory không thể phát hiện: kiểu cột, collation tiếng Việt,
+    ràng buộc FK, hành vi JSON, và các hàm SQL riêng của MySQL.
+
+    Dùng: composer test:mysql
+    (Không dùng artisan test với tham số configuration: collision luôn tự
+    thêm configuration=phpunit.xml, sinh ra hai flag khiến exit code sai.)
+
+    Yêu cầu: .env.testing trỏ DB_DATABASE tới database có hậu tố _Test.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!-- MySQL thật: KHÔNG đặt DB_CONNECTION/DB_DATABASE ở đây,
+             để .env.testing quyết định. -->
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>
