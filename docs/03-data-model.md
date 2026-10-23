@@ -542,43 +542,57 @@ Bỏ qua bản ghi đang sửa và bản ghi `CANCELLED`/đã xóa.
 
 ## 6. Thứ tự migration
 
+Đã triển khai ngày 2026-10-21. Tên file thật dùng tiền tố `2026_10_21_`:
+
 ```
-0001_..._create_users_table                 (giữ, bổ sung cột)
-0002_..._add_vai_tro_to_users_table         (giữ, thêm must_change_password)
-0010_create_lop_hanh_chinh_table
-0011_create_mon_hoc_table
-0012_create_hoc_ky_table
-0013_create_phong_hoc_table
-0014_create_giang_vien_table
-0015_create_sinh_vien_table
-0016_create_lop_hoc_phan_table
-0017_create_dang_ky_hoc_phan_table
-0018_create_buoi_hoc_table
-0019_create_diem_danh_table
-0020_create_diem_table
-0021_create_lich_su_diem_table
-0022_create_cau_hinh_table
-0023_create_nhat_ky_table
-0024_create_menu_table
+0001_01_01_000000_create_users_table              (giữ nguyên)
+2026_10_16_000001_add_vai_tro_to_users_table      (giữ, sửa default → sinh_vien)
+2026_10_21_000900_add_cot_nghiep_vu_to_users_table   (must_change_password, soft delete)
+2026_10_21_001000_create_lop_hanh_chinh_table
+2026_10_21_001100_create_mon_hoc_table
+2026_10_21_001200_create_hoc_ky_table
+2026_10_21_001300_create_phong_hoc_table
+2026_10_21_001400_create_giang_vien_table
+2026_10_21_001500_create_sinh_vien_table
+2026_10_21_001600_create_lop_hoc_phan_table
+2026_10_21_001700_create_buoi_hoc_table
+2026_10_21_001800_create_dang_ky_hoc_phan_table
+2026_10_21_001900_create_diem_danh_table
+2026_10_21_002000_create_diem_table
+2026_10_21_002100_create_lich_su_diem_table
+2026_10_21_002200_create_cau_hinh_table
+2026_10_21_002300_create_nhat_ky_table
+2026_10_21_002400_create_menu_table
 ```
 
-Migration cũ của `lop_hocs` và `sinh_viens` được **xóa** (dữ liệu chỉ là seed), thay bằng bộ mới. Xem [07-decisions.md](07-decisions.md) ADR-003.
+Migration cũ của `lop_hocs`, `sinh_viens`, `menus` đã **xóa** (dữ liệu chỉ là seed), thay bằng bộ mới. Xem [07-decisions.md](07-decisions.md) ADR-003.
+
+> **Ghi chú triển khai:** `menu` dùng số ít (không phải `menus`). Bảng `users` giữ nguyên tên số nhiều vì là bảng hệ thống của Laravel.
 
 ---
 
 ## 7. Dữ liệu seed cho demo
 
-| Bảng | Số lượng |
-|---|---|
-| users | 3 admin + 50 giảng viên + 500 sinh viên |
-| lop_hanh_chinh | 20 |
-| mon_hoc | 30 |
-| hoc_ky | 3 (`2025-2` CLOSED, `2026-1` ONGOING, `2026-2` UPCOMING) |
-| phong_hoc | 25 |
-| lop_hoc_phan | 120 (80 thuộc `2026-1`) |
-| buoi_hoc | ~2.000 |
-| dang_ky_hoc_phan | ~4.000 |
-| diem_danh | ~30.000 |
-| diem | ~4.000 |
+Số liệu **thực tế sau khi chạy `php artisan migrate:fresh --seed`** ngày 2026-10-21:
+
+| Bảng | Thiết kế | Thực tế | Ghi chú |
+|---|---|---|---|
+| users | 553 | 555 | 3 admin (1 demo + 2 phụ) + 51 giảng viên + 501 sinh viên |
+| lop_hanh_chinh | 20 | 20 | |
+| mon_hoc | 30 | 30 | |
+| hoc_ky | 3 | 3 | `2025-2` CLOSED · `2026-1` ONGOING · `2026-2` UPCOMING |
+| phong_hoc | 25 | 25 | |
+| lop_hoc_phan | 120 | 120 | 80 thuộc `2026-1` (OPEN), 40 thuộc `2025-2` (CLOSED) |
+| buoi_hoc | ~2.000 | 2.040 | 17 buổi/lớp, lịch hàng tuần |
+| dang_ky_hoc_phan | ~4.000 | 7.028 | 8 lớp/SV ở `2026-1`, 6 lớp/SV ở `2025-2` |
+| diem_danh | ~30.000 | 76.381 | chỉ cho buổi `DONE` |
+| diem | ~4.000 | 2.999 | chỉ học kỳ đã đóng `2025-2` |
+
+**Dữ liệu cố ý tạo để kiểm chứng nghiệp vụ:**
+- `LHP0001` (2026-1) đăng ký **đầy** 70/70 → dùng test `SECTION_FULL`.
+- 79 lớp còn lại của `2026-1` còn chỗ → dùng demo luồng đăng ký.
+- 39/40 lớp của `2025-2` đầy vì sức chứa nhỏ hơn nhu cầu — phản ánh học kỳ đã kết thúc.
+- Điểm chữ phân bố A=137, B=623, C=713, D=318, F=9 (tổng 1.800 dòng có điểm).
 
 Tài khoản demo: `admin@example.com` / `password`, `giangvien@example.com` / `password`, `sinhvien@example.com` / `password`.
+Ngoài ra `admin2@example.com`, `admin3@example.com` cùng mật khẩu.

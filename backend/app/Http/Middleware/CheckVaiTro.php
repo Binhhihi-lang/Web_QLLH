@@ -10,8 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Chặn truy cập theo vai trò.
  *
  * Cách dùng trong route:
- *   ->middleware('vai.tro:admin')          // chỉ admin
- *   ->middleware('vai.tro:admin,giang_vien') // cả hai vai trò
+ *   ->middleware('vai.tro:ADMIN')                    // chỉ quản trị viên
+ *   ->middleware('vai.tro:ADMIN,GIANG_VIEN')         // cả hai vai trò
  */
 class CheckVaiTro
 {
@@ -23,20 +23,22 @@ class CheckVaiTro
     {
         $nguoiDung = $request->user();
 
-        // Chưa đăng nhập: đẩy về trang đăng nhập.
         if ($nguoiDung === null) {
-            return redirect()->route('login');
+            return response()->json([
+                'success' => false,
+                'message' => 'Chưa đăng nhập hoặc phiên đã hết hạn.',
+                'ma_loi' => 'UNAUTHENTICATED',
+                'errors' => null,
+            ], 401);
         }
 
         if (! in_array($nguoiDung->vai_tro, $vaiTro, true)) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Bạn không có quyền thực hiện chức năng này.',
-                ], 403);
-            }
-
-            abort(403, 'Bạn không có quyền truy cập trang này.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện chức năng này.',
+                'ma_loi' => 'FORBIDDEN',
+                'errors' => null,
+            ], 403);
         }
 
         return $next($request);

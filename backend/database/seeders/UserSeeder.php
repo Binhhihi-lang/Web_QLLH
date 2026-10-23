@@ -9,46 +9,60 @@ use Illuminate\Support\Facades\Hash;
 class UserSeeder extends Seeder
 {
     /**
-     * Tạo tài khoản mẫu cho hai nhóm người dùng.
-     * Dùng email cố định nên chạy lại nhiều lần không tạo trùng.
+     * Ba tài khoản demo theo docs/03-data-model.md mục 7.
+     * Tài khoản giảng viên/sinh viên demo được gắn hồ sơ ở GiangVienSeeder / SinhVienSeeder.
      */
     public function run(): void
     {
-        $taiKhoan = [
+        User::updateOrCreate(
+            ['email' => 'admin@example.com'],
             [
-                'email' => 'admin@example.com',
                 'name' => 'Quản trị viên',
+                'password' => Hash::make('password'),
                 'vai_tro' => User::ADMIN,
+                'trang_thai' => true,
+                'must_change_password' => false,
+                'email_verified_at' => now(),
             ],
-            [
-                'email' => 'giangvien@example.com',
-                'name' => 'Giảng viên mẫu',
-                'vai_tro' => User::GIANG_VIEN,
-            ],
-            [
-                'email' => 'test@example.com',
-                'name' => 'Test User',
-                'vai_tro' => User::GIANG_VIEN,
-            ],
-        ];
+        );
 
-        foreach ($taiKhoan as $duLieu) {
+        User::updateOrCreate(
+            ['email' => 'giangvien@example.com'],
+            [
+                'name' => 'Nguyễn Văn Giảng',
+                'password' => Hash::make('password'),
+                'vai_tro' => User::GIANG_VIEN,
+                'trang_thai' => true,
+                'must_change_password' => false,
+                'email_verified_at' => now(),
+            ],
+        );
+
+        User::updateOrCreate(
+            ['email' => 'sinhvien@example.com'],
+            [
+                'name' => 'Trần Thị Sinh',
+                'password' => Hash::make('password'),
+                'vai_tro' => User::SINH_VIEN,
+                'trang_thai' => true,
+                'must_change_password' => false,
+                'email_verified_at' => now(),
+            ],
+        );
+
+        // Hai quản trị viên phụ để thử phân quyền và nhật ký.
+        for ($i = 2; $i <= 3; $i++) {
             User::updateOrCreate(
-                ['email' => $duLieu['email']],
+                ['email' => "admin{$i}@example.com"],
                 [
-                    'name' => $duLieu['name'],
-                    'vai_tro' => $duLieu['vai_tro'],
-                    'trang_thai' => true,
+                    'name' => "Quản trị viên {$i}",
                     'password' => Hash::make('password'),
-                ]
+                    'vai_tro' => User::ADMIN,
+                    'trang_thai' => true,
+                    'must_change_password' => false,
+                    'email_verified_at' => now(),
+                ],
             );
-        }
-
-        // Thêm tài khoản ngẫu nhiên để thực hành phân trang / lọc.
-        // Chỉ sinh khi chưa đủ, để chạy lại seeder không tạo thêm trùng lặp.
-        if (User::whereNotIn('email', array_column($taiKhoan, 'email'))->count() < 10) {
-            User::factory()->count(8)->giangVien()->create();
-            User::factory()->count(2)->admin()->create();
         }
     }
 }

@@ -7,15 +7,13 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * Trang chủ giờ là trang điều hướng: khách chưa đăng nhập bị đưa về /dang-nhap.
+     * Backend chỉ phục vụ /api (ADR-001); route gốc trả JSON tình trạng.
      */
-    public function test_the_application_redirects_guests_to_login(): void
+    public function test_route_goc_tra_json_tinh_trang_api(): void
     {
-        $this->get('/')->assertRedirect(route('login'));
-    }
-
-    public function test_login_page_returns_a_successful_response(): void
-    {
-        $this->get(route('login'))->assertStatus(200);
+        $this->get('/')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['success', 'message', 'data' => ['api', 'health']]);
     }
 }

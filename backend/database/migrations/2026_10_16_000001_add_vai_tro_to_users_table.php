@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // admin = quản trị viên, giang_vien = giảng viên
-            $table->string('vai_tro', 20)->default('giang_vien')->after('email');
+            // ADMIN = quản trị viên, GIANG_VIEN = giảng viên, SINH_VIEN = sinh viên
+            $table->string('vai_tro', 20)->default('SINH_VIEN')->after('email');
             // Cho phép khóa / mở tài khoản mà không cần xóa
             $table->boolean('trang_thai')->default(true)->after('vai_tro');
         });

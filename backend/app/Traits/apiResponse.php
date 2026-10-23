@@ -12,7 +12,7 @@ trait ApiResponse
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
         ], $code);
     }
 
@@ -26,18 +26,26 @@ trait ApiResponse
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data'    => $duLieu['data'],
-            'meta'    => $duLieu['meta'] ?? null,
-            'links'   => $duLieu['links'] ?? null,
+            'data' => $duLieu['data'],
+            'meta' => $duLieu['meta'] ?? null,
+            'links' => $duLieu['links'] ?? null,
         ], 200);
     }
 
-    protected function error(string $message = 'Có lỗi xảy ra', int $code = 400, $errors = null): JsonResponse
-    {
+    /**
+     * Lỗi nghiệp vụ. $maLoi lấy từ bảng mã lỗi trong docs/04-api-contract.md mục 1.5.
+     */
+    protected function error(
+        string $message = 'Có lỗi xảy ra',
+        int $code = 400,
+        ?string $maLoi = null,
+        $errors = null,
+    ): JsonResponse {
         return response()->json([
             'success' => false,
             'message' => $message,
-            'errors'  => $errors,
+            'ma_loi' => $maLoi,
+            'errors' => $errors,
         ], $code);
     }
 }

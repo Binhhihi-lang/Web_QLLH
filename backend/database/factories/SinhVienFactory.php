@@ -2,8 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\LopHoc;
+use App\Models\LopHanhChinh;
 use App\Models\SinhVien;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,26 +15,16 @@ class SinhVienFactory extends Factory
     public function definition(): array
     {
         return [
-            'ma_sv'         => strtoupper(fake()->unique()->bothify('SV####')),
-            'ho_ten'        => fake()->name(),
-            'email'         => fake()->unique()->safeEmail(),
-            'ngay_sinh'     => fake()->dateTimeBetween('-25 years', '-18 years')->format('Y-m-d'),
-            'gioi_tinh'     => fake()->boolean(),
-            // Nếu chưa có lớp nào thì tạo luôn một lớp mới.
-            'lop_hoc_id'    => LopHoc::factory(),
-            'so_dien_thoai' => fake()->optional()->numerify('09########'),
-            'dia_chi'       => fake()->optional()->address(),
-            'trang_thai'    => true,
+            'ma_sv' => 'SV'.fake()->unique()->numerify('######'),
+            'ho_ten' => fake()->name(),
+            'ngay_sinh' => fake()->dateTimeBetween('-25 years', '-18 years')->format('Y-m-d'),
+            'gioi_tinh' => fake()->boolean(),
+            'email' => fake()->unique()->safeEmail(),
+            'so_dien_thoai' => fake()->numerify('09########'),
+            'dia_chi' => fake()->address(),
+            'lop_hanh_chinh_id' => LopHanhChinh::factory(),
+            'user_id' => User::factory()->sinhVien(),
+            'trang_thai' => true,
         ];
-    }
-
-    /**
-     * Sinh viên chưa được xếp lớp.
-     */
-    public function chuaCoLop(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'lop_hoc_id' => null,
-        ]);
     }
 }

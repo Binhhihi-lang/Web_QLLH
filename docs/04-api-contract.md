@@ -158,7 +158,7 @@ Response 200:
       "id": 1,
       "name": "Quản trị viên",
       "email": "admin@example.com",
-      "vai_tro": "admin",
+      "vai_tro": "ADMIN",
       "must_change_password": false,
       "ho_so": null
     }
@@ -209,7 +209,7 @@ Response tạo mới (201) — **chỉ lần này** có mật khẩu:
     "id": 12,
     "name": "Nguyễn Văn A",
     "email": "a@example.com",
-    "vai_tro": "giang_vien",
+    "vai_tro": "GIANG_VIEN",
     "trang_thai": true,
     "mat_khau_ban_dau": "X7k2mP9qR4tZ"
   }

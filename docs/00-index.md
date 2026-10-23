@@ -13,6 +13,7 @@ Phiên bản tài liệu: **v0.3** — cập nhật ngày 2026-10-20
 | [02-use-cases.md](02-use-cases.md) | Use case + tiêu chí chấp nhận | ✅ Đã chốt | Luồng nghiệp vụ, điều kiện biên |
 | [03-data-model.md](03-data-model.md) | ERD, bảng, cột, kiểu, index, ràng buộc | ✅ Đã chốt | Schema database, quy tắc xóa mềm |
 | [04-api-contract.md](04-api-contract.md) | Quy ước API + danh sách endpoint | ✅ Đã chốt | Hợp đồng FE ↔ BE |
+| [openapi.yaml](openapi.yaml) | Khung OpenAPI 3.1 (sinh model TS phía Angular) | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
 | [05-screens.md](05-screens.md) | Danh mục màn hình + điều hướng Angular | ✅ Đã chốt | Cấu trúc frontend |
 | [06-test-plan.md](06-test-plan.md) | Ma trận FR/BR → test case | ✅ Đã chốt | Kiểm thử |
 | [07-decisions.md](07-decisions.md) | Nhật ký quyết định kiến trúc (ADR) | ✅ Đã chốt | Lý do các lựa chọn |

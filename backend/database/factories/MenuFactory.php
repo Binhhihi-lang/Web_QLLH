@@ -14,8 +14,8 @@ class MenuFactory extends Factory
     public function definition(): array
     {
         return [
-            'ten' => 'Mục ' . fake()->unique()->word(),
-            'url' => '/' . fake()->unique()->slug(2),
+            'ten' => 'Mục '.fake()->unique()->word(),
+            'url' => '/'.fake()->unique()->slug(2),
             'vi_tri' => fake()->randomElement(array_keys(Menu::VI_TRI)),
             'nhom' => fake()->optional()->randomElement(['Học vụ', 'Hệ thống', 'Tổng quan']),
             'vai_tro' => null,

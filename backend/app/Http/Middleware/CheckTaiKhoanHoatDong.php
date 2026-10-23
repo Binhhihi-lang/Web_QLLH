@@ -4,11 +4,11 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Chặn tài khoản đã bị khóa (trang_thai = false) đang giữ session cũ.
+ * Chặn tài khoản đã bị khóa hoặc đã bị xóa mềm khi đang giữ token hợp lệ.
+ * Khi phát hiện, thu hồi toàn bộ token của tài khoản đó (ADR-004).
  */
 class CheckTaiKhoanHoatDong
 {
@@ -19,20 +19,15 @@ class CheckTaiKhoanHoatDong
     {
         $nguoiDung = $request->user();
 
-        if ($nguoiDung !== null && ! $nguoiDung->trang_thai) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        if ($nguoiDung !== null && (! $nguoiDung->trang_thai || $nguoiDung->trashed())) {
+            $nguoiDung->tokens()->delete();
 
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tài khoản của bạn đã bị khóa.',
-                ], 403);
-            }
-
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Tài khoản của bạn đã bị khóa.']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản của bạn đã bị khóa.',
+                'ma_loi' => 'ACCOUNT_LOCKED',
+                'errors' => null,
+            ], 403);
         }
 
         return $next($request);

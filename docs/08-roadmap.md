@@ -6,17 +6,27 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 
 ---
 
-## Tuần 1 — Nền tảng & chốt hợp đồng
+## Tuần 1 — Nền tảng & chốt hợp đồng ✅ (hoàn thành 2026-10-21)
 
-| Việc | Chi tiết | Nguồn |
-|---|---|---|
-| Chốt tài liệu v0.3 | Rà lại 8 tài liệu, xác nhận không còn mâu thuẫn | `docs/00-index.md` |
-| Dọn backend | Bỏ Blade khỏi đường chạy chính, thêm `config/cors.php`, cấu hình Sanctum, bỏ `gio.hanh.chinh` khỏi `/api` | ADR-001, ADR-008 |
-| Envelope + exception | Chuẩn hóa `ApiResponse`, thêm `ma_loi`, xử lý 401/403/404/409/422 cho `api/*` | ADR-009 |
-| Migration mới | 15 bảng nghiệp vụ + bổ sung cột `users`, theo [03-data-model.md](03-data-model.md) | ADR-003 |
-| Factory + Seeder | Factory cho 13 model; seeder demo đầy đủ | 03 mục 7 |
-| `openapi.yaml` khung | Khung OpenAPI + Postman collection rỗng | 04 |
-| **Bàn giao** | `php artisan migrate:fresh --seed` chạy sạch; `GET /api/options/subjects` trả dữ liệu | |
+| Việc | Chi tiết | Nguồn | Trạng thái |
+|---|---|---|---|
+| Chốt tài liệu v0.3 | Rà lại 8 tài liệu, xác nhận không còn mâu thuẫn | `docs/00-index.md` | ✅ |
+| Dọn backend | Bỏ Blade khỏi đường chạy chính, thêm `config/cors.php`, cấu hình Sanctum, bỏ `gio.hanh.chinh` khỏi `/api` | ADR-001, ADR-008 | ✅ |
+| Envelope + exception | Chuẩn hóa `ApiResponse`, thêm `ma_loi`, xử lý 401/403/404/409/422/429 cho `api/*` | ADR-009 | ✅ |
+| Migration mới | 15 bảng nghiệp vụ + bổ sung cột `users`, theo [03-data-model.md](03-data-model.md) | ADR-003 | ✅ |
+| Factory + Seeder | Factory cho 13 model; seeder demo đầy đủ | 03 mục 7 | ✅ |
+| `openapi.yaml` khung | Khung OpenAPI + Postman collection rỗng | 04 | ✅ khung `docs/openapi.yaml` |
+| **Bàn giao** | `php artisan migrate:fresh --seed` chạy sạch; `GET /api/options/subjects` trả dữ liệu | | ✅ 17 test pass |
+
+**Kết quả thực tế Tuần 1:**
+- Schema: 16 bảng nghiệp vụ mới + 3 bảng hệ thống; bảng cũ `lop_hocs`/`sinh_viens`/`menus` đã xóa.
+- 13 model mới với quan hệ, scope và hằng enum.
+- Seeder sinh 555 users, 120 lớp học phần, 2.040 buổi, 7.028 đăng ký, 76.381 điểm danh, 2.999 điểm.
+- 6 endpoint `/api/options/*` hoạt động, envelope + `ma_loi` thống nhất cho mọi lỗi.
+- `docs/openapi.yaml` khung 3.1.0 với 6 endpoint options và 4 auth (auth là placeholder, làm ở Tuần 2).
+- Test: `tests/Feature/NenTangTest.php` 16 case + ExampleTest.
+
+**Việc dời sang Tuần 2:** Postman collection (chưa tạo), 4 endpoint `/api/auth/*` mới chỉ có trong hợp đồng.
 
 ---
 

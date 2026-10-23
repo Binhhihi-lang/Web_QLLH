@@ -26,6 +26,7 @@ class CheckGioHanhChinh
                 'message' => 'Bạn chỉ được thực hiện các thao tác trong giờ hành chính',
             ], 400);
         }
+
         return $next($request);
     }
 }

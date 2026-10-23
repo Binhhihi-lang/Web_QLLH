@@ -72,7 +72,7 @@ src/app/
 
 **Guard:**
 - `authGuard`: chưa đăng nhập → `/dang-nhap`.
-- `roleGuard(['admin'])`: sai vai trò → `/dashboard` kèm thông báo.
+- `roleGuard(['ADMIN'])`: sai vai trò → `/dashboard` kèm thông báo.
 - `mustChangePasswordGuard`: cờ true → `/doi-mat-khau`.
 - `guestGuard`: đã đăng nhập → `/dashboard`.
 

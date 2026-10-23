@@ -1,0 +1,463 @@
+openapi: 3.1.0
+info:
+  title: QLLH API — Hệ thống quản lý lớp học
+  version: 0.1.0
+  description: |
+    Hợp đồng API giữa Laravel (backend) và Angular (frontend).
+
+    Nguồn chân lý là `docs/04-api-contract.md`. File này là khung ban đầu (Tuần 1),
+    được bổ sung dần mỗi khi thêm module. Mọi endpoint đều bọc trong envelope thống nhất.
+
+    **Auth:** Sanctum personal access token, gửi qua `Authorization: Bearer <token>`, hạn 7 ngày (ADR-004).
+servers:
+  - url: http://localhost:8000/api
+    description: Môi trường local
+
+tags:
+  - name: Auth
+    description: Đăng nhập, đăng xuất, hồ sơ cá nhân
+  - name: Options
+    description: Dữ liệu gọn cho ô chọn (dropdown) phía FE
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Đăng nhập, trả token Sanctum
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@example.com
+                password:
+                  type: string
+                  example: password
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DuLieuDangNhap'
+        '401':
+          $ref: '#/components/responses/Loi401'
+        '403':
+          $ref: '#/components/responses/Loi403'
+        '429':
+          $ref: '#/components/responses/Loi429'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Thu hồi token hiện tại
+      responses:
+        '204':
+          description: Đã đăng xuất
+        '401':
+          $ref: '#/components/responses/Loi401'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Thông tin người dùng đang đăng nhập
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThanhCong'
+        '401':
+          $ref: '#/components/responses/Loi401'
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Đổi mật khẩu (bắt buộc ở lần đăng nhập đầu)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mat_khau_cu, password, password_confirmation]
+              properties:
+                mat_khau_cu:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                password_confirmation:
+                  type: string
+      responses:
+        '200':
+          description: Đổi mật khẩu thành công
+        '422':
+          $ref: '#/components/responses/Loi422'
+        '401':
+          $ref: '#/components/responses/Loi401'
+
+  /options/subjects:
+    get:
+      tags: [Options]
+      summary: Danh sách môn học cho ô chọn
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OptionMonHoc'
+
+  /options/semesters:
+    get:
+      tags: [Options]
+      summary: Danh sách học kỳ cho ô chọn
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OptionHocKy'
+
+  /options/teachers:
+    get:
+      tags: [Options]
+      summary: Danh sách giảng viên cho ô chọn
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Option'
+
+  /options/rooms:
+    get:
+      tags: [Options]
+      summary: Danh sách phòng học cho ô chọn
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OptionPhongHoc'
+
+  /options/admin-classes:
+    get:
+      tags: [Options]
+      summary: Danh sách lớp hành chính cho ô chọn
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Option'
+
+  /options/sections:
+    get:
+      tags: [Options]
+      summary: Danh sách lớp học phần đang mở cho ô chọn
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ThanhCong'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OptionLopHocPhan'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+
+  security:
+    - bearerAuth: []
+
+  schemas:
+    ThanhCong:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Thành công
+        data:
+          nullable: true
+
+    PhanTrang:
+      type: object
+      properties:
+        meta:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+            last_page:
+              type: integer
+        links:
+          type: object
+          properties:
+            first:
+              type: string
+              nullable: true
+            prev:
+              type: string
+              nullable: true
+            next:
+              type: string
+              nullable: true
+            last:
+              type: string
+              nullable: true
+
+    Loi:
+      type: object
+      required: [success, message, ma_loi, errors]
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Lớp học phần đã đầy.
+        ma_loi:
+          type: string
+          nullable: true
+          enum:
+            - AUTH_INVALID
+            - ACCOUNT_LOCKED
+            - MUST_CHANGE_PASSWORD
+            - FORBIDDEN
+            - NOT_FOUND
+            - UNAUTHENTICATED
+            - TOO_MANY_REQUESTS
+            - VALIDATION_ERROR
+            - DUPLICATE_CODE
+            - DUPLICATE_EMAIL
+            - SEMESTER_CLOSED
+            - SEMESTER_HAS_SECTIONS
+            - DELETE_BLOCKED
+            - SECTION_FULL
+            - SECTION_NOT_OPEN
+            - DUPLICATE_ENROLLMENT
+            - DUPLICATE_SUBJECT_IN_SEMESTER
+            - SCHEDULE_CONFLICT
+            - OUTSIDE_REGISTRATION
+            - STUDENT_INACTIVE
+            - HAS_GRADE_OR_ATTENDANCE
+            - GRADE_LOCKED
+            - GRADE_INCOMPLETE
+            - RESTORE_PARENT_DELETED
+            - ATTENDANCE_EDIT_EXPIRED
+        errors:
+          nullable: true
+          oneOf:
+            - type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+            - type: 'null'
+
+    Option:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+
+    OptionMonHoc:
+      allOf:
+        - $ref: '#/components/schemas/Option'
+        - type: object
+          required: [so_tin_chi]
+          properties:
+            so_tin_chi:
+              type: integer
+              minimum: 1
+              maximum: 10
+
+    OptionHocKy:
+      allOf:
+        - $ref: '#/components/schemas/Option'
+        - type: object
+          required: [trang_thai]
+          properties:
+            trang_thai:
+              type: string
+              enum: [UPCOMING, ONGOING, CLOSED]
+
+    OptionPhongHoc:
+      allOf:
+        - $ref: '#/components/schemas/Option'
+        - type: object
+          required: [suc_chua]
+          properties:
+            suc_chua:
+              type: integer
+
+    OptionLopHocPhan:
+      allOf:
+        - $ref: '#/components/schemas/Option'
+        - type: object
+          required: [con_cho]
+          properties:
+            con_cho:
+              type: integer
+              minimum: 0
+
+    NguoiDung:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        vai_tro:
+          type: string
+          enum: [admin, giang_vien, sinh_vien]
+        must_change_password:
+          type: boolean
+        ho_so:
+          nullable: true
+          type: object
+
+    DuLieuDangNhap:
+      type: object
+      required: [token, het_han_luc, nguoi_dung]
+      properties:
+        token:
+          type: string
+          example: 1|abc...
+        het_han_luc:
+          type: string
+          example: '2026-10-28 10:00:00'
+        nguoi_dung:
+          $ref: '#/components/schemas/NguoiDung'
+
+  responses:
+    Loi401:
+      description: Chưa đăng nhập hoặc token hết hạn
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loi'
+          example:
+            success: false
+            message: Chưa đăng nhập hoặc phiên đã hết hạn.
+            ma_loi: UNAUTHENTICATED
+            errors: null
+
+    Loi403:
+      description: Không có quyền, tài khoản bị khóa, chưa đổi mật khẩu lần đầu
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loi'
+
+    Loi404:
+      description: Không tìm thấy
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loi'
+
+    Loi409:
+      description: Xung đột nghiệp vụ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loi'
+
+    Loi422:
+      description: Dữ liệu không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loi'
+
+    Loi429:
+      description: Quá giới hạn đăng nhập
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loi'

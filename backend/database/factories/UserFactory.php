@@ -19,17 +19,15 @@ class UserFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'vai_tro' => User::GIANG_VIEN,
+            'vai_tro' => User::SINH_VIEN,
             'trang_thai' => true,
+            'must_change_password' => false,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
     }
 
-    /**
-     * Tài khoản quản trị viên.
-     */
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -37,9 +35,6 @@ class UserFactory extends Factory
         ]);
     }
 
-    /**
-     * Tài khoản giảng viên.
-     */
     public function giangVien(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -47,9 +42,13 @@ class UserFactory extends Factory
         ]);
     }
 
-    /**
-     * Tài khoản đang bị khóa.
-     */
+    public function sinhVien(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'vai_tro' => User::SINH_VIEN,
+        ]);
+    }
+
     public function biKhoa(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -57,10 +56,24 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function phaiDoiMatKhau(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'must_change_password' => true,
+        ]);
+    }
+
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function daXoa(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'deleted_at' => now(),
         ]);
     }
 }
