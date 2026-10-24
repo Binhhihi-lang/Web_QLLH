@@ -13,7 +13,19 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    // Path alias: import tuyệt đối thay vì đếm ../ theo độ sâu thư mục.
+    // Alias làm import không phụ thuộc vị trí file, nên di chuyển file cũng
+    // không phải sửa đường dẫn.
+    //
+    // KHÔNG khai `baseUrl`: TypeScript 6 đã deprecate (TS5101) và từ TS 5
+    // `paths` đã tự hiểu tương đối với tsconfig.
+    "paths": {
+      "@core/*": ["./src/app/core/*"],
+      "@shared/*": ["./src/app/shared/*"],
+      "@features/*": ["./src/app/features/*"],
+      "@env/*": ["./src/environments/*"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

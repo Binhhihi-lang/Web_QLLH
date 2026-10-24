@@ -1,0 +1,173 @@
+<div class="wrap">
+  <app-page-header
+    title="Design System — QLLH"
+    description="Tra cứu token và trạng thái component. Dùng trang này để đối chiếu khi làm màn mới."
+  >
+    <app-button variant="secondary" (click)="doiCheDo()">
+      <span class="material-icons">{{ toi() ? 'light_mode' : 'dark_mode' }}</span>
+      {{ toi() ? 'Chế độ sáng' : 'Chế độ tối' }}
+    </app-button>
+  </app-page-header>
+
+  <!-- ================= MÀU ================= -->
+  <app-card title="Màu ngữ nghĩa" subtitle="Quy tắc tam giác (Triad) của Adobe Color — gốc H=222°, S=88%">
+    <div class="luoi-mau">
+      @for (m of mauNen; track m.bien) {
+        <div class="o-mau">
+          <div class="mau" [style.background]="'var(' + m.bien + ')'"></div>
+          <div class="nhan">
+            <b>{{ m.ten }}</b>
+            <code>{{ m.bien }}</code>
+          </div>
+        </div>
+      }
+    </div>
+  </app-card>
+
+  <app-card title="Bề mặt & chữ" subtitle="Nền slate lạnh — giảm mỏi mắt khi nhìn bảng dày">
+    <div class="luoi-mau">
+      @for (m of mauNenTang; track m.bien) {
+        <div class="o-mau">
+          <div class="mau co-vien" [style.background]="'var(' + m.bien + ')'"></div>
+          <div class="nhan">
+            <b>{{ m.ten }}</b>
+            <code>{{ m.bien }}</code>
+          </div>
+        </div>
+      }
+    </div>
+  </app-card>
+
+  <!-- ================= CHỮ ================= -->
+  <app-card title="Thang chữ" subtitle="Be Vietnam Pro cho tiêu đề, Inter cho nội dung">
+    <div class="thang-chu">
+      <div><span class="co-display">Quản lý lớp học</span><code>display · 2rem</code></div>
+      <div><span class="co-h1">Danh sách sinh viên</span><code>h1 · 1.5rem</code></div>
+      <div><span class="co-h2">Học kỳ 1 · 2025-2026</span><code>h2 · 1.25rem</code></div>
+      <div><span class="co-h3">Lớp CNTT-K20A</span><code>h3 · 1.0625rem</code></div>
+      <div><span class="co-body">Nội dung thường dùng cho đoạn văn và ô bảng.</span><code>body · 0.9375rem</code></div>
+      <div><span class="co-small">Nhãn, mô tả phụ, metadata</span><code>small · 0.8125rem</code></div>
+      <div><span class="co-caption">GHI CHÚ NHỎ NHẤT</span><code>caption · 0.6875rem</code></div>
+    </div>
+    <div class="so-lieu">
+      <span>Chữ số thẳng cột (tabular-nums):</span>
+      <b class="tabular">2100001 · 2100008 · 2100015</b>
+      <b class="tabular">8.75 · 9.25 · 10.00</b>
+    </div>
+  </app-card>
+
+  <!-- ================= NÚT ================= -->
+  <app-card title="Nút" subtitle="Mỗi vùng nhìn chỉ nên có MỘT nút primary">
+    <div class="hang">
+      <app-button variant="primary">Thêm sinh viên</app-button>
+      <app-button variant="secondary">Xuất Excel</app-button>
+      <app-button variant="ghost">Xoá bộ lọc</app-button>
+      <app-button variant="danger">Xoá vĩnh viễn</app-button>
+      <app-button variant="text">Huỷ</app-button>
+    </div>
+    <div class="hang">
+      <app-button size="sm">Cỡ nhỏ</app-button>
+      <app-button [loading]="true">Đang lưu…</app-button>
+      <app-button [disabled]="true">Vô hiệu hoá</app-button>
+    </div>
+  </app-card>
+
+  <!-- ================= BADGE ================= -->
+  <app-card title="Nhãn trạng thái" subtitle="Ánh xạ giá trị DB → màu nằm trong component, không rải ở màn hình">
+    <div class="hang hang-badge">
+      @for (t of trangThai; track t.value) {
+        <app-status-badge [value]="t.value" [label]="t.label" />
+      }
+    </div>
+  </app-card>
+
+  <!-- ================= ALERT ================= -->
+  <app-card title="Hộp thông báo" subtitle="4 mức — nền nhạt, vạch trái theo màu ngữ nghĩa">
+    <div class="cot">
+      <app-alert muc="success" title="Lưu thành công">Hồ sơ sinh viên đã được cập nhật.</app-alert>
+      <app-alert muc="info" title="Lưu ý">Học kỳ này đang trong thời gian đăng ký.</app-alert>
+      <app-alert muc="warning" title="Sắp hết chỗ">Lớp còn 2/45 chỗ trống.</app-alert>
+      <app-alert muc="danger" title="Không thể xoá">Lớp học phần đã có 38 sinh viên đăng ký.</app-alert>
+    </div>
+  </app-card>
+
+  <!-- ================= FORM ================= -->
+  <app-card title="Ô nhập & tìm kiếm" subtitle="Debounce 300ms — gõ 12 ký tự chỉ gọi 1 request">
+    <div class="luoi-form">
+      <div class="o-nhap">
+        <label>Tìm kiếm</label>
+        <app-search-input
+          placeholder="Mã sinh viên, họ tên, email…"
+          [value]="timKiem()"
+          (valueChange)="capNhatTimKiem($event)"
+        />
+        <span class="goi-y">Giá trị hiện tại: "{{ timKiem() }}"</span>
+      </div>
+      <div class="o-nhap">
+        <label>Lớp hành chính</label>
+        <select>
+          <option>Tất cả lớp</option>
+          <option>CNTT-K20A</option>
+          <option>KTPM-K21A</option>
+        </select>
+      </div>
+      <div class="o-nhap">
+        <label>Ngày sinh</label>
+        <input type="date" />
+      </div>
+      <div class="o-nhap co-loi">
+        <label>Email</label>
+        <input type="email" value="sai-dinh-dang" />
+        <span class="thong-bao-loi">Email không đúng định dạng.</span>
+      </div>
+    </div>
+  </app-card>
+
+  <!-- ================= TRẠNG THÁI TẢI ================= -->
+  <app-card title="Trạng thái tải" subtitle="Skeleton giữ đúng kích thước nội dung nên trang không nhảy layout">
+    <div class="luoi-tai">
+      <div class="cot-nho">
+        <app-skeleton-block height="20px" width="60%" />
+        <app-skeleton-block height="14px" />
+        <app-skeleton-block height="14px" />
+        <app-skeleton-block height="14px" width="80%" />
+      </div>
+      <app-loading-state label="Đang tải danh sách sinh viên…" />
+    </div>
+  </app-card>
+
+  <!-- ================= RỖNG ================= -->
+  <app-card title="Trạng thái rỗng" subtitle="Phân biệt rỗng do chưa có dữ liệu và rỗng do lọc không khớp">
+    <div class="luoi-rong">
+      <div class="khung-rong">
+        <app-empty-state
+          icon="◍"
+          title="Chưa có sinh viên nào"
+          description="Thêm sinh viên đầu tiên để bắt đầu quản lý hồ sơ."
+        >
+          <app-button size="sm">＋ Thêm sinh viên</app-button>
+        </app-empty-state>
+      </div>
+      <div class="khung-rong">
+        <app-empty-state
+          icon="⌕"
+          title="Không tìm thấy kết quả"
+          description="Không có sinh viên nào khớp với bộ lọc hiện tại."
+        >
+          <app-button size="sm" variant="secondary">Xoá bộ lọc</app-button>
+        </app-empty-state>
+      </div>
+    </div>
+  </app-card>
+
+  <!-- ================= PHÂN TRANG ================= -->
+  <app-card title="Phân trang" subtitle="Shape meta khớp API: current_page / per_page / total / last_page">
+    <app-pagination
+      [currentPage]="3"
+      [perPage]="10"
+      [total]="501"
+      [lastPage]="51"
+    />
+  </app-card>
+
+</div>

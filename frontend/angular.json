@@ -26,6 +26,8 @@
               }
             ],
             "styles": [
+              "src/_tokens.scss",
+              "src/material-theme.scss",
               "src/styles.css"
             ]
           },
@@ -39,8 +41,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "6kB",
+                  "maximumError": "12kB"
                 }
               ],
               "outputHashing": "all"

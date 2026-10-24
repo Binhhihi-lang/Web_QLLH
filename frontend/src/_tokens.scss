@@ -1,0 +1,191 @@
+// =====================================================================
+// _tokens.scss — NGUỒN CHÂN LÝ DUY NHẤT cho design system QLLH.
+//
+// Vì sao có file này: tailwind.config.js và material-theme.scss cùng đọc
+// biến ở đây, nên "màu chính" chỉ tồn tại MỘT giá trị. Nếu mỗi bên khai
+// riêng thì nút Tailwind và nút Material ra hai màu khác nhau.
+//
+// ---------------------------------------------------------------------
+// BẢNG MÀU: quy tắc TAM GIÁC (TRIAD) của Adobe Color
+// ---------------------------------------------------------------------
+// Ba màu cách đều 120° trên bánh xe màu HSL, gốc là xanh dương giáo dục
+// H=222°. Chọn quy tắc này vì QLLH có đúng ba nhóm trạng thái chính
+// (đạt/không đạt, có mặt/vắng, mở/đóng) và cả ba màu đều đủ tương phản.
+//
+//   H=222°  xanh dương  → màu chính (nút, link, mục đang chọn)
+//   H=342°  đỏ hồng     → nguy hiểm (xoá, không đạt, vắng không phép)
+//   H=102°  xanh lá     → thành công (đạt, có mặt, đang mở)
+//
+// Độ bão hòa S=88% — cao hơn mức 62% thông thường để màu trông tươi.
+// Độ sáng L KHÔNG cố định: mỗi màu lấy mức sáng CAO NHẤT mà chữ trắng
+// vẫn đạt WCAG AA (4.5:1). Nhờ vậy màu tươi tối đa mà vẫn đọc được —
+// đây là số đo bằng công thức, không phải chọn bằng mắt.
+//
+// LƯU Ý QUAN TRỌNG: accent trùng danger, tertiary trùng success là CỐ Ý.
+// Quy tắc tam giác chỉ sinh ba màu; dùng chính ba màu đó cho cả vai trò
+// ngữ nghĩa thì hệ chỉ có ba màu phải nhớ, không phải sáu.
+// =====================================================================
+
+:root {
+  // ---------- Màu chính — H=222° ----------
+  --color-primary: #366ef2; // 4.50:1 với chữ trắng — đúng ngưỡng AA
+  --color-primary-hover: #0f51eb;
+  --color-primary-bright: #5b8cff;
+  --color-primary-soft: #d0ddfb;
+  --color-on-primary: #ffffff;
+  --color-on-primary-soft: #2558d0; // 4.55:1 trên #D0DDFB
+
+  // ---------- Nguy hiểm — H=342° (cũng là màu nhấn phụ của tam giác) ----------
+  --color-danger: #e90f50; // 4.52:1 với chữ trắng
+  --color-danger-hover: #bd0c41;
+  --color-danger-soft: #fbd0dd;
+  --color-on-danger-soft: #b8214e; // 4.51:1 trên #FBD0DD
+
+  // ---------- Thành công — H=102° (cũng là màu phụ trợ của tam giác) ----------
+  --color-success: #2e8609; // 4.64:1 với chữ trắng
+  --color-success-hover: #1f5b06;
+  --color-success-soft: #ddfbd0;
+  --color-on-success-soft: #357e16; // 4.53:1 trên #DDFBD0
+
+  // ---------- Cảnh báo — H=38° (không thuộc tam giác, thêm cho đủ vai trò) ----------
+  --color-warning: #a36b0a; // 4.50:1 với chữ trắng
+  --color-warning-hover: #82560a;
+  --color-warning-soft: #fbebd0;
+  --color-on-warning-soft: #8d6219; // 4.60:1 trên #FBEBD0
+
+  // ---------- Thông tin — H=199° ----------
+  --color-info: #0b7eb4; // 4.51:1 với chữ trắng
+  --color-info-hover: #09648f;
+  --color-info-soft: #d0edfb;
+  --color-on-info-soft: #1b7098; // 4.50:1 trên #D0EDFB
+
+  // ---------- Bề mặt & chữ ----------
+  // Nền slate lạnh: bảng điểm/điểm danh có hàng trăm ô, nền xám lạnh
+  // giảm mỏi mắt hơn nền xanh.
+  --color-bg: #f8fafc; // slate-50
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9; // slate-100 — hàng xen kẽ, vùng phụ
+  --color-ink: #0f172a; // slate-900
+  --color-ink-muted: #475569; // slate-600 — 7.5:1 trên nền
+  --color-ink-subtle: #64748b; // slate-500 — 4.7:1 trên nền
+  --color-border: #e2e8f0; // slate-200
+  --color-border-soft: #f1f5f9; // slate-100 — phân cách trong bảng
+
+  // ---------- Nền tối (sidebar, header tối, footer) ----------
+  --color-dark: #1e293b;
+  --color-dark-2: #0f172a;
+  --color-dark-line: #334155;
+  --color-on-dark: #ffffff;
+  --color-on-dark-muted: #cbd5e1;
+  --color-on-dark-subtle: #7c8ba1;
+
+  // ---------- Sidebar vận hành ----------
+  // Gradient dọc tối dần. Mục đang chọn đảo ngược: nền trắng, chữ xanh.
+  --color-sidebar-top: #1e293b;
+  --color-sidebar-bottom: #0f172a;
+  --color-sidebar-line: rgba(255, 255, 255, 0.12);
+  --color-sidebar-item: #cbd5e1;
+  --color-sidebar-icon: #7c8ba1;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --color-sidebar-label: #8b9bb0;
+  --color-sidebar-active-bg: #ffffff;
+  --color-sidebar-active-fg: #366ef2;
+
+  // ---------- Chữ ----------
+  // Be Vietnam Pro cho tiêu đề (thiết kế riêng cho tiếng Việt, dấu cân đối),
+  // Inter cho nội dung và số liệu.
+  --font-heading: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-display: 2rem;
+  --text-h1: 1.5rem;
+  --text-h2: 1.25rem;
+  --text-h3: 1.0625rem;
+  --text-body: 0.9375rem;
+  --text-small: 0.8125rem;
+  --text-caption: 0.6875rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+
+  // ---------- Bo góc ----------
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  // ---------- Đổ bóng (tông xanh đen, không dùng đen thuần) ----------
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 4px 16px rgba(15, 23, 42, 0.1);
+
+  // ---------- Chuyển động ----------
+  --dur-fast: 130ms;
+  --dur: 200ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// =====================================================================
+// Chế độ tối — cùng tên biến, chỉ đổi giá trị.
+//
+// Ở nền tối, màu phải SÁNG hơn (không phải tối hơn) mới đủ tương phản.
+// Mỗi giá trị dưới đây đạt >= 4.5:1 trên nền #0F172A.
+// =====================================================================
+[data-theme='dark'] {
+  --color-primary: #477af0; // 4.51:1 trên nền tối
+  --color-primary-hover: #6690f5;
+  --color-primary-bright: #6690f5;
+  --color-primary-soft: #1e3a6b;
+  --color-on-primary: #0f172a;
+  --color-on-primary-soft: #b3cafc;
+
+  --color-danger: #ee326a; // 4.51:1
+  --color-danger-hover: #f2587f;
+  --color-danger-soft: #4a1a29;
+  --color-on-danger-soft: #fca3bb;
+
+  --color-success: #43bd0f; // 7.25:1
+  --color-success-hover: #5cd626;
+  --color-success-soft: #1e3a12;
+  --color-on-success-soft: #9ae87a;
+
+  --color-warning: #bd7d0f; // 5.19:1
+  --color-warning-hover: #d99422;
+  --color-warning-soft: #3d3015;
+  --color-on-warning-soft: #e8bd6a;
+
+  --color-info: #1089c1; // 4.57:1
+  --color-info-hover: #2ba3db;
+  --color-info-soft: #103344;
+  --color-on-info-soft: #7ec9ec;
+
+  --color-bg: #0b1120;
+  --color-surface: #111827;
+  --color-surface-alt: #1a2334;
+  --color-ink: #e2e8f0;
+  --color-ink-muted: #94a3b8;
+  --color-ink-subtle: #7c8ba1;
+  --color-border: #273449;
+  --color-border-soft: #1e293b;
+
+  --color-dark: #0b1120;
+  --color-dark-2: #111827;
+  --color-dark-line: #273449;
+  --color-on-dark: #e2e8f0;
+  --color-on-dark-muted: #94a3b8;
+  --color-on-dark-subtle: #64748b;
+
+  --color-sidebar-top: #111827;
+  --color-sidebar-bottom: #060b14;
+  --color-sidebar-line: rgba(255, 255, 255, 0.1);
+  --color-sidebar-item: #94a3b8;
+  --color-sidebar-icon: #5b6b81;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --color-sidebar-label: #6b7a8f;
+  --color-sidebar-active-bg: #477af0;
+  --color-sidebar-active-fg: #ffffff;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+}

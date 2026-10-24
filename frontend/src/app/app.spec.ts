@@ -1,23 +1,28 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      // App chỉ còn <router-outlet>, nên cần router provider mới khởi tạo được.
+      providers: [provideRouter([])],
     }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('khởi tạo được', () => {
     const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('chỉ render router-outlet, không còn template mặc định của ng-cli', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, frontend');
+
+    expect(compiled.querySelector('router-outlet')).toBeTruthy();
+    // Template chào mặc định đã bị xoá — nếu nó quay lại thì test này bắt được.
+    expect(compiled.querySelector('h1')).toBeNull();
   });
 });

@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>QLLH — Duyệt hướng màu (vòng 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   MOCKUP DUYỆT MÀU — VÒNG 2.
+   Vòng 1 (indigo / xanh dương / xanh ngọc) đều thuộc họ XANH. Vòng này
+   đổi hẳn sang 4 họ khác: rượu vang, than chì, vàng đất, xanh rêu.
+   Cùng một màn hình, chỉ đổi biến màu.
+   ===================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  background: #e9ebef;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { font-family: 'Be Vietnam Pro', system-ui, sans-serif; margin: 0; line-height: 1.25; }
+
+/* ---------- Thanh chọn ---------- */
+.thanh-chon {
+  position: sticky; top: 0; z-index: 100;
+  background: #111827; color: #fff;
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  border-bottom: 1px solid #374151;
+}
+.thanh-chon .nhan { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #9ca3af; }
+.thanh-chon button {
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  padding: 8px 15px; border-radius: 8px; cursor: pointer;
+  border: 1.5px solid #374151; background: #1f2937; color: #e5e7eb;
+  transition: all .18s ease;
+}
+.thanh-chon button:hover { border-color: #6b7280; }
+.thanh-chon button.chon { background: #fff; color: #111827; border-color: #fff; }
+.thanh-chon .ghi-chu { font-size: 12px; color: #9ca3af; margin-left: auto; }
+
+/* =====================================================================
+   BIẾN MÀU THEO PHƯƠNG ÁN
+   ===================================================================== */
+
+/* ---------- D: Rượu vang học viện ---------- */
+body[data-pa="d"] {
+  --p: #881337; --p-hover: #6b0f2c; --p-soft: #fff1f2; --on-p: #fff;
+  --accent: #9a3412; --accent-soft: #ffedd5; --on-accent: #7c2d12;
+  --bg: #fafaf9; --surface: #fff; --surface-alt: #f5f5f4;
+  --ink: #1c1917; --ink-muted: #57534e; --ink-subtle: #78716c;
+  --border: #e7e5e4; --border-soft: #f5f5f4;
+  --sb-1: #4c0519; --sb-2: #190a10; --sb-item: #fecdd3; --sb-icon: #b07a8a;
+  --sb-active-bg: #fff; --sb-active-fg: #881337;
+  --ok: #15803d; --ok-soft: #dcfce7;
+  --warn: #b45309; --warn-soft: #fef3c7;
+  --bad: #b91c1c; --bad-soft: #fee2e2;
+  --info: #0369a1; --info-soft: #e0f2fe;
+  --radius: 8px;
+}
+
+/* ---------- E: Than chì & Hổ phách (SIDEBAR SÁNG) ---------- */
+body[data-pa="e"] {
+  --p: #1f2937; --p-hover: #111827; --p-soft: #f3f4f6; --on-p: #fff;
+  --accent: #b45309; --accent-soft: #fef3c7; --on-accent: #78350f;
+  --bg: #f9fafb; --surface: #fff; --surface-alt: #f3f4f6;
+  --ink: #111827; --ink-muted: #4b5563; --ink-subtle: #6b7280;
+  --border: #e5e7eb; --border-soft: #f3f4f6;
+  /* Sidebar SÁNG — khác hẳn 3 phương án vòng 1 */
+  --sb-1: #ffffff; --sb-2: #ffffff; --sb-item: #4b5563; --sb-icon: #9ca3af;
+  --sb-active-bg: #1f2937; --sb-active-fg: #ffffff;
+  --ok: #15803d; --ok-soft: #dcfce7;
+  --warn: #b45309; --warn-soft: #fef3c7;
+  --bad: #b91c1c; --bad-soft: #fee2e2;
+  --info: #0369a1; --info-soft: #e0f2fe;
+  --radius: 8px;
+}
+
+/* ---------- F: Vàng đất học đường ---------- */
+body[data-pa="f"] {
+  --p: #92400e; --p-hover: #78350f; --p-soft: #fffbeb; --on-p: #fff;
+  --accent: #115e59; --accent-soft: #ccfbf1; --on-accent: #134e4a;
+  --bg: #fdfcfb; --surface: #fff; --surface-alt: #f7f3ee;
+  --ink: #1c1917; --ink-muted: #57534e; --ink-subtle: #78716c;
+  --border: #e9e2d8; --border-soft: #f5f0e9;
+  --sb-1: #451a03; --sb-2: #1a0f06; --sb-item: #fde4c8; --sb-icon: #b08b62;
+  --sb-active-bg: #fff; --sb-active-fg: #92400e;
+  --ok: #15803d; --ok-soft: #dcfce7;
+  --warn: #a16207; --warn-soft: #fef9c3;
+  --bad: #b91c1c; --bad-soft: #fee2e2;
+  --info: #0369a1; --info-soft: #e0f2fe;
+  --radius: 8px;
+}
+
+/* ---------- G: Xanh rêu trầm ---------- */
+body[data-pa="g"] {
+  --p: #14532d; --p-hover: #0f3f22; --p-soft: #f0fdf4; --on-p: #fff;
+  --accent: #b45309; --accent-soft: #fef3c7; --on-accent: #78350f;
+  --bg: #f8faf9; --surface: #fff; --surface-alt: #f1f5f3;
+  --ink: #14201a; --ink-muted: #4a5a52; --ink-subtle: #6b7a72;
+  --border: #dfe7e2; --border-soft: #eef3f0;
+  --sb-1: #14532d; --sb-2: #0a1f13; --sb-item: #bbf7d0; --sb-icon: #74a184;
+  --sb-active-bg: #fff; --sb-active-fg: #14532d;
+  /* Success phải LỆCH khỏi primary, nếu không badge "đạt" lẫn với nút chính */
+  --ok: #047857; --ok-soft: #d1fae5;
+  --warn: #b45309; --warn-soft: #fef3c7;
+  --bad: #b91c1c; --bad-soft: #fee2e2;
+  --info: #0369a1; --info-soft: #e0f2fe;
+  --radius: 8px;
+}
+
+/* =====================================================================
+   KHUNG ỨNG DỤNG
+   ===================================================================== */
+.app {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: calc(100vh - 58px);
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  background: linear-gradient(180deg, var(--sb-1) 0%, var(--sb-2) 100%);
+  color: var(--sb-item);
+  display: flex; flex-direction: column;
+  padding: 18px 0;
+}
+/* Phương án E dùng sidebar sáng nên cần viền phải */
+body[data-pa="e"] .sidebar { border-right: 1px solid var(--border); }
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 20px 18px; margin-bottom: 8px;
+  border-bottom: 1px solid rgba(128,128,128,.22);
+}
+body[data-pa="e"] .brand { border-bottom-color: var(--border); }
+.brand .logo {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: grid; place-items: center; flex: none;
+  font-family: 'Be Vietnam Pro'; font-weight: 700; font-size: 15px;
+  background: var(--p); color: var(--on-p);
+}
+body[data-pa="e"] .brand .logo { background: #1f2937; }
+.brand .ten { font-family: 'Be Vietnam Pro'; font-weight: 600; font-size: 14px; line-height: 1.3; color: var(--sb-active-fg); }
+body:not([data-pa="e"]) .brand .ten { color: #fff; }
+.brand .ten small { display: block; font-family: 'Inter'; font-weight: 400; font-size: 11px; color: var(--sb-icon); }
+
+.nhom { padding: 14px 20px 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--sb-icon); }
+.menu { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
+.menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px;
+  color: var(--sb-item); text-decoration: none;
+  font-size: 13.5px; font-weight: 500;
+  transition: background .15s ease;
+}
+.menu a:hover { background: rgba(128,128,128,.14); }
+.menu a.active { background: var(--sb-active-bg); color: var(--sb-active-fg); font-weight: 600; }
+.menu .ic { width: 17px; text-align: center; font-size: 13px; opacity: .85; }
+
+/* ---------- Vùng chính ---------- */
+.main { min-width: 0; display: flex; flex-direction: column; }
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 58px;
+  display: flex; align-items: center; gap: 16px;
+}
+.header .tim {
+  flex: 1; max-width: 380px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  color: var(--ink-subtle); font-size: 13px;
+}
+.header .phai { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--p-soft); color: var(--p);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 12px;
+}
+
+.noi-dung { padding: 22px 24px 40px; }
+
+/* ---------- Tiêu đề trang ---------- */
+.page-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.page-h h1 { font-size: 23px; font-weight: 600; }
+.page-h p { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-muted); }
+.crumbs { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-muted); margin-bottom: 10px; }
+.crumbs .sep { color: var(--ink-subtle); }
+
+/* ---------- Nút ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 9px 16px; border-radius: var(--radius);
+  border: 1.5px solid transparent; cursor: pointer;
+  transition: all .18s ease; white-space: nowrap;
+}
+.btn-primary { background: var(--p); color: var(--on-p); }
+.btn-primary:hover { background: var(--p-hover); }
+.btn-ghost { background: transparent; color: var(--p); }
+.btn-ghost:hover { background: var(--p-soft); }
+.btn-sec { background: var(--surface); color: var(--ink); border-color: var(--border); }
+.btn-sec:hover { background: var(--surface-alt); }
+.btn-sm { font-size: 12.5px; padding: 5px 11px; }
+
+/* ---------- Thẻ số liệu ---------- */
+.the-so { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.the {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+.the .nhan { font-size: 12px; color: var(--ink-muted); font-weight: 500; }
+.the .so { font-size: 25px; font-weight: 700; font-family: 'Be Vietnam Pro'; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.the .so small { font-size: 13px; font-weight: 500; color: var(--ink-subtle); }
+.the .xu-huong { font-size: 11.5px; margin-top: 3px; font-weight: 600; }
+.the .xu-huong.len { color: var(--ok); }
+.the .xu-huong.xuong { color: var(--bad); }
+
+/* ---------- Bộ lọc ---------- */
+.loc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+  padding: 14px 16px;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+}
+.o-nhap { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.o-nhap label { font-size: 11.5px; font-weight: 600; color: var(--ink); }
+.o-nhap input, .o-nhap select {
+  font-family: inherit; font-size: 13.5px;
+  padding: 8px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface); color: var(--ink);
+  outline: none; min-width: 160px;
+}
+.o-nhap input:focus, .o-nhap select:focus { border-color: var(--p); box-shadow: 0 0 0 3px var(--p-soft); }
+.o-nhap.tim-kiem { flex: 1; min-width: 220px; }
+.o-nhap.tim-kiem input { width: 100%; }
+.loc .cach { flex: 1; }
+
+/* ---------- Bảng ---------- */
+.bang-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  text-align: left; font-size: 11.5px; font-weight: 700;
+  letter-spacing: .03em; text-transform: uppercase;
+  color: var(--ink-muted);
+  background: var(--surface-alt);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--p-soft); }
+td.so, th.so { text-align: right; font-variant-numeric: tabular-nums; }
+td.ma { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 5px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.b-ok { background: var(--ok-soft); color: var(--ok); }
+.b-warn { background: var(--warn-soft); color: var(--warn); }
+.b-bad { background: var(--bad-soft); color: var(--bad); }
+.b-info { background: var(--info-soft); color: var(--info); }
+.b-neutral { background: var(--surface-alt); color: var(--ink-muted); }
+
+.thao-tac { display: flex; gap: 2px; justify-content: flex-end; }
+.icon-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: none; background: transparent; cursor: pointer;
+  color: var(--ink-subtle); font-size: 13px;
+  display: grid; place-items: center;
+}
+.icon-btn:hover { background: var(--surface-alt); color: var(--p); }
+
+/* ---------- Phân trang ---------- */
+.phan-trang {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px; color: var(--ink-muted);
+  flex-wrap: wrap;
+}
+.trang { display: flex; gap: 3px; }
+.trang button {
+  min-width: 30px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--ink); font-family: inherit; font-size: 12.5px;
+  cursor: pointer; font-weight: 500;
+}
+.trang button.chon { background: var(--p); color: var(--on-p); border-color: var(--p); font-weight: 700; }
+.trang button:hover:not(.chon) { background: var(--surface-alt); }
+
+/* ---------- Bảng mô tả ---------- */
+.mo-ta {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;
+}
+.mo-ta h3 { font-size: 15px; margin-bottom: 6px; }
+.mo-ta p { margin: 0 0 10px; font-size: 13px; color: var(--ink-muted); line-height: 1.6; }
+.mo-ta .diem { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-muted); }
+.mo-ta .diem b { color: var(--ink); }
+.mau { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+
+@media (max-width: 1080px) { .the-so { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .the-so { grid-template-columns: 1fr; }
+  .noi-dung { padding: 16px 14px 30px; }
+}
+</style>
+</head>
+<body data-pa="d">
+
+<div class="thanh-chon">
+  <span class="nhan">Vòng 2 — họ màu khác</span>
+  <button data-chon="d" class="chon">D — Rượu vang</button>
+  <button data-chon="e">E — Than chì &amp; Hổ phách</button>
+  <button data-chon="f">F — Vàng đất</button>
+  <button data-chon="g">G — Xanh rêu</button>
+  <span class="ghi-chu">E dùng sidebar sáng — khác cấu trúc, không chỉ khác màu</span>
+</div>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">Q</div>
+      <div class="ten">Quản lý lớp học<small>Học kỳ 1 · 2025-2026</small></div>
+    </div>
+
+    <div class="nhom">Tổng quan</div>
+    <nav class="menu">
+      <a href="#" class="active"><span class="ic">▦</span> Dashboard</a>
+    </nav>
+
+    <div class="nhom">Đào tạo</div>
+    <nav class="menu">
+      <a href="#"><span class="ic">◍</span> Sinh viên</a>
+      <a href="#"><span class="ic">◑</span> Giảng viên</a>
+      <a href="#"><span class="ic">▤</span> Lớp hành chính</a>
+      <a href="#"><span class="ic">▥</span> Môn học</a>
+      <a href="#"><span class="ic">◷</span> Học kỳ</a>
+      <a href="#"><span class="ic">▣</span> Phòng học</a>
+    </nav>
+
+    <div class="nhom">Học vụ</div>
+    <nav class="menu">
+      <a href="#"><span class="ic">▦</span> Lớp học phần</a>
+      <a href="#"><span class="ic">✓</span> Đăng ký</a>
+      <a href="#"><span class="ic">◷</span> Lịch học</a>
+      <a href="#"><span class="ic">☑</span> Điểm danh</a>
+      <a href="#"><span class="ic">✎</span> Điểm</a>
+    </nav>
+
+    <div class="nhom">Hệ thống</div>
+    <nav class="menu">
+      <a href="#"><span class="ic">⚙</span> Cấu hình</a>
+      <a href="#"><span class="ic">♻</span> Thùng rác</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+
+    <header class="header">
+      <div class="tim"><span>⌕</span> Tìm sinh viên, lớp học phần…</div>
+      <div class="phai">
+        <span style="font-size:13px;color:var(--ink-muted)">Học kỳ 1 · 2025-2026</span>
+        <div class="avatar">CB</div>
+      </div>
+    </header>
+
+    <div class="noi-dung">
+
+      <div class="mo-ta">
+        <h3 id="ten-pa">Phương án D — Rượu vang học viện</h3>
+        <p id="mo-pa">Rượu vang đậm là màu truyền thống của học viện và đại học — gợi tới huy hiệu, bằng cấp, sự trang trọng. Rất khác biệt so với mọi dashboard xanh. Nền trắng ngả ấm (stone) giữ cảm giác giấy in.</p>
+        <div class="diem">
+          <span><i class="mau" id="m1"></i>Màu chính: <b id="ma-p">#881337</b></span>
+          <span><i class="mau" id="m2"></i>Nhấn phụ: <b id="ma-a">#9A3412</b></span>
+          <span>Tương phản chữ trắng: <b id="tc">9.6:1</b> (AAA)</span>
+        </div>
+      </div>
+
+      <div class="crumbs">
+        <span>Trang chủ</span><span class="sep">›</span><span>Đào tạo</span><span class="sep">›</span><span style="color:var(--ink)">Sinh viên</span>
+      </div>
+
+      <div class="page-h">
+        <div>
+          <h1>Danh sách sinh viên</h1>
+          <p>Quản lý hồ sơ sinh viên toàn trường · 501 sinh viên</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sec">⤓ Xuất Excel</button>
+          <button class="btn btn-primary">＋ Thêm sinh viên</button>
+        </div>
+      </div>
+
+      <div class="the-so">
+        <div class="the">
+          <div class="nhan">Tổng sinh viên</div>
+          <div class="so">501</div>
+          <div class="xu-huong len">↑ 12 trong học kỳ này</div>
+        </div>
+        <div class="the">
+          <div class="nhan">Đang hoạt động</div>
+          <div class="so">468 <small>/ 501</small></div>
+          <div class="xu-huong len">93.4% tỷ lệ</div>
+        </div>
+        <div class="the">
+          <div class="nhan">Lớp hành chính</div>
+          <div class="so">18</div>
+          <div class="xu-huong" style="color:var(--ink-subtle)">Trung bình 27.8 SV/lớp</div>
+        </div>
+        <div class="the">
+          <div class="nhan">Tạm nghỉ</div>
+          <div class="so">33</div>
+          <div class="xu-huong xuong">↑ 3 so với kỳ trước</div>
+        </div>
+      </div>
+
+      <div class="loc">
+        <div class="o-nhap tim-kiem">
+          <label>Tìm kiếm</label>
+          <input type="text" placeholder="Mã sinh viên, họ tên, email…">
+        </div>
+        <div class="o-nhap">
+          <label>Lớp hành chính</label>
+          <select>
+            <option>Tất cả lớp</option>
+            <option>CNTT-K20A</option>
+            <option>CNTT-K20B</option>
+            <option>KTPM-K21A</option>
+          </select>
+        </div>
+        <div class="o-nhap">
+          <label>Giới tính</label>
+          <select><option>Tất cả</option><option>Nam</option><option>Nữ</option></select>
+        </div>
+        <div class="o-nhap">
+          <label>Trạng thái</label>
+          <select><option>Tất cả</option><option>Đang hoạt động</option><option>Tạm nghỉ</option></select>
+        </div>
+        <div class="cach"></div>
+        <button class="btn btn-ghost btn-sm">Xoá bộ lọc</button>
+      </div>
+
+      <div class="bang-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox"></th>
+              <th>Mã SV</th>
+              <th>Họ và tên</th>
+              <th>Lớp</th>
+              <th>Giới tính</th>
+              <th>Ngày sinh</th>
+              <th>Email</th>
+              <th>Trạng thái</th>
+              <th style="width:96px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100001</td>
+              <td>Nguyễn Văn An</td>
+              <td>CNTT-K20A</td>
+              <td>Nam</td>
+              <td class="so">12/03/2002</td>
+              <td style="color:var(--ink-muted)">sv0001@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100008</td>
+              <td>Trần Thị Ngọc Anh</td>
+              <td>CNTT-K20A</td>
+              <td>Nữ</td>
+              <td class="so">25/07/2002</td>
+              <td style="color:var(--ink-muted)">sv0002@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100015</td>
+              <td>Lê Minh Cường</td>
+              <td>CNTT-K20B</td>
+              <td>Nam</td>
+              <td class="so">03/11/2002</td>
+              <td style="color:var(--ink-muted)">sv0003@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100022</td>
+              <td>Phạm Thu Hà</td>
+              <td>KTPM-K21A</td>
+              <td>Nữ</td>
+              <td class="so">19/01/2003</td>
+              <td style="color:var(--ink-muted)">sv0004@student.edu.vn</td>
+              <td><span class="badge b-neutral">Tạm nghỉ</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100029</td>
+              <td>Hoàng Đức Long</td>
+              <td>HTTT-K21A</td>
+              <td>Nam</td>
+              <td class="so">08/09/2003</td>
+              <td style="color:var(--ink-muted)">sv0005@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100036</td>
+              <td>Vũ Thảo Mai</td>
+              <td>ATTT-K22A</td>
+              <td>Nữ</td>
+              <td class="so">14/05/2004</td>
+              <td style="color:var(--ink-muted)">sv0006@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100043</td>
+              <td>Đặng Quốc Nam</td>
+              <td>CNTT-K20A</td>
+              <td>Nam</td>
+              <td class="so">30/12/2002</td>
+              <td style="color:var(--ink-muted)">sv0007@student.edu.vn</td>
+              <td><span class="badge b-warn">Chờ duyệt</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100050</td>
+              <td>Bùi Thị Trang</td>
+              <td>KTPM-K21A</td>
+              <td>Nữ</td>
+              <td class="so">22/08/2003</td>
+              <td style="color:var(--ink-muted)">sv0008@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="phan-trang">
+          <span>Hiển thị 1–8 trong 501 sinh viên</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span>Số dòng</span>
+            <select style="font-family:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--ink)">
+              <option>10</option><option>25</option><option>50</option>
+            </select>
+            <div class="trang">
+              <button>‹</button><button class="chon">1</button><button>2</button><button>3</button><button>…</button><button>63</button><button>›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const MO_TA = {
+  d: {
+    ten: 'Phương án D — Rượu vang học viện',
+    mo: 'Rượu vang đậm là màu truyền thống của học viện và đại học — gợi tới huy hiệu, bằng cấp, sự trang trọng. Rất khác biệt so với mọi dashboard xanh. Nền trắng ngả ấm (stone) giữ cảm giác giấy in.',
+    p: '#881337', a: '#9A3412', tc: '9.6:1',
+    rui: 'Đỏ vang gần với màu "lỗi/xoá", nên nút xoá phải dùng đỏ tươi hơn để tách bạch.'
+  },
+  e: {
+    ten: 'Phương án E — Than chì & Hổ phách',
+    mo: 'Màu chính gần như trung tính (than chì), chỉ dùng hổ phách làm điểm nhấn. Đây là hướng "công cụ chuyên nghiệp" — không phô trương, để dữ liệu tự nói. Sidebar dùng nền SÁNG thay vì tối, tạo cảm giác nhẹ và rộng hơn hẳn.',
+    p: '#1F2937', a: '#B45309', tc: '14.6:1',
+    rui: 'Trung tính quá nên ít "dấu ấn" — nếu hội đồng muốn ấn tượng mạnh thì hơi nhạt.'
+  },
+  f: {
+    ten: 'Phương án F — Vàng đất học đường',
+    mo: 'Vàng đất (nâu hổ phách đậm) gợi giấy cũ, thư viện, bảng gỗ — rất "trường học" mà không sến. Nền trắng ngả kem ấm. Nhấn phụ dùng xanh ngọc để cân lại độ ấm.',
+    p: '#92400E', a: '#115E59', tc: '7.1:1',
+    rui: 'Vàng đất gần với màu "cảnh báo", nên badge cảnh báo phải đổi sang vàng tươi để không lẫn.'
+  },
+  g: {
+    ten: 'Phương án G — Xanh rêu trầm',
+    mo: 'Xanh rêu đậm tạo cảm giác bền vững, điềm tĩnh, gắn với học thuật lâu năm. Khác hẳn xanh dương công nghệ. Nhấn phụ dùng hổ phách cho ấm lại.',
+    p: '#14532D', a: '#B45309', tc: '9.1:1',
+    rui: 'Xanh rêu gần với màu "thành công/đạt", nên màu success phải chỉnh lệch (đã đổi sang #047857) để không lẫn badge.'
+  }
+};
+
+document.querySelectorAll('.thanh-chon button').forEach(b => {
+  b.addEventListener('click', () => {
+    const pa = b.dataset.chon;
+    document.body.dataset.pa = pa;
+    document.querySelectorAll('.thanh-chon button').forEach(x => x.classList.remove('chon'));
+    b.classList.add('chon');
+
+    const m = MO_TA[pa];
+    document.getElementById('ten-pa').textContent = m.ten;
+    document.getElementById('mo-pa').textContent = m.mo;
+    document.getElementById('ma-p').textContent = m.p;
+    document.getElementById('ma-a').textContent = m.a;
+    document.getElementById('tc').textContent = m.tc;
+    document.getElementById('m1').style.background = m.p;
+    document.getElementById('m2').style.background = m.a;
+
+    // Thêm dòng rủi ro — mỗi phương án có một điểm cần lưu ý riêng.
+    let rui = document.getElementById('rui-ro');
+    if (!rui) {
+      rui = document.createElement('div');
+      rui.id = 'rui-ro';
+      rui.style.cssText = 'margin-top:8px;font-size:12.5px;color:var(--ink-muted);padding-top:8px;border-top:1px dashed var(--border)';
+      document.querySelector('.mo-ta').appendChild(rui);
+    }
+    rui.innerHTML = '<b style="color:var(--ink)">Lưu ý:</b> ' + m.rui;
+  });
+});
+
+// Khởi tạo dòng lưu ý cho phương án mặc định
+document.querySelector('.thanh-chon button.chon').click();
+</script>
+
+</body>
+</html>

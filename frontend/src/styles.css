@@ -1,1 +1,66 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   Reset & nền tảng
+   Token nằm ở _tokens.scss — khai trong angular.json styles[], đứng TRƯỚC
+   file này nên biến đã có mặt khi các quy tắc dưới đây dùng.
+   ===================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+/* Chữ số thẳng cột — bắt buộc cho bảng điểm, sĩ số, mã sinh viên.
+   Đây là chi tiết nhỏ nhưng quyết định bảng số có "sạch" hay không. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus nhìn thấy được — không bao giờ xoá outline mà không thay bằng gì. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Khung nội dung chuẩn của mọi trang. */
+.wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 22px 26px 60px;
+}
+
+@media (max-width: 900px) {
+  .wrap {
+    padding: 18px 14px 44px;
+  }
+}

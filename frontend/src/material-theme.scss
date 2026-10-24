@@ -1,0 +1,107 @@
+// =====================================================================
+// material-theme.scss — Material 3 đọc màu từ token chung.
+//
+// Vì sao override: mat.theme() sinh màu từ palette có sẵn, không cho nhét
+// thẳng mã hex của thương hiệu. Nên để nó sinh trước, rồi ghi đè --mat-sys-*
+// bằng token của mình. Nhờ vậy Tailwind và Material khớp nhau.
+//
+// light-dark(a, b) là hàm CSS chuẩn: tự chọn a hay b theo color-scheme,
+// nên không cần khối dark riêng.
+// =====================================================================
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+
+  // typography: 'Inter' (KHÔNG phải Roboto) — mat.theme ghi cứng tên font vào
+  // mọi token --mat-sys-*, nên truyền 'Roboto' sẽ khiến toàn bộ component
+  // Material render Roboto bất kể CSS khai gì.
+  //
+  // M3 chỉ có 12 palette cố định (không có indigo/teal), nên chọn violet và
+  // cyan làm gốc gần nhất. Màu thật vẫn do khối override bên dưới quyết định;
+  // palette ở đây chỉ ảnh hưởng các token phụ không override.
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$green-palette,
+      ),
+      typography: 'Inter',
+      density: 0,
+    )
+  );
+
+  // ---- Ghi đè màu Material bằng token chung (quy tắc TAM GIÁC T4) ----
+  // Xanh dương #366EF2 đạt 4.50:1 với chữ trắng — đúng ngưỡng WCAG AA.
+  --mat-sys-primary: light-dark(#366ef2, #477af0);
+  --mat-sys-on-primary: light-dark(#ffffff, #0f172a);
+  --mat-sys-primary-container: light-dark(#e7eefe, #16233d);
+  --mat-sys-on-primary-container: light-dark(#1d50c9, #a8c2fb);
+
+  // Material dùng "error" cho cả nguy hiểm; ở đây trùng màu nhấn phụ tam giác.
+  --mat-sys-error: light-dark(#e90f50, #ee326a);
+  --mat-sys-on-error: light-dark(#ffffff, #0f172a);
+  --mat-sys-error-container: light-dark(#fee7ee, #3a1520);
+  --mat-sys-on-error-container: light-dark(#c91d50, #fca3bb);
+
+  --mat-sys-surface: light-dark(#ffffff, #111827);
+  --mat-sys-surface-container: light-dark(#f8fafc, #1a2334);
+  --mat-sys-surface-container-high: light-dark(#f1f5f9, #273449);
+  --mat-sys-on-surface: light-dark(#0f172a, #e2e8f0);
+  --mat-sys-on-surface-variant: light-dark(#475569, #94a3b8);
+  --mat-sys-outline: light-dark(#e2e8f0, #273449);
+  --mat-sys-outline-variant: light-dark(#f1f5f9, #1e293b);
+
+  // Nền trang lấy từ token, không lấy mặc định của Material.
+  --mat-sys-background: light-dark(#f8fafc, #0b1120);
+  --mat-sys-on-background: light-dark(#0f172a, #e2e8f0);
+
+  // ---- Ghi đè BO GÓC: Material mặc định bo tròn kiểu viên thuốc (9999px) ----
+  // cho mọi nút. Hệ quản trị cần bo góc khiêm tốn, và phải khớp component
+  // tự viết — nếu không nút Material và nút riêng nhìn lệch nhau.
+  --mat-sys-corner-full: 8px;
+  --mat-sys-corner-extra-large: 16px;
+  --mat-sys-corner-large: 12px;
+  --mat-sys-corner-medium: 8px;
+  --mat-sys-corner-small: 4px;
+  --mat-sys-corner-extra-small: 4px;
+
+  // ---- Ghi đè CHỮ: tiêu đề dùng Be Vietnam Pro, không dùng Inter ----
+  // Material chỉ cho một font chung qua mat.theme(), nên phải override riêng
+  // các token tiêu đề để có cặp chữ "Be Vietnam Pro (tiêu đề) + Inter (nội dung)".
+  --mat-sys-display-large: 400 3.5rem / 4rem var(--font-heading);
+  --mat-sys-display-medium: 400 2.8rem / 3.3rem var(--font-heading);
+  --mat-sys-display-small: 400 2.25rem / 2.75rem var(--font-heading);
+
+  --mat-sys-headline-large: 400 2rem / 2.5rem var(--font-heading);
+  --mat-sys-headline-medium: 400 1.75rem / 2.25rem var(--font-heading);
+  --mat-sys-headline-small: 600 1.5rem / 2rem var(--font-heading);
+
+  --mat-sys-title-large: 600 1.375rem / 1.75rem var(--font-heading);
+  --mat-sys-title-medium: 600 1rem / 1.5rem var(--font-heading);
+  --mat-sys-title-small: 600 0.875rem / 1.25rem var(--font-heading);
+}
+
+body {
+  color-scheme: light;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  margin: 0;
+  height: 100%;
+}
+
+// Chế độ tối: đổi color-scheme để light-dark() chọn nhánh tối.
+[data-theme='dark'] body {
+  color-scheme: dark;
+}
+
+// Chữ tiêu đề của Material dùng font tiêu đề.
+.mat-typography h1,
+.mat-typography h2,
+.mat-typography h3,
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+}

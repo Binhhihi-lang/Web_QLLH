@@ -1,0 +1,229 @@
+:host {
+  display: block;
+  background: var(--color-bg);
+  min-height: 100vh;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 26px 24px 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Icon trong nút: Material Icons cần cỡ riêng, mặc định 24px quá lớn. */
+.material-icons {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* ---------- Lưới màu ---------- */
+.luoi-mau {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.o-mau .mau {
+  height: 52px;
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+}
+
+.o-mau .mau.co-vien {
+  border: 1px solid var(--color-border);
+}
+
+.o-mau .nhan {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.o-mau b {
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.o-mau code {
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+/* ---------- Thang chữ ---------- */
+.thang-chu {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.thang-chu > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.thang-chu > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.thang-chu code {
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  white-space: nowrap;
+}
+
+.co-display { font-family: var(--font-heading); font-size: var(--text-display); font-weight: 700; }
+.co-h1 { font-family: var(--font-heading); font-size: var(--text-h1); font-weight: 600; }
+.co-h2 { font-family: var(--font-heading); font-size: var(--text-h2); font-weight: 600; }
+.co-h3 { font-family: var(--font-heading); font-size: var(--text-h3); font-weight: 600; }
+.co-body { font-size: var(--text-body); }
+.co-small { font-size: var(--text-small); color: var(--color-ink-muted); }
+.co-caption {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.so-lieu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--color-border);
+  font-size: var(--text-small);
+  color: var(--color-ink-muted);
+}
+
+.so-lieu b {
+  color: var(--color-ink);
+}
+
+/* ---------- Hàng / cột ---------- */
+.hang {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hang + .hang {
+  margin-top: 12px;
+}
+
+.hang-badge {
+  gap: 8px;
+}
+
+.cot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Form ---------- */
+.luoi-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.o-nhap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.o-nhap label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.o-nhap input,
+.o-nhap select {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  padding: 9px 11px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  outline: none;
+}
+
+.o-nhap input:focus,
+.o-nhap select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.o-nhap.co-loi input {
+  border-color: var(--color-danger);
+}
+
+.thong-bao-loi {
+  font-size: var(--text-caption);
+  color: var(--color-on-danger-soft);
+  font-weight: 500;
+}
+
+.goi-y {
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+}
+
+/* ---------- Trạng thái tải ---------- */
+.luoi-tai {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.cot-nho {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* ---------- Rỗng ---------- */
+.luoi-rong {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.khung-rong {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 720px) {
+  .wrap {
+    padding: 18px 14px 50px;
+  }
+
+  .luoi-tai,
+  .luoi-rong {
+    grid-template-columns: 1fr;
+  }
+}

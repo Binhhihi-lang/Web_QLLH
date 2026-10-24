@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>QLLH — Bộ màu TƯƠI (Adobe Color)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   MOCKUP — BỘ MÀU TƯƠI theo quy tắc Adobe Color
+
+   Khác vòng trước ở chỗ: độ bão hòa S=88% (trước là 62%), và độ sáng L
+   được TÍNH NGƯỢC — lấy mức sáng cao nhất mà chữ trắng vẫn đạt WCAG AA
+   (4.5:1). Nhờ vậy màu tươi tối đa mà vẫn đọc được, không phải đoán.
+
+   Vòng trước L=40% nên trông "tối tối". Vòng này L=45-65% tùy hue.
+   ===================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  background: #eef0f4;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { font-family: 'Be Vietnam Pro', system-ui, sans-serif; margin: 0; line-height: 1.25; }
+
+.thanh-chon {
+  position: sticky; top: 0; z-index: 100;
+  background: #111827; color: #fff;
+  padding: 10px 18px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  border-bottom: 1px solid #374151;
+}
+.thanh-chon .nhan { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9ca3af; margin-right: 4px; }
+.thanh-chon button {
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  padding: 7px 13px; border-radius: 7px; cursor: pointer;
+  border: 1.5px solid #374151; background: #1f2937; color: #e5e7eb;
+  transition: all .16s ease;
+}
+.thanh-chon button:hover { border-color: #6b7280; }
+.thanh-chon button.chon { background: #fff; color: #111827; border-color: #fff; }
+.thanh-chon .ghi-chu { font-size: 11.5px; color: #9ca3af; margin-left: auto; }
+
+/* =====================================================================
+   BIẾN MÀU — TƯƠI: S=88%, L tính ngược để đạt AA
+   ===================================================================== */
+
+/* T1 — Tương đồng (Analogous) 222/252/192 */
+body[data-pa="t1"] {
+  --p:#336cf2; --p-hover:#2557d4; --p-soft:#ecf1fd; --on-p:#fff;
+  --a:#795af4; --a-soft:#f0ecfd; --on-a:#4f36c4;
+  --n:#0a819e; --n-soft:#ecfafd; --on-n:#076178;
+}
+
+/* T2 — Bổ túc tách 222/12/72 */
+body[data-pa="t2"] {
+  --p:#336cf2; --p-hover:#2557d4; --p-soft:#ecf1fd; --on-p:#fff;
+  --a:#dd370e; --a-soft:#fdf0ec; --on-a:#a8290b;
+  --n:#677f08; --n-soft:#fafdec; --on-n:#4d5f06;
+}
+
+/* T3 — Bổ túc 222/42 */
+body[data-pa="t3"] {
+  --p:#336cf2; --p-hover:#2557d4; --p-soft:#ecf1fd; --on-p:#fff;
+  --a:#996e0a; --a-soft:#fdf8ec; --on-a:#745307;
+  --n:#336cf2; --n-soft:#ecf1fd; --on-n:#2557d4;
+}
+
+/* T4 — Tam giác 222/342/102 */
+body[data-pa="t4"] {
+  --p:#336cf2; --p-hover:#2557d4; --p-soft:#ecf1fd; --on-p:#fff;
+  --a:#e90f50; --a-soft:#fdecf1; --on-a:#b00b3c;
+  --n:#2e8609; --n-soft:#f1fdec; --on-n:#236506;
+}
+
+/* T5 — Vuông 222/312/132 */
+body[data-pa="t5"] {
+  --p:#336cf2; --p-hover:#2557d4; --p-soft:#ecf1fd; --on-p:#fff;
+  --a:#d80eaf; --a-soft:#fdecfa; --on-a:#a20b83;
+  --n:#098922; --n-soft:#ecfdf0; --on-n:#07671a;
+}
+
+/* T6 — Compound 222/252/72 */
+body[data-pa="t6"] {
+  --p:#336cf2; --p-hover:#2557d4; --p-soft:#ecf1fd; --on-p:#fff;
+  --a:#795af4; --a-soft:#f0ecfd; --on-a:#4f36c4;
+  --n:#677f08; --n-soft:#fafdec; --on-n:#4d5f06;
+}
+
+body {
+  --bg:#f8fafc; --surface:#fff; --surface-alt:#f1f5f9;
+  --ink:#0f172a; --ink-muted:#475569; --ink-subtle:#64748b;
+  --border:#e2e8f0; --border-soft:#f1f5f9;
+  --sb-1:#1e293b; --sb-2:#0f172a; --sb-item:#cbd5e1; --sb-icon:#7c8ba1;
+  --sb-active-bg:#fff;
+  --ok:#15803d; --ok-soft:#dcfce7;
+  --warn:#b45309; --warn-soft:#fef3c7;
+  --bad:#b91c1c; --bad-soft:#fee2e2;
+  --info:#0369a1; --info-soft:#e0f2fe;
+  --radius:8px;
+}
+body { --sb-active-fg: var(--p); }
+
+.app { display: grid; grid-template-columns: 250px 1fr; min-height: calc(100vh - 56px); background: var(--bg); color: var(--ink); }
+
+.sidebar { background: linear-gradient(180deg, var(--sb-1) 0%, var(--sb-2) 100%); color: var(--sb-item); display: flex; flex-direction: column; padding: 18px 0; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 20px 18px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.brand .logo { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex: none; font-family: 'Be Vietnam Pro'; font-weight: 700; font-size: 15px; background: var(--p); color: var(--on-p); }
+.brand .ten { font-family: 'Be Vietnam Pro'; font-weight: 600; font-size: 14px; line-height: 1.3; color: #fff; }
+.brand .ten small { display: block; font-family: 'Inter'; font-weight: 400; font-size: 11px; color: var(--sb-icon); }
+
+.nhom { padding: 14px 20px 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--sb-icon); }
+.menu { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
+.menu a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: var(--sb-item); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: background .15s ease; }
+.menu a:hover { background: rgba(255,255,255,.08); }
+.menu a.active { background: var(--sb-active-bg); color: var(--sb-active-fg); font-weight: 600; }
+.menu .ic { width: 17px; text-align: center; font-size: 13px; opacity: .85; }
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 58px; display: flex; align-items: center; gap: 16px; }
+.header .tim { flex: 1; max-width: 380px; display: flex; align-items: center; gap: 8px; background: var(--surface-alt); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 7px 12px; color: var(--ink-subtle); font-size: 13px; }
+.header .phai { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--p-soft); color: var(--p); display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+
+.noi-dung { padding: 22px 24px 40px; }
+
+.page-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.page-h h1 { font-size: 23px; font-weight: 600; }
+.page-h p { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-muted); }
+.crumbs { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-muted); margin-bottom: 10px; }
+.crumbs .sep { color: var(--ink-subtle); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 600; padding: 9px 16px; border-radius: var(--radius); border: 1.5px solid transparent; cursor: pointer; transition: all .18s ease; white-space: nowrap; }
+.btn-primary { background: var(--p); color: var(--on-p); }
+.btn-primary:hover { background: var(--p-hover); }
+.btn-ghost { background: transparent; color: var(--p); }
+.btn-ghost:hover { background: var(--p-soft); }
+.btn-sec { background: var(--surface); color: var(--ink); border-color: var(--border); }
+.btn-sec:hover { background: var(--surface-alt); }
+.btn-sm { font-size: 12.5px; padding: 5px 11px; }
+
+.the-so { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.the { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15,23,42,.05); border-left: 3px solid var(--p); }
+.the:nth-child(2) { border-left-color: var(--n); }
+.the:nth-child(3) { border-left-color: var(--a); }
+.the:nth-child(4) { border-left-color: var(--border); }
+.the .nhan { font-size: 12px; color: var(--ink-muted); font-weight: 500; }
+.the .so { font-size: 25px; font-weight: 700; font-family: 'Be Vietnam Pro'; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.the .so small { font-size: 13px; font-weight: 500; color: var(--ink-subtle); }
+.the .xu-huong { font-size: 11.5px; margin-top: 3px; font-weight: 600; }
+.the .xu-huong.len { color: var(--ok); }
+.the .xu-huong.xuong { color: var(--bad); }
+
+.loc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px 12px 0 0; border-bottom: none; padding: 14px 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.o-nhap { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.o-nhap label { font-size: 11.5px; font-weight: 600; color: var(--ink); }
+.o-nhap input, .o-nhap select { font-family: inherit; font-size: 13.5px; padding: 8px 11px; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--ink); outline: none; min-width: 160px; }
+.o-nhap input:focus, .o-nhap select:focus { border-color: var(--p); box-shadow: 0 0 0 3px var(--p-soft); }
+.o-nhap.tim-kiem { flex: 1; min-width: 220px; }
+.o-nhap.tim-kiem input { width: 100%; }
+.loc .cach { flex: 1; }
+
+.bang-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 0 0 12px 12px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead th { text-align: left; font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-muted); background: var(--surface-alt); padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--p-soft); }
+td.so, th.so { text-align: right; font-variant-numeric: tabular-nums; }
+td.ma { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.b-ok { background: var(--ok-soft); color: var(--ok); }
+.b-warn { background: var(--warn-soft); color: var(--warn); }
+.b-bad { background: var(--bad-soft); color: var(--bad); }
+.b-info { background: var(--info-soft); color: var(--info); }
+.b-neutral { background: var(--surface-alt); color: var(--ink-muted); }
+.b-accent { background: var(--a-soft); color: var(--on-a); }
+.b-nhan { background: var(--n-soft); color: var(--on-n); }
+
+.thao-tac { display: flex; gap: 2px; justify-content: flex-end; }
+.icon-btn { width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: var(--ink-subtle); font-size: 13px; display: grid; place-items: center; }
+.icon-btn:hover { background: var(--surface-alt); color: var(--p); }
+
+.phan-trang { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--ink-muted); flex-wrap: wrap; }
+.trang { display: flex; gap: 3px; }
+.trang button { min-width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 12.5px; cursor: pointer; font-weight: 500; }
+.trang button.chon { background: var(--p); color: var(--on-p); border-color: var(--p); font-weight: 700; }
+.trang button:hover:not(.chon) { background: var(--surface-alt); }
+
+.mo-ta { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px 18px; margin-bottom: 18px; }
+.mo-ta .dau { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.mo-ta h3 { font-size: 15px; }
+.mo-ta .goc { font-size: 11.5px; color: var(--ink-subtle); font-weight: 600; background: var(--surface-alt); padding: 2px 8px; border-radius: 5px; }
+.mo-ta p { margin: 0 0 10px; font-size: 13px; color: var(--ink-muted); line-height: 1.6; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.sw { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-muted); }
+.sw i { width: 22px; height: 22px; border-radius: 6px; display: block; border: 1px solid rgba(0,0,0,.08); }
+.sw b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.kiem { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-muted); padding-top: 9px; border-top: 1px dashed var(--border); }
+.kiem .dat { color: var(--ok); font-weight: 700; }
+.kiem .khong { color: var(--bad); font-weight: 700; }
+
+@media (max-width: 1080px) { .the-so { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .the-so { grid-template-columns: 1fr; }
+  .noi-dung { padding: 16px 14px 30px; }
+}
+</style>
+</head>
+<body data-pa="t1">
+
+<div class="thanh-chon">
+  <span class="nhan">Tươi · Adobe Color</span>
+  <button data-chon="t1" class="chon">T1 Tương đồng</button>
+  <button data-chon="t2">T2 Bổ túc tách</button>
+  <button data-chon="t3">T3 Bổ túc</button>
+  <button data-chon="t4">T4 Tam giác</button>
+  <button data-chon="t5">T5 Vuông</button>
+  <button data-chon="t6">T6 Compound</button>
+  <span class="ghi-chu">S=88% · L tính ngược để chữ trắng đạt AA</span>
+</div>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">Q</div>
+      <div class="ten">Quản lý lớp học<small>Học kỳ 1 · 2025-2026</small></div>
+    </div>
+
+    <div class="nhom">Tổng quan</div>
+    <nav class="menu">
+      <a href="#" class="active"><span class="ic">▦</span> Dashboard</a>
+    </nav>
+
+    <div class="nhom">Đào tạo</div>
+    <nav class="menu">
+      <a href="#"><span class="ic">◍</span> Sinh viên</a>
+      <a href="#"><span class="ic">◑</span> Giảng viên</a>
+      <a href="#"><span class="ic">▤</span> Lớp hành chính</a>
+      <a href="#"><span class="ic">▥</span> Môn học</a>
+      <a href="#"><span class="ic">◷</span> Học kỳ</a>
+      <a href="#"><span class="ic">▣</span> Phòng học</a>
+    </nav>
+
+    <div class="nhom">Học vụ</div>
+    <nav class="menu">
+      <a href="#"><span class="ic">▦</span> Lớp học phần</a>
+      <a href="#"><span class="ic">✓</span> Đăng ký</a>
+      <a href="#"><span class="ic">◷</span> Lịch học</a>
+      <a href="#"><span class="ic">☑</span> Điểm danh</a>
+      <a href="#"><span class="ic">✎</span> Điểm</a>
+    </nav>
+
+    <div class="nhom">Hệ thống</div>
+    <nav class="menu">
+      <a href="#"><span class="ic">⚙</span> Cấu hình</a>
+      <a href="#"><span class="ic">♻</span> Thùng rác</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+
+    <header class="header">
+      <div class="tim"><span>⌕</span> Tìm sinh viên, lớp học phần…</div>
+      <div class="phai">
+        <span style="font-size:13px;color:var(--ink-muted)">Học kỳ 1 · 2025-2026</span>
+        <div class="avatar">CB</div>
+      </div>
+    </header>
+
+    <div class="noi-dung">
+
+      <div class="mo-ta">
+        <div class="dau">
+          <h3 id="ten-pa">T1 — Tương đồng (Analogous)</h3>
+          <span class="goc" id="goc-pa">Góc: 0° / +30° / −30°</span>
+        </div>
+        <p id="mo-pa"></p>
+        <div class="swatches">
+          <span class="sw"><i id="sw1"></i>Chính <b id="ma1"></b></span>
+          <span class="sw"><i id="sw2"></i>Nhấn phụ <b id="ma2"></b></span>
+          <span class="sw"><i id="sw3"></i>Phụ trợ <b id="ma3"></b></span>
+        </div>
+        <div class="kiem">
+          <span>Chữ trắng trên màu chính: <b id="tc1"></b>:1 <span class="dat">ĐẠT AA</span></span>
+          <span id="canh-bao"></span>
+        </div>
+      </div>
+
+      <div class="crumbs">
+        <span>Trang chủ</span><span class="sep">›</span><span>Đào tạo</span><span class="sep">›</span><span style="color:var(--ink)">Sinh viên</span>
+      </div>
+
+      <div class="page-h">
+        <div>
+          <h1>Danh sách sinh viên</h1>
+          <p>Quản lý hồ sơ sinh viên toàn trường · 501 sinh viên</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sec">⤓ Xuất Excel</button>
+          <button class="btn btn-primary">＋ Thêm sinh viên</button>
+        </div>
+      </div>
+
+      <div class="the-so">
+        <div class="the">
+          <div class="nhan">Tổng sinh viên</div>
+          <div class="so">501</div>
+          <div class="xu-huong len">↑ 12 trong học kỳ này</div>
+        </div>
+        <div class="the">
+          <div class="nhan">Đang hoạt động</div>
+          <div class="so">468 <small>/ 501</small></div>
+          <div class="xu-huong len">93.4% tỷ lệ</div>
+        </div>
+        <div class="the">
+          <div class="nhan">Lớp hành chính</div>
+          <div class="so">18</div>
+          <div class="xu-huong" style="color:var(--ink-subtle)">Trung bình 27.8 SV/lớp</div>
+        </div>
+        <div class="the">
+          <div class="nhan">Tạm nghỉ</div>
+          <div class="so">33</div>
+          <div class="xu-huong xuong">↑ 3 so với kỳ trước</div>
+        </div>
+      </div>
+
+      <div class="loc">
+        <div class="o-nhap tim-kiem">
+          <label>Tìm kiếm</label>
+          <input type="text" placeholder="Mã sinh viên, họ tên, email…">
+        </div>
+        <div class="o-nhap">
+          <label>Lớp hành chính</label>
+          <select><option>Tất cả lớp</option><option>CNTT-K20A</option><option>CNTT-K20B</option><option>KTPM-K21A</option></select>
+        </div>
+        <div class="o-nhap">
+          <label>Giới tính</label>
+          <select><option>Tất cả</option><option>Nam</option><option>Nữ</option></select>
+        </div>
+        <div class="o-nhap">
+          <label>Trạng thái</label>
+          <select><option>Tất cả</option><option>Đang hoạt động</option><option>Tạm nghỉ</option></select>
+        </div>
+        <div class="cach"></div>
+        <button class="btn btn-ghost btn-sm">Xoá bộ lọc</button>
+      </div>
+
+      <div class="bang-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox"></th>
+              <th>Mã SV</th><th>Họ và tên</th><th>Lớp</th><th>Giới tính</th>
+              <th>Ngày sinh</th><th>Email</th><th>Trạng thái</th><th style="width:96px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100001</td><td>Nguyễn Văn An</td><td>CNTT-K20A</td>
+              <td>Nam</td><td class="so">12/03/2002</td>
+              <td style="color:var(--ink-muted)">sv0001@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100008</td><td>Trần Thị Ngọc Anh</td><td>CNTT-K20A</td>
+              <td>Nữ</td><td class="so">25/07/2002</td>
+              <td style="color:var(--ink-muted)">sv0002@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100015</td><td>Lê Minh Cường</td><td>CNTT-K20B</td>
+              <td>Nam</td><td class="so">03/11/2002</td>
+              <td style="color:var(--ink-muted)">sv0003@student.edu.vn</td>
+              <td><span class="badge b-nhan">Mới</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100022</td><td>Phạm Thu Hà</td><td>KTPM-K21A</td>
+              <td>Nữ</td><td class="so">19/01/2003</td>
+              <td style="color:var(--ink-muted)">sv0004@student.edu.vn</td>
+              <td><span class="badge b-neutral">Tạm nghỉ</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100029</td><td>Hoàng Đức Long</td><td>HTTT-K21A</td>
+              <td>Nam</td><td class="so">08/09/2003</td>
+              <td style="color:var(--ink-muted)">sv0005@student.edu.vn</td>
+              <td><span class="badge b-accent">Học bổng</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100036</td><td>Vũ Thảo Mai</td><td>ATTT-K22A</td>
+              <td>Nữ</td><td class="so">14/05/2004</td>
+              <td style="color:var(--ink-muted)">sv0006@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100043</td><td>Đặng Quốc Nam</td><td>CNTT-K20A</td>
+              <td>Nam</td><td class="so">30/12/2002</td>
+              <td style="color:var(--ink-muted)">sv0007@student.edu.vn</td>
+              <td><span class="badge b-warn">Chờ duyệt</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="ma">2100050</td><td>Bùi Thị Trang</td><td>KTPM-K21A</td>
+              <td>Nữ</td><td class="so">22/08/2003</td>
+              <td style="color:var(--ink-muted)">sv0008@student.edu.vn</td>
+              <td><span class="badge b-ok">Đang hoạt động</span></td>
+              <td><div class="thao-tac"><button class="icon-btn">👁</button><button class="icon-btn">✎</button><button class="icon-btn">🗑</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="phan-trang">
+          <span>Hiển thị 1–8 trong 501 sinh viên</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span>Số dòng</span>
+            <select style="font-family:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--ink)">
+              <option>10</option><option>25</option><option>50</option>
+            </select>
+            <div class="trang">
+              <button>‹</button><button class="chon">1</button><button>2</button><button>3</button><button>…</button><button>63</button><button>›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const PA = {
+  t1: {
+    ten:'T1 — Tương đồng (Analogous)', goc:'Góc: 0° / +30° / −30°',
+    mo:'Ba màu sát nhau trên bánh xe. Hài hòa nhất, không bao giờ chỏi — mặc định của đa số design system. Nhược điểm: ba màu hơi giống nhau nên badge trạng thái khó phân biệt khi nhìn nhanh.',
+    mau:['#336CF2','#795AF4','#0A819E'], tc:'4.60',
+    canh:'Phụ trợ xanh lơ phải tối (L=33%) mới đủ tương phản — nhìn vẫn trầm hơn hai màu kia.'
+  },
+  t2: {
+    ten:'T2 — Bổ túc tách (Split Complementary)', goc:'Góc: 0° / +150° / −150°',
+    mo:'Hai màu nhấn đối xứng qua màu chính. Tương phản mạnh mà dịu hơn bổ túc thuần. Hợp khi cần phân biệt hai loại trạng thái rõ ràng.',
+    mau:['#336CF2','#DD370E','#677F08'], tc:'4.60',
+    canh:'Ô-liu #677F08 phải rất tối mới đạt AA — đây là màu kém "tươi" nhất trong nhóm dù đã tăng bão hòa.'
+  },
+  t3: {
+    ten:'T3 — Bổ túc (Complementary)', goc:'Góc: 0° / 180°',
+    mo:'Hai màu đối diện hoàn toàn. Tương phản mạnh nhất — rất tốt để làm nổi bật đúng một hành động chính. Dùng nhiều sẽ mỏi mắt.',
+    mau:['#336CF2','#996E0A'], tc:'4.60',
+    canh:'Vàng đất #996E0A khó tươi — hue 42° vốn tối hơn xanh cùng độ sáng. Đây là hạn chế của quy tắc bổ túc khi gốc là xanh dương.'
+  },
+  t4: {
+    ten:'T4 — Tam giác (Triad)', goc:'Góc: 0° / +120° / −120°',
+    mo:'Ba màu cách đều 120°, cân bằng và sinh động. Mỗi màu đủ khác để phân biệt ba nhóm dữ liệu — rất hợp dashboard nhiều chuỗi biểu đồ.',
+    mau:['#336CF2','#E90F50','#2E8609'], tc:'4.60',
+    canh:'Cả ba đều tươi và đều đạt AA. Đây là phương án vừa tươi vừa phân biệt tốt nhất.'
+  },
+  t5: {
+    ten:'T5 — Vuông (Square)', goc:'Góc: 0° / +90° / +180° / +270°',
+    mo:'Bốn màu cách đều 90°. Nhiều màu nhất — hợp hệ có bốn nhóm trạng thái. Rủi ro: bốn màu đậm cạnh nhau dễ tranh sự chú ý.',
+    mau:['#336CF2','#D80EAF','#098922'], tc:'4.60',
+    canh:'Xanh lá #098922 phải tối (L=28%) mới đạt AA nên trông đậm hơn hồng tím — hơi lệch độ tươi giữa các màu.'
+  },
+  t6: {
+    ten:'T6 — Compound', goc:'Góc: 0° / +30° / +180° / +210°',
+    mo:'Kết hợp tương đồng (0°/30°) với bổ túc (180°/210°): vừa có cặp gần nhau để tạo nhóm, vừa có cặp đối diện để nhấn.',
+    mau:['#336CF2','#795AF4','#677F08'], tc:'4.60',
+    canh:'Màu chính và nhấn phụ gần như cùng tông (222° và 252°) — phải nhìn kỹ mới thấy khác.'
+  }
+};
+
+function apDung(pa){
+  const m = PA[pa];
+  document.body.dataset.pa = pa;
+  document.getElementById('ten-pa').textContent = m.ten;
+  document.getElementById('goc-pa').textContent = m.goc;
+  document.getElementById('mo-pa').textContent = m.mo;
+  ['sw1','sw2','sw3'].forEach((id,i)=>document.getElementById(id).style.background = m.mau[i]);
+  ['ma1','ma2','ma3'].forEach((id,i)=>document.getElementById(id).textContent = m.mau[i]);
+  document.getElementById('tc1').textContent = m.tc;
+  document.getElementById('canh-bao').innerHTML = '<b style="color:var(--ink)">Lưu ý:</b> ' + m.canh;
+}
+
+document.querySelectorAll('.thanh-chon button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.thanh-chon button').forEach(x=>x.classList.remove('chon'));
+    b.classList.add('chon');
+    apDung(b.dataset.chon);
+  });
+});
+
+apDung('t1');
+</script>
+
+</body>
+</html>
