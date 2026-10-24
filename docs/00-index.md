@@ -1,7 +1,7 @@
 # 00 — Mục lục tài liệu dự án QLLH
 
 **Hệ thống quản lý lớp học** — Laravel REST API + Angular + MySQL
-Phiên bản tài liệu: **v0.3** — cập nhật ngày 2026-10-20
+Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-24
 
 ---
 
@@ -38,7 +38,7 @@ Phiên bản tài liệu: **v0.3** — cập nhật ngày 2026-10-20
 - **Ngôn ngữ:** nội dung tiếng Việt; tên bảng, cột, endpoint, field JSON **tiếng Việt không dấu** (xem ADR-002).
 - **Mã tham chiếu:** `FR-xx.yy` (chức năng), `BR-xx` (quy tắc nghiệp vụ), `NFR-xx` (phi chức năng), `UC-xx` (use case), `SCR-xx` (màn hình), `ADR-xx` (quyết định).
 - **Ưu tiên:** MoSCoW — Must / Should / Could.
-- **Đánh dấu thay đổi:** `🆕` mới so với v0.2, `✏️` sửa so với v0.2, `❌` bỏ so với v0.2.
+- **Đánh dấu thay đổi:** `🆕` mới, `✏️` sửa, `❌` bỏ.
 - Khi tài liệu và code lệch nhau, **tài liệu là nguồn chân lý**; ngược lại nếu tài liệu sai thì sửa tài liệu trong cùng commit với code.
 
 ---
@@ -65,3 +65,29 @@ Phiên bản tài liệu: **v0.3** — cập nhật ngày 2026-10-20
 | 🆕 Luồng chuẩn bị học kỳ trước đợt đăng ký | UC-04B, TC-04B |
 
 Chi tiết đầy đủ ở [01-requirements.md](01-requirements.md) mục "Thay đổi so với v0.2".
+
+## Bổ sung ở v0.4 (2026-10-24)
+
+Rà soát nghiệp vụ toàn bộ tài liệu, sửa mâu thuẫn nội bộ và bổ sung 7 quy tắc.
+
+| # | Thay đổi | Nơi áp dụng |
+|---|---|---|
+| 1 | `lop_hanh_chinh.khoa` → `khoa_hoc` (khóa ≠ khoa); thêm `nganh`, `nam_nhap_hoc` | ADR-016, `03` §3.4, `01` FR-03.01 |
+| 2 | Học kỳ có `nam_hoc` + `ky_thu` | ADR-016, `03` §3.6 |
+| 3 | 🆕 Ràng buộc năm thứ khi đăng ký (`lop_hoc_phan.nam_thu`) | BR-23, FR-08.01, FR-09.02/05 |
+| 4 | 🆕 Vòng đời học kỳ chỉ tiến, một kỳ ONGOING | BR-24, FR-06.03, ADR-017 |
+| 5 | 🆕 Chặn chồng lấn thời gian (kỳ, đợt, buổi học) | BR-25, FR-06.01, FR-10.01/02 |
+| 6 | 🆕 "Trong đợt đăng ký" tính theo học kỳ chứa lớp | BR-26, FR-09.02 |
+| 7 | 🆕 Đăng ký lại: chặn khi có điểm, chuyên cần tính từ `dang_ky_luc` | BR-27, FR-11.05 |
+| 8 | 🆕 Học lại: GPA một lần/môn, điểm cao nhất; thêm CPA | BR-28, FR-12.08, ADR-018 |
+| 9 | 🆕 Chặn hủy lớp đã chốt điểm | BR-29, FR-08.04 |
+| 10 | 🆕 Đăng ký hàng loạt theo lớp hành chính | FR-09.07, `POST /api/enrollments/bulk` |
+| 11 | Sửa: đổi môn lớp chặn khi có đăng ký (đối xứng đổi học kỳ) | FR-08.03 |
+| 12 | Sửa: BR-14 có ngoại lệ ADMIN sửa điểm danh kỳ CLOSED | BR-14, FR-11.03 |
+| 13 | Sửa: mục 10 bỏ "quy đổi điểm chữ/hệ 4", thêm §10.1 giới hạn đã biết | `01` §10 |
+| 14 | Sửa: `vai_tro` IN HOA trong data model (ADR-015); ERD thêm `diem_chu`, `diem_he_4` | `03` §1, §3.1 |
+| 15 | 🆕 Ảnh đại diện trên Cloudinary, một cột `users.avatar_url` cho cả 3 vai trò | FR-01.10/01.11, ADR-019, `03` §3.1 |
+| 16 | 🆕 Khóa / kích hoạt **hàng loạt**, kèm thu hồi token khi khóa | FR-01.12, FR-02.05b, FR-04.04b, FR-05.04, FR-07.04, BR-30 |
+| 17 | 🆕 Xóa **hàng loạt** cho sinh viên, giảng viên, môn, phòng | FR-02.07, FR-04.06, BR-31, `04` §1.6b |
+
+**Vì sao:** rà soát 2026-10-24 phát hiện tài liệu tự mâu thuẫn (mục 10 loại trừ quy đổi điểm chữ trong khi FR-12.03 bắt buộc có), schema lệch ADR-015, và có 6 lỗ hổng nghiệp vụ chưa định nghĩa. Gốc của câu hỏi "học kỳ có phụ thuộc khóa sinh viên không" là tên cột `khoa` nhập nhằng — đã tách rõ ở ADR-016.

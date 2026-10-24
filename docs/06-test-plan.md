@@ -52,6 +52,20 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | TC-14 | FR-08.04 | Hủy lớp: đăng ký → CANCELLED, buổi → CANCELLED, giữ điểm |
 | TC-15 | FR-10.03 | Lịch STUDENT/TEACHER chỉ trong phạm vi |
 | TC-16 | FR-13.01 → .03 | Số liệu dashboard khớp dữ liệu |
+| TC-17 | FR-09.05, BR-23 | Năm thứ: lớp `nam_thu = 4` + sinh viên năm 1 → 409 `WRONG_STUDY_YEAR`; ADMIN đăng ký hộ thành công + có `nhat_ky`; `nam_thu = null` không chặn; thiếu `nam_nhap_hoc` không chặn |
+| TC-18 | FR-06.03, BR-24 | Vòng đời học kỳ: tiến hợp lệ; lùi từ `CLOSED` → 409; bỏ qua `ONGOING` → 409; kỳ ONGOING thứ hai → 409; mỗi lần chuyển có `nhat_ky` |
+| TC-19 | FR-06.01, FR-10.01, BR-25 | Chồng lấn học kỳ → 409 `SEMESTER_OVERLAP`; đợt đăng ký ngoài khoảng ngày kỳ → 422; buổi học ngoài khoảng ngày kỳ → 409 `SESSION_OUTSIDE_SEMESTER` |
+| TC-20 | FR-09.02, BR-26 | Đăng ký vào kỳ không phải kỳ hiện tại nhưng đang trong đợt của kỳ đó → thành công; ngoài đợt của kỳ đó → 409 `OUTSIDE_REGISTRATION` |
+| TC-21 | BR-27 | Đăng ký lại sau hủy: chặn khi đã có điểm; `diem_danh` cũ không tính vào chuyên cần; buổi sau `dang_ky_luc` mới tính |
+| TC-22 | FR-12.05, FR-12.08, BR-28 | Học lại: GPA chỉ tính một lần với điểm cao nhất; điểm lần thấp vẫn hiển thị trong lịch sử; CPA tính trên học kỳ CLOSED |
+| TC-23 | FR-08.04, BR-29 | Hủy lớp đã chốt điểm → 409 `GRADE_LOCKED`; mở khóa rồi hủy thành công |
+| TC-24 | FR-08.03 | Đổi môn lớp đã có đăng ký ACTIVE → 409 `SUBJECT_CHANGE_BLOCKED`; đổi môn lớp chỉ có đăng ký CANCELLED → thành công |
+| TC-25 | FR-09.07 | Đăng ký hàng loạt 50 SV có 3 lỗi → 47 thành công, 3 dòng `ma_loi`; không vượt sĩ số khi chạy đồng thời |
+| TC-26 | FR-01.10, FR-01.11 | Upload ảnh: đúng định dạng → 200 + `avatar_url`; sai MIME → 422; quá 5 MB → 422; thiếu cấu hình → 503; thay ảnh xóa ảnh cũ trên Cloudinary; gỡ ảnh → `avatar_url = null` |
+| TC-27 | FR-01.12, BR-30 | Khóa tài khoản đơn lẻ và hàng loạt đều **thu hồi toàn bộ token**: token cũ gọi API → 401 ngay |
+| TC-28 | FR-02.05b, FR-02.07, BR-31 | Bulk sinh viên: 10 chọn, 2 còn đăng ký ACTIVE → 8 xóa được, 2 dòng `DELETE_BLOCKED`; khóa hàng loạt khóa luôn tài khoản |
+| TC-29 | FR-04.04b, FR-04.06 | Bulk giảng viên: xóa bị chặn khi còn phụ trách lớp chưa đóng; khóa thu hồi token |
+| TC-30 | BR-31 | Danh sách rỗng → 422; 501 id → 422; id không tồn tại → dòng `NOT_FOUND`, các dòng khác vẫn thành công |
 
 ---
 
@@ -81,6 +95,15 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | BR-20 | `DangKyLaiTest` | Không tạo dòng mới |
 | BR-21 | `DiemDanhTest` | Hủy trước buổi không xuất hiện |
 | BR-22 | `SuaLichTest` | Sửa giờ tạo trùng lịch SV → 409 |
+| BR-23 | `NamThuTest` | Lớp `nam_thu` khác năm thứ → 409; ADMIN override; `null` không chặn |
+| BR-24 | `VongDoiHocKyTest` | Chỉ tiến; `CLOSED` không quay lại; một kỳ ONGOING |
+| BR-25 | `ThoiGianHocKyTest` | Chồng lấn kỳ; đợt ngoài kỳ; buổi ngoài kỳ |
+| BR-26 | `DotDangKyTest` | Đợt tính theo học kỳ chứa lớp, không theo kỳ hiện tại |
+| BR-27 | `DangKyLaiTest` | Chặn khi có điểm; chuyên cần chỉ tính buổi sau `dang_ky_luc` |
+| BR-28 | `TinhGpaTest` | Học lại lấy điểm cao nhất; không cộng hai lần |
+| BR-29 | `HuyLopTest` | Lớp đã chốt điểm không hủy được |
+| BR-30 | `KhoaTaiKhoanTest` | Khóa đơn lẻ và hàng loạt đều xóa `personal_access_tokens` |
+| BR-31 | `HangLoatTest` | Từng dòng độc lập; rỗng → 422; quá 500 → 422; id không tồn tại → `NOT_FOUND` |
 
 ---
 
@@ -101,6 +124,10 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | `TinhGpaTest` | 2 môn 3 tín chỉ, hệ 4 là 3.0 và 2.0 | `gpa_he_4 = 2.50` |
 | `TinhGpaTest` | có môn F (0.0) | vẫn tính vào GPA |
 | `TinhGpaTest` | 0 tín chỉ | `null` |
+| `TinhGpaTest` | môn X học 2 lần: 5.0 và 8.0 (3 tín chỉ) | chỉ tính 8.0 một lần |
+| `TinhGpaTest` | môn X học 2 lần: 8.0 và 5.0 | vẫn tính 8.0 (điểm cao nhất, không phải lần cuối) |
+| `NamThuTest` | nhập học 2023, kỳ thuộc năm học 2026-2027 | `nam_thu = 4` |
+| `NamThuTest` | không có lớp hành chính | `null` |
 | `TinhChuyenCanTest` | 8 PRESENT, 1 LATE, 1 EXCUSED | 1.0 |
 | `TinhChuyenCanTest` | toàn EXCUSED | `null` |
 | `TinhChuyenCanTest` | 0 buổi | `null` |
@@ -121,7 +148,12 @@ Bảng test tự động: với mỗi cặp (vai trò, endpoint), khẳng địn
 | `PUT /api/sessions/{id}/attendance` | 200 | 200 (lớp mình) | 403 |
 | `POST /api/me/enrollments` | 403 | 403 | 201 |
 | `POST /api/enrollments` | 201 | 403 | 403 |
+| `POST /api/enrollments/bulk` | 200 | 403 | 403 |
 | `GET /api/me/grades` | 403 | 403 | 200 |
+| `GET /api/me/gpa` | 403 | 403 | 200 |
+| `POST /api/me/avatar` | 200 | 200 | 200 |
+| `PATCH /api/users/bulk-status` | 200 | 403 | 403 |
+| `POST /api/students/bulk-delete` | 200 | 403 | 403 |
 | `GET /api/trash/students` | 200 | 403 | 403 |
 | `GET /api/dashboard/admin` | 200 | 403 | 403 |
 

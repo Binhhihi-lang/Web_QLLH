@@ -1,0 +1,171 @@
+<div class="dash">
+  <app-page-header
+    title="Dashboard"
+    description="Tổng quan hoạt động học vụ · Học kỳ 1 năm học 2025-2026"
+  >
+    <app-button variant="secondary" (click)="tai()">
+      <span class="material-icons">refresh</span>
+      Làm mới
+    </app-button>
+    <app-button variant="primary" routerLink="/lop-hoc-phan">
+      <span class="material-icons">add</span>
+      Mở lớp học phần
+    </app-button>
+  </app-page-header>
+
+  <!-- ============ ĐANG TẢI ============ -->
+  @if (dangTai()) {
+    <app-loading-state label="Đang tải số liệu dashboard…" padding="80px 16px" />
+  }
+
+  <!-- ============ LỖI ============ -->
+  @if (loi()) {
+    <app-alert muc="danger" title="Không tải được dữ liệu">{{ loi() }}</app-alert>
+    <div class="thu-lai">
+      <app-button variant="secondary" (click)="tai()">Thử lại</app-button>
+    </div>
+  }
+
+  <!-- ============ CÓ DỮ LIỆU ============ -->
+  @if (!dangTai() && !loi()) {
+    <!-- ---- Thẻ số liệu ---- -->
+    <div class="the-so">
+      @for (t of theSoLieu(); track t.khoa) {
+        <div class="the">
+          <div class="the-dau">
+            <span class="the-nhan">{{ t.nhan }}</span>
+            <span class="material-icons the-icon">{{ iconThe(t.khoa) }}</span>
+          </div>
+          <div class="the-so-lieu">
+            {{ t.gia_tri | number }}
+            @if (t.don_vi) {
+              <small>{{ t.don_vi }}</small>
+            }
+          </div>
+          <div class="the-phu" [class]="'huong-' + t.xu_huong">
+            <span class="material-icons">{{ iconXuHuong(t) }}</span>
+            {{ t.phu_chu }}
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ---- Hai cột: biểu đồ + lớp sắp mở ---- -->
+    <div class="luoi-hai">
+      <app-card
+        title="Tỷ lệ lấp đầy theo học kỳ"
+        subtitle="So sánh số chỗ đã đăng ký trên tổng sức chứa"
+      >
+        @if (tyLeLapDay().length === 0) {
+          <app-empty-state
+            icon="bar_chart"
+            title="Chưa có dữ liệu học kỳ"
+            description="Mở học kỳ và lớp học phần để bắt đầu theo dõi tỷ lệ lấp đầy."
+          />
+        } @else {
+          <div class="bieu-do">
+            @for (t of tyLeLapDay(); track t.hoc_ky) {
+              <div class="cot">
+                <div class="cot-gia-tri">{{ phanTram(t) }}%</div>
+                <div class="cot-vung">
+                  <div class="cot-than" [style.height]="chieuCaoCot(t)"></div>
+                </div>
+                <div class="cot-nhan">{{ t.hoc_ky }}</div>
+                <div class="cot-phu">{{ t.da_dang_ky | number }}/{{ t.tong_cho | number }}</div>
+              </div>
+            }
+          </div>
+        }
+      </app-card>
+
+      <app-card title="Lớp học phần sắp mở" subtitle="Sắp xếp theo tỷ lệ lấp đầy">
+        <a cardActions class="xem-tat-ca" routerLink="/lop-hoc-phan">
+          Xem tất cả
+          <span class="material-icons">arrow_forward</span>
+        </a>
+
+        @if (lopSapMo().length === 0) {
+          <app-empty-state
+            icon="class"
+            title="Chưa có lớp nào"
+            description="Tạo lớp học phần cho học kỳ này để sinh viên đăng ký."
+          />
+        } @else {
+          <div class="danh-sach-lop">
+            @for (l of lopSapMo(); track l.id) {
+              <a class="lop" [routerLink]="['/lop-hoc-phan', l.id]">
+                <div class="lop-dau">
+                  <div class="lop-ten">
+                    <strong>{{ l.ten_mon_hoc }}</strong>
+                    <small>{{ l.ma_lop_hp }} · {{ l.ten_giang_vien }}</small>
+                  </div>
+                  <app-status-badge [value]="l.trang_thai" [label]="nhanTrangThaiLop(l)" />
+                </div>
+                <div class="thanh-tien-trinh">
+                  <div class="thanh-nen">
+                    <div
+                      class="thanh-day"
+                      [style.width.%]="l.ty_le"
+                      [class.day]="l.ty_le >= 100"
+                    ></div>
+                  </div>
+                  <span class="si-so">{{ l.si_so }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        }
+      </app-card>
+    </div>
+
+    <!-- ---- Đăng ký gần đây ---- -->
+    <app-card title="Đăng ký gần đây" subtitle="10 lượt đăng ký mới nhất toàn hệ thống">
+      <div cardActions>
+        <a class="xem-tat-ca" routerLink="/dang-ky/danh-sach">
+          Xem tất cả
+          <span class="material-icons">arrow_forward</span>
+        </a>
+      </div>
+
+      @if (dangKyGanDay().length === 0) {
+        <app-empty-state
+          icon="how_to_reg"
+          title="Chưa có lượt đăng ký nào"
+          description="Lượt đăng ký của sinh viên sẽ hiện ở đây khi học kỳ mở."
+        />
+      } @else {
+        <div class="bang-cuon">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã SV</th>
+                <th>Họ và tên</th>
+                <th>Lớp học phần</th>
+                <th>Môn học</th>
+                <th>Thời gian</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of dangKyGanDay(); track d.id) {
+                <tr>
+                  <td class="ma">{{ d.ma_sv }}</td>
+                  <td>{{ d.ho_ten }}</td>
+                  <td class="ma">{{ d.ma_lop_hp }}</td>
+                  <td>{{ d.ten_mon_hoc }}</td>
+                  <td class="thoi-gian">{{ d.thoi_gian }}</td>
+                  <td>
+                    <app-status-badge
+                      [mau]="mauTrangThaiDangKy(d)"
+                      [label]="nhanTrangThaiDangKy(d)"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </app-card>
+  }
+</div>

@@ -11,7 +11,7 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết | Nguồn | Trạng thái |
 |---|---|---|---|
 | Chốt tài liệu v0.3 | Rà lại 8 tài liệu, xác nhận không còn mâu thuẫn | `docs/00-index.md` | ✅ |
-| Dọn backend | Bỏ Blade khỏi đường chạy chính, thêm `config/cors.php`, cấu hình Sanctum, bỏ `gio.hanh.chinh` khỏi `/api` | ADR-001, ADR-008 | ✅ |
+| Dọn backend | Bỏ Blade khỏi đường chạy chính, thêm `config/cors.php`, cấu hình Sanctum, xóa hẳn middleware `gio.hanh.chinh` | ADR-001, ADR-008 | ✅ |
 | Envelope + exception | Chuẩn hóa `ApiResponse`, thêm `ma_loi`, xử lý 401/403/404/409/422/429 cho `api/*` | ADR-009 | ✅ |
 | Migration mới | 15 bảng nghiệp vụ + bổ sung cột `users`, theo [03-data-model.md](03-data-model.md) | ADR-003 | ✅ |
 | Factory + Seeder | Factory cho 13 model; seeder demo đầy đủ | 03 mục 7 | ✅ |
@@ -52,16 +52,21 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 - Postman collection 19 request + hướng dẫn test tại `docs/postman/`.
 - Test: `XacThucTest` 16 case, tổng 34 test pass.
 
+**Bổ sung BE (2026-10-24):**
+- `POST /api/me/avatar` + `DELETE /api/me/avatar` (FR-01.10/01.11) qua `CloudinaryService`, cột `users.avatar_url` + `avatar_public_id` (ADR-019). Thiếu cấu hình → 503.
+- Migration v0.4: `khoa_hoc`/`nganh`/`nam_nhap_hoc`, `hoc_ky.nam_hoc`/`ky_thu`, `lop_hoc_phan.nam_thu`.
+- Postman thêm 2 request ảnh (21 request).
+
 ---
 
 ## Tuần 3 — Sinh viên, giảng viên, lớp hành chính
 
 | Việc | Chi tiết |
 |---|---|
-| API | CRUD `students`, `teachers`, `admin-classes`; tạo kèm tài khoản; trả mật khẩu một lần |
-| Nghiệp vụ | Unique xuyên `users`; chặn xóa theo mục 6.1; phạm vi xem của TEACHER |
+| API | CRUD `students`, `teachers`, `admin-classes`; tạo kèm tài khoản; trả mật khẩu một lần; **bulk-status + bulk-delete** |
+| Nghiệp vụ | Unique xuyên `users`; chặn xóa theo mục 6.1; phạm vi xem của TEACHER; **khóa tài khoản phải thu hồi token (BR-30)**; **thao tác hàng loạt xử lý từng dòng (BR-31)** |
 | FE | SCR-10 → SCR-18 |
-| Test | TC-03, TC-04 |
+| Test | TC-03, TC-04, TC-27, TC-28, TC-29, TC-30 |
 | Hạ tầng | Docker Compose staging (PHP + Nginx + MySQL + Angular build) |
 | **Bàn giao** | ADMIN tạo sinh viên, sinh viên đăng nhập được và bị bắt đổi mật khẩu |
 
@@ -72,9 +77,9 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết |
 |---|---|
 | API | CRUD `subjects`, `semesters`, `rooms`, `menus`, `settings`; endpoint `/options/*` |
-| Nghiệp vụ | Chặn xóa học kỳ CLOSED; chặn xóa phòng còn buổi; menu theo vai trò |
+| Nghiệp vụ | Chặn xóa học kỳ không phải UPCOMING (BR-24); vòng đời trạng thái chỉ tiến; chặn chồng lấn kỳ (BR-25); chặn xóa phòng còn buổi; menu theo vai trò |
 | FE | SCR-19 → SCR-24, SCR-47 → SCR-51 |
-| Test | TC-05 (phần danh mục), BR-15, BR-19 |
+| Test | TC-05 (phần danh mục), TC-18, TC-19, BR-15, BR-19 |
 | **Bàn giao** | Đủ danh mục để mở lớp học phần |
 
 ---
@@ -84,9 +89,9 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết |
 |---|---|
 | API | CRUD `sections`, đổi trạng thái, sinh viên của lớp, policy theo vai trò |
-| Nghiệp vụ | FR-08.05; đổi giảng viên kiểm tra trùng lịch (khung); chặn đổi học kỳ/môn |
+| Nghiệp vụ | FR-08.05; đổi giảng viên kiểm tra trùng lịch (khung); chặn đổi học kỳ/môn khi đã có đăng ký; chặn hủy lớp đã chốt điểm (BR-29) |
 | FE | SCR-25 → SCR-28 |
-| Test | TC-05, BR-03 |
+| Test | TC-05, TC-24, BR-03 |
 | **Bàn giao** | ADMIN mở lớp, gán giảng viên; TEACHER thấy lớp mình; STUDENT thấy lớp OPEN |
 
 ---
@@ -96,9 +101,9 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết |
 |---|---|
 | API | CRUD `sessions`, sinh lịch hàng tuần, `/schedules` |
-| Nghiệp vụ | `ScheduleService`: trùng phòng, trùng giảng viên, trùng sinh viên (BR-06, BR-22) |
+| Nghiệp vụ | `ScheduleService`: trùng phòng, trùng giảng viên, trùng sinh viên (BR-06, BR-22); buổi học phải trong khoảng ngày của kỳ (BR-25) |
 | FE | SCR-35 → SCR-37, lịch tuần/tháng |
-| Test | TC-06, TC-15 |
+| Test | TC-06, TC-15, TC-19 |
 | **Bàn giao** | Sinh lịch 1 lớp, phát hiện trùng phòng/GV/SV, xem lịch theo vai trò |
 
 ---
@@ -107,10 +112,10 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 
 | Việc | Chi tiết |
 |---|---|
-| API | `EnrollmentService` dùng chung; `/enrollments`, `/me/enrollments`; hủy |
-| Nghiệp vụ | BR-08, BR-09 (khóa dòng), BR-10, BR-11, BR-20, BR-22 |
+| API | `EnrollmentService` dùng chung; `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; hủy |
+| Nghiệp vụ | BR-08, BR-09 (khóa dòng), BR-10, BR-11, BR-20, BR-22, **BR-23 (năm thứ)**, BR-26 (đợt theo kỳ của lớp), BR-27 (đăng ký lại) |
 | FE | SCR-30 → SCR-33 |
-| Test | TC-07, TC-08, TC-09, BR-09 tranh chấp chỗ cuối |
+| Test | TC-07, TC-08, TC-09, TC-17, TC-20, TC-21, TC-25, BR-09 tranh chấp chỗ cuối |
 | **Bàn giao** | ADMIN đăng ký hộ và STUDENT tự đăng ký; tranh chấp chỗ cuối an toàn |
 
 ---
@@ -120,7 +125,7 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết |
 |---|---|
 | API | `/sessions/{id}/attendance`, thống kê chuyên cần |
-| Nghiệp vụ | BR-21 (mốc thời gian), 7 ngày sửa, chuyển `DONE` |
+| Nghiệp vụ | BR-21 (mốc thời gian), BR-27 (chuyên cần tính từ `dang_ky_luc`), 7 ngày sửa, chuyển `DONE`, ADMIN sửa được trên kỳ CLOSED (BR-14 ngoại lệ) |
 | FE | SCR-38 → SCR-40 |
 | Test | TC-10, công thức chuyên cần |
 | **Bàn giao** | TEACHER điểm danh, STUDENT xem chuyên cần |
@@ -132,9 +137,9 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết |
 |---|---|
 | API | Nhập điểm đơn/hàng loạt, tính tổng kết, **quy đổi điểm chữ + hệ 4**, chốt, mở khóa, lịch sử |
-| Nghiệp vụ | Công thức 25/25/50; bảng quy đổi A/B/C/D/F cấu hình trong `cau_hinh`; GPA hệ 10 và hệ 4; BR-13 |
+| Nghiệp vụ | Công thức 25/25/50; bảng quy đổi A/B/C/D/F cấu hình trong `cau_hinh`; GPA hệ 10 và hệ 4, **học lại lấy điểm cao nhất** (BR-28), **CPA** (FR-12.08); BR-13 |
 | FE | SCR-41 → SCR-43 (có cột điểm chữ), SCR-03 → SCR-05, SCR-49 (sửa bảng quy đổi) |
-| Test | TC-11, TC-12, TC-16, unit công thức + quy đổi |
+| Test | TC-11, TC-12, TC-16, TC-22, unit công thức + quy đổi |
 | **Bàn giao** | Toàn bộ luồng end-to-end: mở lớp → sinh lịch → đăng ký → điểm danh → nhập điểm → chốt |
 
 ---

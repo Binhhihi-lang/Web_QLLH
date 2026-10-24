@@ -124,13 +124,13 @@ Các bước (1)–(4) là **danh mục dùng chung**, làm một lần và tái
 
 | Bước | Việc cần làm | Điều kiện / lưu ý | Nếu thiếu |
 |---|---|---|---|
-| 1 | Tạo **học kỳ**: mã, tên, ngày bắt đầu/kết thúc, thời gian mở/đóng đăng ký, trạng thái `UPCOMING` | `ngay_bat_dau < ngay_ket_thuc`; `mo_dang_ky < dong_dang_ky` | Không mở được lớp học phần |
+| 1 | Tạo **học kỳ**: mã, tên, năm học, kỳ thứ, ngày bắt đầu/kết thúc, thời gian mở/đóng đăng ký, trạng thái `UPCOMING` | `ngay_bat_dau < ngay_ket_thuc`; `mo_dang_ky < dong_dang_ky`; đợt đăng ký nằm trong khoảng ngày của kỳ; không chồng lấn kỳ khác | Không mở được lớp học phần |
 | 2 | Đảm bảo **môn học** cần dạy đã tồn tại và `ACTIVE` | Môn INACTIVE không mở lớp được | Không chọn được môn |
 | 3 | Đảm bảo **phòng học** tồn tại và `ACTIVE` | Phòng INACTIVE không xếp lịch được | Không xếp được lịch |
 | 4 | Đảm bảo **giảng viên** tồn tại và `ACTIVE` | Giảng viên INACTIVE không gán được | Không mở được lớp |
-| 5 | Mở **lớp học phần**: mã lớp, môn, học kỳ, giảng viên, sĩ số tối đa, trạng thái `OPEN` | Mã lớp duy nhất **trong học kỳ**; không giảm sĩ số dưới số đã đăng ký | Sinh viên không thấy lớp để đăng ký |
-| 6 | Tạo **buổi học** (nhập tay hoặc sinh lịch hàng tuần) | Kiểm tra trùng phòng, trùng giảng viên, trùng sinh viên đã đăng ký | Sinh viên đăng ký được nhưng **không kiểm tra được trùng lịch** |
-| 7 | Kiểm tra **thời gian đăng ký** của học kỳ đã đúng chưa; chuyển học kỳ sang `ONGOING` khi vào kỳ | STUDENT chỉ đăng ký được trong khoảng `mo_dang_ky_luc` – `dong_dang_ky_luc` | STUDENT nhận lỗi `OUTSIDE_REGISTRATION` |
+| 5 | Mở **lớp học phần**: mã lớp, môn, học kỳ, giảng viên, sĩ số tối đa, năm thứ (tùy chọn), trạng thái `OPEN` | Mã lớp duy nhất **trong học kỳ**; không giảm sĩ số dưới số đã đăng ký; `nam_thu = null` nếu lớp phục vụ mọi năm | Sinh viên không thấy lớp để đăng ký |
+| 6 | Tạo **buổi học** (nhập tay hoặc sinh lịch hàng tuần) | Kiểm tra trùng phòng, trùng giảng viên, trùng sinh viên đã đăng ký; ngày buổi phải nằm trong khoảng ngày của kỳ | Sinh viên đăng ký được nhưng **không kiểm tra được trùng lịch** |
+| 7 | Kiểm tra **thời gian đăng ký** của học kỳ đã đúng chưa; chuyển học kỳ sang `ONGOING` khi vào kỳ | STUDENT chỉ đăng ký được trong khoảng `mo_dang_ky_luc` – `dong_dang_ky_luc` **của học kỳ chứa lớp đó** (BR-26) | STUDENT nhận lỗi `OUTSIDE_REGISTRATION` |
 | 8 | (Sinh viên đăng ký) | Xem UC-08 | – |
 
 ### Ba điều dễ hiểu sai
@@ -149,14 +149,15 @@ Sinh viên chọn môn → hệ thống so lịch các lớp đã đăng ký v�
 ```
 Sinh viên mở danh sách lớp OPEN của học kỳ
         ↓
-Hệ thống lọc: còn chỗ, đúng học kỳ, chưa đăng ký, chưa học môn này trong kỳ
+Hệ thống lọc: còn chỗ, đúng học kỳ, chưa đăng ký, chưa học môn này trong kỳ, đúng năm thứ
         ↓
 Sinh viên chọn lớp  →  hệ thống kiểm tra lại toàn bộ (server-side)
         ↓
-   ┌── Trùng lịch? ──► 409 SCHEDULE_CONFLICT + danh sách buổi trùng
-   ├── Hết chỗ?    ──► 409 SECTION_FULL
-   ├── Trùng môn?  ──► 409 DUPLICATE_SUBJECT_IN_SEMESTER
-   └── Hợp lệ       ──► 201, lớp xuất hiện trong thời khóa biểu
+   ┌── Trùng lịch?   ──► 409 SCHEDULE_CONFLICT + danh sách buổi trùng
+   ├── Hết chỗ?      ──► 409 SECTION_FULL
+   ├── Trùng môn?    ──► 409 DUPLICATE_SUBJECT_IN_SEMESTER
+   ├── Sai năm thứ?  ──► 409 WRONG_STUDY_YEAR
+   └── Hợp lệ        ──► 201, lớp xuất hiện trong thời khóa biểu
 ```
 
 **AC**
@@ -165,6 +166,9 @@ Sinh viên chọn lớp  →  hệ thống kiểm tra lại toàn bộ (server-s
 - AC-3: Khi trùng lịch, response nêu rõ buổi trùng (ngày, giờ, lớp đã đăng ký).
 - AC-4: Nếu ADMIN sửa lịch sau khi đã có đăng ký mà gây trùng, hệ thống chặn và trả danh sách xung đột (BR-22).
 - AC-5: Sinh viên đăng ký xong thấy ngay lớp trong thời khóa biểu tuần.
+- AC-6: Lớp có `nam_thu = 4`, sinh viên năm 1 bấm đăng ký → 409 `WRONG_STUDY_YEAR`. ADMIN đăng ký hộ cùng cặp đó → thành công, ghi `nhat_ky` (BR-23).
+- AC-7: Lớp có `nam_thu = null` → không kiểm tra năm thứ.
+- AC-8: Sinh viên chưa có lớp hành chính hoặc lớp chưa có `nam_nhap_hoc` → không chặn (không tính được năm thứ).
 
 ---
 
@@ -271,11 +275,13 @@ Sinh viên chọn lớp  →  hệ thống kiểm tra lại toàn bộ (server-s
 - STUDENT ngoài đợt → 409 `OUTSIDE_REGISTRATION`.
 - STUDENT đã có điểm/điểm danh → 409 `HAS_GRADE_OR_ATTENDANCE`.
 - Học kỳ CLOSED → 409 `SEMESTER_CLOSED`.
+- Đăng ký lại khi bản ghi đã có `diem` → 409 `HAS_GRADE_OR_ATTENDANCE` (BR-27).
 
 **AC**
 - AC-1: Sĩ số lớp giảm ngay.
 - AC-2: Điểm và điểm danh cũ giữ nguyên.
-- AC-3: Đăng ký lại được sau khi hủy (nếu còn chỗ và thỏa điều kiện).
+- AC-3: Đăng ký lại được sau khi hủy (nếu còn chỗ và thỏa điều kiện), **trừ khi đã có điểm**.
+- AC-4: Sau khi đăng ký lại, tỷ lệ chuyên cần chỉ tính các buổi có `ngay_hoc >= dang_ky_luc` mới; `diem_danh` của các buổi trước đó vẫn còn trong lịch sử nhưng không tính vào mẫu số.
 
 ---
 
@@ -334,12 +340,15 @@ Sinh viên chọn lớp  →  hệ thống kiểm tra lại toàn bộ (server-s
 **Luồng chính**
 1. STUDENT mở trang điểm theo học kỳ.
 2. Hệ thống trả danh sách môn, điểm thành phần, tổng kết, kết quả.
-3. Tính GPA theo trọng số tín chỉ, tính cả môn KHÔNG ĐẠT, làm tròn 2 chữ số.
+3. Tính GPA theo trọng số tín chỉ, tính cả môn KHÔNG ĐẠT, làm tròn 2 chữ số. **Mỗi môn tính một lần, lấy điểm cao nhất** (BR-28).
+4. Trả kèm GPA tích lũy (CPA) trên toàn bộ học kỳ đã `CLOSED` (FR-12.08).
 
 **AC**
 - AC-1: Chỉ thấy điểm của chính mình.
 - AC-2: Không thấy điểm khi lớp chưa có điểm tổng kết (trả null).
 - AC-3: GPA khớp công thức ở [03-data-model.md](03-data-model.md) mục 5.2.
+- AC-4: Học lại một môn ở kỳ sau, điểm cao hơn → GPA chỉ tính điểm cao hơn một lần, không cộng cả hai.
+- AC-5: Điểm của lần học lại thấp hơn → GPA vẫn giữ điểm cao hơn; lịch sử hiển thị cả hai lần.
 
 ---
 
@@ -371,20 +380,67 @@ Sinh viên chọn lớp  →  hệ thống kiểm tra lại toàn bộ (server-s
 
 **Luồng chính**
 1. ADMIN chuyển lớp sang CANCELLED, nhập lý do.
-2. Hệ thống chuyển toàn bộ đăng ký ACTIVE → CANCELLED (ghi `huy_boi`, `huy_luc`, lý do).
-3. Chuyển buổi `SCHEDULED` → CANCELLED.
-4. Giữ nguyên điểm và điểm danh đã phát sinh.
-5. Ghi `nhat_ky`.
+2. Hệ thống kiểm tra lớp chưa chốt điểm (`chot_diem_luc` null). Nếu đã chốt → 409 `GRADE_LOCKED`.
+3. Hệ thống chuyển toàn bộ đăng ký ACTIVE → CANCELLED (ghi `huy_boi`, `huy_luc`, lý do).
+4. Chuyển buổi `SCHEDULED` → CANCELLED.
+5. Giữ nguyên điểm và điểm danh đã phát sinh.
+6. Ghi `nhat_ky`.
 
 **AC**
 - AC-1: Không còn đăng ký ACTIVE sau khi hủy lớp.
 - AC-2: Sinh viên thấy lớp ở trạng thái "đã hủy" trong lịch sử.
 - AC-3: Không nhận đăng ký mới.
+- AC-4: Lớp đã chốt điểm không hủy được cho tới khi ADMIN mở khóa điểm (BR-29).
+
+---
+
+## UC-14B — Chuyển trạng thái học kỳ
+
+**Actor:** ADMIN · **FR:** FR-06.03, BR-24, BR-25
+
+**Tiền điều kiện:** học kỳ tồn tại, không ở trạng thái `CLOSED`.
+
+**Luồng chính**
+1. ADMIN chọn học kỳ và trạng thái đích.
+2. Hệ thống kiểm tra chuyển đổi hợp lệ: chỉ `UPCOMING → ONGOING` hoặc `ONGOING → CLOSED`.
+3. Nếu đích là `ONGOING`: kiểm tra không còn học kỳ nào khác đang `ONGOING`.
+4. Cập nhật trạng thái, ghi `nhat_ky` (giá trị cũ → mới, người thực hiện, thời điểm).
+
+**Luồng lỗi**
+- `CLOSED → bất kỳ` → 409 `SEMESTER_TRANSITION_INVALID`.
+- Bỏ qua `ONGOING` (`UPCOMING → CLOSED`) → 409 `SEMESTER_TRANSITION_INVALID`.
+- Đã có kỳ khác `ONGOING` → 409 `SEMESTER_TRANSITION_INVALID` kèm thông tin kỳ đang mở.
+
+**AC**
+- AC-1: `CLOSED` là trạng thái cuối, không có thao tác nào đưa kỳ ra khỏi `CLOSED`.
+- AC-2: Tại mọi thời điểm có tối đa một kỳ `ONGOING`.
+- AC-3: Mỗi lần chuyển có đúng một dòng `nhat_ky`.
+
+---
+
+## UC-14C — Đăng ký hàng loạt theo lớp hành chính
+
+**Actor:** ADMIN · **FR:** FR-09.07, BR-08, BR-09, BR-23
+
+**Luồng chính**
+1. ADMIN chọn lớp học phần + danh sách sinh viên (hoặc chọn cả một lớp hành chính).
+2. Hệ thống xử lý từng sinh viên trong một transaction: kiểm tra FR-09.05 (bỏ qua điều kiện năm thứ theo BR-23), khóa dòng lớp khi kiểm tra chỗ.
+3. Trả kết quả từng dòng: `thanh_cong`, hoặc `ma_loi` + lý do.
+4. Sinh viên lỗi **không** làm hỏng các dòng thành công.
+
+**Luồng lỗi**
+- Cả danh sách rỗng → 422.
+- Lớp không tồn tại/đã xóa → 404.
+- Từng sinh viên lỗi trả mã riêng trong mảng kết quả, không phải 409 toàn request.
+
+**AC**
+- AC-1: 50 sinh viên, 3 người trùng lịch → 47 thành công, 3 dòng lỗi có `ma_loi` cụ thể.
+- AC-2: Không bao giờ vượt `si_so_toi_da`, kể cả khi chạy đồng thời hai request.
+- AC-3: Mỗi lần đăng ký hộ bỏ qua kiểm tra năm thứ đều ghi `nhat_ky`.
 
 ---
 
 ## UC-15 — Xem thời khóa biểu
-
 **Actor:** STUDENT, TEACHER · **FR:** FR-10.03
 
 **Luồng chính**
@@ -419,16 +475,18 @@ Sinh viên chọn lớp  →  hệ thống kiểm tra lại toàn bộ (server-s
 | UC-02 | FR-01.05 | – | TC-02 |
 | UC-03 | FR-02.01 | BR-01 | TC-03 |
 | UC-04 | FR-02.06 | 6.1 | TC-04 |
-| UC-04B | FR-05 → FR-10 | BR-06, BR-15, BR-22 | TC-04B |
+| UC-04B | FR-05 → FR-10 | BR-06, BR-15, BR-22, BR-25 | TC-04B |
 | UC-05 | FR-08.01, .05 | BR-15 | TC-05 |
-| UC-06 | FR-10.02, .04 | BR-06, BR-22 | TC-06 |
-| UC-07 | FR-09.01, .05 | BR-08, BR-09 | TC-07 |
-| UC-08 | FR-09.02, .05 | BR-10 | TC-08 |
-| UC-09 | FR-09.03 | BR-11, BR-20 | TC-09 |
-| UC-10 | FR-11.01, .02 | BR-03, BR-21 | TC-10 |
+| UC-06 | FR-10.02, .04 | BR-06, BR-22, BR-25 | TC-06 |
+| UC-07 | FR-09.01, .05 | BR-08, BR-09, BR-23 | TC-07 |
+| UC-08 | FR-09.02, .05 | BR-10, BR-23, BR-26 | TC-08, TC-17, TC-20 |
+| UC-09 | FR-09.03 | BR-11, BR-20, BR-27 | TC-09, TC-21 |
+| UC-10 | FR-11.01, .02 | BR-03, BR-21, BR-27 | TC-10 |
 | UC-11 | FR-12.01 → .04 | BR-05, BR-13 | TC-11 |
-| UC-12 | FR-12.05 | – | TC-12 |
+| UC-12 | FR-12.05, FR-12.08 | BR-28 | TC-12, TC-22 |
 | UC-13 | FR-14.01 → .05 | BR-18 | TC-13 |
-| UC-14 | FR-08.04 | – | TC-14 |
+| UC-14 | FR-08.04 | BR-29 | TC-14, TC-23 |
+| UC-14B | FR-06.03 | BR-24, BR-25 | TC-18, TC-19 |
+| UC-14C | FR-09.07 | BR-08, BR-09, BR-23 | TC-25 |
 | UC-15 | FR-10.03 | – | TC-15 |
 | UC-16 | FR-13.01 → .03 | – | TC-16 |

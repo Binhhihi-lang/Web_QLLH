@@ -20,6 +20,7 @@ class NguoiDungResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'avatar_url' => $this->avatar_url,
             'vai_tro' => $this->vai_tro,
             'trang_thai' => $this->trang_thai,
             'must_change_password' => $this->must_change_password,

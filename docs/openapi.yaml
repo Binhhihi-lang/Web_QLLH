@@ -110,6 +110,63 @@ paths:
         "401":
           $ref: "#/components/responses/Loi401"
 
+  /me/avatar:
+    post:
+      tags: [Auth]
+      summary: Tải ảnh đại diện lên Cloudinary (FR-01.10)
+      description: |
+        Multipart, field `anh`. JPEG/PNG/WebP/GIF, tối đa 5 MB. Ảnh được cắt
+        vuông 512×512. Thay ảnh thì ảnh cũ bị xóa trên Cloudinary (ADR-019).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [anh]
+              properties:
+                anh:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Cập nhật ảnh đại diện thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDung"
+        "422":
+          $ref: "#/components/responses/Loi422"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "502":
+          $ref: "#/components/responses/Loi502"
+        "503":
+          $ref: "#/components/responses/Loi503"
+    delete:
+      tags: [Auth]
+      summary: Gỡ ảnh đại diện (FR-01.11)
+      description: Xóa ảnh trên Cloudinary và đặt `avatar_url = null`.
+      responses:
+        "200":
+          description: Đã gỡ ảnh đại diện
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDung"
+        "401":
+          $ref: "#/components/responses/Loi401"
+
   /options/subjects:
     get:
       tags: [Options]
@@ -219,7 +276,7 @@ paths:
                       data:
                         type: array
                         items:
-                          $ref: "#/components/schemas/Option"
+                          $ref: "#/components/schemas/OptionLopHanhChinh"
         "401":
           $ref: "#/components/responses/Loi401"
         "403":
@@ -341,6 +398,13 @@ components:
             - GRADE_INCOMPLETE
             - RESTORE_PARENT_DELETED
             - ATTENDANCE_EDIT_EXPIRED
+            - WRONG_STUDY_YEAR
+            - SEMESTER_TRANSITION_INVALID
+            - SEMESTER_OVERLAP
+            - SESSION_OUTSIDE_SEMESTER
+            - SUBJECT_CHANGE_BLOCKED
+            - UPLOAD_NOT_CONFIGURED
+            - UPLOAD_FAILED
         errors:
           nullable: true
           oneOf:
@@ -375,11 +439,18 @@ components:
       allOf:
         - $ref: "#/components/schemas/Option"
         - type: object
-          required: [trang_thai]
+          required: [trang_thai, nam_hoc, ky_thu]
           properties:
             trang_thai:
               type: string
               enum: [UPCOMING, ONGOING, CLOSED]
+            nam_hoc:
+              type: string
+              example: "2026-2027"
+            ky_thu:
+              type: integer
+              minimum: 1
+              maximum: 3
 
     OptionPhongHoc:
       allOf:
@@ -399,6 +470,25 @@ components:
             con_cho:
               type: integer
               minimum: 0
+            nam_thu:
+              type: integer
+              minimum: 1
+              maximum: 6
+              nullable: true
+              description: null = lớp phục vụ mọi năm (BR-23)
+
+    OptionLopHanhChinh:
+      allOf:
+        - $ref: "#/components/schemas/Option"
+        - type: object
+          properties:
+            khoa_hoc:
+              type: string
+              nullable: true
+              description: Khóa (cohort), ví dụ K65 — không phải khoa/faculty
+            nganh:
+              type: string
+              nullable: true
 
     NguoiDung:
       type: object
@@ -410,9 +500,13 @@ components:
         email:
           type: string
           format: email
+        avatar_url:
+          type: string
+          nullable: true
+          description: URL Cloudinary; null = hiển thị chữ cái đầu tên
         vai_tro:
           type: string
-          enum: [admin, giang_vien, sinh_vien]
+          enum: [ADMIN, GIANG_VIEN, SINH_VIEN]
         must_change_password:
           type: boolean
         ho_so:
@@ -475,6 +569,20 @@ components:
 
     Loi429:
       description: Quá giới hạn đăng nhập
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Loi"
+
+    Loi502:
+      description: Dịch vụ ngoài (Cloudinary) lỗi
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Loi"
+
+    Loi503:
+      description: Chức năng chưa được cấu hình trên máy chủ
       content:
         application/json:
           schema:

@@ -7,6 +7,7 @@ import {
   MON_HOC_MOCK,
   SINH_VIEN_MOCK,
 } from '@core/mock/data/danh-muc.mock';
+import { DASHBOARD_ADMIN_MOCK } from '@core/mock/data/dashboard.mock';
 import {
   ApiResponse,
   filterBy,
@@ -56,14 +57,14 @@ export class MockRegistry {
     // ---------- Lớp hành chính ----------
     if (path === '/lop-hanh-chinh' && method === 'GET') {
       let rows = searchBy(this.lopHanhChinh, params.get('keyword'), ['ma_lop', 'ten_lop']);
-      rows = filterBy(rows, params, ['trang_thai']);
+      rows = filterBy(rows, params, ['khoa_hoc', 'nganh', 'trang_thai']);
       return paginate(rows, params, '/api/lop-hanh-chinh');
     }
 
     // ---------- Giảng viên ----------
     if (path === '/giang-vien' && method === 'GET') {
       let rows = searchBy(this.giangVien, params.get('keyword'), ['ma_gv', 'ho_ten', 'email']);
-      rows = filterBy(rows, params, ['bo_mon', 'trang_thai']);
+      rows = filterBy(rows, params, ['chuyen_mon', 'trang_thai']);
       return paginate(rows, params, '/api/giang-vien');
     }
 
@@ -75,14 +76,14 @@ export class MockRegistry {
 
     // ---------- Học kỳ ----------
     if (path === '/hoc-ky' && method === 'GET') {
-      const rows = filterBy(this.hocKy, params, ['trang_thai']);
+      const rows = filterBy(this.hocKy, params, ['trang_thai', 'nam_hoc', 'ky_thu']);
       return paginate(rows, params, '/api/hoc-ky');
     }
 
     // ---------- Lớp học phần ----------
     if (path === '/lop-hoc-phan' && method === 'GET') {
-      let rows = searchBy(this.lopHocPhan, params.get('keyword'), ['ma_lop_hp', 'ten_mon_hoc', 'ten_giang_vien']);
-      rows = filterBy(rows, params, ['hoc_ky_id', 'mon_hoc_id', 'giang_vien_id', 'trang_thai']);
+      let rows = searchBy(this.lopHocPhan, params.get('keyword'), ['ma_lop_hp', 'mon_hoc.ten_mon', 'giang_vien.ho_ten']);
+      rows = filterBy(rows, params, ['hoc_ky.id', 'mon_hoc.id', 'giang_vien.id', 'nam_thu', 'trang_thai']);
       // Lọc "còn chỗ" — tham số riêng của màn SCR-25.
       if (params.get('con_cho') === 'true') {
         rows = rows.filter((r) => r.si_so_hien_tai < r.si_so_toi_da);
@@ -91,15 +92,20 @@ export class MockRegistry {
       return paginate(rows, params, '/api/lop-hoc-phan');
     }
 
+    // ---------- Dashboard ----------
+    if (path === '/dashboard/admin' && method === 'GET') {
+      return ok(DASHBOARD_ADMIN_MOCK);
+    }
+
     // ---------- Options (dùng cho mọi dropdown) ----------
     if (path === '/options/lop-hanh-chinh' && method === 'GET') {
-      return ok(this.lopHanhChinh.map((r) => ({ id: r.id, nhan: r.ma_lop })));
+      return ok(this.lopHanhChinh.map((r) => ({ id: r.id, nhan: r.ma_lop, khoa_hoc: r.khoa_hoc, nganh: r.nganh })));
     }
     if (path === '/options/mon-hoc' && method === 'GET') {
       return ok(this.monHoc.map((r) => ({ id: r.id, nhan: `${r.ma_mon} — ${r.ten_mon}` })));
     }
     if (path === '/options/hoc-ky' && method === 'GET') {
-      return ok(this.hocKy.map((r) => ({ id: r.id, nhan: `${r.ten_hoc_ky} ${r.nam_hoc}` })));
+      return ok(this.hocKy.map((r) => ({ id: r.id, nhan: `${r.ten_hoc_ky}`, nam_hoc: r.nam_hoc, ky_thu: r.ky_thu, trang_thai: r.trang_thai })));
     }
     if (path === '/options/giang-vien' && method === 'GET') {
       return ok(this.giangVien.map((r) => ({ id: r.id, nhan: r.ho_ten })));

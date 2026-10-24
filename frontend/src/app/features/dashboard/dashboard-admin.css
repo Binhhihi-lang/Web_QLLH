@@ -1,0 +1,348 @@
+:host {
+  display: block;
+}
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Icon trong nút và thẻ: Material Icons mặc định 24px là quá lớn. */
+.material-icons {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.thu-lai {
+  display: flex;
+}
+
+/* ================= Thẻ số liệu ================= */
+.the-so {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.the {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.the-dau {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.the-nhan {
+  font-size: var(--text-small);
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.the-icon {
+  font-size: 20px;
+  color: var(--color-primary);
+  opacity: 0.75;
+  flex: none;
+}
+
+.the-so-lieu {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.2;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.the-so-lieu small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-subtle);
+  margin-left: 3px;
+}
+
+.the-phu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.the-phu .material-icons {
+  font-size: 14px;
+}
+
+.the-phu.huong-len {
+  color: var(--color-on-success-soft);
+}
+
+.the-phu.huong-xuong {
+  color: var(--color-on-danger-soft);
+}
+
+/* ================= Lưới hai cột ================= */
+.luoi-hai {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.xem-tat-ca {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.xem-tat-ca .material-icons {
+  font-size: 15px;
+}
+
+.xem-tat-ca:hover {
+  text-decoration: underline;
+}
+
+/* ================= Biểu đồ cột ================= */
+.bieu-do {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 12px;
+  height: 210px;
+  padding-top: 8px;
+}
+
+.cot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.cot-gia-tri {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+
+.cot-vung {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 52px;
+}
+
+.cot-than {
+  width: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: height var(--dur) var(--ease);
+  min-height: 6px;
+}
+
+.cot-nhan {
+  margin-top: 7px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cot-phu {
+  font-size: 10.5px;
+  color: var(--color-ink-subtle);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+/* ================= Danh sách lớp ================= */
+.danh-sach-lop {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lop {
+  display: block;
+  padding: 10px 8px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.lop:hover {
+  background: var(--color-surface-alt);
+}
+
+.lop-dau {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.lop-ten {
+  min-width: 0;
+}
+
+.lop-ten strong {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lop-ten small {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thanh-tien-trinh {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.thanh-nen {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.thanh-day {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width var(--dur) var(--ease);
+}
+
+/* Lớp đầy sĩ số đổi màu — đây là thông tin người dùng cần thấy ngay. */
+.thanh-day.day {
+  background: var(--color-success);
+}
+
+.si-so {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ================= Bảng ================= */
+.bang-cuon {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-align: left;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-alt);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border-soft);
+  font-size: var(--text-small);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--color-primary-soft);
+}
+
+td.ma {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+td.thoi-gian {
+  color: var(--color-ink-subtle);
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 1180px) {
+  .the-so {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1020px) {
+  .luoi-hai {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .the-so {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bieu-do {
+    height: 170px;
+    gap: 6px;
+  }
+
+  .cot-nhan {
+    font-size: 10px;
+  }
+
+  .cot-phu {
+    display: none;
+  }
+}

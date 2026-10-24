@@ -38,6 +38,9 @@ class LopHocPhanSeeder extends Seeder
                     'hoc_ky_id' => $hocKyId,
                     'giang_vien_id' => $gvIds[($dem * 3) % count($gvIds)],
                     'si_so_toi_da' => [60, 70, 80, 90][$dem % 4],
+                    // Cứ 5 lớp thì 1 lớp dành riêng cho một năm thứ (BR-23);
+                    // còn lại null = mọi năm, giống môn đại cương.
+                    'nam_thu' => $dem % 5 === 0 ? (($dem / 5) % 4) + 1 : null,
                     'trang_thai' => $hocKyId === $hocKyDaDong->id
                         ? LopHocPhan::CLOSED
                         : LopHocPhan::OPEN,

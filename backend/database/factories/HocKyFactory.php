@@ -22,7 +22,11 @@ class HocKyFactory extends Factory
 
         return [
             'ma_hoc_ky' => $nam.'-'.$ky,
-            'ten_hoc_ky' => sprintf('Học kỳ %d năm %d', $ky, $nam),
+            'ten_hoc_ky' => sprintf('Học kỳ %d năm %d-%d', $ky, $nam, $nam + 1),
+            // Học kỳ 1 thuộc năm học bắt đầu từ $nam; học kỳ 2 cũng vậy
+            // (HK2 của năm học 2026-2027 diễn ra đầu 2027).
+            'nam_hoc' => $nam.'-'.($nam + 1),
+            'ky_thu' => $ky,
             'ngay_bat_dau' => $batDau->toDateString(),
             'ngay_ket_thuc' => $batDau->copy()->addMonths(4)->toDateString(),
             'mo_dang_ky_luc' => $batDau->copy()->subWeeks(2),

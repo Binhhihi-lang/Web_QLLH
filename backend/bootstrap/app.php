@@ -1,7 +1,6 @@
 <?php
 
 use App\Exceptions\LoiNghiepVu;
-use App\Http\Middleware\CheckGioHanhChinh as CheckGioHanhChinhMiddleware;
 use App\Http\Middleware\CheckTaiKhoanHoatDong as CheckTaiKhoanHoatDongMiddleware;
 use App\Http\Middleware\CheckVaiTro as CheckVaiTroMiddleware;
 use App\Http\Middleware\YeuCauDoiMatKhau;
@@ -32,7 +31,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
 
         $middleware->alias([
-            'gio.hanh.chinh' => CheckGioHanhChinhMiddleware::class,
             'vai.tro' => CheckVaiTroMiddleware::class,
             'tai.khoan.hoat.dong' => CheckTaiKhoanHoatDongMiddleware::class,
             'doi.mat.khau' => YeuCauDoiMatKhau::class,

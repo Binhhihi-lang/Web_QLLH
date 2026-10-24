@@ -18,7 +18,9 @@ class LopHanhChinh extends Model
     protected $fillable = [
         'ma_lop',
         'ten_lop',
-        'khoa',
+        'khoa_hoc',
+        'nganh',
+        'nam_nhap_hoc',
         'mo_ta',
         'trang_thai',
     ];
@@ -26,6 +28,7 @@ class LopHanhChinh extends Model
     protected function casts(): array
     {
         return [
+            'nam_nhap_hoc' => 'integer',
             'trang_thai' => 'boolean',
         ];
     }

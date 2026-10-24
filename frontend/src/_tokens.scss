@@ -179,9 +179,11 @@
   --color-sidebar-bottom: #060b14;
   --color-sidebar-line: rgba(255, 255, 255, 0.1);
   --color-sidebar-item: #94a3b8;
-  --color-sidebar-icon: #5b6b81;
+  --color-sidebar-icon: #7c8ba1;
   --color-sidebar-hover: rgba(255, 255, 255, 0.06);
-  --color-sidebar-label: #6b7a8f;
+  /* Nhãn nhóm phải sáng hơn icon: #6B7A8F cũ chỉ đạt 4.09:1 trên nền #111827,
+     không qua WCAG AA. #8B9BB0 đạt 6.26:1. */
+  --color-sidebar-label: #8b9bb0;
   --color-sidebar-active-bg: #477af0;
   --color-sidebar-active-fg: #ffffff;
 

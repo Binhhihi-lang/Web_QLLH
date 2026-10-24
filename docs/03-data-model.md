@@ -29,6 +29,8 @@ erDiagram
         bigint id PK
         string name
         string email UK
+        text avatar_url
+        string avatar_public_id
         string password
         string vai_tro
         boolean trang_thai
@@ -64,7 +66,9 @@ erDiagram
         bigint id PK
         string ma_lop UK
         string ten_lop
-        string khoa
+        string khoa_hoc
+        string nganh
+        smallint nam_nhap_hoc
         text mo_ta
         boolean trang_thai
     }
@@ -80,6 +84,8 @@ erDiagram
         bigint id PK
         string ma_hoc_ky UK
         string ten_hoc_ky
+        string nam_hoc
+        tinyint ky_thu
         date ngay_bat_dau
         date ngay_ket_thuc
         datetime mo_dang_ky_luc
@@ -100,6 +106,7 @@ erDiagram
         bigint hoc_ky_id FK
         bigint giang_vien_id FK
         smallint si_so_toi_da
+        tinyint nam_thu
         string trang_thai
         datetime chot_diem_luc
         bigint chot_diem_boi
@@ -141,6 +148,8 @@ erDiagram
         decimal diem_giua_ky
         decimal diem_cuoi_ky
         decimal diem_tong_ket
+        string diem_chu
+        decimal diem_he_4
         string ket_qua
     }
     lich_su_diem {
@@ -176,9 +185,11 @@ erDiagram
 | id | bigint unsigned | PK | auto | |
 | name | varchar(255) | no | | Họ tên hiển thị |
 | email | varchar(255) | no | | **unique**, dùng để đăng nhập |
+| avatar_url | text | yes | null | URL Cloudinary. `null` = hiển thị chữ cái đầu tên |
+| avatar_public_id | varchar(255) | yes | null | `public_id` trên Cloudinary, cần để xóa ảnh cũ |
 | email_verified_at | timestamp | yes | null | |
 | password | varchar(255) | no | | bcrypt |
-| vai_tro | varchar(20) | no | `sinh_vien` | `admin`, `giang_vien`, `sinh_vien` |
+| vai_tro | varchar(20) | no | `SINH_VIEN` | `ADMIN`, `GIANG_VIEN`, `SINH_VIEN` |
 | trang_thai | boolean | no | true | false = khóa tài khoản |
 | must_change_password | boolean | no | true | Bắt đổi mật khẩu lần đầu |
 | remember_token | varchar(100) | yes | null | |
@@ -237,11 +248,18 @@ erDiagram
 | id | bigint unsigned | PK | |
 | ma_lop | varchar(20) | no | **unique** |
 | ten_lop | varchar(255) | no | |
-| khoa | varchar(20) | yes | Ví dụ `K65` |
+| khoa_hoc | varchar(20) | yes | **Khóa** (cohort, năm nhập học), ví dụ `K65`. Không phải khoa/faculty |
+| nganh | varchar(20) | yes | Ngành, ví dụ `CNTT`, `KTPM`. Chỉ để lọc/thống kê |
+| nam_nhap_hoc | smallint unsigned | yes | Năm nhập học, ví dụ `2023`. Dùng tính `nam_thu` |
 | mo_ta | text | yes | |
 | trang_thai | boolean | no | |
 | deleted_at, deleted_by, restored_by | | yes | |
 | created_at, updated_at | timestamp | yes | |
+
+**Index:** `unique(ma_lop)`, `index(khoa_hoc)`, `index(nganh)`, `index(trang_thai)`, `index(deleted_at)`.
+
+> Tên cột là `khoa_hoc` (khóa) để không nhập nhằng với **khoa** (faculty) — xem ADR-016.
+> Hệ thống **không** có bảng khoa (faculty) hay chương trình đào tạo. `nganh` chỉ là nhãn tự do để lọc.
 
 ### 3.5. `mon_hoc`
 
@@ -263,6 +281,8 @@ erDiagram
 | id | bigint unsigned | PK | |
 | ma_hoc_ky | varchar(20) | no | **unique**, ví dụ `2026-1` |
 | ten_hoc_ky | varchar(255) | no | |
+| nam_hoc | varchar(9) | no | Ví dụ `2026-2027`. Dùng tính năm thứ |
+| ky_thu | tinyint unsigned | no | 1, 2 hoặc 3 (học kỳ hè) |
 | ngay_bat_dau | date | no | |
 | ngay_ket_thuc | date | no | phải > `ngay_bat_dau` |
 | mo_dang_ky_luc | datetime | no | |
@@ -271,8 +291,10 @@ erDiagram
 | deleted_at, deleted_by, restored_by | | yes | |
 | created_at, updated_at | timestamp | yes | |
 
-**Index:** `unique(ma_hoc_ky)`, `index(trang_thai)`, `index(ngay_bat_dau)`.
+**Index:** `unique(ma_hoc_ky)`, `unique(nam_hoc, ky_thu)`, `index(trang_thai)`, `index(ngay_bat_dau)`.
 
+> **Vòng đời chỉ tiến** (BR-24): `UPCOMING → ONGOING → CLOSED`; `CLOSED` không quay lại. Chỉ một kỳ `ONGOING` tại một thời điểm.
+> Hai học kỳ không chồng lấn `[ngay_bat_dau, ngay_ket_thuc]`; đợt đăng ký phải nằm trong khoảng ngày của kỳ (BR-25).
 > Học kỳ `CLOSED` không được xóa (FR-06.04).
 
 ### 3.7. `phong_hoc`
@@ -297,16 +319,18 @@ erDiagram
 | hoc_ky_id | bigint unsigned | no | FK `hoc_ky.id`, `restrictOnDelete` |
 | giang_vien_id | bigint unsigned | no | FK `giang_vien.id`, `restrictOnDelete` |
 | si_so_toi_da | smallint unsigned | no | > 0 |
+| nam_thu | tinyint unsigned | yes | Năm thứ lớp phục vụ (1–6). `null` = mọi năm. Xem BR-23 |
 | trang_thai | varchar(20) | no | `OPEN`, `CLOSED`, `CANCELLED` |
 | chot_diem_luc | datetime | yes | null = chưa chốt |
 | chot_diem_boi | bigint unsigned | yes | FK `users.id`, `nullOnDelete` |
 | deleted_at, deleted_by, restored_by | | yes | |
 | created_at, updated_at | timestamp | yes | |
 
-**Index:** `unique(hoc_ky_id, ma_lop_hp)`, `index(mon_hoc_id)`, `index(giang_vien_id)`, `index(trang_thai)`, `index(deleted_at)`.
+**Index:** `unique(hoc_ky_id, ma_lop_hp)`, `index(mon_hoc_id)`, `index(giang_vien_id)`, `index(nam_thu)`, `index(trang_thai)`, `index(deleted_at)`.
 
 > `unique(hoc_ky_id, ma_lop_hp)` **không** lọc `deleted_at`, nên bản ghi xóa mềm vẫn giữ chỗ mã — đúng BR-01.
 > Không lưu `si_so_hien_tai`; tính bằng `count` đăng ký ACTIVE (tránh lệch dữ liệu).
+> `nam_thu` là ràng buộc **thô** ở cấp lớp, không thay thế chương trình đào tạo (ADR-016). Môn đại cương phục vụ nhiều năm thì để `null`.
 
 ### 3.9. `buoi_hoc`
 
@@ -347,6 +371,7 @@ erDiagram
 
 > Không dùng soft delete. Hủy = `CANCELLED`. Đăng ký lại = cập nhật chính dòng này về `ACTIVE` (BR-20).
 > **Danh sách điểm danh tại buổi X:** đăng ký có `dang_ky_luc <= thời điểm buổi học` và (`huy_luc` null hoặc `huy_luc > thời điểm buổi học`).
+> **Đăng ký lại bị chặn khi dòng đã có `diem`** (409 `HAS_GRADE_OR_ATTENDANCE`, BR-27) — tránh hồi sinh điểm cũ. `diem_danh` cũ giữ nguyên nhưng không tính vào chuyên cần vì buổi đó nằm trước `dang_ky_luc` mới (§5.3).
 
 ### 3.11. `diem_danh`
 
@@ -500,25 +525,38 @@ Bảng quy đổi mặc định (theo quy chế trường):
 > Điểm chữ có `+`/`−` (`B+` = 3.5, `C+` = 2.5, `D+` = 1.5) **không dùng ở bản 1**. Bảng quy đổi lưu trong `cau_hinh` dưới dạng mảng, nên khi trường đổi quy chế chỉ cần sửa cấu hình, không sửa code — kể cả thêm lại mức `+`.
 > Khoảng được kiểm tra liên tục, không chồng lấn và phủ kín 0–10.
 
-### 5.2. GPA học kỳ
+### 5.2. GPA học kỳ và GPA tích lũy
+
+**Học lại:** mỗi môn chỉ tính **một lần**, lấy `diem_tong_ket` **cao nhất** trong các lần học (ADR-018, BR-28). Điểm của lần không được chọn vẫn lưu và vẫn hiển thị trong lịch sử học tập, chỉ không tham gia GPA.
 
 ```
+-- Với mỗi môn, chọn lần học có điểm tổng kết cao nhất
+mon_tinh_gpa = { mon_hoc_id → max(diem_tong_ket) }
+
 gpa_he_4 = round(
-    sum(diem_he_4 * mon_hoc.so_tin_chi) /
+    sum(diem_he_4_cua_lan_tot_nhat * mon_hoc.so_tin_chi) /
     sum(mon_hoc.so_tin_chi), 2)
 
 gpa_he_10 = round(
-    sum(diem_tong_ket * mon_hoc.so_tin_chi) /
+    sum(diem_tong_ket_cao_nhat * mon_hoc.so_tin_chi) /
     sum(mon_hoc.so_tin_chi), 2)
 ```
 
-Chỉ tính đăng ký `ACTIVE` (không CANCELLED), có `diem_tong_ket` khác null. **Bao gồm môn KHÔNG ĐẠT.** Trả cả hai hệ để hiển thị song song.
+**GPA học kỳ** chỉ xét đăng ký `ACTIVE` thuộc học kỳ đó. **GPA tích lũy (CPA)** xét toàn bộ học kỳ đã `CLOSED`. Cả hai đều:
+
+- Chỉ tính đăng ký có `diem_tong_ket` khác null.
+- **Bao gồm môn KHÔNG ĐẠT.**
+- Trả cả hai hệ để hiển thị song song.
+
+> Khi môn được học lại **trong cùng một học kỳ** (bị chặn bởi BR-08), quy tắc max không phát sinh. Quy tắc này chỉ có tác dụng với học lại ở kỳ khác.
 
 ### 5.3. Tỷ lệ chuyên cần
 
 ```
 ty_le = (so_PRESENT + so_LATE) / (tong_buoi_da_diem_danh - so_EXCUSED)
 ```
+
+Chỉ tính các buổi có `ngay_hoc >= dang_ky_luc` của đăng ký hiện tại (BR-27) — buổi diễn ra trước khi sinh viên đăng ký lại không bị tính là vắng.
 
 Nếu mẫu số = 0 → trả `null`, UI hiển thị "—".
 
@@ -537,6 +575,18 @@ gio_bat_dau_moi < gio_ket_thuc_cu AND gio_ket_thuc_moi > gio_bat_dau_cu
 ```
 
 Bỏ qua bản ghi đang sửa và bản ghi `CANCELLED`/đã xóa.
+
+### 5.6. Năm thứ của sinh viên
+
+```
+nam_thu = nam_bat_dau(nam_hoc cua hoc_ky) - sinh_vien.lop_hanh_chinh.nam_nhap_hoc + 1
+```
+
+Ví dụ: sinh viên nhập học `2023` (K68), học kỳ thuộc năm học `2026-2027` → `2026 - 2023 + 1 = 4`.
+
+Trả `null` khi sinh viên không thuộc lớp hành chính hoặc lớp chưa có `nam_nhap_hoc` — khi đó BR-23 **không** chặn (không đủ dữ liệu để kết luận).
+
+Dùng để đối chiếu với `lop_hoc_phan.nam_thu` khi sinh viên tự đăng ký (BR-23).
 
 ---
 
@@ -563,6 +613,9 @@ Bỏ qua bản ghi đang sửa và bản ghi `CANCELLED`/đã xóa.
 2026_10_21_002200_create_cau_hinh_table
 2026_10_21_002300_create_nhat_ky_table
 2026_10_21_002400_create_menu_table
+2026_10_24_000100_doi_khoa_thanh_khoa_hoc_tren_lop_hanh_chinh   (ADR-016)
+2026_10_24_000200_them_nam_hoc_ky_thu_vao_hoc_ky               (ADR-016, ADR-017)
+2026_10_24_000300_them_nam_thu_vao_lop_hoc_phan                 (ADR-016)
 ```
 
 Migration cũ của `lop_hocs`, `sinh_viens`, `menus` đã **xóa** (dữ liệu chỉ là seed), thay bằng bộ mới. Xem [07-decisions.md](07-decisions.md) ADR-003.

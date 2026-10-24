@@ -114,6 +114,13 @@ Lỗi validation (422):
 | `GRADE_INCOMPLETE` | 409 | Chưa đủ điểm thành phần để chốt |
 | `RESTORE_PARENT_DELETED` | 409 | Bản ghi cha đã bị xóa |
 | `ATTENDANCE_EDIT_EXPIRED` | 409 | Quá hạn sửa điểm danh |
+| `WRONG_STUDY_YEAR` | 409 | Lớp dành cho năm thứ khác với năm thứ hiện tại của sinh viên |
+| `SEMESTER_TRANSITION_INVALID` | 409 | Chuyển trạng thái học kỳ không hợp lệ (chỉ tiến, một kỳ ONGOING) |
+| `SEMESTER_OVERLAP` | 409 | Khoảng ngày chồng lấn với học kỳ khác |
+| `SESSION_OUTSIDE_SEMESTER` | 409 | Ngày buổi học nằm ngoài khoảng ngày của học kỳ |
+| `SUBJECT_CHANGE_BLOCKED` | 409 | Không đổi được môn/học kỳ vì lớp đã có đăng ký |
+| `UPLOAD_NOT_CONFIGURED` | 503 | Chưa cấu hình Cloudinary trên máy chủ |
+| `UPLOAD_FAILED` | 502 | Upload ảnh lên Cloudinary thất bại |
 
 ### 1.6. Phân trang, tìm kiếm, lọc, sắp xếp
 
@@ -128,6 +135,32 @@ Mọi endpoint danh sách nhận:
 | `sort_dir` | `asc`/`desc` | `asc` | |
 
 Bộ lọc riêng ghi ở từng endpoint.
+
+### 1.6b. Thao tác hàng loạt (`*/bulk-*`)
+
+Mọi endpoint `bulk-status` / `bulk-delete` dùng chung một hợp đồng (BR-31):
+
+- Body: `{ "ids": [1,2,3] }`, và `trang_thai` với `bulk-status`. Tối đa **500** id, rỗng → 422.
+- Xử lý **từng bản ghi độc lập**: một dòng vi phạm điều kiện nghiệp vụ bị từ chối riêng, các dòng khác vẫn thành công.
+- Luôn trả **200** (không phải 409) kể cả khi mọi dòng đều lỗi — client đọc `chi_tiet` để biết dòng nào hỏng.
+
+```json
+{
+  "success": true,
+  "message": "Đã xử lý 50 bản ghi.",
+  "data": {
+    "thanh_cong": 47,
+    "that_bai": 3,
+    "chi_tiet": [
+      { "id": 1, "ket_qua": "THANH_CONG" },
+      { "id": 2, "ket_qua": "THAT_BAI", "ma_loi": "DELETE_BLOCKED", "message": "Còn đăng ký ACTIVE ở học kỳ chưa đóng." },
+      { "id": 999, "ket_qua": "THAT_BAI", "ma_loi": "NOT_FOUND", "message": "Không tìm thấy bản ghi." }
+    ]
+  }
+}
+```
+
+> Khác với `POST /api/enrollments/bulk` (mục 12): ở đó mỗi dòng là một **sinh viên cần đăng ký**, ở đây mỗi dòng là một **bản ghi cần đổi trạng thái hoặc xóa**. Cùng shape kết quả.
 
 ### 1.7. Ngày giờ
 
@@ -186,6 +219,44 @@ Sửa hồ sơ cá nhân.
 - TEACHER: `so_dien_thoai`.
 - STUDENT: `so_dien_thoai`, `dia_chi`.
 
+### `POST /api/me/avatar` — ảnh đại diện (FR-01.10)
+
+`multipart/form-data`, field **`anh`**. Mọi vai trò, kể cả ADMIN. Ảnh lưu trên Cloudinary (ADR-019).
+
+| Ràng buộc | Giá trị |
+|---|---|
+| Định dạng | JPEG, PNG, WebP, GIF — kiểm tra bằng MIME đọc từ nội dung file |
+| Kích thước | ≤ 5 MB (`CLOUDINARY_MAX_UPLOAD_KB`) |
+| Xử lý | Cắt vuông 512×512, `gravity: face` |
+
+Response 200:
+```json
+{
+  "success": true,
+  "message": "Cập nhật ảnh đại diện thành công.",
+  "data": {
+    "id": 1,
+    "name": "Nguyễn Văn A",
+    "email": "a@example.com",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1/qllh/avatars/abc123.jpg",
+    "vai_tro": "SINH_VIEN",
+    "trang_thai": true,
+    "must_change_password": false,
+    "ho_so": { "loai": "sinh_vien", "id": 1, "ma_sv": "SV001", "ho_ten": "Nguyễn Văn A" }
+  }
+}
+```
+
+| Lỗi | Khi nào |
+|---|---|
+| 422 `VALIDATION_ERROR` | Thiếu file, sai định dạng, quá kích thước |
+| 502 `UPLOAD_FAILED` | Cloudinary từ chối hoặc không phản hồi |
+| 503 `UPLOAD_NOT_CONFIGURED` | Máy chủ chưa có `CLOUDINARY_NAME` / `API_KEY` / `API_SECRET` |
+
+### `DELETE /api/me/avatar` — gỡ ảnh (FR-01.11)
+
+Xóa ảnh trên Cloudinary và đặt `avatar_url = null`. Trả 200 kèm hồ sơ đã cập nhật. Không lỗi khi người dùng chưa từng có ảnh.
+
 ---
 
 ## 3. Người dùng (ADMIN)
@@ -197,7 +268,8 @@ Sửa hồ sơ cá nhân.
 | GET | `/api/users/{id}` | Chi tiết |
 | PUT | `/api/users/{id}` | Cập nhật (`name`, `email`, `vai_tro`, `trang_thai`) |
 | DELETE | `/api/users/{id}` | Xóa mềm (chỉ tài khoản ADMIN) |
-| PATCH | `/api/users/{id}/status` | `{ "trang_thai": false }` |
+| PATCH | `/api/users/{id}/status` | `{ "trang_thai": false }` — khóa thì **thu hồi toàn bộ token** (BR-30) |
+| PATCH | `/api/users/bulk-status` | Khóa/mở nhiều tài khoản — body `{ "ids": [1,2,3], "trang_thai": false }` |
 | POST | `/api/users/{id}/reset-password` | Trả mật khẩu mới một lần, đặt `must_change_password = true` |
 
 Response tạo mới (201) — **chỉ lần này** có mật khẩu:
@@ -228,6 +300,8 @@ Response tạo mới (201) — **chỉ lần này** có mật khẩu:
 | PUT | `/api/students/{id}` | ADMIN | |
 | DELETE | `/api/students/{id}` | ADMIN | 409 `DELETE_BLOCKED` nếu còn đăng ký ACTIVE |
 | PATCH | `/api/students/{id}/status` | ADMIN | |
+| PATCH | `/api/students/bulk-status` | ADMIN | `{ "ids": [1,2,3], "trang_thai": false }` — khóa thì khóa tài khoản + thu hồi token (BR-30) |
+| POST | `/api/students/bulk-delete` | ADMIN | `{ "ids": [1,2,3] }` — từng bản ghi áp điều kiện FR-02.06 |
 
 Response mẫu:
 ```json
@@ -258,6 +332,8 @@ Response mẫu:
 | PUT | `/api/teachers/{id}` | ADMIN; TEACHER sửa `so_dien_thoai` |
 | DELETE | `/api/teachers/{id}` | ADMIN |
 | PATCH | `/api/teachers/{id}/status` | ADMIN |
+| PATCH | `/api/teachers/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }`, thu hồi token (BR-30) |
+| POST | `/api/teachers/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-04.05 |
 
 ---
 
@@ -274,6 +350,24 @@ Response mẫu:
 | POST | `/api/admin-classes/{id}/students` | ADMIN — body `{ "sinh_vien_ids": [1,2] }` |
 | DELETE | `/api/admin-classes/{id}/students/{studentId}` | ADMIN — gỡ khỏi lớp |
 
+Response mẫu:
+```json
+{
+  "id": 1,
+  "ma_lop": "CNTT-K65-01",
+  "ten_lop": "Công nghệ thông tin K65 - Lớp 01",
+  "khoa_hoc": "K65",
+  "nganh": "CNTT",
+  "nam_nhap_hoc": 2023,
+  "si_so": 42,
+  "trang_thai": true,
+  "da_xoa": false
+}
+```
+
+> `khoa_hoc` là **khóa** (cohort, năm nhập học), không phải khoa/faculty. `nganh` chỉ để lọc — xem ADR-016.
+> Bộ lọc: `q`, `khoa_hoc`, `nganh`, `trang_thai`.
+
 ---
 
 ## 7. Môn học
@@ -286,6 +380,8 @@ Response mẫu:
 | PUT | `/api/subjects/{id}` | ADMIN |
 | DELETE | `/api/subjects/{id}` | ADMIN |
 | PATCH | `/api/subjects/{id}/status` | ADMIN |
+| PATCH | `/api/subjects/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }` |
+| POST | `/api/subjects/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-05.03 |
 
 ---
 
@@ -293,12 +389,31 @@ Response mẫu:
 
 | Method | Endpoint | Quyền |
 |---|---|---|
-| GET | `/api/semesters` | mọi vai trò |
+| GET | `/api/semesters` | mọi vai trò — lọc `nam_hoc`, `ky_thu`, `trang_thai` |
 | POST | `/api/semesters` | ADMIN |
 | GET | `/api/semesters/{id}` | mọi vai trò |
 | PUT | `/api/semesters/{id}` | ADMIN |
-| DELETE | `/api/semesters/{id}` | ADMIN — 409 nếu CLOSED hoặc còn lớp |
-| PATCH | `/api/semesters/{id}/status` | ADMIN |
+| DELETE | `/api/semesters/{id}` | ADMIN — 409 nếu không phải `UPCOMING` hoặc còn lớp |
+| PATCH | `/api/semesters/{id}/status` | ADMIN — chỉ chấp nhận `UPCOMING→ONGOING`, `ONGOING→CLOSED` |
+
+Response mẫu:
+```json
+{
+  "id": 2,
+  "ma_hoc_ky": "2026-1",
+  "ten_hoc_ky": "Học kỳ 1 năm học 2026-2027",
+  "nam_hoc": "2026-2027",
+  "ky_thu": 1,
+  "ngay_bat_dau": "2026-09-07",
+  "ngay_ket_thuc": "2027-01-15",
+  "mo_dang_ky_luc": "2026-08-01 08:00:00",
+  "dong_dang_ky_luc": "2026-08-20 17:00:00",
+  "trang_thai": "ONGOING",
+  "dang_mo_dang_ky": false
+}
+```
+
+`PATCH /api/semesters/{id}/status` — body `{ "trang_thai": "CLOSED" }`. Trả 409 `SEMESTER_TRANSITION_INVALID` khi chuyển lùi, bỏ qua `ONGOING`, hoặc khi đã có kỳ khác `ONGOING`.
 
 ---
 
@@ -312,6 +427,8 @@ Response mẫu:
 | PUT | `/api/rooms/{id}` | ADMIN |
 | DELETE | `/api/rooms/{id}` | ADMIN |
 | PATCH | `/api/rooms/{id}/status` | ADMIN |
+| PATCH | `/api/rooms/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }` |
+| POST | `/api/rooms/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-07.03 |
 
 ---
 
@@ -319,7 +436,7 @@ Response mẫu:
 
 | Method | Endpoint | Quyền | Ghi chú |
 |---|---|---|---|
-| GET | `/api/sections` | theo vai trò | Lọc `q`, `hoc_ky_id`, `mon_hoc_id`, `giang_vien_id`, `trang_thai`, `con_cho` |
+| GET | `/api/sections` | theo vai trò | Lọc `q`, `hoc_ky_id`, `mon_hoc_id`, `giang_vien_id`, `nam_thu`, `trang_thai`, `con_cho` |
 | POST | `/api/sections` | ADMIN | |
 | GET | `/api/sections/{id}` | theo vai trò | Kèm `si_so_hien_tai`, `si_so_toi_da`, `da_chot_diem` |
 | PUT | `/api/sections/{id}` | ADMIN | Kiểm tra FR-08.03 |
@@ -341,6 +458,7 @@ Response chi tiết:
   "giang_vien": { "id": 5, "ma_gv": "GV005", "ho_ten": "Trần Thị B" },
   "si_so_toi_da": 60,
   "si_so_hien_tai": 42,
+  "nam_thu": 4,
   "trang_thai": "OPEN",
   "da_chot_diem": false,
   "chot_diem_luc": null,
@@ -407,6 +525,7 @@ Thành công 201 trả danh sách buổi đã tạo. Nếu có bất kỳ buổi
 |---|---|---|---|
 | GET | `/api/enrollments` | ADMIN, TEACHER | Lọc `hoc_ky_id`, `lop_hoc_phan_id`, `sinh_vien_id`, `trang_thai` |
 | POST | `/api/enrollments` | ADMIN | Body `{ "sinh_vien_id": 1, "lop_hoc_phan_id": 10 }` |
+| POST | `/api/enrollments/bulk` | ADMIN | Body `{ "lop_hoc_phan_id": 10, "sinh_vien_ids": [1,2,3] }` hoặc `{ "lop_hoc_phan_id": 10, "lop_hanh_chinh_id": 3 }`. Trả mảng kết quả từng sinh viên |
 | DELETE | `/api/enrollments/{id}` | ADMIN | Hủy, body `{ "ly_do": "..." }` |
 | GET | `/api/me/enrollments` | STUDENT | Lọc `hoc_ky_id`, `trang_thai` |
 | POST | `/api/me/enrollments` | STUDENT | Body `{ "lop_hoc_phan_id": 10 }` |
@@ -426,6 +545,22 @@ Response đăng ký:
 }
 ```
 
+Response đăng ký hàng loạt (`POST /api/enrollments/bulk`) — luôn 200, kết quả từng sinh viên:
+```json
+{
+  "success": true,
+  "message": "Đã xử lý 50 sinh viên.",
+  "data": {
+    "thanh_cong": 47,
+    "that_bai": 3,
+    "chi_tiet": [
+      { "sinh_vien_id": 1, "ma_sv": "SV001", "ket_qua": "THANH_CONG" },
+      { "sinh_vien_id": 2, "ma_sv": "SV002", "ket_qua": "THAT_BAI", "ma_loi": "SCHEDULE_CONFLICT", "message": "Trùng lịch với lớp INT3306-02" }
+    ]
+  }
+}
+```
+
 ---
 
 ## 13. Điểm
@@ -437,6 +572,7 @@ Response đăng ký:
 | GET | `/api/enrollments/{id}/grade-history` | ADMIN, TEACHER (lớp mình) | Lịch sử sửa |
 | GET | `/api/sections/{id}/grades` | ADMIN, TEACHER (lớp mình) | Bảng điểm |
 | GET | `/api/me/grades` | STUDENT | Điểm + GPA theo học kỳ |
+| GET | `/api/me/gpa` | STUDENT | GPA học kỳ + GPA tích lũy (CPA), tín chỉ tích lũy (FR-12.08) |
 
 Request nhập điểm:
 ```json
@@ -488,6 +624,32 @@ Response:
   "tong_tin_chi": 3
 }
 ```
+
+> Học lại một môn: chỉ tính lần có `diem_tong_ket` cao nhất (BR-28, ADR-018).
+
+### `GET /api/me/gpa` — response
+
+```json
+{
+  "hoc_ky_hien_tai": {
+    "id": 2,
+    "ma_hoc_ky": "2026-1",
+    "ten_hoc_ky": "Học kỳ 1 năm học 2026-2027",
+    "gpa_he_10": 7.88,
+    "gpa_he_4": 3.00,
+    "tong_tin_chi": 18
+  },
+  "tich_luy": {
+    "gpa_he_10": 7.42,
+    "gpa_he_4": 2.87,
+    "tong_tin_chi": 96,
+    "tin_chi_dat": 88,
+    "so_hoc_ky_da_tinh": 5
+  }
+}
+```
+
+`tich_luy` chỉ tính các học kỳ `CLOSED`; mỗi môn tính một lần với điểm cao nhất. `tin_chi_dat` là tổng tín chỉ của các môn có `ket_qua = DAT`.
 
 ### `GET /api/settings` — phần bảng quy đổi
 
@@ -563,12 +725,12 @@ Bộ lọc: `q`, `deleted_by`, `deleted_tu`, `deleted_den`, `page`, `per_page`.
 
 | Method | Endpoint | Trả về |
 |---|---|---|
-| GET | `/api/options/semesters` | `[{ id, label, trang_thai }]` |
+| GET | `/api/options/semesters` | `[{ id, label, trang_thai, nam_hoc, ky_thu }]` |
 | GET | `/api/options/subjects` | `[{ id, label, so_tin_chi }]` |
 | GET | `/api/options/teachers` | `[{ id, label }]` |
 | GET | `/api/options/rooms` | `[{ id, label, suc_chua }]` |
-| GET | `/api/options/admin-classes` | `[{ id, label }]` |
-| GET | `/api/options/sections` | `[{ id, label, con_cho }]` |
+| GET | `/api/options/admin-classes` | `[{ id, label, khoa_hoc, nganh }]` |
+| GET | `/api/options/sections` | `[{ id, label, con_cho, nam_thu }]` |
 
 Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi truyền `tat_ca=1`.
 
@@ -578,23 +740,23 @@ Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi tr
 
 | Nhóm | Số endpoint |
 |---|---|
-| Auth & me | 12 |
-| Người dùng | 7 |
-| Sinh viên | 6 |
-| Giảng viên | 6 |
+| Auth & me | 14 |
+| Người dùng | 8 |
+| Sinh viên | 8 |
+| Giảng viên | 8 |
 | Lớp hành chính | 8 |
-| Môn học | 6 |
+| Môn học | 8 |
 | Học kỳ | 6 |
-| Phòng học | 6 |
+| Phòng học | 8 |
 | Lớp học phần | 11 |
 | Buổi học & lịch | 8 |
-| Đăng ký | 6 |
-| Điểm | 5 |
+| Đăng ký | 7 |
+| Điểm | 6 |
 | Dashboard | 3 |
 | Thùng rác | 2 |
 | Menu & cấu hình | 7 |
 | Options | 6 |
-| **Tổng** | **~99** |
+| **Tổng** | **~118** |
 
 ---
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\OptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -31,6 +32,10 @@ Route::prefix('auth')->group(function () {
 | Toàn bộ endpoint còn lại yêu cầu đăng nhập và đã đổi mật khẩu lần đầu.
 */
 Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
+    // FR-01.10 / FR-01.11 — ảnh đại diện, dùng chung cho cả 3 vai trò
+    Route::post('/me/avatar', [HoSoController::class, 'taiAnhDaiDien'])->name('api/me/avatar');
+    Route::delete('/me/avatar', [HoSoController::class, 'xoaAnhDaiDien'])->name('api/me/avatar/xoa');
+
     Route::prefix('options')->group(function () {
         Route::get('subjects', [OptionController::class, 'subjects']);
         Route::get('semesters', [OptionController::class, 'semesters']);

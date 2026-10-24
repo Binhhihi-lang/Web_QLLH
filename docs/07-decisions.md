@@ -129,9 +129,9 @@ Mỗi quyết định dưới đây đã được chốt. Khi muốn thay đổi
 
 **Bối cảnh:** Code cũ có `CheckGioHanhChinh` chặn mọi request ngoài 8h–17h, áp lên cả `/api`. Ràng buộc này không có trong FR v0.2, chặn demo ngoài giờ và chặn test.
 
-**Quyết định:** Bỏ khỏi toàn bộ route `/api`. Giữ file middleware để dùng tùy chọn nếu sau này có yêu cầu riêng cho một vài thao tác ghi.
+**Quyết định:** Bỏ hoàn toàn khỏi hệ thống: gỡ alias `gio.hanh.chinh` trong `bootstrap/app.php` và **xóa file** `CheckGioHanhChinh.php`. Không giữ lại dưới dạng "để dành" — middleware không dùng là code chết, gây nhầm lẫn khi đọc và vẫn bị tính vào độ phủ test.
 
-**Hệ quả:** API hoạt động 24/7; nếu môn học yêu cầu ràng buộc giờ, thêm lại có chọn lọc.
+**Hệ quả:** API hoạt động 24/7. Nếu sau này môn học yêu cầu ràng buộc giờ, viết middleware mới có chọn lọc — git history vẫn còn bản cũ để tham khảo.
 
 ---
 
@@ -247,3 +247,113 @@ Mỗi quyết định dưới đây đã được chốt. Khi muốn thay đổi
 - (−) Dữ liệu cũ trong DB phải chạy lại seeder (DB chỉ có dữ liệu demo).
 
 **Phương án bị loại:** giữ chữ thường cho riêng `vai_tro` (duy trì hai quy ước); đổi tất cả enum khác sang chữ thường (ngược ADR-002, phải sửa nhiều nơi hơn).
+
+---
+
+## ADR-016 — Tách "khóa" khỏi "khoa", chương trình đào tạo ngoài phạm vi
+
+**Ngày:** 2026-10-24 · **Trạng thái:** Đã chấp nhận
+
+**Bối cảnh:** Cột `lop_hanh_chinh.khoa` (ví dụ `K65`) mang nghĩa **khóa** (cohort — năm nhập học), nhưng viết không dấu trùng với **khoa** (faculty — Khoa CNTT, Khoa Cơ khí). Người đọc dễ hiểu nhầm rằng học kỳ phải gắn với khoa, dẫn tới đề xuất "tạo học kỳ phải phụ thuộc khóa sinh viên".
+
+Thực tế, chặn "sinh viên năm 1 không học môn năm 4" cần **chương trình đào tạo**: ánh xạ (ngành × kỳ thứ) → danh sách môn. Muốn đúng hoàn toàn còn cần cả **khoa** vì chương trình 4 năm của Khoa CNTT khác Khoa Cơ khí. Đó là nghiệp vụ phòng đào tạo, không phải quản lý lớp học.
+
+**Quyết định:**
+
+1. Đổi `lop_hanh_chinh.khoa` → **`khoa_hoc`** để hết nhập nhằng.
+2. Thêm `lop_hanh_chinh.nganh` và `lop_hanh_chinh.nam_nhap_hoc` — **chỉ để lọc và thống kê**, không dùng chặn đăng ký.
+3. Thêm `lop_hoc_phan.nam_thu` (nullable, `null` = mọi năm) — ràng buộc nhẹ ở cấp lớp, không cần chương trình đào tạo.
+4. **Không** đưa bảng `khoa` (faculty) và `chuong_trinh_dao_tao` vào phạm vi v1.
+
+**Hệ quả**
+
+- (+) Tên cột hết nhập nhằng; FE/BE/người chấm đọc đúng khái niệm.
+- (+) Chặn được lỗi đăng ký sai năm với chi phí thấp (BR-23), ADMIN vẫn override được khi cần.
+- (+) Tính được "sinh viên đang năm thứ mấy" mà không phải đoán từ chuỗi `K65`.
+- (−) `nam_thu` là ràng buộc **thô**: nó không biết môn nào bắt buộc/kỳ nào, không biết tiên quyết, không biết chương trình từng ngành. Đây là giới hạn đã biết, ghi ở [01-requirements.md](01-requirements.md) mục 10.
+- (−) Khi một lớp phục vụ nhiều năm (môn đại cương), ADMIN phải nhớ để `nam_thu = null`.
+
+**Phương án bị loại:** đưa chương trình đào tạo đầy đủ vào (vượt phạm vi 10 tuần, biến đồ án thành hệ thống quản lý trường); gắn `khoa` vào `hoc_ky` (sai bản chất — học kỳ là trục thời gian toàn trường, mọi khóa cùng học); không kiểm tra gì (bỏ ngỏ lỗi nghiệp vụ rõ ràng).
+
+---
+
+## ADR-017 — Vòng đời học kỳ chỉ tiến, một kỳ ONGOING tại một thời điểm
+
+**Ngày:** 2026-10-24 · **Trạng thái:** Đã chấp nhận
+
+**Bối cảnh:** FR-06.03 chỉ nói ADMIN "chuyển thủ công" giữa ba trạng thái, không nói được phép chuyển nào. Hệ quả: có thể mở lại kỳ `CLOSED` (trái BR-14 "lưu trữ vĩnh viễn"), có thể có nhiều kỳ `ONGOING` cùng lúc (làm "học kỳ hiện tại" trở nên nhập nhằng), có thể bỏ qua `ONGOING`. Ngoài ra không chặn hai học kỳ chồng lấn ngày.
+
+**Quyết định:**
+
+1. Chỉ cho chuyển **tiến**: `UPCOMING → ONGOING → CLOSED`. `CLOSED` là trạng thái cuối, không quay lại.
+2. Chỉ **một** học kỳ `ONGOING` tại một thời điểm.
+3. Hai học kỳ không được chồng lấn khoảng `[ngay_bat_dau, ngay_ket_thuc]`.
+4. Đợt đăng ký phải nằm trong khoảng ngày của học kỳ.
+5. Mọi lần chuyển trạng thái ghi `nhat_ky` (NFR-05).
+6. Chỉ xóa mềm được học kỳ `UPCOMING` và chưa có lớp học phần — bỏ quyền xóa kỳ `ONGOING`.
+7. BR-14 có một ngoại lệ: **ADMIN được sửa điểm danh** trên kỳ `CLOSED`, có ghi `nhat_ky`. Không cần mở lại học kỳ.
+
+**Hệ quả**
+
+- (+) "Học kỳ hiện tại" luôn xác định duy nhất, dashboard và mọi truy vấn theo kỳ ổn định.
+- (+) Kỳ đã đóng thật sự bất biến với dữ liệu điểm, chỉ còn lỗ hổng vận hành (điểm danh sót) được xử lý có kiểm soát.
+- (−) ADMIN không sửa sai được thứ tự kỳ nếu đã chuyển nhầm sang `CLOSED`; phải tạo kỳ mới.
+- (−) Ngoại lệ điểm danh làm BR-14 không còn tuyệt đối — phải đọc kèm để hiểu.
+
+**Phương án bị loại:** cho chuyển tự do (phá tính bất biến của dữ liệu lịch sử); cho mở lại kỳ `CLOSED` (phải thêm luồng mở khóa, audit, và mọi báo cáo cũ có thể đổi số); để nhiều kỳ `ONGOING` (không xác định được kỳ hiện tại).
+
+---
+
+## ADR-018 — Học lại: GPA tính điểm cao nhất mỗi môn
+
+**Ngày:** 2026-10-24 · **Trạng thái:** Đã chấp nhận
+
+**Bối cảnh:** Câu hỏi đã chốt #7 cho phép đăng ký lại môn đã học kỳ trước và "không kiểm tra lịch sử". Công thức GPA ở [03-data-model.md](03-data-model.md) §5.2 lại cộng **mọi** đăng ký ACTIVE có điểm. Học lại một môn vì vậy bị tính **hai lần** vào GPA — không trường nào làm vậy.
+
+**Quyết định:**
+
+1. GPA (học kỳ và tích lũy) tính **một lần cho mỗi môn**, lấy `diem_tong_ket` **cao nhất** trong các lần học.
+2. Áp dụng cho cả GPA học kỳ và GPA tích lũy (CPA).
+3. Thêm `GET /api/me/gpa` trả GPA học kỳ và CPA, để quy tắc này có chỗ thể hiện (FR-12.08).
+4. Điểm của lần học không được chọn **vẫn lưu** trong bảng `diem` và vẫn hiển thị trong lịch sử học tập — chỉ không tham gia GPA.
+
+**Hệ quả**
+
+- (+) GPA đúng nghiệp vụ, không phạt sinh viên học lại để cải thiện điểm.
+- (+) CPA có chỗ hiển thị, phục vụ xét tốt nghiệp/học bổng ở mức demo.
+- (−) Truy vấn GPA phức tạp hơn: cần nhóm theo `mon_hoc_id` và lấy max, không chỉ `sum`/`count`.
+- (−) "Điểm cao nhất" khác "điểm lần cuối" — nếu trường dùng lần cuối, phải sửa công thức; ghi rõ trong tài liệu.
+
+**Phương án bị loại:** lấy điểm lần gần nhất (phạt sinh viên học lại, ít trường dùng); cộng cả hai lần (sai rõ ràng, đang là hành vi hiện tại).
+
+---
+
+## ADR-019 — Ảnh đại diện trên Cloudinary, một cột cho cả ba vai trò
+
+**Ngày:** 2026-10-24 · **Trạng thái:** Đã chấp nhận
+
+**Bối cảnh:** Cả ba vai trò đều cần ảnh đại diện nhưng `sinh_vien` và `giang_vien` không có cột nào. Hai lựa chọn: thêm cột ảnh vào từng bảng hồ sơ, hoặc đặt một cột trên `users`. Đồng thời phải quyết định lưu file ở đâu — đĩa server, DB dạng blob, hay dịch vụ ngoài.
+
+Dự án đặt vé máy bay (đồ án trước của cùng tác giả) đã dùng Cloudinary với `users.avatar_url`; giữ cùng cách làm để tái dùng kinh nghiệm và cấu hình.
+
+**Quyết định:**
+
+1. Ảnh nằm ở **`users.avatar_url`** (text) và **`users.avatar_public_id`**, không nằm trên `sinh_vien`/`giang_vien`. Lý do: ADMIN không có hồ sơ riêng vẫn cần ảnh; mỗi người chỉ có một tài khoản nên không có nguy cơ lệch dữ liệu giữa hai bảng.
+2. Lưu trên **Cloudinary**, không lưu nhị phân trong DB và không lưu trên đĩa server. DB chỉ giữ URL hiển thị và `public_id` để xóa.
+3. Endpoint `POST /api/me/avatar` (multipart, field `anh`) và `DELETE /api/me/avatar`, dùng chung cho cả ba vai trò.
+4. Ảnh được **cắt vuông 512×512** khi upload (Cloudinary transformation `fill` + `gravity: face`), để không phải truyền ảnh 10 MP về trình duyệt cho một avatar 40 px.
+5. Chỉ nhận JPEG/PNG/WebP/GIF, tối đa 5 MB (`CLOUDINARY_MAX_UPLOAD_KB`). Kiểm tra bằng MIME đọc từ **nội dung file**, không tin phần mở rộng hay header do client gửi.
+6. Thiếu cấu hình Cloudinary → endpoint trả **503 `UPLOAD_NOT_CONFIGURED`**, phần còn lại của hệ thống vẫn chạy. Không để lỗi cấu hình làm hỏng cả ứng dụng.
+7. Khi thay ảnh: upload ảnh mới trước, ghi DB, **sau đó** mới xóa ảnh cũ. Nếu bước ghi DB lỗi thì ảnh cũ vẫn còn dùng được.
+8. Xóa ảnh là thao tác **không ném lỗi**: ảnh mồ côi trên Cloudinary không đáng làm hỏng việc xóa tài khoản.
+
+**Hệ quả**
+
+- (+) Một chỗ duy nhất cho ảnh của cả ba vai trò, không phải đồng bộ hai bảng.
+- (+) Không tăng dung lượng DB, không phải sao lưu file, không phải phục vụ file tĩnh.
+- (+) Cấu hình và kinh nghiệm tái dùng từ đồ án đặt vé.
+- (−) Phụ thuộc dịch vụ ngoài: Cloudinary lỗi hoặc hết quota thì không đổi được ảnh (nhưng hệ thống vẫn chạy).
+- (−) Cần thêm 2 biến bí mật vào `.env`; máy nào chưa cấu hình thì không test được luồng upload.
+- (−) Ảnh đã upload rồi mà DB mất thì ảnh mồ côi trên Cloudinary — chấp nhận, dọn tay nếu cần.
+
+**Phương án bị loại:** thêm `anh_dai_dien` vào cả `sinh_vien` và `giang_vien` (ADMIN không có chỗ lưu, phải đồng bộ hai nơi); lưu file trên đĩa server (phải sao lưu, phải phục vụ tĩnh, mất khi container bị tạo lại); lưu base64/blob trong MySQL (phình DB, chậm mọi truy vấn bảng `users`).

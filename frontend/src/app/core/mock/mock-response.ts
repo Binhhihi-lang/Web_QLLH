@@ -133,41 +133,53 @@ export function stripOrigin(url: string): string {
   return url.replace(/^https?:\/\/[^/]+/, '').replace(/^\/api/, '');
 }
 
+/**
+ * Đọc giá trị theo đường dẫn có thể lồng nhau: `doc(row, 'mon_hoc.ten_mon')`.
+ * Cần vì `LopHocPhan` trả object lồng (`mon_hoc`, `hoc_ky`, `giang_vien`)
+ * đúng như hợp đồng API, không làm phẳng như bản mock trước.
+ */
+function doc(row: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>((acc, key) => {
+    if (acc === null || acc === undefined || typeof acc !== 'object') return undefined;
+    return (acc as Record<string, unknown>)[key];
+  }, row);
+}
+
 /** Lọc theo `keyword` trên các trường văn bản. */
-export function searchBy<T>(rows: T[], keyword: string | null, fields: (keyof T)[]): T[] {
+export function searchBy<T>(rows: T[], keyword: string | null, fields: string[]): T[] {
   if (!keyword) return rows;
   const k = keyword.toLowerCase();
   return rows.filter((row) =>
-    fields.some((f) => String(row[f] ?? '').toLowerCase().includes(k)),
+    fields.some((f) => String(doc(row, f) ?? '').toLowerCase().includes(k)),
   );
 }
 
 /** Lọc chính xác theo các query param có trong danh sách cho phép. */
-export function filterBy<T extends Record<string, unknown>>(
+export function filterBy<T extends object>(
   rows: T[],
   params: HttpParams,
-  allowed: (keyof T)[],
+  allowed: string[],
 ): T[] {
   let result = rows;
   for (const field of allowed) {
-    const value = params.get(String(field));
+    const value = params.get(field);
     if (value === null || value === '') continue;
-    result = result.filter((row) => String(row[field]) === value);
+    result = result.filter((row) => String(doc(row, field)) === value);
   }
   return result;
 }
 
 /** Sắp xếp theo `sort` (tên cột) + `order` (asc/desc). */
-export function sortBy<T extends Record<string, unknown>>(
+export function sortBy<T extends object>(
   rows: T[],
   params: HttpParams,
-  fallback: keyof T,
+  fallback: string,
 ): T[] {
-  const field = (params.get('sort') ?? fallback) as keyof T;
+  const field = params.get('sort') ?? fallback;
   const desc = params.get('order') === 'desc';
   return [...rows].sort((a, b) => {
-    const av = a[field];
-    const bv = b[field];
+    const av = doc(a, field);
+    const bv = doc(b, field);
     if (av === bv) return 0;
     const cmp = String(av) < String(bv) ? -1 : 1;
     return desc ? -cmp : cmp;

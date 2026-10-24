@@ -24,6 +24,8 @@ class HocKy extends Model
     protected $fillable = [
         'ma_hoc_ky',
         'ten_hoc_ky',
+        'nam_hoc',
+        'ky_thu',
         'ngay_bat_dau',
         'ngay_ket_thuc',
         'mo_dang_ky_luc',
@@ -34,11 +36,23 @@ class HocKy extends Model
     protected function casts(): array
     {
         return [
+            'ky_thu' => 'integer',
             'ngay_bat_dau' => 'date',
             'ngay_ket_thuc' => 'date',
             'mo_dang_ky_luc' => 'datetime',
             'dong_dang_ky_luc' => 'datetime',
         ];
+    }
+
+    /**
+     * Năm dương lịch bắt đầu của năm học, ví dụ `2026-2027` → 2026.
+     * Dùng để tính năm thứ của sinh viên (03-data-model.md §5.6).
+     */
+    public function namBatDauNamHoc(): ?int
+    {
+        $phan = explode('-', (string) $this->nam_hoc);
+
+        return ctype_digit($phan[0] ?? '') ? (int) $phan[0] : null;
     }
 
     public function lopHocPhan(): HasMany

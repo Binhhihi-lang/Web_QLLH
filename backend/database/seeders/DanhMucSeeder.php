@@ -28,12 +28,16 @@ class DanhMucSeeder extends Seeder
         $rows = [];
 
         for ($i = 1; $i <= 20; $i++) {
-            $khoa = 'K'.(63 + intdiv($i, 5));
-            $ma = sprintf('%s-%s%02d', $nganh[($i - 1) % count($nganh)], $khoa, $i);
+            $khoaHoc = 'K'.(63 + intdiv($i, 5));
+            $nganhCuaLop = $nganh[($i - 1) % count($nganh)];
+            $ma = sprintf('%s-%s%02d', $nganhCuaLop, $khoaHoc, $i);
             $rows[] = [
                 'ma_lop' => $ma,
                 'ten_lop' => 'Lớp '.$ma,
-                'khoa' => $khoa,
+                'khoa_hoc' => $khoaHoc,
+                'nganh' => $nganhCuaLop,
+                // K63 nhập học 2021, K64 → 2022, ...
+                'nam_nhap_hoc' => 2000 + (int) substr($khoaHoc, 1) - 42,
                 'mo_ta' => null,
                 'trang_thai' => true,
                 'created_at' => now(),
@@ -88,6 +92,8 @@ class DanhMucSeeder extends Seeder
             [
                 'ma_hoc_ky' => '2025-2',
                 'ten_hoc_ky' => 'Học kỳ 2 năm học 2025-2026',
+                'nam_hoc' => '2025-2026',
+                'ky_thu' => 2,
                 'ngay_bat_dau' => '2026-01-05',
                 'ngay_ket_thuc' => '2026-05-15',
                 'mo_dang_ky_luc' => '2025-12-15 08:00:00',
@@ -99,6 +105,8 @@ class DanhMucSeeder extends Seeder
             [
                 'ma_hoc_ky' => '2026-1',
                 'ten_hoc_ky' => 'Học kỳ 1 năm học 2026-2027',
+                'nam_hoc' => '2026-2027',
+                'ky_thu' => 1,
                 'ngay_bat_dau' => '2026-09-07',
                 'ngay_ket_thuc' => '2027-01-16',
                 'mo_dang_ky_luc' => '2026-08-10 08:00:00',
@@ -110,6 +118,8 @@ class DanhMucSeeder extends Seeder
             [
                 'ma_hoc_ky' => '2026-2',
                 'ten_hoc_ky' => 'Học kỳ 2 năm học 2026-2027',
+                'nam_hoc' => '2026-2027',
+                'ky_thu' => 2,
                 'ngay_bat_dau' => '2027-01-25',
                 'ngay_ket_thuc' => '2027-05-28',
                 'mo_dang_ky_luc' => '2027-01-04 08:00:00',

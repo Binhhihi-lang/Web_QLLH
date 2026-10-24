@@ -66,4 +66,25 @@ class SinhVien extends Model
     {
         return $query->where('trang_thai', true);
     }
+
+    /**
+     * Năm thứ hiện tại của sinh viên (03-data-model.md §5.6, BR-23).
+     *
+     * `nam_thu = nam_bat_dau(nam_hoc) - nam_nhap_hoc + 1`
+     *
+     * Trả null khi không đủ dữ liệu để kết luận (chưa xếp lớp hành chính,
+     * lớp chưa có `nam_nhap_hoc`, hoặc học kỳ chưa có `nam_hoc`) — khi đó
+     * BR-23 KHÔNG chặn, vì chặn trên dữ liệu thiếu sẽ khóa nhầm sinh viên.
+     */
+    public function namThuTrong(HocKy $hocKy): ?int
+    {
+        $namBatDau = $hocKy->namBatDauNamHoc();
+        $namNhapHoc = $this->lopHanhChinh?->nam_nhap_hoc;
+
+        if ($namBatDau === null || $namNhapHoc === null) {
+            return null;
+        }
+
+        return $namBatDau - (int) $namNhapHoc + 1;
+    }
 }

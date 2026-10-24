@@ -86,6 +86,7 @@ src/app/
 |---|---|---|---|---|
 | SCR-01 | Đăng nhập | `/dang-nhap` | công khai | Form email/password, thông báo lỗi, loading |
 | SCR-02 | Đổi mật khẩu | `/doi-mat-khau` | mọi vai trò | 3 ô mật khẩu, validate độ mạnh, cảnh báo khi bắt buộc đổi |
+| SCR-02B | 🆕 Ảnh đại diện | Dialog trên header (mọi trang) | mọi vai trò | Chọn ảnh → xem trước → tải lên; nút "Gỡ ảnh". Hiển thị ảnh tròn 32 px ở header, `avatar_url` null thì hiện chữ cái đầu tên trên nền màu theo vai trò |
 
 ### 3.2. Dashboard
 
@@ -99,7 +100,7 @@ src/app/
 
 | Mã | Màn hình | Route | Ghi chú |
 |---|---|---|---|
-| SCR-10 | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên, lớp, giới tính, ngày sinh, email, SĐT, trạng thái, thao tác. Bộ lọc: tìm kiếm, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột. Phân trang. |
+| SCR-10 | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên, lớp, giới tính, ngày sinh, email, SĐT, trạng thái, thao tác. Bộ lọc: tìm kiếm, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột. Phân trang. **Chọn nhiều dòng → thanh hành động: Kích hoạt / Khóa / Xóa** (FR-02.05b, FR-02.07) |
 | SCR-11 | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form; sau khi tạo hiện dialog chứa `mat_khau_ban_dau` + nút copy |
 | SCR-12 | Chi tiết sinh viên | `/sinh-vien/:id` | Thông tin cá nhân, lớp hành chính, danh sách học phần đã đăng ký, điểm, chuyên cần (tab) |
 
@@ -109,7 +110,7 @@ src/app/
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-13 | Danh sách giảng viên | `/giang-vien` | ADMIN |
+| SCR-13 | Danh sách giảng viên | `/giang-vien` | ADMIN — chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-04.04b, FR-04.06) |
 | SCR-14 | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN |
 | SCR-15 | Chi tiết giảng viên | `/giang-vien/:id` | ADMIN, TEACHER (bản thân) |
 
@@ -117,27 +118,27 @@ src/app/
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-16 | Danh sách lớp hành chính | `/lop-hanh-chinh` | ADMIN, TEACHER |
-| SCR-17 | Thêm/Sửa lớp | `/lop-hanh-chinh/them`, `/:id/sua` | ADMIN |
+| SCR-16 | Danh sách lớp hành chính | `/lop-hanh-chinh` | ADMIN, TEACHER | Cột: mã, tên, khóa, ngành, sĩ số. Lọc theo khóa/ngành |
+| SCR-17 | Thêm/Sửa lớp | `/lop-hanh-chinh/them`, `/:id/sua` | ADMIN | Trường: mã, tên, **khóa** (`khoa_hoc`), ngành, năm nhập học, mô tả |
 | SCR-18 | Chi tiết lớp + gán sinh viên | `/lop-hanh-chinh/:id` | ADMIN (dialog chọn nhiều sinh viên) |
 
 ### 3.6. Môn học, Học kỳ, Phòng học
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-19 | Danh sách môn học | `/mon-hoc` | mọi vai trò (chỉ xem với TEACHER/STUDENT) |
+| SCR-19 | Danh sách môn học | `/mon-hoc` | mọi vai trò (chỉ xem với TEACHER/STUDENT). ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-05.04) |
 | SCR-20 | Thêm/Sửa môn học | `/mon-hoc/them`, `/:id/sua` | ADMIN |
-| SCR-21 | Danh sách học kỳ | `/hoc-ky` | mọi vai trò |
-| SCR-22 | Thêm/Sửa học kỳ | `/hoc-ky/them`, `/:id/sua` | ADMIN — có nút chuyển trạng thái |
-| SCR-23 | Danh sách phòng học | `/phong-hoc` | ADMIN, TEACHER |
+| SCR-21 | Danh sách học kỳ | `/hoc-ky` | mọi vai trò | Cột: mã, tên, năm học, kỳ thứ, khoảng ngày, đợt đăng ký, trạng thái |
+| SCR-22 | Thêm/Sửa học kỳ | `/hoc-ky/them`, `/:id/sua` | ADMIN — có nút chuyển trạng thái. Chỉ hiện nút cho bước kế tiếp hợp lệ: `UPCOMING` → "Bắt đầu kỳ", `ONGOING` → "Đóng kỳ"; `CLOSED` không có nút (BR-24) |
+| SCR-23 | Danh sách phòng học | `/phong-hoc` | ADMIN, TEACHER. ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-07.04) |
 | SCR-24 | Thêm/Sửa phòng học | `/phong-hoc/them`, `/:id/sua` | ADMIN |
 
 ### 3.7. Lớp học phần
 
 | Mã | Màn hình | Route | Vai trò | Ghi chú |
 |---|---|---|---|---|
-| SCR-25 | Danh sách lớp học phần | `/lop-hoc-phan` | theo vai trò | Cột: mã, môn, học kỳ, giảng viên, sĩ số `x/y`, trạng thái. Lọc: học kỳ, môn, giảng viên, trạng thái, còn chỗ |
-| SCR-26 | Thêm/Sửa lớp học phần | `/lop-hoc-phan/them`, `/:id/sua` | ADMIN | |
+| SCR-25 | Danh sách lớp học phần | `/lop-hoc-phan` | theo vai trò | Cột: mã, môn, học kỳ, giảng viên, năm thứ, sĩ số `x/y`, trạng thái. Lọc: học kỳ, môn, giảng viên, năm thứ, trạng thái, còn chỗ |
+| SCR-26 | Thêm/Sửa lớp học phần | `/lop-hoc-phan/them`, `/:id/sua` | ADMIN | Trường: mã, môn, học kỳ, giảng viên, sĩ số tối đa, **năm thứ** (để trống = mọi năm) | |
 | SCR-27 | Chi tiết lớp học phần | `/lop-hoc-phan/:id` | theo vai trò | Tab: thông tin, sinh viên, lịch học, điểm danh, điểm |
 | SCR-28 | Danh sách sinh viên của lớp | `/lop-hoc-phan/:id/sinh-vien` | ADMIN, TEACHER | Nút hủy đăng ký (ADMIN) |
 | SCR-29 | Bảng điểm lớp | `/lop-hoc-phan/:id/diem` | ADMIN, TEACHER | Nhập inline, nút chốt điểm, badge đã chốt |
@@ -146,7 +147,7 @@ src/app/
 
 | Mã | Màn hình | Route | Vai trò | Ghi chú |
 |---|---|---|---|---|
-| SCR-30 | Đăng ký hộ | `/dang-ky` | ADMIN | Chọn sinh viên + lớp, hiển thị kết quả kiểm tra |
+| SCR-30 | Đăng ký hộ | `/dang-ky` | ADMIN | Chọn sinh viên + lớp, hiển thị kết quả kiểm tra. Nút **"Đăng ký theo lớp hành chính"** mở dialog chọn lớp HP + lớp HC, hiện bảng kết quả từng sinh viên (FR-09.07) |
 | SCR-31 | Danh sách đăng ký | `/dang-ky/danh-sach` | ADMIN, TEACHER | Lọc theo học kỳ, lớp, sinh viên, trạng thái |
 | SCR-32 | Danh sách lớp đang mở | `/lop-hoc-phan` (view STUDENT) | STUDENT | Hiện số chỗ còn, nút "Đăng ký" |
 | SCR-33 | Đăng ký của tôi | `/dang-ky-cua-toi` | STUDENT | Theo học kỳ, trạng thái, nút hủy |
@@ -172,7 +173,7 @@ src/app/
 | Mã | Màn hình | Route | Vai trò | Ghi chú |
 |---|---|---|---|---|
 | SCR-41 | Nhập điểm | `/lop-hoc-phan/:id/diem` | TEACHER, ADMIN | Bảng nhập inline, tự tính tổng kết + điểm chữ + hệ 4, cảnh báo khi đã chốt |
-| SCR-42 | Điểm của tôi | `/diem-cua-toi` | STUDENT | Theo học kỳ, GPA hệ 10 và hệ 4, cột điểm chữ A/B/C/D/F, trạng thái đạt/không đạt |
+| SCR-42 | Điểm của tôi | `/diem-cua-toi` | STUDENT | Theo học kỳ, GPA hệ 10 và hệ 4, **GPA tích lũy + tín chỉ tích lũy** (FR-12.08), cột điểm chữ A/B/C/D/F, trạng thái đạt/không đạt |
 | SCR-43 | Lịch sử sửa điểm | `/lop-hoc-phan/:id/diem/lich-su` | ADMIN, TEACHER | Dialog theo từng sinh viên |
 
 ### 3.12. Quản trị
@@ -249,6 +250,15 @@ Mỗi form phải có: validate client, hiển thị lỗi 422 theo trường, c
 | `SEMESTER_CLOSED` | Học kỳ đã đóng, chỉ được xem. |
 | `DELETE_BLOCKED` | Không thể xóa: hiển thị danh sách phụ thuộc. |
 | `MUST_CHANGE_PASSWORD` | Chuyển hướng `/doi-mat-khau`. |
+| `WRONG_STUDY_YEAR` | Lớp này dành cho sinh viên năm thứ {n}. |
+| `SEMESTER_TRANSITION_INVALID` | Không thể chuyển trạng thái học kỳ theo hướng này. |
+| `SEMESTER_OVERLAP` | Khoảng ngày trùng với học kỳ {tên}. |
+| `SESSION_OUTSIDE_SEMESTER` | Ngày buổi học nằm ngoài khoảng ngày của học kỳ. |
+| `SUBJECT_CHANGE_BLOCKED` | Lớp đã có sinh viên đăng ký, không đổi được môn/học kỳ. |
+| `UPLOAD_NOT_CONFIGURED` | Chức năng tải ảnh chưa được cấu hình. Liên hệ quản trị viên. |
+| `UPLOAD_FAILED` | Tải ảnh lên thất bại, vui lòng thử lại. |
+
+**Thao tác hàng loạt:** luôn hiện dialog xác nhận kèm số lượng; sau khi xong hiện bảng kết quả từng dòng (thành công / lỗi kèm lý do), **không** đóng dialog tự động để người dùng đọc được dòng nào hỏng.
 
 ---
 

@@ -81,10 +81,12 @@ class OptionController extends Controller
         $data = LopHanhChinh::query()
             ->where('trang_thai', true)
             ->orderBy('ma_lop')
-            ->get(['id', 'ten_lop'])
+            ->get(['id', 'ten_lop', 'khoa_hoc', 'nganh'])
             ->map(fn (LopHanhChinh $l) => [
                 'id' => $l->id,
                 'label' => $l->ten_lop,
+                'khoa_hoc' => $l->khoa_hoc,
+                'nganh' => $l->nganh,
             ]);
 
         return $this->success($data);
@@ -97,11 +99,12 @@ class OptionController extends Controller
             ->withCount(['dangKyHocPhan as so_dang_ky' => fn ($q) => $q->where('trang_thai', 'ACTIVE')])
             ->where('trang_thai', LopHocPhan::OPEN)
             ->orderBy('ma_lop_hp')
-            ->get(['id', 'ma_lop_hp', 'mon_hoc_id', 'si_so_toi_da'])
+            ->get(['id', 'ma_lop_hp', 'mon_hoc_id', 'si_so_toi_da', 'nam_thu'])
             ->map(fn (LopHocPhan $l) => [
                 'id' => $l->id,
                 'label' => $l->ma_lop_hp.' — '.($l->monHoc?->ten_mon ?? ''),
                 'con_cho' => max(0, $l->si_so_toi_da - $l->so_dang_ky),
+                'nam_thu' => $l->nam_thu,
             ]);
 
         return $this->success($data);

@@ -30,8 +30,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/",
-              "host": ["{{base_url}}"],
-              "path": [""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
             },
             "description": "Kiểm tra backend có chạy không. Không cần token."
           },
@@ -70,8 +74,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -79,8 +89,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "Đăng nhập bằng tài khoản ADMIN demo. Token tự động lưu vào biến collection `token`."
           },
@@ -110,8 +126,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -119,8 +141,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "Đăng nhập bằng tài khoản giảng viên demo. Trả kèm hồ sơ `giang_vien`."
           },
@@ -150,8 +178,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -159,8 +193,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "Đăng nhập bằng tài khoản sinh viên demo. Trả kèm hồ sơ `sinh_vien`."
           },
@@ -188,8 +228,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -197,8 +243,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "Kiểm tra nhánh lỗi đăng nhập. Không lưu token."
           },
@@ -228,14 +280,29 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "Body rỗng — kiểm tra validation."
           },
@@ -262,13 +329,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/auth/me",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "me"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
             },
             "description": "Trả thông tin tài khoản đang đăng nhập + hồ sơ sinh viên/giảng viên (ADMIN có ho_so = null)."
           },
@@ -290,9 +369,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -300,8 +388,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/change-password",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "change-password"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
             },
             "description": "⚠️ Đổi mật khẩu THẬT trên DB. Sau khi chạy, mật khẩu tài khoản demo thành `matkhaumoi123`. Chạy lại seeder để khôi phục:\n`php artisan migrate:fresh --seed`"
           },
@@ -324,15 +418,113 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/auth/logout",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "logout"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
             },
             "description": "Thu hồi token hiện tại. Token cũ sẽ trả 401 ở lần gọi sau."
+          },
+          "response": []
+        },
+        {
+          "name": "Tải ảnh đại diện (multipart)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 hoặc 503 khi chưa cấu hình', () => pm.expect([200, 503]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.test('Có avatar_url', () => pm.expect(data.avatar_url).to.match(/^https:\\/\\/res\\.cloudinary\\.com\\//));",
+                  "    pm.environment.set('avatar_url', data.avatar_url);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "FR-01.10 — upload ảnh lên Cloudinary, thay ảnh cũ. Chọn file ở tab Body → form-data, key `anh`. Cần cấu hình CLOUDINARY_* trong .env, nếu không sẽ trả 503 UPLOAD_NOT_CONFIGURED."
+          },
+          "response": []
+        },
+        {
+          "name": "Gỡ ảnh đại diện",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                  "pm.test('avatar_url = null', () => pm.expect(pm.response.json().data.avatar_url).to.be.null);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "FR-01.11 — xóa ảnh trên Cloudinary và đặt avatar_url = null."
           },
           "response": []
         }
@@ -365,13 +557,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/subjects",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "subjects"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "subjects"
+              ]
             },
             "description": "Danh sách môn học đang hoạt động, dùng cho ô chọn ở FE."
           },
@@ -403,13 +607,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/semesters",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "semesters"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "semesters"
+              ]
             },
             "description": "3 học kỳ seed: 2025-2 CLOSED, 2026-1 ONGOING, 2026-2 UPCOMING."
           },
@@ -434,13 +650,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/teachers",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "teachers"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "teachers"
+              ]
             },
             "description": "Danh sách giảng viên đang hoạt động."
           },
@@ -467,13 +695,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/rooms",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "rooms"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "rooms"
+              ]
             },
             "description": "25 phòng học seed."
           },
@@ -497,13 +737,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/admin-classes",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "admin-classes"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "admin-classes"
+              ]
             },
             "description": "20 lớp hành chính seed."
           },
@@ -536,13 +788,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/sections",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "sections"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "sections"
+              ]
             },
             "description": "Lớp học phần đang OPEN. `con_cho = 0` nghĩa là đã đầy (dùng để test SECTION_FULL)."
           },
@@ -571,11 +835,22 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/api/options/subjects",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "subjects"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "subjects"
+              ]
             },
             "description": "Endpoint bảo vệ gọi mà không có Authorization header."
           },
@@ -597,13 +872,25 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer 999|token-gia-mao" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer 999|token-gia-mao"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/options/subjects",
-              "host": ["{{base_url}}"],
-              "path": ["api", "options", "subjects"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "options",
+                "subjects"
+              ]
             },
             "description": "Token không tồn tại trong bảng personal_access_tokens."
           },
@@ -628,13 +915,24 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/khong-ton-tai",
-              "host": ["{{base_url}}"],
-              "path": ["api", "khong-ton-tai"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "khong-ton-tai"
+              ]
             },
             "description": "Kiểm tra envelope 404 thay vì trang HTML mặc định của Laravel."
           },
@@ -661,8 +959,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/auth/me",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "me"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
             },
             "description": "Postman/trình duyệt có thể không gửi Accept. Backend phải trả JSON chứ không redirect về route login (đã xóa)."
           },
@@ -672,11 +976,29 @@
     }
   ],
   "variable": [
-    { "key": "base_url", "value": "http://127.0.0.1:8000" },
-    { "key": "token", "value": "" },
-    { "key": "mon_hoc_id", "value": "" },
-    { "key": "hoc_ky_id", "value": "" },
-    { "key": "giang_vien_id", "value": "" },
-    { "key": "lop_hp_id", "value": "" }
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "mon_hoc_id",
+      "value": ""
+    },
+    {
+      "key": "hoc_ky_id",
+      "value": ""
+    },
+    {
+      "key": "giang_vien_id",
+      "value": ""
+    },
+    {
+      "key": "lop_hp_id",
+      "value": ""
+    }
   ]
 }
