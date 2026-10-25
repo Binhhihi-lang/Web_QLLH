@@ -32,6 +32,25 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   links: PageLinks;
 }
 
+/** Kết quả một dòng trong thao tác hàng loạt — BR-31. */
+export interface KetQuaDong {
+  id: number;
+  ket_qua: 'THANH_CONG' | 'THAT_BAI';
+  ma_loi?: string;
+  message?: string;
+}
+
+/**
+ * Kết quả endpoint thao tác hàng loạt. Backend luôn trả 200 và xử lý từng dòng
+ * độc lập, nên KHÔNG dùng HTTP status để biết thành công — phải đọc `that_bai`
+ * hoặc `chi_tiet`.
+ */
+export interface KetQuaHangLoat {
+  thanh_cong: number;
+  that_bai: number;
+  chi_tiet: KetQuaDong[];
+}
+
 /** Mã lỗi nghiệp vụ — xem bảng ánh xạ ở docs/05-screens.md mục 6. */
 export const MaLoi = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
@@ -100,7 +119,9 @@ export function paginate<T>(
   baseUrl: string,
 ): PaginatedResponse<T> {
   const currentPage = Number(params.get('page') ?? 1) || 1;
-  const perPage = Number(params.get('per_page') ?? 10) || 10;
+  // Hợp đồng §1.6: `per_page` chỉ nhận 10, 25, 50, 100. Giá trị lạ rơi về 10.
+  const xinPerPage = Number(params.get('per_page') ?? 10);
+  const perPage = [10, 25, 50, 100].includes(xinPerPage) ? xinPerPage : 10;
   const total = items.length;
   const lastPage = Math.max(1, Math.ceil(total / perPage));
   const start = (currentPage - 1) * perPage;
@@ -154,7 +175,13 @@ export function searchBy<T>(rows: T[], keyword: string | null, fields: string[])
   );
 }
 
-/** Lọc chính xác theo các query param có trong danh sách cho phép. */
+/**
+ * Lọc chính xác theo các query param có trong danh sách cho phép.
+ *
+ * Query string luôn là chuỗi, nên phải đổi về đúng kiểu của giá trị trong dữ
+ * liệu trước khi so sánh: `?trang_thai=false` phải khớp boolean `false`, và
+ * `?gioi_tinh=1` phải khớp `true`. So sánh `String(false)` với `"0"` sẽ trượt.
+ */
 export function filterBy<T extends object>(
   rows: T[],
   params: HttpParams,
@@ -162,26 +189,43 @@ export function filterBy<T extends object>(
 ): T[] {
   let result = rows;
   for (const field of allowed) {
-    const value = params.get(field);
-    if (value === null || value === '') continue;
-    result = result.filter((row) => String(doc(row, field)) === value);
+    const raw = params.get(field);
+    if (raw === null || raw === '') continue;
+
+    result = result.filter((row) => {
+      const value = doc(row, field);
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'boolean') {
+        return value === (raw === 'true' || raw === '1');
+      }
+      if (typeof value === 'number') {
+        return value === Number(raw);
+      }
+      return String(value) === raw;
+    });
   }
   return result;
 }
 
-/** Sắp xếp theo `sort` (tên cột) + `order` (asc/desc). */
+/** Sắp xếp theo `sort_by` (tên cột) + `sort_dir` (asc/desc) — hợp đồng §1.6. */
 export function sortBy<T extends object>(
   rows: T[],
   params: HttpParams,
   fallback: string,
 ): T[] {
-  const field = params.get('sort') ?? fallback;
-  const desc = params.get('order') === 'desc';
+  const field = params.get('sort_by') ?? fallback;
+  const desc = params.get('sort_dir') === 'desc';
   return [...rows].sort((a, b) => {
     const av = doc(a, field);
     const bv = doc(b, field);
     if (av === bv) return 0;
-    const cmp = String(av) < String(bv) ? -1 : 1;
+    if (av === null || av === undefined) return 1;
+    if (bv === null || bv === undefined) return -1;
+    // Số so với số thì so theo số, còn lại so theo chuỗi (locale tiếng Việt).
+    const cmp =
+      typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : String(av).localeCompare(String(bv), 'vi');
     return desc ? -cmp : cmp;
   });
 }

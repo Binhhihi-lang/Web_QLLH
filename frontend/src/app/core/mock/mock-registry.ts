@@ -1,114 +1,45 @@
 import { HttpParams } from '@angular/common/http';
-import {
-  GIANG_VIEN_MOCK,
-  HOC_KY_MOCK,
-  LOP_HANH_CHINH_MOCK,
-  LOP_HOC_PHAN_MOCK,
-  MON_HOC_MOCK,
-  SINH_VIEN_MOCK,
-} from '@core/mock/data/danh-muc.mock';
-import { DASHBOARD_ADMIN_MOCK } from '@core/mock/data/dashboard.mock';
-import {
-  ApiResponse,
-  filterBy,
-  ok,
-  paginate,
-  readParams,
-  searchBy,
-  sortBy,
-  stripOrigin,
-} from '@core/mock/mock-response';
+import { Injectable } from '@angular/core';
+import { DaoTaoRegistry } from '@core/mock/registry/dao-tao.registry';
+import { HocVuRegistry } from '@core/mock/registry/hoc-vu.registry';
+import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
 
 /**
- * Sổ tra cứu mock: ánh xạ (method + đường dẫn) sang dữ liệu giả.
+ * Sổ tra cứu mock: chỉ ĐIỀU PHỐI, không chứa dữ liệu.
  *
- * Vì sao là lớp có trạng thái chứ không phải hàm thuần: các thao tác ghi
- * (tạo, sửa, xoá) phải thấy được ở lần đọc sau — nếu không thì không thử được
- * luồng CRUD thật. Dữ liệu chỉ nằm trong bộ nhớ, tải lại trang là về ban đầu.
+ * Vì sao tách: hai bạn FE làm song song trên hai nhóm màn hình. Nếu mọi mock
+ * nằm trong một file thì ngày nào cũng conflict. Mỗi nhóm một registry riêng
+ * (`dao-tao.registry.ts`, `hoc-vu.registry.ts`), mỗi người sở hữu một file;
+ * file này chỉ chuyển tiếp nên gần như không bao giờ phải sửa.
+ *
+ * Thêm nhóm mới: tạo registry con, thêm một dòng vào mảng `nguon` dưới đây.
+ *
+ * Đường dẫn dùng tiếng Anh đúng docs/04-api-contract.md (`/students`,
+ * `/subjects`…), dù trường JSON là tiếng Việt.
  *
  * Trả `undefined` khi không có mock cho đường dẫn → interceptor để request đi
  * tiếp ra mạng thật.
  */
+@Injectable()
 export class MockRegistry {
-  private sinhVien = SINH_VIEN_MOCK.map((r) => ({ ...r }));
-  private lopHanhChinh = LOP_HANH_CHINH_MOCK.map((r) => ({ ...r }));
-  private giangVien = GIANG_VIEN_MOCK.map((r) => ({ ...r }));
-  private monHoc = MON_HOC_MOCK.map((r) => ({ ...r }));
-  private hocKy = HOC_KY_MOCK.map((r) => ({ ...r }));
-  private lopHocPhan = LOP_HOC_PHAN_MOCK.map((r) => ({ ...r }));
-  private nextId = 1000;
+  private readonly daoTao = new DaoTaoRegistry();
+  private readonly hocVu = new HocVuRegistry();
+
+  private readonly nguon = [this.daoTao, this.hocVu];
 
   resolve(
     method: string,
     urlWithParams: string,
-    body: unknown,
+    body: unknown = null,
   ): ApiResponse<unknown> | Record<string, unknown> | undefined {
     const path = stripOrigin(urlWithParams).split('?')[0];
-    const params = readParams(urlWithParams);
+    const params: HttpParams = readParams(urlWithParams);
 
-    // ---------- Sinh viên ----------
-    if (path === '/sinh-vien' && method === 'GET') {
-      let rows = searchBy(this.sinhVien, params.get('keyword'), ['ma_sv', 'ho_ten', 'email']);
-      rows = filterBy(rows, params, ['lop_hanh_chinh_id', 'gioi_tinh', 'trang_thai']);
-      rows = sortBy(rows, params, 'ma_sv');
-      return paginate(rows, params, '/api/sinh-vien');
-    }
-
-    // ---------- Lớp hành chính ----------
-    if (path === '/lop-hanh-chinh' && method === 'GET') {
-      let rows = searchBy(this.lopHanhChinh, params.get('keyword'), ['ma_lop', 'ten_lop']);
-      rows = filterBy(rows, params, ['khoa_hoc', 'nganh', 'trang_thai']);
-      return paginate(rows, params, '/api/lop-hanh-chinh');
-    }
-
-    // ---------- Giảng viên ----------
-    if (path === '/giang-vien' && method === 'GET') {
-      let rows = searchBy(this.giangVien, params.get('keyword'), ['ma_gv', 'ho_ten', 'email']);
-      rows = filterBy(rows, params, ['chuyen_mon', 'trang_thai']);
-      return paginate(rows, params, '/api/giang-vien');
-    }
-
-    // ---------- Môn học ----------
-    if (path === '/mon-hoc' && method === 'GET') {
-      const rows = searchBy(this.monHoc, params.get('keyword'), ['ma_mon', 'ten_mon']);
-      return paginate(rows, params, '/api/mon-hoc');
-    }
-
-    // ---------- Học kỳ ----------
-    if (path === '/hoc-ky' && method === 'GET') {
-      const rows = filterBy(this.hocKy, params, ['trang_thai', 'nam_hoc', 'ky_thu']);
-      return paginate(rows, params, '/api/hoc-ky');
-    }
-
-    // ---------- Lớp học phần ----------
-    if (path === '/lop-hoc-phan' && method === 'GET') {
-      let rows = searchBy(this.lopHocPhan, params.get('keyword'), ['ma_lop_hp', 'mon_hoc.ten_mon', 'giang_vien.ho_ten']);
-      rows = filterBy(rows, params, ['hoc_ky.id', 'mon_hoc.id', 'giang_vien.id', 'nam_thu', 'trang_thai']);
-      // Lọc "còn chỗ" — tham số riêng của màn SCR-25.
-      if (params.get('con_cho') === 'true') {
-        rows = rows.filter((r) => r.si_so_hien_tai < r.si_so_toi_da);
+    for (const nguon of this.nguon) {
+      const ketQua = nguon.resolve(method, path, params, body);
+      if (ketQua !== undefined) {
+        return ketQua as ApiResponse<unknown>;
       }
-      rows = sortBy(rows, params, 'ma_lop_hp');
-      return paginate(rows, params, '/api/lop-hoc-phan');
-    }
-
-    // ---------- Dashboard ----------
-    if (path === '/dashboard/admin' && method === 'GET') {
-      return ok(DASHBOARD_ADMIN_MOCK);
-    }
-
-    // ---------- Options (dùng cho mọi dropdown) ----------
-    if (path === '/options/lop-hanh-chinh' && method === 'GET') {
-      return ok(this.lopHanhChinh.map((r) => ({ id: r.id, nhan: r.ma_lop, khoa_hoc: r.khoa_hoc, nganh: r.nganh })));
-    }
-    if (path === '/options/mon-hoc' && method === 'GET') {
-      return ok(this.monHoc.map((r) => ({ id: r.id, nhan: `${r.ma_mon} — ${r.ten_mon}` })));
-    }
-    if (path === '/options/hoc-ky' && method === 'GET') {
-      return ok(this.hocKy.map((r) => ({ id: r.id, nhan: `${r.ten_hoc_ky}`, nam_hoc: r.nam_hoc, ky_thu: r.ky_thu, trang_thai: r.trang_thai })));
-    }
-    if (path === '/options/giang-vien' && method === 'GET') {
-      return ok(this.giangVien.map((r) => ({ id: r.id, nhan: r.ho_ten })));
     }
 
     return undefined;

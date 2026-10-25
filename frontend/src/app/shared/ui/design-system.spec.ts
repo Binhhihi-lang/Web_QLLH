@@ -41,6 +41,20 @@ describe('Pagination', () => {
     expect(c.cacTrang()).toEqual([1, 2, null, 51]);
   });
 
+  it('ô "Số dòng" hiện đúng per_page, không rơi về option đầu', () => {
+    // Lỗi thật đã gặp: đặt `[value]` lên thẻ select trong khi option render
+    // bằng @for thì trình duyệt chọn option đầu tiên (10) dù per_page là 25.
+    const fixture = TestBed.createComponent(Pagination);
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('perPage', 25);
+    fixture.componentRef.setInput('total', 86);
+    fixture.componentRef.setInput('lastPage', 4);
+    fixture.detectChanges();
+
+    const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
+    expect(select.value).toBe('25');
+  });
+
   it('không rút gọn khi đang ở trang cuối', () => {
     const c = tao(51, 51);
     expect(c.cacTrang()).toEqual([1, null, 50, 51]);

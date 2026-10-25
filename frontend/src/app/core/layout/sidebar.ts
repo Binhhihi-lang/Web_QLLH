@@ -1,25 +1,17 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { DAO_TAO_MENU, MucMenu, NhomMenu } from '../../routes/dao-tao.menu';
+import { HE_THONG_MENU, HOC_VU_MENU } from '../../routes/hoc-vu.menu';
 
-export interface MucMenu {
-  nhan: string;
-  duong_dan: string;
-  icon: string;
-  /** Vai trò được thấy mục này. Rỗng = mọi vai trò. */
-  vai_tro?: string[];
-}
-
-export interface NhomMenu {
-  tieu_de: string;
-  muc: MucMenu[];
-}
+export type { MucMenu, NhomMenu };
 
 /**
  * Sidebar điều hướng.
  *
- * Nhóm menu khai báo ở ĐÂY chứ không lấy từ API như SCR-47 (quản lý menu):
- * dự án có 10 tuần, menu động là hạng mục Should. Khi backend có `/api/menus`
- * thì thay nguồn dữ liệu, phần render giữ nguyên.
+ * Nguồn menu là hai file khai báo theo nhóm (`routes/dao-tao.menu.ts`,
+ * `routes/hoc-vu.menu.ts`), không lấy từ API như SCR-47: dự án có 10 tuần, menu
+ * động là hạng mục Should. Khi backend có `/api/menus` thì thay nguồn dữ liệu,
+ * phần render giữ nguyên.
  *
  * Lọc theo vai trò ngay tại component để màn ADMIN không thấy mục của STUDENT.
  */
@@ -238,40 +230,19 @@ export class Sidebar {
 
   readonly thuGon = signal(false);
 
+  /**
+   * Menu ghép từ hai file khai báo riêng — mỗi nhóm do một bạn FE sở hữu.
+   * Thêm màn mới thì sửa `routes/dao-tao.menu.ts` hoặc `routes/hoc-vu.menu.ts`,
+   * không sửa file này.
+   */
   private readonly CAY_MENU: NhomMenu[] = [
     {
       tieu_de: 'Tổng quan',
       muc: [{ nhan: 'Dashboard', duong_dan: '/dashboard', icon: 'dashboard' }],
     },
-    {
-      tieu_de: 'Đào tạo',
-      muc: [
-        { nhan: 'Sinh viên', duong_dan: '/sinh-vien', icon: 'school' },
-        { nhan: 'Giảng viên', duong_dan: '/giang-vien', icon: 'person' },
-        { nhan: 'Lớp hành chính', duong_dan: '/lop-hanh-chinh', icon: 'groups' },
-        { nhan: 'Môn học', duong_dan: '/mon-hoc', icon: 'menu_book' },
-        { nhan: 'Học kỳ', duong_dan: '/hoc-ky', icon: 'date_range' },
-        { nhan: 'Phòng học', duong_dan: '/phong-hoc', icon: 'meeting_room' },
-      ],
-    },
-    {
-      tieu_de: 'Học vụ',
-      muc: [
-        { nhan: 'Lớp học phần', duong_dan: '/lop-hoc-phan', icon: 'class' },
-        { nhan: 'Đăng ký', duong_dan: '/dang-ky', icon: 'how_to_reg' },
-        { nhan: 'Lịch học', duong_dan: '/lich-hoc', icon: 'calendar_month' },
-        { nhan: 'Điểm danh', duong_dan: '/diem-danh', icon: 'fact_check' },
-        { nhan: 'Điểm', duong_dan: '/diem', icon: 'grading' },
-      ],
-    },
-    {
-      tieu_de: 'Hệ thống',
-      muc: [
-        { nhan: 'Người dùng', duong_dan: '/nguoi-dung', icon: 'manage_accounts', vai_tro: ['ADMIN'] },
-        { nhan: 'Cấu hình', duong_dan: '/cau-hinh', icon: 'settings', vai_tro: ['ADMIN'] },
-        { nhan: 'Thùng rác', duong_dan: '/thung-rac', icon: 'delete', vai_tro: ['ADMIN'] },
-      ],
-    },
+    DAO_TAO_MENU,
+    HOC_VU_MENU,
+    HE_THONG_MENU,
   ];
 
   readonly nhomHienThi = computed(() => {

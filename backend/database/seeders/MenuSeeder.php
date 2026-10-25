@@ -15,22 +15,22 @@ class MenuSeeder extends Seeder
     {
         $menus = [
             // --- Sidebar: Tổng quan ---
-            ['ten' => 'Bảng điều khiển', 'url' => '/dashboard', 'vi_tri' => 'sidebar', 'nhom' => 'Tổng quan', 'vai_tro' => null, 'thu_tu' => 1],
+            ['ten' => 'Dashboard', 'url' => '/dashboard', 'vi_tri' => 'sidebar', 'nhom' => 'Tổng quan', 'vai_tro' => null, 'thu_tu' => 1],
 
             // --- Sidebar: Học vụ ---
             ['ten' => 'Lớp học phần', 'url' => '/lop-hoc-phan', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => null, 'thu_tu' => 10],
             ['ten' => 'Lịch học', 'url' => '/lich-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => null, 'thu_tu' => 11],
-            ['ten' => 'Đăng ký học phần', 'url' => '/dang-ky', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => User::SINH_VIEN, 'thu_tu' => 12],
+            ['ten' => 'Đăng ký', 'url' => '/dang-ky', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => User::SINH_VIEN, 'thu_tu' => 12],
             ['ten' => 'Điểm danh', 'url' => '/diem-danh', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => User::GIANG_VIEN, 'thu_tu' => 13],
             ['ten' => 'Điểm', 'url' => '/diem', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => null, 'thu_tu' => 14],
 
-            // --- Sidebar: Danh mục ---
-            ['ten' => 'Sinh viên', 'url' => '/sinh-vien', 'vi_tri' => 'sidebar', 'nhom' => 'Danh mục', 'vai_tro' => User::ADMIN, 'thu_tu' => 20],
-            ['ten' => 'Giảng viên', 'url' => '/giang-vien', 'vi_tri' => 'sidebar', 'nhom' => 'Danh mục', 'vai_tro' => User::ADMIN, 'thu_tu' => 21],
-            ['ten' => 'Lớp hành chính', 'url' => '/lop-hanh-chinh', 'vi_tri' => 'sidebar', 'nhom' => 'Danh mục', 'vai_tro' => User::ADMIN, 'thu_tu' => 22],
-            ['ten' => 'Môn học', 'url' => '/mon-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Danh mục', 'vai_tro' => User::ADMIN, 'thu_tu' => 23],
-            ['ten' => 'Học kỳ', 'url' => '/hoc-ky', 'vi_tri' => 'sidebar', 'nhom' => 'Danh mục', 'vai_tro' => User::ADMIN, 'thu_tu' => 24],
-            ['ten' => 'Phòng học', 'url' => '/phong-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Danh mục', 'vai_tro' => User::ADMIN, 'thu_tu' => 25],
+            // --- Sidebar: Đào tạo ---
+            ['ten' => 'Sinh viên', 'url' => '/sinh-vien', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => User::ADMIN, 'thu_tu' => 20],
+            ['ten' => 'Giảng viên', 'url' => '/giang-vien', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => User::ADMIN, 'thu_tu' => 21],
+            ['ten' => 'Lớp hành chính', 'url' => '/lop-hanh-chinh', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => User::ADMIN, 'thu_tu' => 22],
+            ['ten' => 'Môn học', 'url' => '/mon-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => User::ADMIN, 'thu_tu' => 23],
+            ['ten' => 'Học kỳ', 'url' => '/hoc-ky', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => User::ADMIN, 'thu_tu' => 24],
+            ['ten' => 'Phòng học', 'url' => '/phong-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => User::ADMIN, 'thu_tu' => 25],
 
             // --- Sidebar: Hệ thống ---
             ['ten' => 'Người dùng', 'url' => '/nguoi-dung', 'vi_tri' => 'sidebar', 'nhom' => 'Hệ thống', 'vai_tro' => User::ADMIN, 'thu_tu' => 30],

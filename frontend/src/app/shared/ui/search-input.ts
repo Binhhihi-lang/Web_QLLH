@@ -13,16 +13,20 @@ import { FormsModule } from '@angular/forms';
   imports: [FormsModule],
   template: `
     <div class="o-tim">
-      <span class="ic" aria-hidden="true">⌕</span>
+      <span class="material-icons ic" aria-hidden="true">search</span>
       <input
         type="search"
+        [id]="id()"
+        [name]="id()"
         [placeholder]="placeholder()"
         [ngModel]="value()"
         (ngModelChange)="khiGo($event)"
         [attr.aria-label]="placeholder()"
       />
       @if (value()) {
-        <button class="xoa" type="button" (click)="xoa()" aria-label="Xoá tìm kiếm">✕</button>
+        <button class="xoa" type="button" (click)="xoa()" aria-label="Xoá tìm kiếm">
+          <span class="material-icons" aria-hidden="true">close</span>
+        </button>
       }
     </div>
   `,
@@ -30,11 +34,11 @@ import { FormsModule } from '@angular/forms';
     .o-tim {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       background: var(--color-surface);
       border: 1.5px solid var(--color-border);
       border-radius: var(--radius);
-      padding: 0 11px;
+      padding: 0 12px;
       transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
     }
 
@@ -43,10 +47,14 @@ import { FormsModule } from '@angular/forms';
       box-shadow: 0 0 0 3px var(--color-primary-soft);
     }
 
+    /* Icon phải cùng cỡ với chữ trong ô, không phải icon 14px như nút phụ —
+       icon nhỏ hơn chữ trông như bị lỗi font. */
     .ic {
       color: var(--color-ink-subtle);
-      font-size: 14px;
+      font-size: 20px;
+      line-height: 1;
       flex: none;
+      user-select: none;
     }
 
     input {
@@ -56,9 +64,9 @@ import { FormsModule } from '@angular/forms';
       outline: none;
       background: transparent;
       font-family: var(--font-body);
-      font-size: var(--text-small);
+      font-size: var(--text-body);
       color: var(--color-ink);
-      padding: 9px 0;
+      padding: 10px 0;
     }
 
     input::placeholder {
@@ -71,14 +79,20 @@ import { FormsModule } from '@angular/forms';
     }
 
     .xoa {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: none;
       background: transparent;
       color: var(--color-ink-subtle);
       cursor: pointer;
-      font-size: 11px;
-      padding: 3px;
-      border-radius: 4px;
+      padding: 2px;
+      border-radius: var(--radius-sm);
       flex: none;
+    }
+
+    .xoa .material-icons {
+      font-size: 18px;
     }
 
     .xoa:hover {
@@ -88,6 +102,8 @@ import { FormsModule } from '@angular/forms';
   `,
 })
 export class SearchInput {
+  /** Mặc định `q` — đúng tên tham số tìm kiếm của mọi endpoint danh sách (§1.6). */
+  readonly id = input('q');
   readonly placeholder = input('Tìm kiếm…');
   readonly value = input('');
   readonly debounceMs = input(300);

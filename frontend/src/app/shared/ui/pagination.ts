@@ -19,9 +19,13 @@ import { Component, computed, input, output } from '@angular/core';
       <div class="ben-phai">
         <label class="co-chu">
           Số dòng
-          <select [value]="perPage()" (change)="doiCoTrang($event)">
+          <!-- Chọn theo từng option bằng "selected", không đặt "value" trên
+               thẻ select: option được render bằng @for nên khi input perPage
+               đổi, thẻ select chưa có option khớp để nhận giá trị, và trình
+               duyệt rơi về option đầu tiên (10). -->
+          <select id="so-dong" name="per_page" (change)="doiCoTrang($event)">
             @for (n of coTrang(); track n) {
-              <option [value]="n">{{ n }}</option>
+              <option [value]="n" [selected]="n === perPage()">{{ n }}</option>
             }
           </select>
         </label>
@@ -56,6 +60,18 @@ import { Component, computed, input, output } from '@angular/core';
       border-top: 1px solid var(--color-border);
       font-size: var(--text-small);
       color: var(--color-ink-muted);
+    }
+
+    @media (max-width: 640px) {
+      .phan-trang {
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .tom-tat {
+        width: 100%;
+        text-align: center;
+      }
     }
 
     .ben-phai {

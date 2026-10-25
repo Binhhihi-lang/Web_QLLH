@@ -11,31 +11,31 @@ src/app/
   core/
     auth/            auth.service.ts, auth.interceptor.ts, role.guard.ts, must-change-password.guard.ts
     models/          *.model.ts  (sinh từ openapi.yaml)
-    services/        api.service.ts, sinh-vien.service.ts, ...
-    layout/          main-layout.component.ts, sidebar, header
+    services/        sinh-vien.service.ts, dashboard.service.ts, ...
+    layout/          main-layout.ts, sidebar.ts, header.ts, footer.ts
+    mock/            mock.interceptor.ts, mock-registry.ts, mock-response.ts,
+                     registry/{dao-tao,hoc-vu}.registry.ts, data/{dao-tao,hoc-vu,dashboard}.mock.ts
   shared/
-    components/      data-table, pagination, confirm-dialog, page-header, empty-state,
-                     status-badge, search-input, form-field, loading
-    pipes/
-    directives/
+    ui/              13 component dùng lại + 1 trang giữ chỗ:
+                     app-button, app-card, app-alert, status-badge, empty-state,
+                     loading (skeleton + spinner), page-header, search-input,
+                     pagination, data-table, form-field, confirm-dialog,
+                     date-input, dang-xay-dung
+    pipes/           ngay-vn.pipe.ts
   features/
     auth/            login, change-password
     dashboard/       admin, teacher, student
-    sinh-vien/       list, form, detail
-    giang-vien/      list, form, detail
-    lop-hanh-chinh/  list, form, detail
-    mon-hoc/         list, form
-    hoc-ky/          list, form
-    phong-hoc/       list, form
-    lop-hoc-phan/    list, form, detail, students, grades
-    dang-ky/         admin-enroll, my-enrollments, section-register
-    lich-hoc/        schedule-view, session-form, generate-form
-    diem-danh/       attendance-list, attendance-form, summary
-    diem/            grade-entry, my-grades, grade-history
-    thung-rac/       trash-list
-    menu/            list, form
-    cau-hinh/        settings
+    dao-tao/         sinh-vien, giang-vien, lop-hanh-chinh, mon-hoc, hoc-ky, phong-hoc
+    hoc-vu/          lop-hoc-phan, dang-ky, lich-hoc, diem-danh, diem
+    style-guide/     trang xem token + component
+  routes/            dao-tao.routes.ts, hoc-vu.routes.ts + file menu cùng tên
 ```
+
+> **Vì sao `shared/ui/` chứ không phải `shared/components/`:** thư mục `ui` gom
+> mọi thứ hiển thị dùng lại được (nút, bảng, ô nhập, badge…); `pipes` và
+> `directives` để riêng vì không phải component. Hai dự án trước dùng
+> `shared/components/`, nhưng ở đây đã chốt `shared/ui/` từ Tuần 2 và toàn bộ
+> import đang trỏ vào đó (`@shared/ui/*`).
 
 **Quy ước bắt buộc** (theo 2 dự án trước):
 - Component `standalone: true`.
@@ -47,6 +47,19 @@ src/app/
 ---
 
 ## 2. Điều hướng cấp cao
+
+**Bốn nhóm menu trên sidebar:**
+
+| Nhóm hiển thị | Tên trong code | Nội dung |
+|---|---|---|
+| Tổng quan | — | Dashboard |
+| **Đào tạo** | `dao-tao` | Sinh viên, Giảng viên, Lớp hành chính, Môn học, Học kỳ, Phòng học |
+| Học vụ | `hoc-vu` | Lớp học phần, Đăng ký, Lịch học, Điểm danh, Điểm |
+| Hệ thống | — | Người dùng, Menu, Cấu hình, Nhật ký, Thùng rác |
+
+> Nhóm thứ hai tên là **"Đào tạo"** ở mọi nơi: nhãn sidebar, tên thư mục
+> (`features/dao-tao/`), tên file (`routes/dao-tao.routes.ts`), và cột `nhom`
+> trong bảng `menus`.
 
 ```
 /                     → redirect theo vai trò
@@ -100,11 +113,19 @@ src/app/
 
 | Mã | Màn hình | Route | Ghi chú |
 |---|---|---|---|
-| SCR-10 | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên, lớp, giới tính, ngày sinh, email, SĐT, trạng thái, thao tác. Bộ lọc: tìm kiếm, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột. Phân trang. **Chọn nhiều dòng → thanh hành động: Kích hoạt / Khóa / Xóa** (FR-02.05b, FR-02.07) |
-| SCR-11 | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form; sau khi tạo hiện dialog chứa `mat_khau_ban_dau` + nút copy |
-| SCR-12 | Chi tiết sinh viên | `/sinh-vien/:id` | Thông tin cá nhân, lớp hành chính, danh sách học phần đã đăng ký, điểm, chuyên cần (tab) |
+| SCR-10 ✅ | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên (+email phụ), lớp, giới tính, ngày sinh, trạng thái, thao tác. Bộ lọc: tìm kiếm, khóa, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột. Phân trang. **Chọn nhiều dòng → thanh hành động: Kích hoạt / Khóa / Xóa** (FR-02.05b, FR-02.07). Xong với mock. |
+| SCR-11 | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form; sau khi tạo hiện dialog chứa `mat_khau_ban_dau` + nút copy. Hiện là trang giữ chỗ. |
+| SCR-12 ✅ | Chi tiết sinh viên | `/sinh-vien/:id` | Ngăn kéo mở từ danh sách, không chuyển trang (giữ vị trí cuộn và bộ lọc). Tải lại theo `id`. Xong với mock. |
 
 > TEACHER thấy bộ cột giới hạn (FR-02.03) và không thấy nút thêm/sửa/xóa.
+
+**Quy ước cột "Lớp" ở mọi màn danh sách:** hiện **mã lớp** (`CNTT-K65-01`), không
+hiện tên đầy đủ (`Công nghệ thông tin K65 - Lớp 01`). Tên đầy đủ dài gấp ba mã,
+làm bảng tràn ngang trên máy hẹp; vẫn tra được qua tooltip và ở ngăn kéo chi tiết.
+
+**Quy ước thao tác hàng loạt:** luôn hỏi xác nhận kèm số lượng; sau khi xong hiện
+khối kết quả `thanh_cong / that_bai` **kèm danh sách dòng lỗi và lý do từng dòng**,
+giữ lại các dòng lỗi trong trạng thái đã chọn để người dùng xử lý tiếp.
 
 ### 3.4. Giảng viên
 
@@ -264,9 +285,26 @@ Mỗi form phải có: validate client, hiển thị lỗi 422 theo trường, c
 
 ## 7. Lộ trình dựng FE
 
-1. **Tuần 2:** core (auth service, interceptor, guard), layout, shared components.
-2. **Tuần 3–4:** auth, sinh viên, giảng viên, lớp hành chính, danh mục.
+1. **Tuần 2 ✅:** core (models, services, mock layer), layout, shared components (14 component `shared/ui`).
+2. **Tuần 3–4:** auth, sinh viên, giảng viên, lớp hành chính, môn học, học kỳ, phòng học.
 3. **Tuần 5–6:** lớp học phần, lịch học.
 4. **Tuần 7–8:** điểm danh, điểm.
 5. **Tuần 9:** đăng ký sinh viên, dashboard, thùng rác.
 6. **Tuần 10:** hoàn thiện UI, responsive, kiểm thử.
+
+---
+
+## 8. Quy ước khi viết màn hình mới
+
+Rút ra từ màn SCR-10 — áp dụng cho ~43 màn còn lại để không phải sửa lại về sau.
+
+| Quy ước | Lý do |
+|---|---|
+| Chép `features/dao-tao/sinh-vien/danh-sach.ts` rồi đổi cột + bộ lọc | Bảng, phân trang, tìm kiếm, 4 trạng thái đã nằm trong `shared/ui`, không viết lại |
+| State: một `signal` cho tham số truy vấn, một cho kết quả; đổi tham số thì gọi lại API | Lọc/sắp xếp phía client sẽ sai khi phân trang — backend phải tính trên toàn bộ dữ liệu |
+| Tách "bộ lọc đang chọn" khỏi "bộ lọc đã áp dụng" khi có khoảng ngày | Áp dụng ngay giữa hai lần chọn ngày sẽ ra kết quả của một nửa bộ lọc |
+| Ô `<select>` có option render bằng `@for` phải chọn bằng `[selected]` trên từng option, **không** `[value]` trên thẻ select | Trình duyệt chưa có option khớp thì rơi về option đầu — lỗi âm thầm, có test hồi quy ở `design-system.spec.ts` |
+| Popup/ngăn kéo đóng bằng **cả ba cách**: bấm ra ngoài, Escape, và nút đóng | `@HostListener('document:keydown.escape')` + focus vào hộp thoại; gắn `(keydown.escape)` lên div không focus được sẽ không bao giờ chạy |
+| Icon dùng Material Icons, **không** ký tự Unicode | `⚠ ✕ ▤ ↕ ◍ ⌕` render khác nhau theo font từng máy, có máy ra ô vuông rỗng |
+| Cột chứa mã (lớp, môn, khoá) hiện mã, tên đầy đủ để trong tooltip | Mã ngắn và ổn định; tên đầy đủ làm bảng tràn ngang trên mobile |
+| Không có comment chứa dấu `` ` `` bên trong template literal hoặc `styles` | Chuỗi `` ` `` đóng template sớm, gây lỗi cú pháp khó tìm |

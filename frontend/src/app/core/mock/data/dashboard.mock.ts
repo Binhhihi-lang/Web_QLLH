@@ -9,7 +9,8 @@
 export interface TheSoLieu {
   /** Khoá định danh — dùng để gắn icon và màu, không hiển thị. */
   khoa: string;
-  nhan: string;
+  /** Nhãn hiển thị. Tên trường là `label`, khớp hợp đồng API. */
+  label: string;
   gia_tri: number;
   don_vi: string | null;
   /** Mô tả phụ dưới con số, ví dụ "12 trong học kỳ này". */
@@ -59,7 +60,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
   the_so_lieu: [
     {
       khoa: 'sinh_vien',
-      nhan: 'Tổng sinh viên',
+      label: 'Tổng sinh viên',
       gia_tri: 501,
       don_vi: null,
       phu_chu: '12 sinh viên mới trong học kỳ này',
@@ -67,7 +68,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
     },
     {
       khoa: 'lop_hoc_phan',
-      nhan: 'Lớp học phần đang mở',
+      label: 'Lớp học phần đang mở',
       gia_tri: 34,
       don_vi: null,
       phu_chu: '6 lớp đã đầy sĩ số',
@@ -75,7 +76,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
     },
     {
       khoa: 'dang_ky',
-      nhan: 'Lượt đăng ký học phần',
+      label: 'Lượt đăng ký học phần',
       gia_tri: 7028,
       don_vi: null,
       phu_chu: 'Trung bình 14.0 lớp mỗi sinh viên',
@@ -83,7 +84,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
     },
     {
       khoa: 'cho_dang_ky',
-      nhan: 'Chỗ còn trống',
+      label: 'Chỗ còn trống',
       gia_tri: 214,
       don_vi: 'chỗ',
       phu_chu: 'Chiếm 14.2% tổng sức chứa',
@@ -158,7 +159,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       ho_ten: 'Nguyễn Văn An',
       ma_lop_hp: 'INT2215-HK2-2025-31',
       ten_mon_hoc: 'Lập trình web',
-      thoi_gian: '5 phút trước',
+      thoi_gian: '2026-10-24 09:15:00',
       trang_thai: 'THANH_CONG',
     },
     {
@@ -167,7 +168,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       ho_ten: 'Trần Thị Ngọc Anh',
       ma_lop_hp: 'INT2204-HK2-2025-32',
       ten_mon_hoc: 'Cơ sở dữ liệu',
-      thoi_gian: '12 phút trước',
+      thoi_gian: '2026-10-24 09:08:00',
       trang_thai: 'THANH_CONG',
     },
     {
@@ -176,7 +177,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       ho_ten: 'Lê Minh Cường',
       ma_lop_hp: 'INT3401-HK2-2025-33',
       ten_mon_hoc: 'Trí tuệ nhân tạo',
-      thoi_gian: '28 phút trước',
+      thoi_gian: '2026-10-24 08:52:00',
       trang_thai: 'THANH_CONG',
     },
     {
@@ -185,7 +186,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       ho_ten: 'Phạm Thu Hà',
       ma_lop_hp: 'INT2203-HK2-2025-34',
       ten_mon_hoc: 'Lập trình hướng đối tượng',
-      thoi_gian: '45 phút trước',
+      thoi_gian: '2026-10-24 08:35:00',
       trang_thai: 'DA_HUY',
     },
     {
@@ -194,7 +195,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       ho_ten: 'Hoàng Đức Long',
       ma_lop_hp: 'MAT1093-HK2-2025-35',
       ten_mon_hoc: 'Đại số tuyến tính',
-      thoi_gian: '1 giờ trước',
+      thoi_gian: '2026-10-24 08:20:00',
       trang_thai: 'THANH_CONG',
     },
     {
@@ -203,7 +204,7 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       ho_ten: 'Vũ Thảo Mai',
       ma_lop_hp: 'INT2215-HK2-2025-31',
       ten_mon_hoc: 'Lập trình web',
-      thoi_gian: '2 giờ trước',
+      thoi_gian: '2026-10-24 07:40:00',
       trang_thai: 'THANH_CONG',
     },
   ],

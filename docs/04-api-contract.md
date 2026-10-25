@@ -79,24 +79,30 @@ Lỗi validation (422):
 |---|---|
 | 200 | Lấy, cập nhật, hành động thành công |
 | 201 | Tạo mới thành công |
-| 204 | Xóa thành công (không trả body) |
+| 204 | Không dùng — mọi response đều có envelope, kể cả thao tác xóa (trả 200, `data = null`) |
 | 401 | Chưa đăng nhập / token hết hạn |
 | 403 | Không có quyền, tài khoản bị khóa, chưa đổi mật khẩu lần đầu |
 | 404 | Không tìm thấy |
 | 409 | Xung đột nghiệp vụ (trùng lịch, hết chỗ, đã chốt điểm, học kỳ đóng, chặn xóa) |
 | 422 | Dữ liệu không hợp lệ |
 | 429 | Quá giới hạn đăng nhập |
+| 502 | Dịch vụ ngoài (Cloudinary) từ chối hoặc không phản hồi |
+| 503 | Dịch vụ ngoài chưa được cấu hình |
 
 ### 1.5. Bảng mã lỗi nghiệp vụ (`ma_loi`)
 
 | Mã | HTTP | Ý nghĩa |
 |---|---|---|
 | `AUTH_INVALID` | 401 | Sai email hoặc mật khẩu |
+| `UNAUTHENTICATED` | 401 | Chưa đăng nhập, token sai hoặc đã hết hạn |
 | `ACCOUNT_LOCKED` | 403 | Tài khoản bị khóa |
 | `MUST_CHANGE_PASSWORD` | 403 | Phải đổi mật khẩu trước khi dùng chức năng khác |
 | `FORBIDDEN` | 403 | Không có quyền |
 | `NOT_FOUND` | 404 | Không tìm thấy |
 | `VALIDATION_ERROR` | 422 | Lỗi validate theo trường |
+| `TOO_MANY_REQUESTS` | 429 | Quá giới hạn đăng nhập (5 lần/phút) |
+| `UPLOAD_FAILED` | 502 | Cloudinary từ chối hoặc không phản hồi |
+| `UPLOAD_NOT_CONFIGURED` | 503 | Máy chủ thiếu `CLOUDINARY_NAME` / `API_KEY` / `API_SECRET` |
 | `DUPLICATE_CODE` | 422 | Mã đã tồn tại (kể cả bản ghi đã xóa) |
 | `DUPLICATE_EMAIL` | 422 | Email đã tồn tại trên toàn hệ thống |
 | `SEMESTER_CLOSED` | 409 | Học kỳ đã đóng, chỉ đọc |
@@ -115,10 +121,11 @@ Lỗi validation (422):
 | `RESTORE_PARENT_DELETED` | 409 | Bản ghi cha đã bị xóa |
 | `ATTENDANCE_EDIT_EXPIRED` | 409 | Quá hạn sửa điểm danh |
 | `WRONG_STUDY_YEAR` | 409 | Lớp dành cho năm thứ khác với năm thứ hiện tại của sinh viên |
+| `SUBJECT_CHANGE_BLOCKED` | 409 | Không đổi môn của lớp đã có đăng ký ACTIVE (FR-08.03) |
+| `SEMESTER_CHANGE_BLOCKED` | 409 | Không đổi học kỳ của lớp đã có đăng ký ACTIVE (FR-08.03) |
 | `SEMESTER_TRANSITION_INVALID` | 409 | Chuyển trạng thái học kỳ không hợp lệ (chỉ tiến, một kỳ ONGOING) |
 | `SEMESTER_OVERLAP` | 409 | Khoảng ngày chồng lấn với học kỳ khác |
 | `SESSION_OUTSIDE_SEMESTER` | 409 | Ngày buổi học nằm ngoài khoảng ngày của học kỳ |
-| `SUBJECT_CHANGE_BLOCKED` | 409 | Không đổi được môn/học kỳ vì lớp đã có đăng ký |
 | `UPLOAD_NOT_CONFIGURED` | 503 | Chưa cấu hình Cloudinary trên máy chủ |
 | `UPLOAD_FAILED` | 502 | Upload ảnh lên Cloudinary thất bại |
 
@@ -191,7 +198,9 @@ Response 200:
       "id": 1,
       "name": "Quản trị viên",
       "email": "admin@example.com",
+      "avatar_url": null,
       "vai_tro": "ADMIN",
+      "trang_thai": true,
       "must_change_password": false,
       "ho_so": null
     }
@@ -202,16 +211,21 @@ Response 200:
 Lỗi: 401 `AUTH_INVALID`, 403 `ACCOUNT_LOCKED`, 429.
 
 ### `POST /api/auth/logout`
-Thu hồi token hiện tại. 204.
+Thu hồi token hiện tại. Trả **200** kèm envelope (`data = null`) — không dùng 204 vì envelope thống nhất
+luôn có body.
 
 ### `GET /api/auth/me`
-Trả thông tin user + hồ sơ (sinh viên/giảng viên) + danh sách quyền.
+Trả thông tin user + hồ sơ (sinh viên/giảng viên). Quyền **không** trả trong response — client suy ra từ
+`vai_tro` và ẩn/hiện giao diện; server luôn kiểm tra lại bằng Policy.
 
 ### `POST /api/auth/change-password`
 ```json
 { "mat_khau_cu": "password", "password": "matkhaumoi", "password_confirmation": "matkhaumoi" }
 ```
-200. Đặt `must_change_password = false`, thu hồi các token khác.
+200. Đặt `must_change_password = false`, giữ token hiện tại và thu hồi **các token khác**.
+
+Sai `mat_khau_cu` → 422 `VALIDATION_ERROR` với `errors.mat_khau_cu` (không dùng mã riêng, để giao diện hiển thị
+lỗi ngay dưới ô nhập như các lỗi validate khác).
 
 ### `PUT /api/me`
 Sửa hồ sơ cá nhân.
@@ -294,7 +308,7 @@ Response tạo mới (201) — **chỉ lần này** có mật khẩu:
 
 | Method | Endpoint | Quyền | Ghi chú |
 |---|---|---|---|
-| GET | `/api/students` | ADMIN, TEACHER (giới hạn) | Lọc `q`, `lop_hanh_chinh_id`, `gioi_tinh`, `trang_thai`, `ngay_sinh_tu`, `ngay_sinh_den` |
+| GET | `/api/students` | ADMIN, TEACHER (giới hạn) | Lọc `q`, `lop_hanh_chinh_id`, `khoa_hoc`, `gioi_tinh`, `trang_thai`, `ngay_sinh_tu`, `ngay_sinh_den` |
 | POST | `/api/students` | ADMIN | Tạo kèm tài khoản, trả `mat_khau_ban_dau` một lần |
 | GET | `/api/students/{id}` | ADMIN, TEACHER (nếu thuộc lớp mình), STUDENT (bản thân) | |
 | PUT | `/api/students/{id}` | ADMIN | |
@@ -681,18 +695,47 @@ Response:
 | GET | `/api/dashboard/teacher` | TEACHER |
 | GET | `/api/dashboard/student` | STUDENT |
 
-Dashboard ADMIN:
+Dashboard ADMIN (`GET /api/dashboard/admin`) — đủ dữ liệu cho SCR-03:
+
 ```json
 {
-  "so_sinh_vien": 500,
-  "so_giang_vien": 50,
-  "so_mon_hoc": 30,
-  "hoc_ky_hien_tai": { "id": 1, "ma_hoc_ky": "2026-1", "ten_hoc_ky": "Học kỳ 1 2026-2027" },
-  "so_lop_hoc_phan": 80,
-  "ty_le_lap_day": 0.72,
-  "so_dang_ky": 3200
+  "the_so_lieu": [
+    { "khoa": "sinh_vien", "label": "Tổng sinh viên", "gia_tri": 501, "don_vi": null,
+      "phu_chu": "12 sinh viên mới trong học kỳ này", "xu_huong": "len" },
+    { "khoa": "lop_hoc_phan", "label": "Lớp học phần đang mở", "gia_tri": 34, "don_vi": null,
+      "phu_chu": "6 lớp đã đầy sĩ số", "xu_huong": "len" },
+    { "khoa": "dang_ky", "label": "Lượt đăng ký học phần", "gia_tri": 7028, "don_vi": null,
+      "phu_chu": "Trung bình 14.0 lớp mỗi sinh viên", "xu_huong": "len" },
+    { "khoa": "cho_dang_ky", "label": "Chỗ còn trống", "gia_tri": 214, "don_vi": "chỗ",
+      "phu_chu": "Chiếm 14.2% tổng sức chứa", "xu_huong": "xuong" }
+  ],
+  "ty_le_lap_day": [
+    { "hoc_ky": "HK1 2025-2026", "tong_cho": 1310, "da_dang_ky": 1124 }
+  ],
+  "lop_sap_mo": [
+    { "id": 31, "ma_lop_hp": "INT2215-2026-1-31", "ten_mon_hoc": "Lập trình web",
+      "ten_giang_vien": "Nguyễn Văn An", "si_so": "38/45", "ty_le": 84,
+      "trang_thai": "OPEN", "nam_thu": 4 }
+  ],
+  "dang_ky_gan_day": [
+    { "id": 1, "ma_sv": "2100001", "ho_ten": "Nguyễn Văn An",
+      "ma_lop_hp": "INT2215-2026-1-31", "ten_mon_hoc": "Lập trình web",
+      "thoi_gian": "2026-10-24 09:15:00", "trang_thai": "THANH_CONG" }
+  ]
 }
 ```
+
+| Trường | Kiểu | Ghi chú |
+|---|---|---|
+| `the_so_lieu[].khoa` | string | `sinh_vien`, `lop_hoc_phan`, `dang_ky`, `cho_dang_ky` — FE dùng để gắn icon |
+| `the_so_lieu[].label` | string | Nhãn hiển thị. Dùng `label` chứ **không** phải `nhan` — cùng tên trường với `/api/options/*` |
+| `the_so_lieu[].xu_huong` | `len`/`xuong`/`bang` | So với học kỳ trước |
+| `ty_le_lap_day` | array | 4 học kỳ gần nhất, dùng vẽ biểu đồ cột |
+| `lop_sap_mo[].si_so` | string | Dạng `"38/45"` để hiển thị trực tiếp |
+| `lop_sap_mo[].ty_le` | int 0–100 | Độ dài thanh tiến trình |
+| `dang_ky_gan_day[].thoi_gian` | datetime | `YYYY-MM-DD HH:mm:ss`, không phải chuỗi tương đối |
+
+Dashboard TEACHER và STUDENT: bổ sung khi làm SCR-04/05 (Tuần 7).
 
 ---
 
@@ -740,7 +783,7 @@ Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi tr
 
 | Nhóm | Số endpoint |
 |---|---|
-| Auth & me | 14 |
+| Xác thực & hồ sơ | 7 |
 | Người dùng | 8 |
 | Sinh viên | 8 |
 | Giảng viên | 8 |
@@ -752,11 +795,11 @@ Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi tr
 | Buổi học & lịch | 8 |
 | Đăng ký | 7 |
 | Điểm | 6 |
-| Dashboard | 3 |
+| Điểm danh cá nhân & dashboard | 6 |
 | Thùng rác | 2 |
-| Menu & cấu hình | 7 |
+| Menu & cấu hình | 6 |
 | Options | 6 |
-| **Tổng** | **~118** |
+| **Tổng** | **113** |
 
 ---
 

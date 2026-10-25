@@ -1,7 +1,7 @@
 # 00 — Mục lục tài liệu dự án QLLH
 
 **Hệ thống quản lý lớp học** — Laravel REST API + Angular + MySQL
-Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-24
+Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-25
 
 ---
 
@@ -13,12 +13,14 @@ Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-24
 | [02-use-cases.md](02-use-cases.md) | Use case + tiêu chí chấp nhận | ✅ Đã chốt | Luồng nghiệp vụ, điều kiện biên |
 | [03-data-model.md](03-data-model.md) | ERD, bảng, cột, kiểu, index, ràng buộc | ✅ Đã chốt | Schema database, quy tắc xóa mềm |
 | [04-api-contract.md](04-api-contract.md) | Quy ước API + danh sách endpoint | ✅ Đã chốt | Hợp đồng FE ↔ BE |
-| [openapi.yaml](openapi.yaml) | Khung OpenAPI 3.1 (sinh model TS phía Angular) | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
-| [postman/](postman/) | Collection 19 request + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
-| [05-screens.md](05-screens.md) | Danh mục màn hình + điều hướng Angular | ✅ Đã chốt | Cấu trúc frontend |
+| [openapi.yaml](openapi.yaml) | Khung OpenAPI 3.1 — **41/113 path** đã đặc tả (auth, me/avatar, options, lô tuần 3–4) | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
+| [postman/](postman/) | Collection 21 request + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
+| [05-screens.md](05-screens.md) | Danh sách màn hình + điều hướng Angular | ✅ Đã chốt | Cấu trúc frontend |
 | [06-test-plan.md](06-test-plan.md) | Ma trận FR/BR → test case | ✅ Đã chốt | Kiểm thử |
 | [07-decisions.md](07-decisions.md) | Nhật ký quyết định kiến trúc (ADR) | ✅ Đã chốt | Lý do các lựa chọn |
 | [08-roadmap.md](08-roadmap.md) | Kế hoạch triển khai 10 tuần | ✅ Đã chốt | Thứ tự công việc |
+| [phan-cong-cong-viec.md](phan-cong-cong-viec.md) | Phân công nhóm 4 người + quy trình Git | ✅ Dùng được | Ai làm gì, ai sở hữu file nào |
+| [tong-quan-kien-truc.html](tong-quan-kien-truc.html) | Sơ đồ kiến trúc trực quan (mở bằng trình duyệt) | ✅ Dùng được | Thuyết trình, giới thiệu dự án |
 
 **Lưu trữ:** `archive/Functional_Requirements_Class_Management_v0.2.docx` là bản cũ, **không còn hiệu lực**. Chỉ dùng để tham chiếu lịch sử.
 

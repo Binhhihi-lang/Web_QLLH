@@ -19,8 +19,8 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | **Bàn giao** | `php artisan migrate:fresh --seed` chạy sạch; `GET /api/options/subjects` trả dữ liệu | | ✅ 17 test pass |
 
 **Kết quả thực tế Tuần 1:**
-- Schema: 16 bảng nghiệp vụ mới + 3 bảng hệ thống; bảng cũ `lop_hocs`/`sinh_viens`/`menus` đã xóa.
-- 13 model mới với quan hệ, scope và hằng enum.
+- Schema: 16 bảng nghiệp vụ + 3 bảng hệ thống; bảng cũ `lop_hocs`/`sinh_viens`/`menus` đã xóa.
+- 16 model, 16 factory, 12 seeder (số thật sau khi bổ sung v0.4 — bản ghi ban đầu là 13 model/13 factory).
 - Seeder sinh 555 users, 120 lớp học phần, 2.040 buổi, 7.028 đăng ký, 76.381 điểm danh, 2.999 điểm.
 - 6 endpoint `/api/options/*` hoạt động, envelope + `ma_loi` thống nhất cho mọi lỗi.
 - `docs/openapi.yaml` khung 3.1.0 với 6 endpoint options và 4 auth (auth là placeholder, làm ở Tuần 2).
@@ -35,12 +35,12 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Việc | Chi tiết | Trạng thái |
 |---|---|---|
 | Auth API | Login, logout, me, change-password, `must_change_password` middleware, rate limit | ✅ BE xong |
-| Policy khung | `LopHocPhanPolicy`, `SinhVienPolicy`, `DiemPolicy`, `DiemDanhPolicy` | ✅ BE xong |
-| FE core | Auth service, interceptor (gắn token, xử lý 401/403), guard (auth, role, must-change-password), **bộ chuyển chế độ xem vai trò cho ADMIN (SCR-52/53)** | ⬜ FE |
-| FE layout | Layout chính, sidebar từ `/api/menus`, header, breadcrumb | ⬜ FE |
-| FE shared | `data-table`, `pagination`, `search-input`, `confirm-dialog`, `status-badge`, `empty-state`, `form-field` | ⬜ FE |
-| Test | TC-01, TC-02, ma trận phân quyền khung | ✅ 16 case BE |
-| **Bàn giao** | Đăng nhập bằng 3 vai trò trên Angular; sidebar khác nhau; bắt đổi mật khẩu lần đầu | ⬜ chờ FE |
+| Policy khung | `LopHocPhanPolicy`, `SinhVienPolicy`, `DiemPolicy`, `DiemDanhPolicy` | ✅ BE xong (chưa endpoint nào gọi — chờ CRUD Tuần 3) |
+| FE core | Auth service, interceptor (gắn token, xử lý 401/403), guard (auth, role, must-change-password), **bộ chuyển chế độ xem vai trò cho ADMIN (SCR-52/53)** | ⬜ FE — dời sang Tuần 8 |
+| FE layout | Layout chính, sidebar, header, footer | ✅ FE xong (menu khai cứng, chưa đọc `/api/menus`) |
+| FE shared | `pagination`, `search-input`, `status-badge`, `empty-state`, `loading`, `page-header`, `app-button`, `app-card`, `app-alert` | ✅ 9/11 xong; còn `data-table`, `form-field` |
+| Test | TC-01, TC-02, ma trận phân quyền khung | ✅ 46 test BE (12 test MySQL thật) |
+| **Bàn giao** | Đăng nhập bằng 3 vai trò trên Angular; sidebar khác nhau; bắt đổi mật khẩu lần đầu | 🔶 một phần — layout + trang đăng nhập có, chưa nối API |
 
 **Kết quả BE Tuần 2 (2026-10-23):**
 - 4 endpoint auth: `POST /api/auth/login` (rate limit 5/phút), `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/change-password`.
@@ -49,13 +49,74 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 - 4 Policy khung + `Gate::before` cho ADMIN.
 - Toàn bộ `/api/options/*` giờ yêu cầu đăng nhập.
 - `config/sanctum.php`: `guard => []` (chỉ Bearer token, không fallback session), `expiration` 7 ngày.
-- Postman collection 19 request + hướng dẫn test tại `docs/postman/`.
-- Test: `XacThucTest` 16 case, tổng 34 test pass.
+- Postman collection 19 request + hướng dẫn test tại `docs/postman/` (sau bổ sung ảnh: 21 request).
+- Test: `XacThucTest` 16 case, tổng 34 test pass (sau bổ sung MySQL: 46).
 
 **Bổ sung BE (2026-10-24):**
 - `POST /api/me/avatar` + `DELETE /api/me/avatar` (FR-01.10/01.11) qua `CloudinaryService`, cột `users.avatar_url` + `avatar_public_id` (ADR-019). Thiếu cấu hình → 503.
 - Migration v0.4: `khoa_hoc`/`nganh`/`nam_nhap_hoc`, `hoc_ky.nam_hoc`/`ky_thu`, `lop_hoc_phan.nam_thu`.
 - Postman thêm 2 request ảnh (21 request).
+
+---
+
+## Trạng thái thực tế tại 2026-10-25 (sau đợt sửa chuẩn bị chia việc nhóm 4)
+
+Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng để biết tuần nào thực sự đã xong.
+
+| Hạng mục | Kế hoạch | Thực tế | Ghi chú |
+|---|---|---|---|
+| Schema + model + factory + seeder | Tuần 1 | ✅ xong | 16 bảng nghiệp vụ, 16 model, 16 factory, 12 seeder |
+| Envelope + mã lỗi + exception | Tuần 1 | ✅ xong | 9 mã lỗi đang dùng trong code |
+| Auth (4 endpoint) | Tuần 2 | ✅ xong | Có throttle, middleware đổi mật khẩu |
+| Ảnh đại diện (Cloudinary) | Tuần 2 | ✅ xong code | **Cần điền `CLOUDINARY_*` vào `.env` mới chạy thật** |
+| Options (6 endpoint) | Tuần 1 | ✅ xong | |
+| Policy | Tuần 2 | 🔶 khai báo xong, **chưa endpoint nào gọi** | Chờ CRUD Tuần 3 |
+| Design system + layout FE | Tuần 2 | ✅ xong | 14 component `shared/ui`, `/style-guide`, dark mode |
+| Mock layer | Tuần 2 | ✅ xong | Cờ `useMock: true` đang bật |
+| Auth phía client (AuthService, guard) | Tuần 2 | ⬜ chưa | Dời sang Tuần 8 |
+| CRUD nghiệp vụ + bulk | Tuần 3–9 | ⬜ chưa | Toàn bộ còn lại |
+| Màn hình FE | Tuần 3–9 | 🔶 4/47 | Đăng nhập, dashboard ADMIN, style-guide, danh sách sinh viên (SCR-10) |
+| `openapi.yaml` | Tuần 1 → dần | 🔶 41/113 path | Đã có lô tuần 3–4 (đào tạo + menus + settings) |
+
+**Tổng endpoint:** 11 chạy thật / 113 trong hợp đồng (`04-api-contract.md` mục 18). `openapi.yaml` đã đặc tả 41 path (lô tuần 3–4), phần còn lại sinh dần mỗi thứ Sáu.
+
+**Đợt sửa 2026-10-25 — chuẩn bị chia việc cho nhóm 4:**
+
+| Việc | Kết quả |
+|---|---|
+| Đổi tên nhóm "danh mục" → "đào tạo" toàn bộ | `dao-tao.model.ts`, `dao-tao.mock.ts`, `features/dao-tao/`, `routes/dao-tao.*`, `registry/dao-tao.registry.ts`. Không còn chữ "danh mục" trong `docs/` lẫn code. |
+| Dựng 2 component dùng chung còn thiếu | `shared/ui/data-table.ts` (sắp xếp, chọn nhiều dòng, 4 trạng thái), `shared/ui/form-field.ts` |
+| Thêm component phụ trợ | `shared/ui/confirm-dialog.ts`, `date-input.ts`, `dang-xay-dung.ts`, `shared/pipes/ngay-vn.pipe.ts` |
+| Màn SCR-10 danh sách sinh viên | `features/dao-tao/sinh-vien/danh-sach.ts` — khuôn mẫu cho ~40 màn còn lại, kèm ngăn kéo chi tiết SCR-12 |
+| Thao tác hàng loạt | Nối thật `PATCH /students/bulk-status` + `POST /students/bulk-delete` (BR-31), hiện kết quả từng dòng lỗi |
+| Trang giữ chỗ cho màn chưa làm | `DangXayDung` + khai route cho cả 14 mục sidebar, để bấm vào không rơi về dashboard |
+| Sửa lỗi Escape không đóng popup | `confirm-dialog`, ngăn kéo chi tiết dùng `@HostListener('document:keydown.escape')` + focus vào hộp thoại |
+| Bỏ icon Unicode | `⚠`, `✕`, `▤`, `↕`, `↑↓`, `◍`, `⌕` → Material Icons |
+| Tách mock theo nhóm | `hoc-vu.mock.ts` riêng, Đạt không còn sửa file của Đức Anh |
+| Sửa lỗi ô "Số dòng" phân trang | `[value]` trên `<select>` không khớp option render bằng `@for` → chọn bằng `[selected]`; có test hồi quy |
+
+**Test FE:** 49/49 pass (`registry-probe.spec.ts` 18, `shared-components.spec.ts` 14, `design-system.spec.ts` 15, `app.spec.ts` 2).
+
+**Đã đồng bộ FE với hợp đồng (2026-10-24, nhánh `develop`):**
+
+| Điểm lệch cũ | Đã sửa thành |
+|---|---|
+| Mock dùng `/sinh-vien`, `/giang-vien`, `/lop-hanh-chinh`, `/mon-hoc`, `/hoc-ky`, `/lop-hoc-phan` | `/students`, `/teachers`, `/admin-classes`, `/subjects`, `/semesters`, `/sections` |
+| Options dùng `/options/lop-hanh-chinh`, `/options/mon-hoc`, `/options/hoc-ky`, `/options/giang-vien` | `/options/admin-classes`, `/options/subjects`, `/options/semesters`, `/options/teachers` |
+| Options trả trường `nhan` | `label` (khớp `OptionController` và hợp đồng §17) |
+| Tìm kiếm dùng `keyword`, sắp xếp dùng `sort`/`order` | `q`, `sort_by`/`sort_dir` (hợp đồng §1.6) |
+| `per_page` nhận mọi số | chỉ nhận 10/25/50/100, giá trị khác rơi về 10 |
+| Lọc so sánh chuỗi nên `?trang_thai=false` không khớp boolean | so sánh đúng kiểu boolean/số |
+| `sinh_vien` trả `lop_hanh_chinh_id` + `lop_hanh_chinh_ten` phẳng | object lồng `lop_hanh_chinh: {id, ma_lop, ten_lop}` |
+| Thiếu `da_xoa`, `chot_diem_luc` | đã thêm vào model và mock |
+| Dashboard dùng `nhan`, `thoi_gian` là chuỗi tương đối ("5 phút trước") | `label`, datetime `YYYY-MM-DD HH:mm:ss` |
+
+Có 10 test trong `core/mock/registry-probe.spec.ts` khoá các quy ước trên —
+lệch lại sẽ fail ngay chứ không đợi đến ngày tắt mock.
+
+**Tách file để hai bạn FE làm song song:** xem `01-requirements.md` §8.3.
+Route và menu tách theo nhóm (`routes/dao-tao.*`, `routes/hoc-vu.*`), mock
+registry tách theo nhóm (`core/mock/registry/*`).
 
 ---
 
@@ -72,15 +133,15 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 
 ---
 
-## Tuần 4 — Danh mục còn lại
+## Tuần 4 — Đào tạo còn lại
 
 | Việc | Chi tiết |
 |---|---|
 | API | CRUD `subjects`, `semesters`, `rooms`, `menus`, `settings`; endpoint `/options/*` |
 | Nghiệp vụ | Chặn xóa học kỳ không phải UPCOMING (BR-24); vòng đời trạng thái chỉ tiến; chặn chồng lấn kỳ (BR-25); chặn xóa phòng còn buổi; menu theo vai trò |
 | FE | SCR-19 → SCR-24, SCR-47 → SCR-51 |
-| Test | TC-05 (phần danh mục), TC-18, TC-19, BR-15, BR-19 |
-| **Bàn giao** | Đủ danh mục để mở lớp học phần |
+| Test | TC-05 (phần đào tạo), TC-18, TC-19, BR-15, BR-19 |
+| **Bàn giao** | Đủ dữ liệu đào tạo để mở lớp học phần |
 
 ---
 
@@ -161,7 +222,7 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 | Mốc | Điều kiện đạt |
 |---|---|
 | Cuối tuần 2 | Đăng nhập 3 vai trò + phân quyền server hoạt động |
-| Cuối tuần 4 | Toàn bộ danh mục CRUD được |
+| Cuối tuần 4 | Toàn bộ nhóm đào tạo CRUD được |
 | Cuối tuần 6 | Sinh lịch phát hiện đủ 3 loại trùng |
 | Cuối tuần 7 | Đăng ký có kiểm tra sĩ số và trùng lịch |
 | Cuối tuần 9 | Luồng end-to-end hoàn chỉnh |

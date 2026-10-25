@@ -118,7 +118,7 @@ Mỗi use case ánh xạ 1-1 tới FR trong [01-requirements.md](01-requirements
                     (7) Mở đợt đăng ký  →  (8) Sinh viên đăng ký
 ```
 
-Các bước (1)–(4) là **danh mục dùng chung**, làm một lần và tái sử dụng nhiều học kỳ. Chỉ (5)–(8) lặp lại mỗi kỳ.
+Các bước (1)–(4) là **dữ liệu đào tạo dùng chung**, làm một lần và tái sử dụng nhiều học kỳ. Chỉ (5)–(8) lặp lại mỗi kỳ.
 
 ### Chi tiết từng bước
 

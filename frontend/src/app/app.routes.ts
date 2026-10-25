@@ -1,6 +1,15 @@
 import { Routes } from '@angular/router';
 import { MainLayout } from '@core/layout/main-layout';
+import { daoTaoRoutes } from './routes/dao-tao.routes';
+import { hocVuRoutes } from './routes/hoc-vu.routes';
 
+/**
+ * Route gốc — chỉ gộp route của hai nhóm, không khai màn hình cụ thể.
+ *
+ * Vì sao: hai bạn FE làm song song. Nếu mỗi màn khai ở đây thì mỗi lần thêm
+ * màn là một lần conflict. Màn đào tạo khai ở `routes/dao-tao.routes.ts`
+ * (Đức Anh), màn học vụ ở `routes/hoc-vu.routes.ts` (Đạt).
+ */
 export const routes: Routes = [
   {
     path: '',
@@ -32,6 +41,10 @@ export const routes: Routes = [
         loadComponent: () =>
           import('@features/style-guide/style-guide').then((m) => m.StyleGuide),
       },
+
+      // Nhóm đào tạo (Đức Anh) và nhóm học vụ (Đạt) — mỗi nhóm một file.
+      ...daoTaoRoutes,
+      ...hocVuRoutes,
     ],
   },
 

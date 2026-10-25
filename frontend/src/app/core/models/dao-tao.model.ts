@@ -1,11 +1,13 @@
 /**
- * Model sinh theo docs/openapi.yaml — tên field tiếng Việt không dấu (ADR-002).
+ * Model sinh theo docs/04-api-contract.md — tên field tiếng Việt không dấu (ADR-002).
  * Không đổi tên field cho "đẹp": Backend trả đúng những tên này.
  *
  * Quy ước giá trị:
- * - `trang_thai` của bản ghi danh mục là BOOLEAN (true = đang hoạt động),
+ * - `trang_thai` của bản ghi đào tạo là BOOLEAN (true = đang hoạt động),
  *   khớp cột `boolean` trong DB. Chỉ `lop_hoc_phan.trang_thai` và
  *   `dang_ky_hoc_phan.trang_thai` mới dùng chuỗi enum.
+ * - Đường dẫn API dùng tiếng Anh (`/api/students`), trường JSON dùng tiếng Việt.
+ *   Hai quy ước này độc lập — xem docs/04-api-contract.md.
  */
 
 export type VaiTro = 'ADMIN' | 'GIANG_VIEN' | 'SINH_VIEN';
@@ -46,10 +48,17 @@ export interface SinhVien {
   email: string;
   so_dien_thoai: string | null;
   dia_chi: string | null;
-  lop_hanh_chinh_id: number | null;
-  lop_hanh_chinh_ten: string | null;
   trang_thai: boolean;
+  /** Object lồng theo hợp đồng API, không phải cột phẳng. */
+  lop_hanh_chinh: LopHanhChinhRutGon | null;
   avatar_url: string | null;
+  da_xoa: boolean;
+}
+
+export interface LopHanhChinhRutGon {
+  id: number;
+  ma_lop: string;
+  ten_lop: string;
 }
 
 export interface LopHanhChinh {
@@ -63,6 +72,7 @@ export interface LopHanhChinh {
   nam_nhap_hoc: number | null;
   si_so: number;
   trang_thai: boolean;
+  da_xoa: boolean;
 }
 
 export type TrangThaiLopHocPhan = 'OPEN' | 'CLOSED' | 'CANCELLED';
@@ -79,6 +89,8 @@ export interface LopHocPhan {
   nam_thu: number | null;
   trang_thai: TrangThaiLopHocPhan;
   da_chot_diem: boolean;
+  chot_diem_luc: string | null;
+  da_xoa: boolean;
 }
 
 export interface MonHocRutGon {
@@ -131,6 +143,7 @@ export interface GiangVien {
   chuyen_mon: string | null;
   trang_thai: boolean;
   avatar_url: string | null;
+  da_xoa: boolean;
 }
 
 export interface MonHoc {
@@ -140,4 +153,52 @@ export interface MonHoc {
   so_tin_chi: number;
   mo_ta: string | null;
   trang_thai: boolean;
+  da_xoa: boolean;
+}
+
+/**
+ * Mục trong ô chọn (dropdown) — `/api/options/*`.
+ * Trường hiển thị tên là `label`, khớp OptionController và docs/04-api-contract.md.
+ */
+export interface TuyChon<T = number> {
+  id: T;
+  label: string;
+}
+
+export interface TuyChonMonHoc extends TuyChon {
+  so_tin_chi: number;
+}
+
+export interface TuyChonHocKy extends TuyChon {
+  trang_thai: TrangThaiHocKy;
+  nam_hoc: string;
+  ky_thu: number;
+}
+
+export interface TuyChonPhongHoc extends TuyChon {
+  suc_chua: number;
+}
+
+export interface TuyChonLopHanhChinh extends TuyChon {
+  khoa_hoc: string | null;
+  nganh: string | null;
+}
+
+export interface TuyChonLopHocPhan extends TuyChon {
+  con_cho: number;
+  nam_thu: number | null;
+}
+
+/**
+ * Tham số chung của mọi endpoint danh sách — docs/04-api-contract.md §1.6.
+ * `per_page` chỉ nhận 10, 25, 50, 100.
+ */
+export interface ThamSoDanhSach {
+  page?: number;
+  per_page?: 10 | 25 | 50 | 100;
+  /** Tìm kiếm — tên là `q`, không phải `keyword`. */
+  q?: string;
+  /** Tên cột trong whitelist của từng resource. */
+  sort_by?: string;
+  sort_dir?: 'asc' | 'desc';
 }

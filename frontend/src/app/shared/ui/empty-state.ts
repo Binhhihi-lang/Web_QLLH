@@ -6,13 +6,17 @@ import { Component, input } from '@angular/core';
  * Có CTA tuỳ chọn: danh sách rỗng do CHƯA CÓ dữ liệu thì nên mời tạo mới;
  * rỗng do LỌC không khớp thì nên mời xoá bộ lọc. Ép cùng một thông điệp cho
  * cả hai trường hợp là lỗi hay gặp.
+ *
+ * `icon` nhận **tên icon Material** (`inbox`, `search_off`, `warning`), không
+ * nhận ký tự Unicode: ký tự như `▤` hay `⚠` render khác nhau theo font của
+ * từng máy, có máy ra ô vuông rỗng.
  */
 @Component({
   selector: 'app-empty-state',
   standalone: true,
   template: `
     <div class="rong">
-      <div class="ic" aria-hidden="true">{{ icon() }}</div>
+      <span class="material-icons ic" aria-hidden="true">{{ icon() }}</span>
       <h4>{{ title() }}</h4>
       @if (description()) {
         <p>{{ description() }}</p>
@@ -36,6 +40,7 @@ import { Component, input } from '@angular/core';
       line-height: 1;
       margin-bottom: 12px;
       opacity: 0.45;
+      color: var(--color-ink-muted);
     }
 
     h4 {
@@ -64,5 +69,5 @@ import { Component, input } from '@angular/core';
 export class EmptyState {
   readonly title = input('Không có dữ liệu');
   readonly description = input<string>('');
-  readonly icon = input('▤');
+  readonly icon = input('inbox');
 }

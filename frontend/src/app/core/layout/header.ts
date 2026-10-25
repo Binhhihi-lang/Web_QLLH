@@ -35,6 +35,8 @@ import {
         <span class="material-icons ic">search</span>
         <input
           type="search"
+          id="tim-kiem-toan-he-thong"
+          name="q"
           placeholder="Tìm sinh viên, lớp học phần, môn học…"
           aria-label="Tìm kiếm toàn hệ thống"
         />

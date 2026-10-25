@@ -90,7 +90,7 @@ Hệ thống cung cấp nền tảng tập trung quản lý lớp học phần v
 
 | Actor | Mô tả | Phạm vi chính |
 |---|---|---|
-| **ADMIN** | Quản trị hệ thống | Toàn bộ danh mục, tài khoản, lớp học phần, đăng ký hộ, lịch học, điểm, xóa mềm/khôi phục, dashboard |
+| **ADMIN** | Quản trị hệ thống | Toàn bộ dữ liệu đào tạo, tài khoản, lớp học phần, đăng ký hộ, lịch học, điểm, xóa mềm/khôi phục, dashboard |
 | **TEACHER** | Giảng viên | Xem lớp mình phụ trách, xem sinh viên của lớp, điểm danh, nhập và chốt điểm, dashboard cá nhân |
 | **STUDENT** | Sinh viên | Xem lớp đang mở, tự đăng ký/hủy trong đợt, xem lịch, điểm danh và điểm cá nhân, dashboard cá nhân |
 
@@ -104,7 +104,7 @@ Hệ thống cung cấp nền tảng tập trung quản lý lớp học phần v
 
 | Thuật ngữ | Ý nghĩa |
 |---|---|
-| Môn học (Subject) | Danh mục môn: mã, tên, số tín chỉ. Không gắn thời gian hay giảng viên. |
+| Môn học (Subject) | Dữ liệu môn: mã, tên, số tín chỉ. Không gắn thời gian hay giảng viên. |
 | Học kỳ (Semester) | Khoảng thời gian giảng dạy, có đợt mở/đóng đăng ký. |
 | Lớp học phần (Section) | Một lần mở môn trong một học kỳ, do một giảng viên phụ trách, có sĩ số tối đa. Là đơn vị giảng dạy, điểm danh, chấm điểm. |
 | Đăng ký học phần (Enrollment) | Việc sinh viên tham gia lớp học phần. Điểm và điểm danh gắn vào bản ghi này. |
@@ -466,12 +466,36 @@ Quy ước: controller mỏng, nghiệp vụ ở Service, validate ở Form Requ
 
 ```
 src/app/
-  core/        # auth service, interceptor, guard, models, api services
-  shared/      # table, pagination, modal, confirm, form field, badge
-  features/    # auth, dashboard, sinh-vien, giang-vien, mon-hoc, hoc-ky,
-               # phong-hoc, lop-hanh-chinh, lop-hoc-phan, dang-ky, lich-hoc,
-               # diem-danh, diem, thung-rac, menu, cau-hinh
+  core/          # layout, models, services, mock (interceptor + registry + data)
+  shared/ui/     # 9 component dùng lại: button, card, alert, badge, empty,
+                 # loading, page-header, search-input, pagination
+  features/      # mỗi nhóm màn một thư mục con
+    auth/        # đăng nhập
+    dashboard/   # dashboard ADMIN (SCR-03)
+    dao-tao/     # Đức Anh: sinh viên, giảng viên, lớp HC, môn, học kỳ, phòng
+    hoc-vu/      # Đạt: lớp HP, đăng ký, lịch, điểm danh, điểm, thùng rác, menu
+  routes/        # khai báo route + menu TÁCH THEO NHÓM (xem dưới)
 ```
+
+**Vì sao `routes/` tách riêng:** hai bạn FE làm song song trên hai nhóm màn.
+Nếu mọi route và mọi menu nằm trong `app.routes.ts` và `sidebar.ts` thì ngày
+nào cũng conflict. Cách tách:
+
+| File | Nội dung | Người sở hữu |
+|---|---|---|
+| `routes/dao-tao.routes.ts` | route nhóm đào tạo | Đức Anh |
+| `routes/dao-tao.menu.ts` | mục menu nhóm đào tạo | Đức Anh |
+| `routes/hoc-vu.routes.ts` | route nhóm học vụ | Đạt |
+| `routes/hoc-vu.menu.ts` | mục menu nhóm học vụ + hệ thống | Đạt |
+| `app.routes.ts` | chỉ gộp hai file route | PM |
+| `core/layout/sidebar.ts` | chỉ đọc từ hai file menu | PM |
+
+Cùng nguyên tắc với mock: `core/mock/registry/dao-tao.registry.ts` (Đức Anh)
+và `core/mock/registry/hoc-vu.registry.ts` (Đạt); `mock-registry.ts` chỉ điều phối.
+
+**Quy ước đường dẫn:** URL giao diện dùng tiếng Việt (`/sinh-vien`), đường dẫn
+API dùng tiếng Anh (`/api/students`). Hai quy ước độc lập — xem ADR-002 và
+`04-api-contract.md`.
 
 ---
 

@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QLLH — Tổng quan kiến trúc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+
+<style>
+  /* ---------- Design plan ----------
+     Màu: lấy đúng bảng T4 Triad của dự án (_tokens.scss) — xanh 222° làm accent,
+          đỏ/hổ phách/lục chỉ dùng cho trạng thái ngữ nghĩa.
+     Chữ: IBM Plex Sans (tiêu đề, hơi kỹ thuật) · Be Vietnam Pro (thân bài, dấu tiếng Việt đẹp)
+          · IBM Plex Mono (tên bảng, đường dẫn, mã).
+     Bố cục: một cột tài liệu rộng 1000px, điều hướng dính trên đầu, sơ đồ SVG theo tầng.
+  */
+  :root {
+    --bg: #f6f8fc;
+    --surface: #ffffff;
+    --surface-2: #edf1f8;
+    --surface-3: #e3e9f4;
+    --fg: #0f1728;
+    --fg-muted: #55617a;
+    --fg-faint: #7b869c;
+    --line: #d8dfec;
+    --line-strong: #b9c4d8;
+    --accent: #2a57c8;
+    --accent-bg: #e6edfd;
+    --ok: #266f0a;
+    --ok-bg: #e3f3da;
+    --warn: #8a5a06;
+    --warn-bg: #fbf0d9;
+    --danger: #c00d42;
+    --danger-bg: #fde4ea;
+    --info: #0a6c99;
+    --info-bg: #ddeff7;
+    --radius: 10px;
+    --font-head: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #0d1320;
+      --surface: #141d2d;
+      --surface-2: #1b2638;
+      --surface-3: #223047;
+      --fg: #e5eaf4;
+      --fg-muted: #a2aec4;
+      --fg-faint: #7f8ca4;
+      --line: #2a364b;
+      --line-strong: #3d4c66;
+      --accent: #8fadfb;
+      --accent-bg: #1d2b4a;
+      --ok: #86cd63;
+      --ok-bg: #1c3018;
+      --warn: #e2ab46;
+      --warn-bg: #33280f;
+      --danger: #ff7096;
+      --danger-bg: #3a1a25;
+      --info: #63bde0;
+      --info-bg: #12303d;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --bg: #0d1320;
+    --surface: #141d2d;
+    --surface-2: #1b2638;
+    --surface-3: #223047;
+    --fg: #e5eaf4;
+    --fg-muted: #a2aec4;
+    --fg-faint: #7f8ca4;
+    --line: #2a364b;
+    --line-strong: #3d4c66;
+    --accent: #8fadfb;
+    --accent-bg: #1d2b4a;
+    --ok: #86cd63;
+    --ok-bg: #1c3018;
+    --warn: #e2ab46;
+    --warn-bg: #33280f;
+    --danger: #ff7096;
+    --danger-bg: #3a1a25;
+    --info: #63bde0;
+    --info-bg: #12303d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-right: max(18px, env(safe-area-inset-right, 0px));
+    padding-block: 0 72px;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .wrap > * { min-width: 0; }
+
+  /* ---------- Điều hướng dính ---------- */
+  .thanh-nav {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    margin-inline: calc(-1 * max(18px, env(safe-area-inset-left, 0px)));
+    padding-inline: max(18px, env(safe-area-inset-left, 0px));
+  }
+
+  .thanh-nav nav {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding: 11px 0 10px;
+    scrollbar-width: none;
+  }
+  .thanh-nav nav::-webkit-scrollbar { display: none; }
+
+  .thanh-nav a {
+    flex: none;
+    font-family: var(--font-head);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+  }
+  .thanh-nav a:hover { color: var(--accent); border-bottom-color: var(--line-strong); }
+  .thanh-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+  /* ---------- Đầu trang ---------- */
+  header.mo-dau { padding: 52px 0 8px; }
+
+  .eyebrow {
+    font-family: var(--font-head);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: clamp(30px, 5.2vw, 46px);
+    line-height: 1.12;
+    letter-spacing: -0.022em;
+    font-weight: 700;
+    margin: 12px 0 0;
+    text-wrap: balance;
+  }
+
+  .mo-ta {
+    font-size: 17px;
+    color: var(--fg-muted);
+    max-width: 62ch;
+    margin: 14px 0 0;
+    text-wrap: pretty;
+  }
+
+  .dai-thong-so {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.01em;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--fg-muted);
+    white-space: nowrap;
+  }
+  .chip strong { color: var(--fg); font-weight: 500; }
+
+  .hop-trang-thai {
+    margin-top: 26px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 15px 18px;
+    font-size: 14.5px;
+    color: var(--fg-muted);
+  }
+  .hop-trang-thai strong { color: var(--fg); font-weight: 600; }
+
+  /* ---------- Phần ---------- */
+  section { padding-top: 56px; scroll-margin-top: 60px; }
+
+  h2 {
+    font-family: var(--font-head);
+    font-size: clamp(21px, 3vw, 26px);
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .so {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+
+  h3 {
+    font-family: var(--font-head);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin: 30px 0 8px;
+  }
+
+  p { margin: 10px 0; max-width: 72ch; text-wrap: pretty; }
+  p.dan { color: var(--fg-muted); }
+
+  ul, ol { margin: 10px 0; padding-left: 22px; max-width: 72ch; }
+  li { margin: 5px 0; }
+  li::marker { color: var(--fg-faint); }
+
+  code, .mono { font-family: var(--font-mono); font-size: 0.9em; }
+
+  code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--fg);
+    white-space: nowrap;
+  }
+
+  pre {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.62;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 14px 0;
+    tab-size: 2;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; font-size: inherit; }
+  .c { color: var(--fg-faint); }
+  .k { color: var(--accent); }
+  .s { color: var(--ok); }
+
+  /* ---------- Sơ đồ ---------- */
+  figure { margin: 20px 0 8px; }
+
+  .khung-so-do {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px;
+    overflow-x: auto;
+  }
+
+  figure svg {
+    display: block;
+    width: 100%;
+    min-width: 620px;
+    max-width: 100%;
+    height: auto;
+    color: var(--fg);
+    font-family: var(--font-mono);
+  }
+
+  figcaption {
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin-top: 10px;
+    max-width: 72ch;
+    text-wrap: pretty;
+  }
+  figcaption b { color: var(--fg); font-weight: 600; }
+
+  /* ---------- Bảng ---------- */
+  .khung-bang { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: var(--radius); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    background: var(--surface);
+  }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    font-family: var(--font-head);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.mono { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+  td small { color: var(--fg-muted); }
+
+  /* ---------- Nhãn trạng thái ---------- */
+  .nhan {
+    display: inline-block;
+    font-family: var(--font-head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .nhan.ok { background: var(--ok-bg); color: var(--ok); }
+  .nhan.warn { background: var(--warn-bg); color: var(--warn); }
+  .nhan.off { background: var(--surface-3); color: var(--fg-muted); }
+  .nhan.bad { background: var(--danger-bg); color: var(--danger); }
+
+  /* ---------- Lưới thẻ ---------- */
+  .luoi {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+  }
+
+  .the {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .the h4 {
+    font-family: var(--font-head);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    color: var(--fg);
+  }
+  .the p { margin: 0; font-size: 13.5px; color: var(--fg-muted); max-width: none; }
+  .the .so-lon {
+    font-family: var(--font-head);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .the.nhan-manh { border-color: var(--line-strong); box-shadow: 0 1px 0 var(--line); }
+
+  /* ---------- Quy tắc nghiệp vụ ---------- */
+  .ds-quy-tac { display: grid; gap: 0; margin: 18px 0; border-top: 1px solid var(--line); }
+
+  .quy-tac {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .quy-tac .ma {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    padding-top: 2px;
+  }
+  .quy-tac .noi-dung { min-width: 0; }
+  .quy-tac .noi-dung b { font-family: var(--font-head); font-weight: 600; }
+  .quy-tac .noi-dung p { margin: 2px 0 0; font-size: 14px; color: var(--fg-muted); }
+
+  /* ---------- Dàn ý thuyết trình ---------- */
+  .dan-y { counter-reset: buoc; margin: 18px 0; display: grid; gap: 0; }
+
+  .buoc {
+    counter-increment: buoc;
+    display: grid;
+    grid-template-columns: 46px 1fr 62px;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+  }
+  .buoc::before {
+    content: counter(buoc, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg-faint);
+    padding-top: 3px;
+  }
+  .buoc .ten { font-family: var(--font-head); font-weight: 600; font-size: 14.5px; }
+  .buoc .ten span { display: block; font-family: var(--font-body); font-weight: 400; font-size: 13.5px; color: var(--fg-muted); margin-top: 2px; }
+  .buoc .giay { font-family: var(--font-mono); font-size: 12px; color: var(--fg-faint); text-align: right; padding-top: 3px; }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--fg-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 640px) {
+    header.mo-dau { padding-top: 34px; }
+    section { padding-top: 44px; }
+    .quy-tac { grid-template-columns: 1fr; gap: 2px; }
+    .buoc { grid-template-columns: 32px 1fr; }
+    .buoc .giay { grid-column: 2; text-align: left; padding-top: 0; }
+    figure svg { min-width: 560px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; transition: none !important; }
+  }
+  html { scroll-behavior: smooth; }
+</style>
+
+<div class="thanh-nav">
+  <nav>
+    <a href="#pham-vi">Phạm vi</a>
+    <a href="#kien-truc">Kiến trúc</a>
+    <a href="#request">Một request</a>
+    <a href="#du-lieu">Dữ liệu</a>
+    <a href="#nghiep-vu">Nghiệp vụ</a>
+    <a href="#backend">Backend</a>
+    <a href="#frontend">Frontend</a>
+    <a href="#hien-trang">Hiện trạng</a>
+    <a href="#thuyet-trinh">Thuyết trình</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="mo-dau">
+    <div class="eyebrow">Đồ án môn học · tài liệu v0.4 · nhánh develop</div>
+    <h1>Hệ thống quản lý lớp học</h1>
+    <p class="mo-ta">
+      Một ứng dụng web quản lý đào tạo theo mô hình <b>lớp học phần</b>: mở lớp cho từng học kỳ, sinh viên đăng ký,
+      giảng viên dạy và điểm danh, cuối kỳ nhập điểm và chốt. Backend là REST API thuần, frontend là ứng dụng
+      Angular riêng biệt.
+    </p>
+    <div class="dai-thong-so">
+      <span class="chip"><strong>Laravel 13.8</strong> · PHP 8.5</span>
+      <span class="chip"><strong>Angular 22</strong> · Tailwind 3 · Material 22</span>
+      <span class="chip"><strong>MySQL 8</strong></span>
+      <span class="chip">Sanctum token · 7 ngày</span>
+      <span class="chip">10 tuần · 3 vai trò</span>
+    </div>
+    <div class="hop-trang-thai">
+      <div>
+        <strong>Đang ở đâu:</strong> xong phần nền tảng (schema, model, xác thực, phân quyền, envelope lỗi) và
+        xong frontend nền (design system, layout, dashboard, mock layer). Nghiệp vụ CRUD bắt đầu từ tuần 3.
+        Backend hiện chạy thật <b>11 endpoint</b> trên tổng số <b>113 endpoint</b> trong hợp đồng.
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 01 ================= -->
+  <section id="pham-vi">
+    <h2><span class="so">01</span> Bài toán và phạm vi</h2>
+
+    <p class="dan">
+      Trường đang quản lý lớp bằng bảng tính: mỗi học kỳ phải mở hàng trăm lớp học phần, kiểm tra sĩ số,
+      phát hiện trùng lịch, rồi tổng hợp điểm danh và điểm. Làm tay thì sai số cao và không có nơi tra cứu.
+    </p>
+
+    <h3>Ba vai trò, ba phạm vi nhìn thấy</h3>
+    <div class="luoi">
+      <div class="the nhan-manh">
+        <h4>ADMIN — quản trị viên</h4>
+        <p>Quản lý toàn bộ dữ liệu đào tạo (sinh viên, giảng viên, lớp hành chính, môn, học kỳ, phòng), mở lớp học phần,
+          đăng ký hộ, xóa mềm và khôi phục, xem mọi dashboard.</p>
+      </div>
+      <div class="the">
+        <h4>GIẢNG VIÊN — người dạy</h4>
+        <p>Chỉ thấy lớp mình phụ trách: danh sách sinh viên, lịch dạy, điểm danh từng buổi, nhập điểm và chốt điểm.
+          Đây là giới hạn do Policy kiểm tra ở server, không phải ẩn nút ở giao diện.</p>
+      </div>
+      <div class="the">
+        <h4>SINH VIÊN — người học</h4>
+        <p>Xem lớp đang mở và tự đăng ký trong đợt, hủy đăng ký khi còn hạn, xem thời khóa biểu, điểm danh,
+          điểm và GPA tích lũy của chính mình.</p>
+      </div>
+    </div>
+
+    <h3>Nghiệp vụ gồm 14 nhóm chức năng</h3>
+    <p>
+      Xác thực và tài khoản · sinh viên · lớp hành chính · giảng viên · môn học · học kỳ · phòng học ·
+      lớp học phần · đăng ký học phần · lịch học · điểm danh · điểm · dashboard · xóa mềm và khôi phục.
+      Mỗi chức năng có mã <code>FR-xx.yy</code>, mỗi quy tắc nghiệp vụ có mã <code>BR-xx</code>; tài liệu và code
+      tham chiếu chéo bằng chính các mã này.
+    </p>
+
+    <h3>Cố ý không làm</h3>
+    <p>
+      Học phí và thanh toán, thi trực tuyến, chat hoặc thông báo thời gian thực, AI, ứng dụng di động, môn tiên quyết,
+      giới hạn tín chỉ mỗi kỳ, danh sách chờ khi lớp đầy. Chương trình đào tạo (ngành × kỳ → môn) cũng nằm ngoài phạm vi
+      vì muốn đúng còn phải có bảng khoa — thay bằng ràng buộc thô “năm thứ” trên lớp học phần.
+    </p>
+  </section>
+
+  <!-- ================= 02 ================= -->
+  <section id="kien-truc">
+    <h2><span class="so">02</span> Kiến trúc tổng thể</h2>
+
+    <p>
+      Hai ứng dụng tách rời, chỉ nói chuyện qua HTTP + JSON. Angular không render phía server, Laravel không có view —
+      toàn bộ giao diện do trình duyệt dựng. Hệ quả thực tế: hai bên có thể phát triển và test độc lập, và
+      backend kiểm chứng được bằng Postman mà không cần mở giao diện.
+    </p>
+
+    <figure>
+      <div class="khung-so-do">
+        <svg viewBox="0 0 1000 470" role="img" aria-label="Sơ đồ kiến trúc: trình duyệt chạy Angular gọi HTTP JSON tới Laravel, Laravel đi qua chuỗi middleware, Form Request, Controller, Service, Policy rồi trả JSON qua API Resource; dữ liệu lưu ở MySQL, ảnh đại diện lưu ở Cloudinary.">
+          <defs>
+            <marker id="m-arch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <!-- Angular -->
+          <rect x="16" y="64" width="290" height="342" rx="12" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.75"></rect>
+          <text x="32" y="92" font-size="10" letter-spacing="1.4" fill="currentColor" opacity="0.6">TRÌNH DUYỆT — ANGULAR 22 SPA</text>
+
+          <g font-size="11.5" fill="currentColor">
+            <rect x="32" y="106" width="258" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="46" y="128">Router · lazy load từng màn</text>
+
+            <rect x="32" y="148" width="258" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="46" y="170">features/* — màn hình nghiệp vụ</text>
+
+            <rect x="32" y="190" width="258" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="46" y="212">shared/ui — 9 component dùng lại</text>
+
+            <rect x="32" y="232" width="258" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="46" y="254">core/services → HttpClient</text>
+
+            <rect x="32" y="274" width="258" height="34" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.28" stroke-dasharray="4 3"></rect>
+            <text x="46" y="296" fill="currentColor" opacity="0.75">core/mock — interceptor (đang bật)</text>
+
+            <rect x="32" y="316" width="258" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="46" y="338">_tokens.scss → Tailwind + Material</text>
+
+            <rect x="32" y="358" width="258" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="46" y="380">Sanctum token lưu ở phía client</text>
+          </g>
+
+          <!-- mũi tên HTTP -->
+          <line x1="308" y1="250" x2="370" y2="250" stroke="currentColor" stroke-width="1.6" marker-end="url(#m-arch)"></line>
+          <text x="339" y="222" font-size="10.5" text-anchor="middle" fill="currentColor">HTTP · JSON</text>
+          <text x="339" y="238" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.65">Bearer</text>
+
+          <!-- Laravel -->
+          <rect x="372" y="40" width="384" height="392" rx="12" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.75"></rect>
+          <text x="388" y="66" font-size="10" letter-spacing="1.4" fill="currentColor" opacity="0.6">LARAVEL 13.8 — REST API</text>
+
+          <g font-size="11.5" fill="currentColor">
+            <rect x="388" y="80" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="102">routes/api.php — khai báo endpoint</text>
+
+            <rect x="388" y="122" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="144">Middleware — auth:sanctum · doi.mat.khau</text>
+
+            <rect x="388" y="164" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="186">Form Request — validate, message tiếng Việt</text>
+
+            <rect x="388" y="206" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="228">Controller — mỏng, chỉ điều phối</text>
+
+            <rect x="388" y="248" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="270">Service — nghiệp vụ (đăng ký, trùng lịch, điểm)</text>
+
+            <rect x="388" y="290" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="312">Policy — kiểm tra sở hữu theo vai trò</text>
+
+            <rect x="388" y="332" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="354">API Resource — định hình JSON trả ra</text>
+
+            <rect x="388" y="374" width="352" height="34" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.28"></rect>
+            <text x="402" y="396">Eloquent ORM — model + quan hệ + soft delete</text>
+          </g>
+
+          <!-- mũi tên DB -->
+          <line x1="758" y1="250" x2="822" y2="250" stroke="currentColor" stroke-width="1.6" marker-end="url(#m-arch)"></line>
+          <text x="790" y="240" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.75">SQL</text>
+
+          <rect x="824" y="196" width="160" height="88" rx="10" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1.3"></rect>
+          <text x="904" y="228" font-size="12.5" text-anchor="middle" fill="currentColor" font-weight="500">MySQL 8</text>
+          <text x="904" y="248" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.65">16 bảng nghiệp vụ</text>
+          <text x="904" y="265" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.65">+ audit, cấu hình, menu</text>
+
+          <!-- Cloudinary -->
+          <line x1="758" y1="100" x2="822" y2="100" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#m-arch)"></line>
+          <text x="790" y="88" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.7">upload</text>
+
+          <rect x="824" y="56" width="160" height="88" rx="10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 3"></rect>
+          <text x="904" y="88" font-size="12.5" text-anchor="middle" fill="currentColor" font-weight="500">Cloudinary</text>
+          <text x="904" y="108" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.65">ảnh đại diện 512×512</text>
+          <text x="904" y="125" font-size="10.5" text-anchor="middle" fill="currentColor" opacity="0.65">một cột users.avatar_url</text>
+        </svg>
+      </div>
+      <figcaption>
+        <b>Điều đáng chú ý:</b> mọi request đi qua đúng một đường — middleware trước, rồi Form Request, rồi Controller.
+        Không có controller nào tự parse request hay tự ghép JSON trả về, nên hình dạng response giống nhau ở mọi endpoint.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 03 ================= -->
+  <section id="request">
+    <h2><span class="so">03</span> Vòng đời một request</h2>
+
+    <p>
+      Đây là đường đi ngắn nhất cần nắm: từ lúc người dùng bấm đăng nhập đến lúc một màn hình có dữ liệu.
+      Token là thứ nối hai nửa lại với nhau.
+    </p>
+
+    <figure>
+      <div class="khung-so-do">
+        <svg viewBox="0 0 1000 300" role="img" aria-label="Năm bước: đăng nhập trả token, token hạn 7 ngày, gọi API kèm Bearer token, chuỗi middleware kiểm tra, controller trả envelope JSON. Mọi lỗi đều quay về cùng một envelope.">
+          <defs>
+            <marker id="m-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <g>
+            <rect x="16" y="52" width="172" height="86" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+            <text x="30" y="76" font-size="11.5" font-weight="500" fill="currentColor">POST /auth/login</text>
+            <text x="30" y="96" font-size="10.5" fill="currentColor" opacity="0.7">email + mật khẩu</text>
+            <text x="30" y="112" font-size="10.5" fill="currentColor" opacity="0.7">throttle 5 lần/phút</text>
+            <text x="30" y="128" font-size="10.5" fill="currentColor" opacity="0.7">kiểm tra trang_thai</text>
+
+            <line x1="188" y1="95" x2="216" y2="95" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-req)"></line>
+
+            <rect x="218" y="52" width="172" height="86" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+            <text x="232" y="76" font-size="11.5" font-weight="500" fill="currentColor">Bearer token</text>
+            <text x="232" y="96" font-size="10.5" fill="currentColor" opacity="0.7">Sanctum, hạn 7 ngày</text>
+            <text x="232" y="112" font-size="10.5" fill="currentColor" opacity="0.7">lưu ở phía client</text>
+            <text x="232" y="128" font-size="10.5" fill="currentColor" opacity="0.7">gắn vào mọi request sau</text>
+
+            <line x1="390" y1="95" x2="418" y2="95" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-req)"></line>
+
+            <rect x="420" y="52" width="172" height="86" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+            <text x="434" y="76" font-size="11.5" font-weight="500" fill="currentColor">GET /api/…</text>
+            <text x="434" y="96" font-size="10.5" fill="currentColor" opacity="0.7">Authorization: Bearer …</text>
+            <text x="434" y="112" font-size="10.5" fill="currentColor" opacity="0.7">query: lọc, sắp xếp, trang</text>
+            <text x="434" y="128" font-size="10.5" fill="currentColor" opacity="0.7">envelope thống nhất</text>
+
+            <line x1="592" y1="95" x2="620" y2="95" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-req)"></line>
+
+            <rect x="622" y="52" width="172" height="86" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+            <text x="636" y="76" font-size="11.5" font-weight="500" fill="currentColor">Chuỗi middleware</text>
+            <text x="636" y="96" font-size="10.5" fill="currentColor" opacity="0.7">auth:sanctum</text>
+            <text x="636" y="112" font-size="10.5" fill="currentColor" opacity="0.7">doi.mat.khau</text>
+            <text x="636" y="128" font-size="10.5" fill="currentColor" opacity="0.7">Policy theo vai trò</text>
+
+            <line x1="794" y1="95" x2="822" y2="95" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-req)"></line>
+
+            <rect x="824" y="52" width="160" height="86" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+            <text x="838" y="76" font-size="11.5" font-weight="500" fill="currentColor">Controller</text>
+            <text x="838" y="96" font-size="10.5" fill="currentColor" opacity="0.7">→ Service → Resource</text>
+            <text x="838" y="112" font-size="10.5" fill="currentColor" opacity="0.7">→ JSON 200</text>
+            <text x="838" y="128" font-size="10.5" fill="currentColor" opacity="0.7">hoặc lỗi nghiệp vụ</text>
+          </g>
+
+          <!-- nhánh lỗi -->
+          <line x1="110" y1="138" x2="110" y2="176" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.6"></line>
+          <line x1="504" y1="138" x2="504" y2="176" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.6"></line>
+          <line x1="708" y1="138" x2="708" y2="176" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.6"></line>
+          <line x1="904" y1="138" x2="904" y2="176" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.6"></line>
+
+          <rect x="16" y="178" width="968" height="72" rx="9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 3" opacity="0.65"></rect>
+          <text x="34" y="204" font-size="11" fill="currentColor" opacity="0.85">Mọi lỗi dùng chung một envelope — không có endpoint nào trả HTML hay chuỗi trần:</text>
+          <text x="34" y="226" font-size="11.5" fill="currentColor" font-family="IBM Plex Mono, monospace">{ success: false, message, ma_loi, errors }</text>
+          <text x="34" y="242" font-size="10.5" fill="currentColor" opacity="0.65">401 chưa đăng nhập · 403 không có quyền / phải đổi mật khẩu · 404 · 409 vi phạm nghiệp vụ · 422 dữ liệu sai · 429 quá nhiều lần</text>
+
+          <text x="16" y="284" font-size="10.5" fill="currentColor" opacity="0.55">Mã lỗi là CHUỖI (<tspan font-family="IBM Plex Mono, monospace">SECTION_FULL</tspan>, <tspan font-family="IBM Plex Mono, monospace">GRADE_LOCKED</tspan>, <tspan font-family="IBM Plex Mono, monospace">SEMESTER_CLOSED</tspan>…) để giao diện dịch được sang câu tiếng Việt mà không phụ thuộc số thứ tự.</text>
+        </svg>
+      </div>
+      <figcaption>
+        <b>Vì sao mã lỗi là chuỗi:</b> giao diện cần phân biệt “lớp đã đầy” với “trùng lịch” để hiện đúng thông điệp.
+        Dùng số thì mỗi lần thêm luật phải nhớ số nào đã cấp.
+      </figcaption>
+    </figure>
+
+    <h3>Hai hình dạng response</h3>
+<pre><code><span class="c">// Thành công</span>
+{ <span class="k">"success"</span>: true, <span class="k">"message"</span>: <span class="s">"Thành công"</span>, <span class="k">"data"</span>: { … } }
+
+<span class="c">// Danh sách có phân trang — thêm meta và links</span>
+{
+  <span class="k">"success"</span>: true,
+  <span class="k">"message"</span>: <span class="s">"Thành công"</span>,
+  <span class="k">"data"</span>: [ … ],
+  <span class="k">"meta"</span>: { <span class="k">"current_page"</span>: 1, <span class="k">"per_page"</span>: 10, <span class="k">"total"</span>: 42, <span class="k">"last_page"</span>: 5 },
+  <span class="k">"links"</span>: { <span class="k">"first"</span>: …, <span class="k">"prev"</span>: null, <span class="k">"next"</span>: …, <span class="k">"last"</span>: … }
+}
+
+<span class="c">// Lỗi nghiệp vụ</span>
+{ <span class="k">"success"</span>: false, <span class="k">"message"</span>: <span class="s">"Lớp đã đủ sĩ số."</span>, <span class="k">"ma_loi"</span>: <span class="s">"SECTION_FULL"</span>, <span class="k">"errors"</span>: null }</code></pre>
+  </section>
+
+  <!-- ================= 04 ================= -->
+  <section id="du-lieu">
+    <h2><span class="so">04</span> Mô hình dữ liệu</h2>
+
+    <p>
+      Toàn bộ hệ thống xoay quanh <b>một sợi xương sống</b>: một lớp học phần mở ra, sinh viên đăng ký vào lớp đó,
+      mỗi đăng ký sinh ra điểm và các lần điểm danh. Mọi bảng còn lại chỉ là dữ liệu nền nuôi sợi xương sống ấy.
+      Hiểu được hình dưới là hiểu được phần lớn nghiệp vụ.
+    </p>
+
+    <figure>
+      <div class="khung-so-do">
+        <svg viewBox="0 0 1020 400" role="img" aria-label="Sơ đồ thực thể: users liên kết một-một với sinh viên và giảng viên; lớp hành chính chứa sinh viên; môn học, học kỳ và giảng viên cấp cho lớp học phần; lớp học phần nhận đăng ký học phần và sinh ra buổi học; đăng ký sinh ra điểm và điểm danh; buổi học cũng sinh điểm danh; điểm có lịch sử sửa.">
+          <defs>
+            <marker id="m-er" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <g font-family="IBM Plex Mono, monospace">
+            <!-- ===== hàng dữ liệu nền ===== -->
+            <g>
+              <rect x="180" y="34" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="194" y="58" font-size="11.5" fill="currentColor">lop_hanh_chinh</text>
+              <text x="194" y="76" font-size="9.5" fill="currentColor" opacity="0.6">khoa_hoc · nganh</text>
+            </g>
+
+            <g>
+              <rect x="380" y="34" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="394" y="58" font-size="11.5" fill="currentColor">mon_hoc</text>
+              <text x="394" y="76" font-size="9.5" fill="currentColor" opacity="0.6">so_tin_chi</text>
+            </g>
+
+            <g>
+              <rect x="540" y="34" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="554" y="58" font-size="11.5" fill="currentColor">hoc_ky</text>
+              <text x="554" y="76" font-size="9.5" fill="currentColor" opacity="0.6">nam_hoc · ky_thu</text>
+            </g>
+
+            <g>
+              <rect x="700" y="34" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="714" y="58" font-size="11.5" fill="currentColor">giang_vien</text>
+              <text x="714" y="76" font-size="9.5" fill="currentColor" opacity="0.6">chuyen_mon</text>
+            </g>
+
+            <!-- ===== hàng giữa ===== -->
+            <g>
+              <rect x="16" y="170" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="30" y="194" font-size="11.5" fill="currentColor">users</text>
+              <text x="30" y="212" font-size="9.5" fill="currentColor" opacity="0.6">vai_tro · token</text>
+            </g>
+
+            <g>
+              <rect x="180" y="170" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="194" y="194" font-size="11.5" fill="currentColor">sinh_vien</text>
+              <text x="194" y="212" font-size="9.5" fill="currentColor" opacity="0.6">ma_sv · ho_ten</text>
+            </g>
+
+            <g>
+              <rect x="400" y="170" width="170" height="56" rx="7" fill="currentColor" fill-opacity="0.08" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8"></rect>
+              <text x="414" y="194" font-size="11.5" fill="currentColor" font-weight="500">lop_hoc_phan</text>
+              <text x="414" y="212" font-size="9.5" fill="currentColor" opacity="0.7">nam_thu · si_so · chot_diem</text>
+            </g>
+
+            <g>
+              <rect x="650" y="170" width="180" height="56" rx="7" fill="currentColor" fill-opacity="0.08" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8"></rect>
+              <text x="664" y="194" font-size="11.5" fill="currentColor" font-weight="500">dang_ky_hoc_phan</text>
+              <text x="664" y="212" font-size="9.5" fill="currentColor" opacity="0.7">ACTIVE · huy_luc</text>
+            </g>
+
+            <g>
+              <rect x="880" y="170" width="124" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="894" y="194" font-size="11.5" fill="currentColor">diem</text>
+              <text x="894" y="212" font-size="9.5" fill="currentColor" opacity="0.6">chu · he_4</text>
+            </g>
+
+            <!-- ===== hàng dưới ===== -->
+            <g>
+              <rect x="180" y="300" width="152" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="194" y="324" font-size="11.5" fill="currentColor">phong_hoc</text>
+              <text x="194" y="342" font-size="9.5" fill="currentColor" opacity="0.6">suc_chua</text>
+            </g>
+
+            <g>
+              <rect x="400" y="300" width="170" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="414" y="324" font-size="11.5" fill="currentColor">buoi_hoc</text>
+              <text x="414" y="342" font-size="9.5" fill="currentColor" opacity="0.6">ngay_hoc · gio · trang_thai</text>
+            </g>
+
+            <g>
+              <rect x="650" y="300" width="180" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="664" y="324" font-size="11.5" fill="currentColor">diem_danh</text>
+              <text x="664" y="342" font-size="9.5" fill="currentColor" opacity="0.6">co_mat · vang · tre</text>
+            </g>
+
+            <g>
+              <rect x="880" y="300" width="124" height="56" rx="7" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.2"></rect>
+              <text x="894" y="324" font-size="11.5" fill="currentColor">lich_su_diem</text>
+              <text x="894" y="342" font-size="9.5" fill="currentColor" opacity="0.6">audit</text>
+            </g>
+          </g>
+
+          <!-- ===== liên kết ===== -->
+          <g stroke="currentColor" fill="none" stroke-width="1.3" opacity="0.75">
+            <line x1="256" y1="90" x2="256" y2="164" marker-end="url(#m-er)"></line>
+            <line x1="92" y1="198" x2="174" y2="198" marker-end="url(#m-er)"></line>
+
+            <line x1="456" y1="90" x2="456" y2="164" marker-end="url(#m-er)"></line>
+            <line x1="616" y1="90" x2="560" y2="164" marker-end="url(#m-er)"></line>
+            <line x1="776" y1="90" x2="580" y2="164" marker-end="url(#m-er)"></line>
+
+            <line x1="570" y1="198" x2="644" y2="198" marker-end="url(#m-er)"></line>
+            <line x1="830" y1="198" x2="874" y2="198" marker-end="url(#m-er)"></line>
+
+            <polyline points="256,226 256,262 690,262 690,230" marker-end="url(#m-er)"></polyline>
+
+            <line x1="485" y1="226" x2="485" y2="294" marker-end="url(#m-er)"></line>
+            <line x1="332" y1="328" x2="394" y2="328" marker-end="url(#m-er)"></line>
+            <line x1="570" y1="328" x2="644" y2="328" marker-end="url(#m-er)"></line>
+            <line x1="740" y1="226" x2="740" y2="294" marker-end="url(#m-er)"></line>
+            <line x1="942" y1="226" x2="942" y2="294" marker-end="url(#m-er)"></line>
+          </g>
+
+          <g font-size="9" fill="currentColor" opacity="0.55" font-family="IBM Plex Mono, monospace">
+            <text x="262" y="132">1–n</text>
+            <text x="120" y="192">1–1</text>
+            <text x="462" y="132">1–n</text>
+            <text x="588" y="132">1–n</text>
+            <text x="418" y="272" opacity="0.9">đăng ký</text>
+            <text x="588" y="192">1–n</text>
+            <text x="846" y="192">1–1</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>
+        <b>Hai bảng được tô đậm</b> là nơi mọi quy tắc nghiệp vụ dồn về: sĩ số, trùng lịch, chốt điểm đều kiểm tra
+        trên <span class="mono">lop_hoc_phan</span> và <span class="mono">dang_ky_hoc_phan</span>. Các bảng còn lại chỉ cung cấp dữ liệu nền.
+      </figcaption>
+    </figure>
+
+    <h3>Nhóm bảng theo miền</h3>
+    <div class="khung-bang">
+      <table>
+        <thead>
+          <tr><th>Miền</th><th>Bảng</th><th>Vai trò trong hệ thống</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Tài khoản</td>
+            <td class="mono">users · sinh_vien · giang_vien</td>
+            <td><small>Một tài khoản gắn 1–1 với hồ sơ sinh viên hoặc giảng viên. ADMIN không có hồ sơ riêng — vì vậy ảnh đại diện đặt trên <span class="mono">users</span>, không đặt trên hai bảng hồ sơ.</small></td>
+          </tr>
+          <tr>
+            <td>Đào tạo</td>
+            <td class="mono">lop_hanh_chinh · mon_hoc · hoc_ky · phong_hoc</td>
+            <td><small>Dữ liệu nền ít thay đổi. Đều có xóa mềm và cờ <span class="mono">trang_thai</span> kiểu boolean.</small></td>
+          </tr>
+          <tr>
+            <td>Học vụ</td>
+            <td class="mono">lop_hoc_phan · dang_ky_hoc_phan · buoi_hoc</td>
+            <td><small>Trục nghiệp vụ chính. <span class="mono">lop_hoc_phan.trang_thai</span> là enum OPEN / CLOSED / CANCELLED.</small></td>
+          </tr>
+          <tr>
+            <td>Kết quả</td>
+            <td class="mono">diem · diem_danh · lich_su_diem</td>
+            <td><small>Điểm 1–1 với đăng ký; điểm danh gắn với cặp (buổi, đăng ký); lịch sử ghi lại mọi lần sửa điểm.</small></td>
+          </tr>
+          <tr>
+            <td>Hệ thống</td>
+            <td class="mono">cau_hinh · nhat_ky · menu</td>
+            <td><small>Cấu hình không hard-code (trọng số điểm, bảng quy đổi điểm chữ), nhật ký thao tác, menu động.</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Ba quy ước schema chi phối toàn bộ code</h3>
+    <ul>
+      <li><b>Tên tiếng Việt không dấu, số ít</b> — <code>sinh_vien</code>, <code>lop_hoc_phan</code>, <code>buoi_hoc</code>. Enum giữ tiếng Anh in hoa. Nhờ vậy tên cột đọc ra đúng nghĩa nghiệp vụ, không phải dịch trong đầu.</li>
+      <li><b>Xóa mềm ở mọi bảng nghiệp vụ</b>, kèm <code>deleted_by</code> / <code>restored_by</code>. Ràng buộc unique <b>không</b> lọc <code>deleted_at</code>: mã sinh viên đã xóa vẫn không được cấp lại cho người khác.</li>
+      <li><b>Không lưu số liệu suy ra được</b>. Sĩ số hiện tại đếm từ đăng ký ACTIVE chứ không có cột riêng — tránh hai nguồn sự thật lệch nhau.</li>
+    </ul>
+  </section>
+
+  <!-- ================= 05 ================= -->
+  <section id="nghiep-vu">
+    <h2><span class="so">05</span> Quy tắc nghiệp vụ cốt lõi</h2>
+
+    <p>
+      Phần này là thứ hội đồng sẽ hỏi. Mỗi quy tắc đều có mã <code>BR-xx</code> và có test tương ứng trong
+      <code>docs/06-test-plan.md</code>.
+    </p>
+
+    <figure>
+      <div class="khung-so-do">
+        <svg viewBox="0 0 1000 230" role="img" aria-label="Hai máy trạng thái: học kỳ chỉ tiến từ sắp diễn ra sang đang diễn ra rồi đóng, không quay lại; đăng ký học phần chuyển từ đang học sang đã hủy, có thể đăng ký lại thành bản ghi mới.">
+          <defs>
+            <marker id="m-st" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <text x="16" y="30" font-size="10.5" letter-spacing="1.2" fill="currentColor" opacity="0.6">HỌC KỲ</text>
+
+          <g>
+            <rect x="120" y="44" width="150" height="46" rx="23" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.3"></rect>
+            <text x="195" y="72" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">UPCOMING</text>
+
+            <line x1="272" y1="67" x2="336" y2="67" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-st)"></line>
+            <text x="304" y="58" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">bắt đầu kỳ</text>
+
+            <rect x="340" y="44" width="150" height="46" rx="23" fill="currentColor" fill-opacity="0.09" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.6"></rect>
+            <text x="415" y="72" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">ONGOING</text>
+
+            <line x1="492" y1="67" x2="556" y2="67" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-st)"></line>
+            <text x="524" y="58" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">đóng kỳ</text>
+
+            <rect x="560" y="44" width="150" height="46" rx="23" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.3"></rect>
+            <text x="635" y="72" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">CLOSED</text>
+          </g>
+
+          <text x="740" y="62" font-size="10.5" fill="currentColor" opacity="0.7">Chỉ tiến, không lùi (BR-24).</text>
+          <text x="740" y="80" font-size="10.5" fill="currentColor" opacity="0.7">Toàn trường tối đa một kỳ ONGOING.</text>
+          <text x="740" y="98" font-size="10.5" fill="currentColor" opacity="0.7">Kỳ CLOSED không xóa — chỉ lưu trữ.</text>
+
+          <line x1="16" y1="130" x2="984" y2="130" stroke="currentColor" stroke-width="1" opacity="0.18"></line>
+
+          <text x="16" y="160" font-size="10.5" letter-spacing="1.2" fill="currentColor" opacity="0.6">ĐĂNG KÝ HỌC PHẦN</text>
+
+          <g>
+            <rect x="120" y="174" width="150" height="46" rx="23" fill="currentColor" fill-opacity="0.09" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.6"></rect>
+            <text x="195" y="202" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">ACTIVE</text>
+
+            <line x1="272" y1="197" x2="336" y2="197" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-st)"></line>
+            <text x="304" y="188" font-size="9.5" text-anchor="middle" fill="currentColor" opacity="0.7">hủy trong đợt</text>
+
+            <rect x="340" y="174" width="150" height="46" rx="23" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.3"></rect>
+            <text x="415" y="202" font-size="11.5" text-anchor="middle" fill="currentColor" font-family="IBM Plex Mono, monospace">CANCELLED</text>
+          </g>
+
+          <text x="530" y="192" font-size="10.5" fill="currentColor" opacity="0.7">Không sửa bản ghi đã hủy — đăng ký lại tạo bản ghi mới (BR-20).</text>
+          <text x="530" y="210" font-size="10.5" fill="currentColor" opacity="0.7">Chặn đăng ký lại nếu đã có điểm (BR-27).</text>
+        </svg>
+      </div>
+      <figcaption>
+        <b>Điểm hay bị hiểu sai:</b> “đang trong đợt đăng ký” không phải một trạng thái của học kỳ. Nó là phép so sánh
+        thời điểm hiện tại với <span class="mono">mo_dang_ky_luc</span> và <span class="mono">dong_dang_ky_luc</span> của học kỳ chứa lớp đó.
+      </figcaption>
+    </figure>
+
+    <div class="ds-quy-tac">
+      <div class="quy-tac">
+        <div class="ma">Điểm</div>
+        <div class="noi-dung">
+          <b>25% chuyên cần + 25% giữa kỳ + 50% cuối kỳ, thang 10</b>
+          <p>Quy đổi điểm chữ: A từ 8.5 (hệ 4 = 4.0), B từ 7.0 (3.0), C từ 5.5 (2.0), D từ 4.0 (1.0), F dưới 4.0 (0.0).
+            Bảng quy đổi lưu trong bảng <span class="mono">cau_hinh</span> để đổi được mà không sửa code.</p>
+        </div>
+      </div>
+      <div class="quy-tac">
+        <div class="ma">BR-23</div>
+        <div class="noi-dung">
+          <b>Năm thứ chặn đăng ký</b>
+          <p>Năm thứ = năm bắt đầu năm học − năm nhập học + 1. Lớp có <span class="mono">nam_thu</span> chỉ nhận sinh viên đúng năm đó;
+            để trống nghĩa là mọi năm. Thiếu dữ liệu thì <b>không chặn</b> — chặn trên dữ liệu thiếu sẽ khóa nhầm sinh viên.</p>
+        </div>
+      </div>
+      <div class="quy-tac">
+        <div class="ma">BR-28</div>
+        <div class="noi-dung">
+          <b>Học lại lấy điểm cao nhất</b>
+          <p>GPA tính một lần cho mỗi môn, lấy điểm cao nhất trong các lần học. GPA tích lũy (CPA) cộng dồn toàn khóa,
+            trọng số theo tín chỉ, làm tròn 2 chữ số.</p>
+        </div>
+      </div>
+      <div class="quy-tac">
+        <div class="ma">BR-30</div>
+        <div class="noi-dung">
+          <b>Khóa tài khoản phải thu hồi token</b>
+          <p>Token Sanctum sống 7 ngày. Nếu chỉ đặt <span class="mono">trang_thai = false</span> mà không xóa token thì người bị khóa vẫn gọi được API.
+            Vì vậy khóa tài khoản luôn đi kèm thu hồi toàn bộ token.</p>
+        </div>
+      </div>
+      <div class="quy-tac">
+        <div class="ma">BR-31</div>
+        <div class="noi-dung">
+          <b>Thao tác hàng loạt xử lý từng dòng</b>
+          <p>Mỗi id được xử lý độc lập; API luôn trả 200 kèm <span class="mono">{ thanh_cong, that_bai, chi_tiet[] }</span>.
+            Không dùng kiểu “tất cả hoặc không gì cả” — một bản ghi lỗi không được kéo cả lô thất bại. Danh sách rỗng trả 422, tối đa 500 id.</p>
+        </div>
+      </div>
+      <div class="quy-tac">
+        <div class="ma">BR-29</div>
+        <div class="noi-dung">
+          <b>Đã chốt điểm thì khóa</b>
+          <p>Chốt điểm lưu ở cấp lớp (<span class="mono">lop_hoc_phan.chot_diem_luc</span>), không phải cấp từng dòng điểm — vì chốt là hành động của cả lớp.
+            Mở lại chỉ ADMIN và phải ghi lý do.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 06 ================= -->
+  <section id="backend">
+    <h2><span class="so">06</span> Bản đồ code backend</h2>
+
+    <p>
+      Một quy ước duy nhất chi phối toàn bộ: <b>controller mỏng, nghiệp vụ ở Service, kiểm tra dữ liệu ở Form Request,
+      phân quyền ở Policy, định hình JSON ở Resource</b>. Nhờ vậy mỗi file chỉ có một lý do để sửa.
+    </p>
+
+<pre><code>backend/app/
+├── Http/
+│   ├── Controllers/Api/     <span class="c">AuthController · HoSoController · OptionController</span>
+│   ├── Requests/            <span class="c">Auth/DangNhapRequest · Auth/DoiMatKhauRequest · HoSo/TaiAnhDaiDienRequest</span>
+│   ├── Resources/           <span class="c">NguoiDungResource</span>
+│   └── Middleware/          <span class="c">CheckVaiTro · CheckTaiKhoanHoatDong · YeuCauDoiMatKhau</span>
+├── Models/                  <span class="c">16 model — quan hệ, enum hằng số, scope, hàm nghiệp vụ nhỏ</span>
+├── Policies/                <span class="c">LopHocPhan · SinhVien · Diem · DiemDanh</span>
+├── Services/                <span class="c">CloudinaryService</span>
+├── Exceptions/LoiNghiepVu.php   <span class="c">lỗi nghiệp vụ có ma_loi + HTTP status</span>
+└── Traits/apiResponse.php       <span class="c">success / successPhanTrang / error</span>
+
+routes/api.php               <span class="c">toàn bộ endpoint, nhóm theo middleware</span>
+bootstrap/app.php            <span class="c">alias middleware + map MỌI lỗi thành envelope JSON</span>
+database/
+├── migrations/              <span class="c">24 file — 16 bảng nghiệp vụ + 4 cột bổ sung</span>
+├── factories/               <span class="c">16 factory</span>
+└── seeders/                 <span class="c">12 seeder — dữ liệu demo cỡ thật</span></code></pre>
+
+    <h3>Ba tầng chặn một request</h3>
+    <p>
+      Chặn theo thứ tự từ ngoài vào: <b>đã đăng nhập chưa</b> (middleware <code>auth:sanctum</code>),
+      <b>đã đổi mật khẩu lần đầu chưa</b> (<code>doi.mat.khau</code> — chưa đổi thì chỉ gọi được 3 endpoint),
+      rồi <b>có quyền trên bản ghi cụ thể không</b> (Policy). Tầng thứ ba mới là thứ phân biệt giảng viên với nhau:
+      cùng là giảng viên nhưng chỉ được sửa lớp mình phụ trách.
+    </p>
+<pre><code><span class="c">// LopHocPhanPolicy — BR-03 / BR-04</span>
+<span class="k">public function</span> xem(User $nguoiDung, LopHocPhan $lop): bool
+{
+    <span class="k">if</span> ($nguoiDung->laAdmin()) <span class="k">return</span> true;
+
+    <span class="k">if</span> ($nguoiDung->laGiangVien()) {
+        <span class="k">return</span> $this->laGiangVienCuaLop($nguoiDung, $lop);   <span class="c">// chỉ lớp mình dạy</span>
+    }
+
+    <span class="c">// Sinh viên: lớp đang mở, hoặc lớp mình đã đăng ký</span>
+    <span class="k">return</span> $lop->trang_thai === LopHocPhan::OPEN || $this->daDangKy($nguoiDung, $lop);
+}</code></pre>
+
+    <h3>Dữ liệu demo cỡ thật</h3>
+    <p>
+      Seeder sinh 555 tài khoản, 501 sinh viên, 51 giảng viên, 120 lớp học phần, 2.040 buổi học, 7.028 đăng ký,
+      76.381 lượt điểm danh và 2.999 dòng điểm. Mục đích không phải để demo cho đẹp mà để lộ vấn đề hiệu năng:
+      với cỡ này, một truy vấn N+1 hiện ra ngay.
+    </p>
+
+    <h3>Kiểm thử</h3>
+    <ul>
+      <li><b>46 test PHPUnit</b> — nền tảng, xác thực, và 12 test chạy trên <b>MySQL thật</b> qua Docker để bắt những thứ SQLite bỏ qua: kiểu cột, số 0 đầu mã sinh viên, cột JSON, khóa ngoại cascade, collation tiếng Việt.</li>
+      <li>Chốt an toàn ở tầng bootstrap: test chỉ chạy trên SQLite <code>:memory:</code> hoặc database có tên kết thúc bằng <code>_Test</code>. Đặt ở <code>setUp()</code> là quá muộn — <code>RefreshDatabase</code> đã xóa database trước đó.</li>
+    </ul>
+  </section>
+
+  <!-- ================= 07 ================= -->
+  <section id="frontend">
+    <h2><span class="so">07</span> Bản đồ code frontend</h2>
+
+<pre><code>frontend/src/app/
+├── core/
+│   ├── layout/       <span class="c">main-layout · sidebar · header · footer</span>
+│   ├── models/       <span class="c">dao-tao.model.ts — kiểu dữ liệu sinh từ hợp đồng API</span>
+│   ├── services/     <span class="c">dashboard.service.ts — gọi HttpClient, không biết mock hay thật</span>
+│   └── mock/         <span class="c">interceptor · registry · response helper · data/*.mock.ts</span>
+├── shared/ui/        <span class="c">9 component: button, card, alert, badge, empty, loading,</span>
+│                     <span class="c">                page-header, search-input, pagination</span>
+└── features/         <span class="c">auth/login · dashboard · style-guide</span>
+
+src/_tokens.scss        <span class="c">nguồn chân lý duy nhất cho màu, chữ, bo góc, đổ bóng</span>
+src/material-theme.scss <span class="c">Material 3 đọc lại token ở trên</span>
+tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex trong component</span></code></pre>
+
+    <h3>Mock layer — điểm thiết kế đáng nói nhất</h3>
+    <p>
+      Backend mới có 11 endpoint nhưng giao diện cần dữ liệu cho hàng chục màn. Cách làm: một
+      <b>HTTP interceptor</b> chặn request khi cờ <code>useMock</code> bật, trả dữ liệu giả <b>đúng envelope và đúng mã HTTP</b>.
+      Service và component viết y như khi gọi thật, nên tắt mock chỉ cần đổi một dòng trong <code>environment.ts</code>.
+    </p>
+
+    <figure>
+      <div class="khung-so-do">
+        <svg viewBox="0 0 1000 210" role="img" aria-label="Service gọi HttpClient; nếu cờ useMock bật thì interceptor trả dữ liệu từ MockRegistry trong bộ nhớ, nếu tắt thì request đi ra Laravel thật.">
+          <defs>
+            <marker id="m-mock" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <rect x="16" y="66" width="170" height="64" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+          <text x="101" y="92" font-size="11.5" text-anchor="middle" fill="currentColor">Service / Component</text>
+          <text x="101" y="112" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">gọi HttpClient như thật</text>
+
+          <line x1="188" y1="98" x2="224" y2="98" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-mock)"></line>
+
+          <rect x="226" y="66" width="150" height="64" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+          <text x="301" y="92" font-size="11.5" text-anchor="middle" fill="currentColor">HttpClient</text>
+          <text x="301" y="112" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">request đi vào đây</text>
+
+          <line x1="378" y1="98" x2="414" y2="98" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-mock)"></line>
+
+          <rect x="416" y="66" width="136" height="64" rx="9" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"></rect>
+          <text x="484" y="94" font-size="11.5" text-anchor="middle" fill="currentColor">interceptor</text>
+          <text x="484" y="114" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.65">useMock ?</text>
+
+          <line x1="554" y1="86" x2="614" y2="56" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-mock)"></line>
+          <text x="586" y="60" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.75">true</text>
+
+          <line x1="554" y1="112" x2="614" y2="142" stroke="currentColor" stroke-width="1.5" marker-end="url(#m-mock)"></line>
+          <text x="586" y="148" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.75">false</text>
+
+          <rect x="616" y="24" width="190" height="64" rx="9" fill="currentColor" fill-opacity="0.09" stroke="currentColor" stroke-width="1.5"></rect>
+          <text x="711" y="50" font-size="11.5" text-anchor="middle" fill="currentColor" font-weight="500">MockRegistry</text>
+          <text x="711" y="70" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.7">dữ liệu seeded trong bộ nhớ</text>
+
+          <rect x="616" y="112" width="190" height="64" rx="9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 3"></rect>
+          <text x="711" y="138" font-size="11.5" text-anchor="middle" fill="currentColor">Laravel /api</text>
+          <text x="711" y="158" font-size="10" text-anchor="middle" fill="currentColor" opacity="0.7">127.0.0.1:8000</text>
+
+          <text x="830" y="46" font-size="10.5" fill="currentColor" opacity="0.7">trả đúng envelope</text>
+          <text x="830" y="64" font-size="10.5" fill="currentColor" opacity="0.7">và đúng mã HTTP</text>
+          <text x="830" y="82" font-size="10.5" fill="currentColor" opacity="0.7">để nhánh lỗi cũng chạy thật</text>
+        </svg>
+      </div>
+      <figcaption>
+        <b>Lợi ích:</b> khi backend xong endpoint nào, chỉ cần bỏ mock cho đúng đường dẫn đó — không phải viết lại service.
+        Registry trả <span class="mono">undefined</span> cho đường dẫn không có mock, và request tự đi ra mạng thật.
+      </figcaption>
+    </figure>
+
+    <h3>Design system</h3>
+    <p>
+      Một file token là nguồn chân lý, cả Tailwind và Material đều đọc lại từ đó. Bảng màu theo quy tắc tam giác
+      (triad) của Adobe Color: xanh dương 222° làm màu chính, đỏ 342° và lục 102° cách đều 120°. Độ sáng của mỗi màu
+      được tính ngược từ yêu cầu tương phản WCAG AA 4.5:1 với chữ trắng, không chọn bằng mắt.
+    </p>
+    <p>
+      Có 9 component dùng lại trong <code>shared/ui</code> và một trang <code>/style-guide</code> hiển thị toàn bộ token
+      cùng component ở cả chế độ sáng và tối. Nhờ vậy khi thêm màn mới không phải tự đoán màu hay khoảng cách.
+    </p>
+  </section>
+
+  <!-- ================= 08 ================= -->
+  <section id="hien-trang">
+    <h2><span class="so">08</span> Hiện trạng và chỗ còn lệch</h2>
+
+    <p>
+      Nhìn thẳng vào khoảng cách giữa code và hợp đồng — đây là danh sách cần nắm trước khi thuyết trình,
+      vì câu hỏi “phần này chạy chưa?” gần như chắc chắn sẽ được hỏi.
+    </p>
+
+    <div class="khung-bang">
+      <table>
+        <thead>
+          <tr><th>Phần</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Schema + model + seeder</td>
+            <td><span class="nhan ok">Xong</span></td>
+            <td><small>16 bảng, 16 model, 16 factory, 12 seeder. Dữ liệu demo đã sinh được.</small></td>
+          </tr>
+          <tr>
+            <td>Xác thực Sanctum</td>
+            <td><span class="nhan ok">Xong</span></td>
+            <td><small>4 endpoint: login, logout, me, change-password. Có throttle 5 lần/phút.</small></td>
+          </tr>
+          <tr>
+            <td>Phân quyền</td>
+            <td><span class="nhan warn">Một phần</span></td>
+            <td><small>4 Policy đã khai và gắn vào Gate; ADMIN bỏ qua mọi kiểm tra. Nhưng chưa endpoint nghiệp vụ nào gọi Policy vì CRUD chưa có.</small></td>
+          </tr>
+          <tr>
+            <td>Options (dropdown)</td>
+            <td><span class="nhan ok">Xong</span></td>
+            <td><small>6 endpoint, đều yêu cầu đăng nhập.</small></td>
+          </tr>
+          <tr>
+            <td>Ảnh đại diện</td>
+            <td><span class="nhan ok">Xong</span></td>
+            <td><small>Cloudinary, cắt vuông 512×512, giới hạn 5 MB. Cần điền khoá vào <span class="mono">.env</span> mới chạy thật.</small></td>
+          </tr>
+          <tr>
+            <td>CRUD nghiệp vụ + bulk</td>
+            <td><span class="nhan off">Chưa code</span></td>
+            <td><small>Mới là hợp đồng trong tài liệu. Đây là toàn bộ tuần 3–9.</small></td>
+          </tr>
+          <tr>
+            <td>Frontend nền</td>
+            <td><span class="nhan ok">Xong</span></td>
+            <td><small>Design system, layout, dashboard ADMIN, trang đăng nhập, mock layer. 16 test Vitest pass.</small></td>
+          </tr>
+          <tr>
+            <td>Frontend nghiệp vụ</td>
+            <td><span class="nhan off">Chưa code</span></td>
+            <td><small>Sidebar đã khai ~14 mục nhưng chỉ 3 route tồn tại; các mục còn lại rơi về dashboard.</small></td>
+          </tr>
+          <tr>
+            <td>Auth phía client</td>
+            <td><span class="nhan off">Chưa có</span></td>
+            <td><small>Chưa có AuthService, chưa có guard, layout đang hard-code vai trò ADMIN.</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Năm điểm lệch nên sửa trước khi nối hai nửa</h3>
+    <ol>
+      <li>
+        <b>Tên endpoint options không khớp.</b> Mock của frontend dùng <code>/options/lop-hanh-chinh</code>,
+        <code>/options/mon-hoc</code>, <code>/options/hoc-ky</code>, <code>/options/giang-vien</code>;
+        backend khai <code>/options/admin-classes</code>, <code>/options/subjects</code>, <code>/options/semesters</code>,
+        <code>/options/teachers</code>. Tắt mock là mọi dropdown nhận 404.
+      </li>
+      <li>
+        <b>Tên trường trong options khác nhau.</b> Backend trả <code>label</code>, mock và model frontend đọc <code>nhan</code>.
+      </li>
+      <li>
+        <b>Middleware khóa tài khoản đã đăng ký nhưng chưa gắn vào route.</b> Alias <code>tai.khoan.hoat.dong</code> có trong
+        <code>bootstrap/app.php</code> nhưng không nhóm route nào dùng. Hiện BR-30 mới được chặn ở bước đăng nhập, nên token
+        cấp trước khi khóa vẫn dùng được tới 7 ngày.
+      </li>
+      <li>
+        <b>Còn một route ngoài hợp đồng:</b> <code>GET /api/user</code> trả nguyên model User, không qua Resource.
+      </li>
+      <li>
+        <b>Cờ mock đang bật</b> (<code>useMock: true</code>), nên toàn bộ giao diện hiện chạy trên dữ liệu giả — cần nói rõ điều này
+        khi demo, tránh hiểu nhầm là đã nối backend.
+      </li>
+    </ol>
+  </section>
+
+  <!-- ================= 09 ================= -->
+  <section id="thuyet-trinh">
+    <h2><span class="so">09</span> Dàn ý thuyết trình</h2>
+
+    <p class="dan">
+      Sáu nhịp, tổng khoảng 8 phút, đi từ vấn đề đến bằng chứng. Thứ tự này cố ý đặt phần “chạy được gì” sau cùng,
+      vì người nghe cần hiểu mô hình trước khi thấy con số có ý nghĩa.
+    </p>
+
+    <div class="dan-y">
+      <div class="buoc">
+        <div class="ten">Vấn đề
+          <span>Quản lý lớp bằng bảng tính: mở lớp, kiểm sĩ số, phát hiện trùng lịch, tổng hợp điểm — làm tay thì sai và không tra cứu lại được.</span>
+        </div>
+        <div class="giay">1 phút</div>
+      </div>
+      <div class="buoc">
+        <div class="ten">Mô hình nghiệp vụ
+          <span>Vẽ sợi xương sống: lớp học phần → đăng ký → điểm và điểm danh. Nói rõ vì sao tách “lớp hành chính” (lớp cố định của sinh viên) khỏi “lớp học phần” (lớp mở theo kỳ).</span>
+        </div>
+        <div class="giay">1,5 phút</div>
+      </div>
+      <div class="buoc">
+        <div class="ten">Ba vai trò và giới hạn quyền
+          <span>Nhấn điểm quan trọng: giới hạn của giảng viên được kiểm ở server bằng Policy, không phải chỉ ẩn nút trên giao diện.</span>
+        </div>
+        <div class="giay">1 phút</div>
+      </div>
+      <div class="buoc">
+        <div class="ten">Kiến trúc hai nửa
+          <span>Angular gọi REST API, Laravel không có view. Lợi ích thực tế: kiểm thử backend độc lập bằng Postman, hai bên phát triển song song được.</span>
+        </div>
+        <div class="giay">1,5 phút</div>
+      </div>
+      <div class="buoc">
+        <div class="ten">Ba quyết định đáng bảo vệ
+          <span>Mã lỗi là chuỗi thay vì số; chốt điểm lưu ở cấp lớp; khóa tài khoản phải thu hồi token. Mỗi cái nêu hậu quả nếu làm ngược lại.</span>
+        </div>
+        <div class="giay">2 phút</div>
+      </div>
+      <div class="buoc">
+        <div class="ten">Đã chạy được gì
+          <span>Demo: đăng nhập thật lấy token, gọi endpoint options, dashboard ADMIN, trang style-guide đổi sáng/tối. Nói thẳng phần CRUD còn là hợp đồng — kèm lộ trình 10 tuần.</span>
+        </div>
+        <div class="giay">1 phút</div>
+      </div>
+    </div>
+
+    <h3>Ba câu hỏi nên chuẩn bị trước</h3>
+    <ul>
+      <li><b>“Sao không dùng framework full-stack như Blade?”</b> — Vì cần API dùng lại được cho ứng dụng khác sau này, và vì tách hai nửa cho phép kiểm thử backend bằng Postman độc lập với giao diện.</li>
+      <li><b>“Sao học kỳ không gắn với khóa sinh viên?”</b> — Học kỳ là trục thời gian toàn trường, khóa là thuộc tính của sinh viên. Ràng buộc giữa hai thứ nằm ở chỗ khác: trường <span class="mono">nam_thu</span> trên lớp học phần.</li>
+      <li><b>“Sao chưa có chức năng X?”</b> — Mỗi hạng mục ngoài phạm vi đều có lý do ghi trong tài liệu, không phải bỏ sót. Ví dụ chương trình đào tạo cần bảng khoa mới đúng, nên đã thay bằng ràng buộc thô.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>QLLH · tài liệu v0.4 · nhánh <span class="mono">develop</span> · cập nhật 2026-10-24</span>
+    <span>Nguồn: <span class="mono">docs/00-index.md</span> → <span class="mono">08-roadmap.md</span></span>
+  </footer>
+
+</div>
+</body>
+</html>
