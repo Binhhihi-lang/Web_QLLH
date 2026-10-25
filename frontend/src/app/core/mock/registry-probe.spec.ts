@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MockRegistry } from '@core/mock/mock-registry';
 import { statusFor } from '@core/mock/mock-response';
+import { LOP_HOC_PHAN_MOCK } from '@core/mock/data/hoc-vu.mock';
 
 /**
  * Kiểm tra mock layer khớp docs/04-api-contract.md.
@@ -129,6 +130,35 @@ describe('MockRegistry khớp hợp đồng API', () => {
     expect(lan2.ma_loi).toBe('NOT_FOUND');
   });
 
+  it('chặn xóa giảng viên còn phụ trách lớp học phần thuộc học kỳ chưa đóng', () => {
+    const id = goi('/teachers').data[0].id;
+    const xoa = r.resolve('DELETE', `http://localhost:8000/api/teachers/${id}`, null) as any;
+
+    expect(xoa.success).toBe(false);
+    expect(xoa.ma_loi).toBe('DELETE_BLOCKED');
+    expect(statusFor(xoa.ma_loi)).toBe(409);
+  });
+
+  it('xóa mềm giảng viên không còn lớp đang mở và từ chối xóa lại', () => {
+    const id = goi('/teachers').data[0].id;
+    const lopLienQuan = LOP_HOC_PHAN_MOCK.filter((lop) => lop.giang_vien.id === id);
+    const trangThaiXoaCu = lopLienQuan.map((lop) => lop.da_xoa);
+    lopLienQuan.forEach((lop) => (lop.da_xoa = true));
+
+    try {
+      const xoa = r.resolve('DELETE', `http://localhost:8000/api/teachers/${id}`, null) as any;
+      const danhSachSauXoa = goi('/teachers?per_page=100');
+      const xoaLanHai = r.resolve('DELETE', `http://localhost:8000/api/teachers/${id}`, null) as any;
+
+      expect(xoa.success).toBe(true);
+      expect(danhSachSauXoa.data.some((gv: any) => gv.id === id)).toBe(false);
+      expect(xoaLanHai.success).toBe(false);
+      expect(xoaLanHai.ma_loi).toBe('NOT_FOUND');
+    } finally {
+      lopLienQuan.forEach((lop, index) => (lop.da_xoa = trangThaiXoaCu[index]));
+    }
+  });
+
   it('tạo sinh viên trả mật khẩu ban đầu đúng một lần và đưa hồ sơ vào danh sách', () => {
     const body = {
       ma_sv: 'SV-MOI-001',
@@ -252,5 +282,85 @@ describe('MockRegistry khớp hợp đồng API', () => {
 
     expect(bulk('/students/bulk-delete', { ids }).data.thanh_cong).toBe(2);
     expect(goi('/students?per_page=100').meta.total).toBe(truoc - 2);
+  });
+
+  it('giảng viên hỗ trợ tìm kiếm và lọc trạng thái', () => {
+    const tatCa = goi('/teachers?per_page=100');
+    const timKiem = goi('/teachers?q=GV0001');
+    const khoa = goi('/teachers?trang_thai=false&per_page=100');
+
+    expect(timKiem.data).toHaveLength(1);
+    expect(timKiem.data[0].ma_gv).toBe('GV0001');
+    expect(khoa.data.every((gv: any) => gv.trang_thai === false)).toBe(true);
+    expect(tatCa.meta.total).toBeGreaterThan(khoa.meta.total);
+  });
+
+  it('bulk-status giảng viên đổi trạng thái theo từng dòng', () => {
+    const ids = goi('/teachers').data.slice(0, 2).map((gv: any) => gv.id);
+    const res = bulk('/teachers/bulk-status', { ids, trang_thai: false }, 'PATCH');
+
+    expect(res.success).toBe(true);
+    expect(res.data.thanh_cong).toBe(2);
+    expect(goi('/teachers?trang_thai=false&per_page=100').data.map((gv: any) => gv.id)).toEqual(
+      expect.arrayContaining(ids),
+    );
+  });
+
+  it('bulk-delete chặn từng giảng viên còn phụ trách lớp trong học kỳ chưa đóng', () => {
+    const id = goi('/teachers').data[0].id;
+    const truoc = goi('/teachers?per_page=100').meta.total;
+    const res = bulk('/teachers/bulk-delete', { ids: [id] });
+
+    expect(res.data.thanh_cong).toBe(0);
+    expect(res.data.that_bai).toBe(1);
+    expect(res.data.chi_tiet[0].ma_loi).toBe('DELETE_BLOCKED');
+    expect(goi('/teachers?per_page=100').meta.total).toBe(truoc);
+    expect(goi('/teachers?per_page=100').data.some((gv: any) => gv.id === id)).toBe(true);
+  });
+
+  it('giảng viên hỗ trợ tạo hồ sơ và từ chối trùng mã hoặc email', () => {
+    const original = goi('/teachers').data[0];
+    const created = bulk(
+      '/teachers',
+      {
+        ma_gv: 'GV-MOCK-NEW',
+        ho_ten: 'Giảng viên tạo mới',
+        email: 'gv-mock-new@example.edu.vn',
+      },
+      'POST',
+    );
+    const duplicateEmail = bulk(
+      '/teachers',
+      {
+        ma_gv: 'GV-MOCK-OTHER',
+        ho_ten: 'Email trùng',
+        email: original.email,
+      },
+      'POST',
+    );
+
+    expect(created.success).toBe(true);
+    expect(created.data.mat_khau_ban_dau).toBeTruthy();
+    expect(duplicateEmail.success).toBe(false);
+    expect(duplicateEmail.ma_loi).toBe('DUPLICATE_EMAIL');
+  });
+
+  it('giảng viên hỗ trợ cập nhật và ẩn hồ sơ đã xóa khỏi chi tiết', () => {
+    const id = goi('/teachers').data[0].id;
+    const updated = bulk(
+      `/teachers/${id}`,
+      {
+        ma_gv: 'GV0001',
+        ho_ten: 'Tên giảng viên đã cập nhật',
+        email: 'gv0001@university.edu.vn',
+        chuyen_mon: 'Hệ thống thông tin',
+        trang_thai: true,
+      },
+      'PUT',
+    );
+
+    expect(updated.success).toBe(true);
+    expect(updated.data.ho_ten).toBe('Tên giảng viên đã cập nhật');
+    expect(goi(`/teachers/${id}`).data.id).toBe(id);
   });
 });
