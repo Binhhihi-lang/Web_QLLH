@@ -5,6 +5,22 @@ import { SinhVien, ThamSoDanhSach, TuyChonLopHanhChinh } from '@core/models/dao-
 import { KetQuaHangLoat, PaginatedResponse } from '@core/mock/mock-response';
 import { environment } from '@env/environment';
 
+export interface SinhVienInput {
+  ma_sv: string;
+  ho_ten: string;
+  email: string;
+  ngay_sinh: string | null;
+  gioi_tinh: boolean | null;
+  so_dien_thoai: string | null;
+  dia_chi: string | null;
+  lop_hanh_chinh_id: number | null;
+  trang_thai: boolean;
+}
+
+export interface SinhVienTaoMoi extends SinhVien {
+  mat_khau_ban_dau: string;
+}
+
 /**
  * Service danh sách sinh viên — KHUÔN MẪU cho mọi màn danh sách khác.
  *
@@ -50,6 +66,18 @@ export class SinhVienService {
   layMot(id: number): Observable<SinhVien> {
     return this.http
       .get<{ data: SinhVien }>(`${this.goc}/students/${id}`)
+      .pipe(map((r) => r.data));
+  }
+
+  taoMoi(duLieu: SinhVienInput): Observable<SinhVienTaoMoi> {
+    return this.http
+      .post<{ data: SinhVienTaoMoi }>(`${this.goc}/students`, duLieu)
+      .pipe(map((r) => r.data));
+  }
+
+  capNhat(id: number, duLieu: SinhVienInput): Observable<SinhVien> {
+    return this.http
+      .put<{ data: SinhVien }>(`${this.goc}/students/${id}`, duLieu)
       .pipe(map((r) => r.data));
   }
 

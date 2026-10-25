@@ -21,13 +21,13 @@ export const daoTaoRoutes: Routes = [
   },
   {
     path: 'sinh-vien/them',
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-11', title: 'Thêm sinh viên' },
+    loadComponent: () =>
+      import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
   },
   {
     path: 'sinh-vien/:id/sua',
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-11', title: 'Sửa sinh viên' },
+    loadComponent: () =>
+      import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
   },
 
   // SCR-13/14/15 — Giảng viên

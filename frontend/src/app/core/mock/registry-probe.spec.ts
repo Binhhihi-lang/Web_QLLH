@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MockRegistry } from '@core/mock/mock-registry';
+import { statusFor } from '@core/mock/mock-response';
 
 /**
  * Kiểm tra mock layer khớp docs/04-api-contract.md.
@@ -126,6 +127,78 @@ describe('MockRegistry khớp hợp đồng API', () => {
     const lan2 = r.resolve('DELETE', url, null) as any;
     expect(lan2.success).toBe(false);
     expect(lan2.ma_loi).toBe('NOT_FOUND');
+  });
+
+  it('tạo sinh viên trả mật khẩu ban đầu đúng một lần và đưa hồ sơ vào danh sách', () => {
+    const body = {
+      ma_sv: 'SV-MOI-001',
+      ho_ten: 'Nguyễn Sinh Viên',
+      email: 'sv-moi-001@example.edu.vn',
+      ngay_sinh: null,
+      gioi_tinh: true,
+      so_dien_thoai: null,
+      dia_chi: null,
+      lop_hanh_chinh_id: null,
+      trang_thai: true,
+    };
+    const tao = r.resolve('POST', 'http://localhost:8000/api/students', body) as any;
+
+    expect(tao.success).toBe(true);
+    expect(tao.data.mat_khau_ban_dau).toHaveLength(12);
+
+    const ds = goi('/students?per_page=100').data;
+    expect(ds.some((sv: any) => sv.ma_sv === body.ma_sv)).toBe(true);
+    expect(ds.find((sv: any) => sv.id === tao.data.id).mat_khau_ban_dau).toBeUndefined();
+    expect(goi(`/students/${tao.data.id}`).data.mat_khau_ban_dau).toBeUndefined();
+  });
+
+  it('từ chối tạo sinh viên có mã hoặc email đã tồn tại', () => {
+    const hienTai = goi('/students').data[0];
+    const trungMa = r.resolve('POST', 'http://localhost:8000/api/students', {
+      ma_sv: hienTai.ma_sv,
+      ho_ten: 'Tên khác',
+      email: 'khac@example.edu.vn',
+    }) as any;
+    const trungEmail = r.resolve('POST', 'http://localhost:8000/api/students', {
+      ma_sv: 'SV-MOI-002',
+      ho_ten: 'Tên khác',
+      email: hienTai.email,
+    }) as any;
+
+    expect(trungMa.success).toBe(false);
+    expect(trungMa.ma_loi).toBe('DUPLICATE_CODE');
+    expect(trungMa.errors.ma_sv).toBeDefined();
+    expect(trungEmail.success).toBe(false);
+    expect(trungEmail.ma_loi).toBe('DUPLICATE_EMAIL');
+    expect(trungEmail.errors.email).toBeDefined();
+    expect(statusFor(trungMa.ma_loi)).toBe(422);
+    expect(statusFor(trungEmail.ma_loi)).toBe(422);
+  });
+
+  it('cập nhật sinh viên theo PUT và trả NOT_FOUND cho id không tồn tại', () => {
+    const hienTai = goi('/students').data[0];
+    const body = {
+      ma_sv: hienTai.ma_sv,
+      ho_ten: 'Tên đã cập nhật',
+      email: hienTai.email,
+      ngay_sinh: hienTai.ngay_sinh,
+      gioi_tinh: hienTai.gioi_tinh,
+      so_dien_thoai: hienTai.so_dien_thoai,
+      dia_chi: hienTai.dia_chi,
+      lop_hanh_chinh_id: hienTai.lop_hanh_chinh.id,
+      trang_thai: hienTai.trang_thai,
+    };
+    const sua = r.resolve(
+      'PUT',
+      `http://localhost:8000/api/students/${hienTai.id}`,
+      body,
+    ) as any;
+    const khongTonTai = r.resolve('PUT', 'http://localhost:8000/api/students/999999', body) as any;
+
+    expect(sua.success).toBe(true);
+    expect(sua.data.ho_ten).toBe(body.ho_ten);
+    expect(khongTonTai.success).toBe(false);
+    expect(khongTonTai.ma_loi).toBe('NOT_FOUND');
   });
 
   // ---------------- Thao tác hàng loạt (BR-31) ----------------
