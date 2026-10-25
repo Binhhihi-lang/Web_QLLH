@@ -5,7 +5,7 @@ namespace App\Traits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-trait ApiResponse
+trait ApiResponseTrait
 {
     protected function success($data = null, string $message = 'Thành công', int $code = 200): JsonResponse
     {

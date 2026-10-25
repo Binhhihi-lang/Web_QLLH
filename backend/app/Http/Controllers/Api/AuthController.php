@@ -8,14 +8,14 @@ use App\Http\Requests\Auth\DangNhapRequest;
 use App\Http\Requests\Auth\DoiMatKhauRequest;
 use App\Http\Resources\NguoiDungResource;
 use App\Models\User;
-use App\Traits\ApiResponse;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    use ApiResponse;
+    use ApiResponseTrait;
 
     /**
      * FR-01.01 — Đăng nhập, trả Bearer token Sanctum hạn 7 ngày.

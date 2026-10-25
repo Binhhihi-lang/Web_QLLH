@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\DangKyHocPhan;
 use App\Models\SinhVien;
 use App\Models\User;
 
@@ -56,6 +57,7 @@ class SinhVienPolicy
         }
 
         return $sinhVien->dangKyHocPhan()
+            ->where('trang_thai', DangKyHocPhan::ACTIVE)
             ->whereHas('lopHocPhan', fn ($q) => $q->where('giang_vien_id', $nguoiDung->giangVien->id))
             ->exists();
     }

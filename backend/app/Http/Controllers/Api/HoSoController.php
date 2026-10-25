@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\HoSo\TaiAnhDaiDienRequest;
 use App\Http\Resources\NguoiDungResource;
 use App\Services\CloudinaryService;
-use App\Traits\ApiResponse;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
  */
 class HoSoController extends Controller
 {
-    use ApiResponse;
+    use ApiResponseTrait;
 
     public function __construct(private readonly CloudinaryService $cloudinary) {}
 

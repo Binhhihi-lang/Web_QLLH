@@ -9,14 +9,14 @@ use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\MonHoc;
 use App\Models\PhongHoc;
-use App\Traits\ApiResponse;
+use App\Traits\ApiResponseTrait;
 
 /**
  * Dữ liệu gọn cho ô chọn (dropdown) ở FE — docs/04-api-contract.md mục options.
  */
 class OptionController extends Controller
 {
-    use ApiResponse;
+    use ApiResponseTrait;
 
     public function subjects()
     {

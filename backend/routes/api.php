@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HoSoController;
+use App\Http\Controllers\Api\LopHanhChinhController;
 use App\Http\Controllers\Api\OptionController;
+use App\Http\Controllers\Api\SinhVienController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +46,39 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('rooms', [OptionController::class, 'rooms']);
         Route::get('admin-classes', [OptionController::class, 'adminClasses']);
         Route::get('sections', [OptionController::class, 'sections']);
+    });
+
+    Route::prefix('students')->group(function () {
+        Route::get('/', [SinhVienController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::post('/', [SinhVienController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::patch('bulk-status', [SinhVienController::class, 'capNhatTrangThaiHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::post('bulk-delete', [SinhVienController::class, 'xoaHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::get('{sinhVien}', [SinhVienController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::put('{sinhVien}', [SinhVienController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{sinhVien}', [SinhVienController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+        Route::patch('{sinhVien}/status', [SinhVienController::class, 'capNhatTrangThai'])->middleware('vai.tro:ADMIN');
+    });
+
+    Route::prefix('teachers')->group(function () {
+        Route::get('/', [GiangVienController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [GiangVienController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::patch('bulk-status', [GiangVienController::class, 'capNhatTrangThaiHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::post('bulk-delete', [GiangVienController::class, 'xoaHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::get('{giangVien}', [GiangVienController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::put('{giangVien}', [GiangVienController::class, 'update'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::delete('{giangVien}', [GiangVienController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+        Route::patch('{giangVien}/status', [GiangVienController::class, 'capNhatTrangThai'])->middleware('vai.tro:ADMIN');
+    });
+
+    Route::prefix('admin-classes')->group(function () {
+        Route::get('/', [LopHanhChinhController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [LopHanhChinhController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::get('{lopHanhChinh}', [LopHanhChinhController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::put('{lopHanhChinh}', [LopHanhChinhController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{lopHanhChinh}', [LopHanhChinhController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+        Route::get('{lopHanhChinh}/students', [LopHanhChinhController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::post('{lopHanhChinh}/students', [LopHanhChinhController::class, 'ganSinhVien'])->middleware('vai.tro:ADMIN');
+        Route::delete('{lopHanhChinh}/students/{sinhVien}', [LopHanhChinhController::class, 'goSinhVien'])->middleware('vai.tro:ADMIN');
     });
 
     Route::get('/user', function (Request $request) {
