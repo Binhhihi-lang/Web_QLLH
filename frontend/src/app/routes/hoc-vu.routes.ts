@@ -18,19 +18,20 @@ export const hocVuRoutes: Routes = [
   {
     path: 'lop-hoc-phan',
     canActivate: [roleGuard],
-    data: {
-      roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
-      ma: 'SCR-25',
-      title: 'Lớp học phần',
-    },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'] },
+    loadComponent: () =>
+      import('@features/hoc-vu/lop-hoc-phan/danh-sach').then((m) => m.LopHocPhanDanhSach),
   },
   {
     path: 'lop-hoc-phan/:id/sinh-vien',
     canActivate: [roleGuard],
-    data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-28', title: 'Sinh viên lớp học phần' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    data: { roles: ['ADMIN', 'GIANG_VIEN'] },
+    loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/sinh-vien').then((m) => m.LopHocPhanSinhVien),
   },
+  { path: 'lop-hoc-phan/:id/diem', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
+  { path: 'lop-hoc-phan/them', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
+  { path: 'lop-hoc-phan/:id/sua', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
+  { path: 'lop-hoc-phan/:id', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/chi-tiet').then((m) => m.LopHocPhanChiTiet) },
 
   // SCR-30/31/32/33 — Đăng ký theo vai trò
   {
