@@ -30,21 +30,23 @@ Câu hỏi đặt ra: kiến trúc hiện tại có đủ để hai bên làm vi
 ### Ba kết luận chính
 
 1. **Việc tách là khả thi.** Frontend và backend tách được thật, nhờ mock layer ở tầng HTTP interceptor và bộ hợp đồng API viết trước. Đức Anh và Đạt không cần chờ Tiến một ngày nào.
-2. **Điều kiện đã đạt.** Bốn điểm lệch đã sửa: đường dẫn API, tên trường `label`, tách ba file dùng chung, và 10 test khoá quy ước để không lệch lại.
-3. **Khối lượng backend vẫn là rủi ro.** Lô quản lý sinh viên, giảng viên và lớp hành chính đã có API; còn 77 endpoint trong hợp đồng cần triển khai. Cách xử lý ở [mục 9](#9-rủi-ro-và-cách-xử-lý).
+2. **Điều kiện đã đạt.** Bốn điểm lệch đã sửa: đường dẫn API, tên trường `label`, tách ba file dùng chung, và 18 case test khoá quy ước để không lệch lại.
+3. **Khối lượng backend vẫn là rủi ro.** Đã có 52/113 endpoint theo hợp đồng; còn 61 endpoint cần triển khai. Cách xử lý ở [mục 9](#9-rủi-ro-và-cách-xử-lý).
 
 ### Con số cần nhớ
 
 | Hạng mục     | Đã xong                                                              | Còn lại | Ai làm        |
 | ------------ | -------------------------------------------------------------------- | ------- | ------------- |
-| Endpoint API | 36 endpoint theo hợp đồng + 1 route tiện ích                         | 77      | Tiến + PM     |
-| Hợp đồng     | 41/113 path trong `openapi.yaml` (đủ cho tuần 3–4)                    | 72      | PM            |
+| Endpoint API | 52 endpoint theo hợp đồng + 1 route tiện ích                         | 61      | Tiến + PM     |
+| Hợp đồng     | 41 path / 65 operation trong `openapi.yaml`                          | 48 operation | PM       |
 | Màn hình     | 9 (đăng nhập, dashboard ADMIN, style-guide, SCR-10–15)                | 38      | Đức Anh + Đạt |
 | Thời gian    | 2 tuần / 10 tuần                                                     | 8 tuần  | —             |
 
-**Cập nhật 26/10:** Backend đã có các API quản lý `students`, `teachers` và
-`admin-classes`; frontend sinh viên/giảng viên đã gọi các API tương ứng qua
-service. AuthService/interceptor đã được triển khai trong commit `cf8d36c`.
+**Cập nhật tiến độ:** Backend đã có các API quản lý `students`, `teachers`,
+`admin-classes`, `subjects` và `rooms`; CRUD môn học/phòng học có test riêng
+9/9 pass. Các thay đổi CRUD môn học/phòng học hiện còn trong working tree,
+chưa commit hoặc merge. Frontend sinh viên/giảng viên đã gọi các API tương ứng
+qua service. AuthService/interceptor đã được triển khai trong commit `cf8d36c`.
 Smoke test trình duyệt ngày 26/10 đã đăng nhập cả ba vai trò, tải hồ sơ
 `/auth/me` và xác nhận menu theo vai trò từ backend thật. CORS ban đầu chỉ cho
 phép `localhost:4200`, trong khi frontend chạy ở `127.0.0.1:4200`; cấu hình đã
@@ -104,7 +106,7 @@ và [docs/08-roadmap.md](08-roadmap.md).
 | 1   | Đường dẫn API trong mock dùng tiếng Việt  | Mock: `/sinh-vien`, `/mon-hoc`… / Hợp đồng: `/students`, `/subjects`…   | Tắt mock là **toàn bộ** màn danh sách nhận 404, không chỉ dropdown | ✅ Đã sửa                     |
 | 2   | Tên trường options lệch                   | BE trả `label` (`OptionController.php`), mock và model FE đọc `nhan`    | Dropdown hiện trống dù API trả 200. Không exception nào được ném   | ✅ Đã sửa                     |
 | 3   | Ba file dùng chung cả hai FE đều phải sửa | `app.routes.ts`, `core/layout/sidebar.ts`, `core/mock/mock-registry.ts` | Hai bạn sửa cùng file mỗi ngày → conflict liên tục                 | ✅ Đã tách                    |
-| 4   | `openapi.yaml` mới có 11/113 endpoint     | `grep -c "^  /" docs/openapi.yaml` → 41                                | Đã sinh lô tuần 3–4; còn 72 endpoint của tuần 5–9 | 🔶 Còn — PM sinh dần mỗi tuần |
+| 4   | `openapi.yaml` chưa bao phủ đủ hợp đồng   | 41 path, 65 operation trong tổng 113 endpoint hợp đồng                 | Còn 48 operation cần đặc tả | 🔶 Còn — PM sinh dần theo tuần |
 
 ### Chín điểm lệch FE đã sửa trong phiên 25/10
 
@@ -120,7 +122,7 @@ và [docs/08-roadmap.md](08-roadmap.md).
 | Thiếu `da_xoa`, `chot_diem_luc`                                                                  | đã thêm vào model và mock                                                                |
 | Dashboard dùng `nhan`, `thoi_gian` là chuỗi tương đối                                            | `label`, datetime `YYYY-MM-DD HH:mm:ss`                                                  |
 
-**Test khoá quy ước:** `frontend/src/app/core/mock/registry-probe.spec.ts` — 18 case, gồm 2 case khẳng định đường dẫn tiếng Việt cũ trả `undefined` và 5 case cho thao tác hàng loạt (BR-31). Tổng Vitest **49/49 pass**.
+**Test khoá quy ước:** `frontend/src/app/core/mock/registry-probe.spec.ts` — 18 case, gồm 2 case khẳng định đường dẫn tiếng Việt cũ trả `undefined` và 5 case cho thao tác hàng loạt (BR-31). Kết quả Vitest đã ghi nhận: **88/88 pass**.
 
 > **Kết luận:** về cơ chế lẫn dữ liệu, kiến trúc đã đủ để hai bên làm việc độc lập. Việc còn lại là PM sinh dần `openapi.yaml` cho từng lô endpoint.
 
@@ -134,7 +136,7 @@ Năm việc, tổng khoảng 2 ngày làm việc (việc 1–4 đã xong ngày 2
 
 Không cần viết hết 113 endpoint một lúc. Quy tắc: **trước khi bước vào tuần N, `openapi.yaml` phải có đủ endpoint của tuần N.**
 
-- ✅ Tuần 0 (đã xong 25/10): sinh cho tuần 3–4 — students, teachers, admin-classes, subjects, semesters, rooms, menus, settings. **41/113 path.**
+- ✅ Đã đặc tả 41 path / 65 operation trong 113 endpoint hợp đồng; các operation còn lại tiếp tục được bổ sung theo lô tuần.
 - Mỗi thứ Sáu: sinh cho tuần kế tiếp, khoảng 2 giờ mỗi lần.
 - Sinh xong chạy kiểm tra cú pháp YAML và duyệt `$ref` nội bộ. Hợp đồng sai cú pháp còn tệ hơn không có hợp đồng.
 
@@ -191,6 +193,10 @@ Quy tắc duy nhất: **mỗi thư mục có đúng một người được sử
 | `docs/**`, `docs/openapi.yaml`                               | PM           | Đọc. Cần sửa hợp đồng → báo PM   |
 | `frontend/src/app/features/dao-tao/**`                       | Đức Anh      | Đọc                              |
 | `frontend/src/app/features/hoc-vu/**`                        | Đạt          | Đọc                              |
+| `frontend/src/app/features/dashboard/**`                     | Đạt          | SCR-03–05; PM tích hợp route chung |
+| SCR-47–51 quản trị (feature code; thư mục chưa tạo)            | Đạt          | PM tích hợp route/menu dùng chung |
+| SCR-45 thùng rác (feature code; thư mục chưa tạo)              | PM           | Đạt đọc |
+| `frontend/src/app/features/auth/**`                          | PM           | Đọc                              |
 | `frontend/src/app/shared/**`                                 | PM           | Đọc. Cần thêm component → báo PM |
 | `frontend/src/app/core/**` (layout, models, services, mock)  | PM           | Đọc                              |
 | `frontend/src/app/routes/dao-tao.*`                          | Đức Anh      | Đọc                              |
@@ -217,52 +223,52 @@ Cột "Bàn giao" là điều kiện để tuần đó được coi là xong —
 
 | Tuần           | Tiến — Backend lõi                                                                                                                             | Đức Anh — FE đào tạo                                                                                    | Đạt — FE học vụ                                                                                        | PM                                                                                                                |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| **0** (2 ngày) | — (chờ hợp đồng)                                                                                                                               | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                            | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                           | ✅ Đã xong: sửa 9 điểm lệch FE, tách 3 file dùng chung, 10 test khoá quy ước. Còn: `data-table` + `form-field`    |
-| **3**          | CRUD `students` + `teachers` + `admin-classes`; tạo kèm tài khoản, trả mật khẩu một lần; bulk-status + bulk-delete; BR-30 thu hồi token, BR-31 | SCR-10 → 12 (sinh viên): bảng, lọc, phân trang, form, dialog mật khẩu ban đầu                           | SCR-19 → 20 (môn học), SCR-21 → 22 (học kỳ) — dùng `data-table` PM vừa dựng                            | Sinh openapi lô 4–5; CRUD `subjects` + `rooms` (khuôn mẫu); review PR; merge                                      |
-| **4**          | CRUD `semesters` (vòng đời trạng thái, BR-24/25) + hoàn thiện `/options/*`                                                                     | SCR-13 → 15 (giảng viên), SCR-16 → 18 (lớp hành chính + gán sinh viên); thanh hành động hàng loạt       | SCR-23 → 24 (phòng học), SCR-47 → 51 (menu động, cấu hình)                                             | CRUD `menus` + `settings`; Docker Compose staging; e2e đầu tiên: tắt mock cho `/options/*`, chạy thật             |
-| **5**          | CRUD `sections` lõi + đổi trạng thái + FR-08.05 kiểm tra hợp lệ + Policy theo vai trò                                                          | SCR-25 → 28 (lớp học phần): danh sách, form, chi tiết, sinh viên của lớp                                | SCR-35 → 37 (lịch): khung tuần/tháng, form buổi học, sinh lịch hàng tuần — dựng bằng mock trước        | Sinh openapi lô 6–7; `/sections/{id}/students` + attendance-summary; bắt đầu bộ test e2e                          |
-| **6**          | `ScheduleService`: trùng phòng / giảng viên / sinh viên (BR-06, BR-22) + `/schedules` — phần khó nhất tuần                                     | SCR-29 (bảng điểm lớp, khung nhập), SCR-45 (thùng rác)                                                  | Hoàn thiện lịch; SCR-38 → 40 (điểm danh): danh sách buổi, điểm danh một buổi, thống kê chuyên cần      | CRUD `sessions` + sinh lịch hàng tuần; seeder dữ liệu demo; rà test plan                                          |
-| **7**          | `EnrollmentService` lõi: sĩ số, trùng lịch, năm thứ, đợt đăng ký, khóa dòng tranh chấp chỗ cuối (BR-08/09/23/26)                               | SCR-30 → 33 (đăng ký hộ, đăng ký hàng loạt theo lớp, đăng ký của tôi)                                   | SCR-41 → 43 (nhập điểm, điểm của tôi, lịch sử sửa điểm); SCR-04 + 05 (dashboard giảng viên, sinh viên) | `/enrollments` (CRUD) + `/enrollments/bulk` + `/me/enrollments` + hủy; test tranh chấp chỗ cuối                   |
-| **8**          | Nhập điểm đơn + hàng loạt; tổng kết 25/25/50; quy đổi A/B/C/D/F; chốt/mở khóa; GPA + CPA                                                       | SCR-02 (đổi mật khẩu), SCR-02B (ảnh đại diện); nối `AuthService` thật + guard + chế độ xem theo vai trò | SCR-42 (CPA, GPA tích lũy); rà responsive toàn bộ màn học vụ                                           | Điểm danh nâng cao: BR-21 mốc thời gian, 7 ngày sửa, chuyển DONE, ngoại lệ ADMIN trên kỳ CLOSED; E2E luồng đầy đủ |
-| **9**          | Lịch sử sửa điểm + hoàn thiện phần điểm; sửa lỗi khi tắt mock                                                                                  | Rà 4 trạng thái UI cho toàn bộ màn đào tạo                                                              | Hoàn thiện dashboard 3 vai trò; biểu đồ tỷ lệ lấp đầy                                                  | `/trash/*`, khôi phục, `nhat_ky`; tắt mock toàn bộ; chạy ma trận phân quyền                                       |
-| **10**         | Hỗ trợ sửa lỗi tích hợp; rà test plan                                                                                                          | Hoàn thiện SCR-45; rà responsive                                                                        | Kịch bản demo + dữ liệu demo; rà responsive                                                            | README, kịch bản demo 10 phút, merge cuối, đóng gói staging                                                       |
+| **0** (2 ngày) | — (chờ hợp đồng)                                                                                                                               | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                            | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                           | ✅ Khung dùng chung đã dựng; test registry 18 case. |
+| **3**          | CRUD `students` + `teachers` + `admin-classes`; tạo kèm tài khoản, trả mật khẩu một lần; bulk-status + bulk-delete; BR-30 thu hồi token, BR-31 | SCR-10 → 18 (sinh viên, giảng viên, lớp hành chính)                                                       | —                                                                                                      | CRUD `subjects` + `rooms` (đã có code và test; chưa commit/merge); review PR |
+| **4**          | CRUD `semesters` (vòng đời trạng thái, BR-24/25) + hoàn thiện `/options/*`                                                                     | SCR-19 → 24 (môn học, học kỳ, phòng học)                                                                 | SCR-47 → 51 (quản trị: menu, cấu hình, người dùng)                                                     | CRUD `menus` + `settings`; Docker Compose staging; E2E `/options/*` |
+| **5**          | CRUD `sections` lõi + đổi trạng thái + FR-08.05 kiểm tra hợp lệ + Policy theo vai trò                                                          | —                                                                                                        | SCR-25 → 28 (lớp học phần): danh sách, form, chi tiết, sinh viên của lớp                                | Sinh OpenAPI lô 6–7; `/sections/{id}/students` + attendance-summary; bắt đầu bộ test E2E |
+| **6**          | `ScheduleService`: trùng phòng / giảng viên / sinh viên (BR-06, BR-22) + `/schedules` — phần khó nhất tuần                                     | —                                                                                                        | SCR-35 → 37 (lịch tuần/tháng, thêm buổi, sinh lịch)                                                    | CRUD `sessions` + sinh lịch hàng tuần; SCR-45 (thùng rác); seeder dữ liệu demo; rà test plan |
+| **7**          | `EnrollmentService` lõi: sĩ số, trùng lịch, năm thứ, đợt đăng ký, khóa dòng tranh chấp chỗ cuối (BR-08/09/23/26)                               | —                                                                                                        | SCR-30 → 33 (đăng ký)                                                                                   | `/enrollments` (CRUD) + `/enrollments/bulk` + `/me/enrollments` + hủy; test tranh chấp chỗ cuối                   |
+| **8**          | Nhập điểm đơn + hàng loạt; tổng kết 25/25/50; quy đổi A/B/C/D/F; chốt/mở khóa; GPA + CPA                                                       | SCR-02 (đổi mật khẩu), SCR-02B (ảnh đại diện); nối `AuthService` thật + guard + chế độ xem theo vai trò | SCR-38 → 40 (điểm danh); rà responsive toàn bộ màn học vụ                                                | Điểm danh nâng cao: BR-21 mốc thời gian, 7 ngày sửa, chuyển DONE, ngoại lệ ADMIN trên kỳ CLOSED; E2E luồng đầy đủ |
+| **9**          | Lịch sử sửa điểm + hoàn thiện phần điểm; sửa lỗi khi tắt mock                                                                                  | —                                                                                                        | SCR-29, SCR-41 → 43 (bảng điểm, nhập điểm, điểm của tôi, lịch sử); SCR-03 → 05 (dashboard); hoàn thiện bảng quy đổi tại SCR-49 | `/trash/*`, khôi phục, `nhat_ky`; tắt mock toàn bộ; chạy ma trận phân quyền |
+| **10**         | Hỗ trợ sửa lỗi tích hợp; rà test plan                                                                                                          | Rà responsive, trạng thái UI toàn bộ màn đào tạo                                                        | Kịch bản demo + dữ liệu demo; rà responsive                                                            | README, kịch bản demo 10 phút, merge cuối, đóng gói staging                                                       |
 
 ---
 
 ## 6. Phụ lục: màn hình thuộc về ai
 
-Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Cột trạng thái cập nhật 26/10/2026.
+Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Quy tắc sở hữu: Đức Anh phụ trách toàn bộ SCR đào tạo 10–24; Đạt phụ trách toàn bộ SCR học vụ 25–43 và dashboard/quản trị 03–05, 47–51; PM phụ trách xác thực, màn toàn cục và thùng rác. Cột trạng thái phản ánh tiến độ đã đối chiếu với code.
 
 > Ghi chú: SCR-06 → 09, 34, 44, 46 không tồn tại trong `docs/05-screens.md` — số được cấp theo nhóm và có khoảng trống, không phải thiếu màn hình. Tổng cộng **47 màn** (gồm SCR-02B).
 
 | SCR | Màn hình                                | Đường dẫn                          | Phụ trách        | Trạng thái                 |
 | --- | --------------------------------------- | ---------------------------------- | ---------------- | -------------------------- |
-| 01  | Đăng nhập 3 vai trò                     | `/dang-nhap/admin`, `/dang-nhap/giang-vien`, `/dang-nhap/sinh-vien` | PM | Ba giao diện riêng; sinh viên dùng mã SV; API + đối chiếu role đã nối, chờ E2E |
-| 02  | Đổi mật khẩu                            | `/doi-mat-khau`                    | PM               | Giao diện + gọi API; chờ E2E |
-| 02B | Ảnh đại diện (dialog trên header)       | —                                  | Đức Anh (tuần 8) | Chưa có                    |
+| 01  | Đăng nhập 3 vai trò                     | `/dang-nhap/admin`, `/dang-nhap/giang-vien`, `/dang-nhap/sinh-vien` | PM | API + đối chiếu role; đã smoke test cả ba vai trò với backend thật; E2E đầy đủ còn lại |
+| 02  | Đổi mật khẩu                            | `/doi-mat-khau`                    | PM               | Giao diện + gọi API; E2E đầy đủ còn lại |
+| 02B | Ảnh đại diện (dialog trên header)       | —                                  | PM (tuần 8)      | Chưa có                    |
 | 03  | Dashboard ADMIN                         | `/dashboard`                       | Đạt (tuần 9)     | Xong (dùng mock)           |
-| 04  | Dashboard GIẢNG VIÊN                    | `/dashboard`                       | Đạt (tuần 7)     | Chưa có                    |
-| 05  | Dashboard SINH VIÊN                     | `/dashboard`                       | Đạt (tuần 7)     | Chưa có                    |
-| 10  | Danh sách sinh viên                     | `/sinh-vien`                       | Đức Anh          | UI + service API xong; E2E chờ auth |
-| 11  | Thêm/sửa sinh viên                      | `/sinh-vien/them`, `/:id/sua`      | Đức Anh          | Form + service API xong; E2E chờ auth |
-| 12  | Chi tiết sinh viên                      | `/sinh-vien/:id`                   | Đức Anh          | Ngăn kéo + service API xong; E2E chờ auth |
-| 13  | Danh sách giảng viên                    | `/giang-vien`                      | Đức Anh          | UI + service API xong; E2E chờ auth |
-| 14  | Thêm/sửa giảng viên                     | `/giang-vien/them`, `/:id/sua`     | Đức Anh          | Form + service API xong; E2E chờ auth |
-| 15  | Chi tiết giảng viên                     | `/giang-vien/:id`                  | Đức Anh          | Hồ sơ + service API xong; E2E chờ auth |
+| 04  | Dashboard GIẢNG VIÊN                    | `/dashboard`                       | Đạt (tuần 9)     | Chưa có                    |
+| 05  | Dashboard SINH VIÊN                     | `/dashboard`                       | Đạt (tuần 9)     | Chưa có                    |
+| 10  | Danh sách sinh viên                     | `/sinh-vien`                       | Đức Anh          | UI + service API xong; E2E CRUD thật còn lại |
+| 11  | Thêm/sửa sinh viên                      | `/sinh-vien/them`, `/:id/sua`      | Đức Anh          | Form + service API xong; E2E CRUD thật còn lại |
+| 12  | Chi tiết sinh viên                      | `/sinh-vien/:id`                   | Đức Anh          | Ngăn kéo + service API xong; E2E CRUD thật còn lại |
+| 13  | Danh sách giảng viên                    | `/giang-vien`                      | Đức Anh          | UI + service API xong; E2E CRUD thật còn lại |
+| 14  | Thêm/sửa giảng viên                     | `/giang-vien/them`, `/:id/sua`     | Đức Anh          | Form + service API xong; E2E CRUD thật còn lại |
+| 15  | Chi tiết giảng viên                     | `/giang-vien/:id`                  | Đức Anh          | Hồ sơ + service API xong; E2E CRUD thật còn lại |
 | 16  | Danh sách lớp hành chính                | `/lop-hanh-chinh`                  | Đức Anh          | Chưa có                    |
 | 17  | Thêm/sửa lớp                            | `/lop-hanh-chinh/them`, `/:id/sua` | Đức Anh          | Chưa có                    |
 | 18  | Chi tiết lớp + gán sinh viên            | `/lop-hanh-chinh/:id`              | Đức Anh          | Chưa có                    |
-| 19  | Danh sách môn học                       | `/mon-hoc`                         | Đạt (tuần 3)     | Chưa có                    |
-| 20  | Thêm/sửa môn học                        | `/mon-hoc/them`, `/:id/sua`        | Đạt (tuần 3)     | Chưa có                    |
-| 21  | Danh sách học kỳ                        | `/hoc-ky`                          | Đạt (tuần 3)     | Chưa có                    |
-| 22  | Thêm/sửa học kỳ + nút chuyển trạng thái | `/hoc-ky/them`, `/:id/sua`         | Đạt (tuần 3)     | Chưa có                    |
-| 23  | Danh sách phòng học                     | `/phong-hoc`                       | Đạt (tuần 4)     | Chưa có                    |
-| 24  | Thêm/sửa phòng học                      | `/phong-hoc/them`, `/:id/sua`      | Đạt (tuần 4)     | Chưa có                    |
-| 25  | Danh sách lớp học phần                  | `/lop-hoc-phan`                    | Đức Anh (tuần 5) | Chưa có                    |
-| 26  | Thêm/sửa lớp học phần                   | `/lop-hoc-phan/them`, `/:id/sua`   | Đức Anh (tuần 5) | Chưa có                    |
-| 27  | Chi tiết lớp học phần                   | `/lop-hoc-phan/:id`                | Đức Anh (tuần 5) | Chưa có                    |
-| 28  | Sinh viên của lớp                       | `/lop-hoc-phan/:id/sinh-vien`      | Đức Anh (tuần 5) | Chưa có                    |
-| 29  | Bảng điểm lớp                           | `/lop-hoc-phan/:id/diem`           | Đức Anh (tuần 6) | Chưa có                    |
+| 19  | Danh sách môn học                       | `/mon-hoc`                         | Đức Anh (tuần 3) | Chưa có                    |
+| 20  | Thêm/sửa môn học                        | `/mon-hoc/them`, `/:id/sua`        | Đức Anh (tuần 3) | Chưa có                    |
+| 21  | Danh sách học kỳ                        | `/hoc-ky`                          | Đức Anh (tuần 3) | Chưa có                    |
+| 22  | Thêm/sửa học kỳ + nút chuyển trạng thái | `/hoc-ky/them`, `/:id/sua`         | Đức Anh (tuần 3) | Chưa có                    |
+| 23  | Danh sách phòng học                     | `/phong-hoc`                       | Đức Anh (tuần 4) | Chưa có                    |
+| 24  | Thêm/sửa phòng học                      | `/phong-hoc/them`, `/:id/sua`      | Đức Anh (tuần 4) | Chưa có                    |
+| 25  | Danh sách lớp học phần                  | `/lop-hoc-phan`                    | Đạt (tuần 5)     | Chưa có                    |
+| 26  | Thêm/sửa lớp học phần                   | `/lop-hoc-phan/them`, `/:id/sua`   | Đạt (tuần 5)     | Chưa có                    |
+| 27  | Chi tiết lớp học phần                   | `/lop-hoc-phan/:id`                | Đạt (tuần 5)     | Chưa có                    |
+| 28  | Sinh viên của lớp                       | `/lop-hoc-phan/:id/sinh-vien`      | Đạt (tuần 5)     | Chưa có                    |
+| 29  | Bảng điểm lớp                           | `/lop-hoc-phan/:id/diem`           | Đạt (tuần 9)    | Chưa có                    |
 | 30  | Đăng ký hộ + đăng ký hàng loạt          | `/dang-ky`                         | Đạt (tuần 7)     | Chưa có                    |
 | 31  | Danh sách đăng ký                       | `/dang-ky/danh-sach`               | Đạt (tuần 7)     | Chưa có                    |
 | 32  | Lớp đang mở (sinh viên)                 | `/lop-hoc-phan`                    | Đạt (tuần 7)     | Chưa có                    |
@@ -270,20 +276,20 @@ Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Cột trạ
 | 35  | Xem lịch                                | `/lich-hoc`                        | Đạt (tuần 5)     | Chưa có                    |
 | 36  | Thêm buổi học                           | `/lop-hoc-phan/:id/lich/them`      | Đạt (tuần 5)     | Chưa có                    |
 | 37  | Sinh lịch hàng tuần                     | `/lop-hoc-phan/:id/lich/sinh`      | Đạt (tuần 5)     | Chưa có                    |
-| 38  | Danh sách buổi để điểm danh             | `/diem-danh`                       | Đạt (tuần 6)     | Chưa có                    |
-| 39  | Điểm danh một buổi                      | `/diem-danh/:sessionId`            | Đạt (tuần 6)     | Chưa có                    |
-| 40  | Thống kê chuyên cần                     | `/lop-hoc-phan/:id/chuyen-can`     | Đạt (tuần 6)     | Chưa có                    |
-| 41  | Nhập điểm                               | `/lop-hoc-phan/:id/diem`           | Đạt (tuần 7)     | Chưa có                    |
-| 42  | Điểm của tôi + CPA                      | `/diem-cua-toi`                    | Đạt (tuần 8)     | Chưa có                    |
-| 43  | Lịch sử sửa điểm                        | `/lop-hoc-phan/:id/diem/lich-su`   | Đạt (tuần 7)     | Chưa có                    |
-| 45  | Thùng rác                               | `/thung-rac`                       | Đức Anh (tuần 6) | Chưa có                    |
+| 38  | Danh sách buổi để điểm danh             | `/diem-danh`                       | Đạt (tuần 8)    | Chưa có                    |
+| 39  | Điểm danh một buổi                      | `/diem-danh/:sessionId`            | Đạt (tuần 8)    | Chưa có                    |
+| 40  | Thống kê chuyên cần                     | `/lop-hoc-phan/:id/chuyen-can`     | Đạt (tuần 8)    | Chưa có                    |
+| 41  | Nhập điểm                               | `/lop-hoc-phan/:id/diem`           | Đạt (tuần 9)    | Chưa có                    |
+| 42  | Điểm của tôi + CPA                      | `/diem-cua-toi`                    | Đạt (tuần 9)    | Chưa có                    |
+| 43  | Lịch sử sửa điểm                        | `/lop-hoc-phan/:id/diem/lich-su`   | Đạt (tuần 9)    | Chưa có                    |
+| 45  | Thùng rác                               | `/thung-rac`                       | PM               | Chưa có                    |
 | 47  | Quản lý menu                            | `/menu`                            | Đạt (tuần 4)     | Chưa có                    |
 | 48  | Thêm/sửa menu                           | `/menu/them`, `/:id/sua`           | Đạt (tuần 4)     | Chưa có                    |
 | 49  | Cấu hình                                | `/cau-hinh`                        | Đạt (tuần 4)     | Chưa có                    |
 | 50  | Quản lý người dùng                      | `/nguoi-dung`                      | Đạt (tuần 4)     | Chưa có                    |
 | 51  | Thêm/sửa người dùng                     | `/nguoi-dung/them`, `/:id/sua`     | Đạt (tuần 4)     | Chưa có                    |
-| 52  | Nút xem theo vai trò (ADMIN)            | header                             | Đức Anh (tuần 8) | Chưa có                    |
-| 53  | Banner đang xem theo vai trò            | toàn cục                           | Đức Anh (tuần 8) | Chưa có                    |
+| 52  | Nút xem theo vai trò (ADMIN)            | header                             | PM (tuần 8)      | Chưa có                    |
+| 53  | Banner đang xem theo vai trò            | toàn cục                           | PM (tuần 8)      | Chưa có                    |
 | —   | Trang style-guide                       | `/style-guide`                     | PM               | Xong                       |
 
 ---

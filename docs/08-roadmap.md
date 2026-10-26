@@ -49,13 +49,13 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 - 4 Policy khung + `Gate::before` cho ADMIN.
 - Toàn bộ `/api/options/*` giờ yêu cầu đăng nhập.
 - `config/sanctum.php`: `guard => []` (chỉ Bearer token, không fallback session), `expiration` 7 ngày.
-- Postman collection 19 request + hướng dẫn test tại `docs/postman/` (sau bổ sung ảnh: 21 request).
+- Postman collection ban đầu 19 request (21 sau bổ sung ảnh); hiện đã mở rộng lên 67 request.
 - Test: `XacThucTest` 16 case, tổng 34 test pass (sau bổ sung MySQL: 46).
 
 **Bổ sung BE (2026-10-24):**
 - `POST /api/me/avatar` + `DELETE /api/me/avatar` (FR-01.10/01.11) qua `CloudinaryService`, cột `users.avatar_url` + `avatar_public_id` (ADR-019). Thiếu cấu hình → 503.
 - Migration v0.4: `khoa_hoc`/`nganh`/`nam_nhap_hoc`, `hoc_ky.nam_hoc`/`ky_thu`, `lop_hoc_phan.nam_thu`.
-- Postman thêm 2 request ảnh (21 request).
+- Postman thêm 2 request ảnh (21 request tại thời điểm đó; collection hiện có 67 request).
 
 ---
 
@@ -73,16 +73,21 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Phân quyền hồ sơ | Tuần 2–3 | 🔶 một phần | `SinhVienPolicy` được gọi ở endpoint sinh viên; `GiangVienController` kiểm tra quyền xem/sửa hồ sơ chính chủ; policy cho module khác chờ triển khai |
 | Design system + layout FE | Tuần 2 | ✅ xong | 14 component `shared/ui`, `/style-guide`, dark mode |
 | Mock layer | Tuần 2 | ✅ xong | `environment.useMock` bật/tắt interceptor; `false` gửi request tới backend thật |
-| Auth phía client (AuthService, bearer interceptor, auth/role/password guard, ba giao diện login) | Tuần 2 (dời sang Tuần 8) | ✅ Đã triển khai; trình duyệt xác minh đăng nhập cả ba vai trò, `/auth/me` và menu tương ứng với backend thật ngày 26/10; test FE/BE pass | CORS cho phép `localhost:4200` và `127.0.0.1:4200`; dashboard gọi `GET /api/dashboard/admin` nhưng backend chưa có route; SCR-52/53 còn lại |
-| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 triển khai một phần | Backend có 8 route mỗi nhóm `students`, `teachers`, `admin-classes`; FE có SCR-10–15 và service gọi đúng endpoint. Auth FE đã được nối; E2E vẫn cần backend/DB sẵn sàng |
+| Auth phía client (AuthService, bearer interceptor, auth/role/password guard, ba giao diện login) | Tuần 2 (dời sang Tuần 8) | ✅ Đã triển khai; trình duyệt xác minh đăng nhập cả ba vai trò, `/auth/me` và menu tương ứng với backend thật ngày 26/10; test FE/BE pass | CORS cho phép `localhost:4200` và `127.0.0.1:4200`; dashboard gọi `GET /api/dashboard/admin` nhưng backend chưa có route; SCR-52/53 còn lại, PM phụ trách |
+| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 triển khai một phần | Backend có 8 route mỗi nhóm `students`, `teachers`, `admin-classes`, `subjects`, `rooms`; CRUD `subjects`/`rooms` và 9 test đang ở working tree, chưa commit/merge. FE có SCR-10–15; E2E vẫn cần backend/DB sẵn sàng |
 | Đăng ký công khai / quên mật khẩu | Chưa chốt | ⏸ hoãn | Đăng ký chờ PM chốt phạm vi; quên mật khẩu công khai chưa có API/SMTP. Tạm hướng dẫn liên hệ phòng đào tạo/Admin |
-| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; các module nghiệp vụ khác còn trong kế hoạch |
-| `openapi.yaml` | Tuần 1 → dần | 🔶 41/113 path | Đã có lô tuần 3–4 (đào tạo + menus + settings) |
+| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; các module nghiệp vụ khác còn trong kế hoạch. Đức Anh: SCR-10–24; Đạt: SCR-25–43, SCR-03–05, SCR-47–51; PM: auth, màn toàn cục, SCR-45 |
+| `openapi.yaml` | Tuần 1 → dần | 🔶 41 path / 65 operation | Đã có 65/113 operation hợp đồng; còn 48 operation cần đặc tả |
 
-**Tổng endpoint:** 36 route Laravel khớp hợp đồng / 113 endpoint được mô tả trong
-[`04-api-contract.md`](04-api-contract.md) mục 18. Trong đó `PUT /api/me` vẫn
-chưa có route Laravel; ngoài ra còn `GET /api/user`, route tiện ích chưa có trong
-hợp đồng. `openapi.yaml` đã đặc tả 41 path; 72 path còn lại được bổ sung theo từng lô.
+**Tổng endpoint:** 52 route Laravel khớp hợp đồng / 113 endpoint được mô tả trong
+[`04-api-contract.md`](04-api-contract.md) mục 18; còn 61 endpoint theo hợp đồng
+chưa có route. Trong đó `PUT /api/me` vẫn chưa có route Laravel; ngoài ra còn
+`GET /api/user`, route tiện ích chưa có trong hợp đồng. Số path OpenAPI (41) là
+khác đơn vị với số operation (65 đã đặc tả, 48 còn lại).
+
+**Kiểm thử và công cụ đã đối chiếu:** backend có 79 test (67 pass, 12 skipped);
+9 test riêng cho CRUD môn học/phòng học đều pass. Pint và `git diff --check`
+đều pass. Postman collection hiện có 67 request.
 
 **Đợt sửa 2026-10-25 — chuẩn bị chia việc cho nhóm 4:**
 
@@ -132,7 +137,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | CRUD `students`, `teachers`, `admin-classes`; tạo kèm tài khoản; trả mật khẩu một lần; **bulk-status + bulk-delete** |
 | Nghiệp vụ | Unique xuyên `users`; chặn xóa theo mục 6.1; phạm vi xem của TEACHER; **khóa tài khoản phải thu hồi token (BR-30)**; **thao tác hàng loạt xử lý từng dòng (BR-31)** |
-| FE | SCR-10 → SCR-18 |
+| FE | Đức Anh: SCR-10 → SCR-18 |
 | Test | TC-03, TC-04, TC-27, TC-28, TC-29, TC-30 |
 | Hạ tầng | Docker Compose staging (PHP + Nginx + MySQL + Angular build) |
 | **Bàn giao** | ADMIN tạo sinh viên, sinh viên đăng nhập được và bị bắt đổi mật khẩu |
@@ -145,7 +150,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | CRUD `subjects`, `semesters`, `rooms`, `menus`, `settings`; endpoint `/options/*` |
 | Nghiệp vụ | Chặn xóa học kỳ không phải UPCOMING (BR-24); vòng đời trạng thái chỉ tiến; chặn chồng lấn kỳ (BR-25); chặn xóa phòng còn buổi; menu theo vai trò |
-| FE | SCR-19 → SCR-24, SCR-47 → SCR-51 |
+| FE | Đức Anh: SCR-19 → SCR-24; Đạt: SCR-47 → SCR-51 |
 | Test | TC-05 (phần đào tạo), TC-18, TC-19, BR-15, BR-19 |
 | **Bàn giao** | Đủ dữ liệu đào tạo để mở lớp học phần |
 
@@ -157,7 +162,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | CRUD `sections`, đổi trạng thái, sinh viên của lớp, policy theo vai trò |
 | Nghiệp vụ | FR-08.05; đổi giảng viên kiểm tra trùng lịch (khung); chặn đổi học kỳ/môn khi đã có đăng ký; chặn hủy lớp đã chốt điểm (BR-29) |
-| FE | SCR-25 → SCR-28 |
+| FE | Đạt: SCR-25 → SCR-28 |
 | Test | TC-05, TC-24, BR-03 |
 | **Bàn giao** | ADMIN mở lớp, gán giảng viên; TEACHER thấy lớp mình; STUDENT thấy lớp OPEN |
 
@@ -169,7 +174,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | CRUD `sessions`, sinh lịch hàng tuần, `/schedules` |
 | Nghiệp vụ | `ScheduleService`: trùng phòng, trùng giảng viên, trùng sinh viên (BR-06, BR-22); buổi học phải trong khoảng ngày của kỳ (BR-25) |
-| FE | SCR-35 → SCR-37, lịch tuần/tháng |
+| FE | Đạt: SCR-35 → SCR-37; PM: SCR-45 (thùng rác) |
 | Test | TC-06, TC-15, TC-19 |
 | **Bàn giao** | Sinh lịch 1 lớp, phát hiện trùng phòng/GV/SV, xem lịch theo vai trò |
 
@@ -181,7 +186,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | `EnrollmentService` dùng chung; `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; hủy |
 | Nghiệp vụ | BR-08, BR-09 (khóa dòng), BR-10, BR-11, BR-20, BR-22, **BR-23 (năm thứ)**, BR-26 (đợt theo kỳ của lớp), BR-27 (đăng ký lại) |
-| FE | SCR-30 → SCR-33 |
+| FE | Đạt: SCR-30 → SCR-33 |
 | Test | TC-07, TC-08, TC-09, TC-17, TC-20, TC-21, TC-25, BR-09 tranh chấp chỗ cuối |
 | **Bàn giao** | ADMIN đăng ký hộ và STUDENT tự đăng ký; tranh chấp chỗ cuối an toàn |
 
@@ -193,7 +198,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | `/sessions/{id}/attendance`, thống kê chuyên cần |
 | Nghiệp vụ | BR-21 (mốc thời gian), BR-27 (chuyên cần tính từ `dang_ky_luc`), 7 ngày sửa, chuyển `DONE`, ADMIN sửa được trên kỳ CLOSED (BR-14 ngoại lệ) |
-| FE | SCR-38 → SCR-40 |
+| FE | Đạt: SCR-38 → SCR-40 |
 | Test | TC-10, công thức chuyên cần |
 | **Bàn giao** | TEACHER điểm danh, STUDENT xem chuyên cần |
 
@@ -205,7 +210,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | Nhập điểm đơn/hàng loạt, tính tổng kết, **quy đổi điểm chữ + hệ 4**, chốt, mở khóa, lịch sử |
 | Nghiệp vụ | Công thức 25/25/50; bảng quy đổi A/B/C/D/F cấu hình trong `cau_hinh`; GPA hệ 10 và hệ 4, **học lại lấy điểm cao nhất** (BR-28), **CPA** (FR-12.08); BR-13 |
-| FE | SCR-41 → SCR-43 (có cột điểm chữ), SCR-03 → SCR-05, SCR-49 (sửa bảng quy đổi) |
+| FE | Đạt: SCR-29, SCR-41 → SCR-43, SCR-03 → SCR-05; hoàn thiện bảng quy đổi tại SCR-49 |
 | Test | TC-11, TC-12, TC-16, TC-22, unit công thức + quy đổi |
 | **Bàn giao** | Toàn bộ luồng end-to-end: mở lớp → sinh lịch → đăng ký → điểm danh → nhập điểm → chốt |
 
@@ -216,7 +221,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 | Việc | Chi tiết |
 |---|---|
 | API | `/trash/*`, khôi phục, `nhat_ky` |
-| FE | SCR-45 thùng rác, rà soát responsive, trạng thái rỗng/lỗi toàn bộ màn |
+| FE | PM: SCR-45 thùng rác; Đức Anh/Đạt: rà soát responsive, trạng thái rỗng/lỗi theo phần phụ trách |
 | Test | TC-13, TC-14, chạy toàn bộ ma trận phân quyền |
 | Tài liệu | Cập nhật `openapi.yaml`, README, kịch bản demo |
 | **Bàn giao** | Bản staging ổn định, dữ liệu demo, kịch bản demo 10 phút |

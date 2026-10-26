@@ -60,6 +60,7 @@ class NhatKy extends Model
         ?array $giaTriCu = null,
         ?array $giaTriMoi = null,
         ?string $ghiChu = null,
+        ?int $nguoiThucHienId = null,
     ): self {
         return static::query()->create([
             'doi_tuong_loai' => $doiTuongLoai,
@@ -67,7 +68,7 @@ class NhatKy extends Model
             'hanh_dong' => $hanhDong,
             'gia_tri_cu' => $giaTriCu,
             'gia_tri_moi' => $giaTriMoi,
-            'nguoi_thuc_hien_id' => auth()->id(),
+            'nguoi_thuc_hien_id' => $nguoiThucHienId ?? auth()->id(),
             'ghi_chu' => $ghiChu,
             'thoi_diem' => now(),
         ]);

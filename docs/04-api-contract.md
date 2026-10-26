@@ -407,6 +407,8 @@ Response mẫu:
 | PATCH | `/api/subjects/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }` |
 | POST | `/api/subjects/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-05.03 |
 
+`GET /api/subjects` hỗ trợ tìm theo `q`, lọc `trang_thai`, sắp xếp bằng `sort_by` (`id`, `ma_mon`, `ten_mon`, `so_tin_chi`, `trang_thai`) và `sort_dir` (`asc`, `desc`), cùng phân trang. Mã môn phải duy nhất; `so_tin_chi` nằm trong khoảng 1–10. Xóa bị từ chối với `409 DELETE_BLOCKED` khi còn lớp học phần chưa xóa thuộc học kỳ chưa `CLOSED`.
+
 ---
 
 ## 8. Học kỳ
@@ -453,6 +455,8 @@ Response mẫu:
 | PATCH | `/api/rooms/{id}/status` | ADMIN |
 | PATCH | `/api/rooms/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }` |
 | POST | `/api/rooms/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-07.03 |
+
+`GET /api/rooms` hỗ trợ tìm theo `q`, lọc `trang_thai`, sắp xếp bằng `sort_by` (`id`, `ma_phong`, `ten_phong`, `suc_chua`, `trang_thai`) và `sort_dir` (`asc`, `desc`), cùng phân trang. Mã phòng phải duy nhất; `suc_chua` phải lớn hơn 0. Xóa bị từ chối với `409 DELETE_BLOCKED` khi còn buổi học `SCHEDULED` chưa kết thúc.
 
 ---
 

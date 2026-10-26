@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\LopHanhChinhController;
+use App\Http\Controllers\Api\MonHocController;
 use App\Http\Controllers\Api\OptionController;
+use App\Http\Controllers\Api\PhongHocController;
 use App\Http\Controllers\Api\SinhVienController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +48,28 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('rooms', [OptionController::class, 'rooms']);
         Route::get('admin-classes', [OptionController::class, 'adminClasses']);
         Route::get('sections', [OptionController::class, 'sections']);
+    });
+
+    Route::prefix('subjects')->group(function () {
+        Route::get('/', [MonHocController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [MonHocController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::patch('bulk-status', [MonHocController::class, 'capNhatTrangThaiHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::post('bulk-delete', [MonHocController::class, 'xoaHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::get('{monHoc}', [MonHocController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::put('{monHoc}', [MonHocController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{monHoc}', [MonHocController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+        Route::patch('{monHoc}/status', [MonHocController::class, 'capNhatTrangThai'])->middleware('vai.tro:ADMIN');
+    });
+
+    Route::prefix('rooms')->group(function () {
+        Route::get('/', [PhongHocController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::post('/', [PhongHocController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::patch('bulk-status', [PhongHocController::class, 'capNhatTrangThaiHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::post('bulk-delete', [PhongHocController::class, 'xoaHangLoat'])->middleware('vai.tro:ADMIN');
+        Route::get('{phongHoc}', [PhongHocController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::put('{phongHoc}', [PhongHocController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{phongHoc}', [PhongHocController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+        Route::patch('{phongHoc}/status', [PhongHocController::class, 'capNhatTrangThai'])->middleware('vai.tro:ADMIN');
     });
 
     Route::prefix('students')->group(function () {

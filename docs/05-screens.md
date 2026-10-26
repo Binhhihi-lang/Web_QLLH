@@ -60,6 +60,11 @@ src/app/
 > Nhóm thứ hai tên là **"Đào tạo"** ở mọi nơi: nhãn sidebar, tên thư mục
 > (`features/dao-tao/`), tên file (`routes/dao-tao.routes.ts`), và cột `nhom`
 > trong bảng `menus`.
+>
+> **Phân công UI:** Đức Anh phụ trách đào tạo SCR-10–24; Đạt phụ trách học vụ
+> SCR-25–43, dashboard SCR-03–05 và quản trị SCR-47–51. PM phụ trách xác thực,
+> các màn toàn cục SCR-02B/SCR-52/SCR-53 và thùng rác SCR-45. Chi tiết ownership
+> file và tiến độ nằm trong [phan-cong-cong-viec.md](phan-cong-cong-viec.md).
 
 ```
 /                     → redirect theo vai trò

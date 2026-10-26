@@ -13,8 +13,8 @@ Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-26
 | [02-use-cases.md](02-use-cases.md) | Use case + tiêu chí chấp nhận | ✅ Đã chốt | Luồng nghiệp vụ, điều kiện biên |
 | [03-data-model.md](03-data-model.md) | ERD, bảng, cột, kiểu, index, ràng buộc | ✅ Đã chốt | Schema database, quy tắc xóa mềm |
 | [04-api-contract.md](04-api-contract.md) | Quy ước API + danh sách endpoint | ✅ Đã chốt | Hợp đồng FE ↔ BE |
-| [openapi.yaml](openapi.yaml) | Khung OpenAPI 3.1 — **41/113 path** đã đặc tả (auth, me/avatar, options, lô tuần 3–4) | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
-| [postman/](postman/) | Collection 21 request + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
+| [openapi.yaml](openapi.yaml) | OpenAPI 3.1 — **41 path, 65 operation** đã đặc tả trong hợp đồng 113 endpoint | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
+| [postman/](postman/) | Collection **67 request** + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
 | [05-screens.md](05-screens.md) | Danh sách màn hình + điều hướng Angular | ✅ Đã chốt | Cấu trúc frontend |
 | [06-test-plan.md](06-test-plan.md) | Ma trận FR/BR → test case | ✅ Đã chốt | Kiểm thử |
 | [07-decisions.md](07-decisions.md) | Nhật ký quyết định kiến trúc (ADR) | ✅ Đã chốt | Lý do các lựa chọn |
@@ -93,3 +93,9 @@ Rà soát nghiệp vụ toàn bộ tài liệu, sửa mâu thuẫn nội bộ v�
 | 17 | 🆕 Xóa **hàng loạt** cho sinh viên, giảng viên, môn, phòng | FR-02.07, FR-04.06, BR-31, `04` §1.6b |
 
 **Vì sao:** rà soát 2026-10-24 phát hiện tài liệu tự mâu thuẫn (mục 10 loại trừ quy đổi điểm chữ trong khi FR-12.03 bắt buộc có), schema lệch ADR-015, và có 6 lỗ hổng nghiệp vụ chưa định nghĩa. Gốc của câu hỏi "học kỳ có phụ thuộc khóa sinh viên không" là tên cột `khoa` nhập nhằng — đã tách rõ ở ADR-016.
+
+## Cập nhật triển khai và phân công (2026-10-26)
+
+- Phân công màn hình đã thống nhất: Đức Anh phụ trách đào tạo SCR-10–24; Đạt phụ trách học vụ SCR-25–43 và dashboard/quản trị SCR-03–05, SCR-47–51; PM phụ trách xác thực, màn toàn cục và thùng rác. Chi tiết tại [phan-cong-cong-viec.md](phan-cong-cong-viec.md).
+- Backend hiện có 52/113 endpoint theo hợp đồng và 1 route tiện ích; CRUD môn học/phòng học cùng 9 test đang có trong working tree, chưa commit/merge.
+- Postman có 67 request. OpenAPI có 41 path, tương ứng 65 operation; không so sánh số path trực tiếp với tổng endpoint trong hợp đồng.

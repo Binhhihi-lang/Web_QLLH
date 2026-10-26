@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
     "name": "QLLH API — Hệ thống quản lý lớp học",
-    "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy lần lượt folder **03 → 04 → 05** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
+    "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1569,7 +1569,241 @@
       ]
     },
     {
-      "name": "06 — Kiểm tra lỗi & phân quyền",
+      "name": "06 — Môn học (CRUD + bulk)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "01. Tạo môn học",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Tạo môn học thành công', () => pm.response.to.have.status(201));",
+                "pm.collectionVariables.set('mon_hoc_id', pm.response.json().data.id);",
+                "pm.collectionVariables.set('mon_hoc_ma', pm.response.json().data.ma_mon);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ma_mon\": \"PM{{$timestamp}}\",\n    \"ten_mon\": \"Môn học kiểm thử Postman\",\n    \"so_tin_chi\": 3,\n    \"trang_thai\": true\n}" },
+            "url": "{{base_url}}/api/subjects"
+          },
+          "response": []
+        },
+        {
+          "name": "02. Danh sách + tìm kiếm môn học",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/subjects?q={{mon_hoc_ma}}&trang_thai=true&per_page=10"
+          },
+          "response": []
+        },
+        {
+          "name": "03. Chi tiết môn học",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/subjects/{{mon_hoc_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "04. Cập nhật môn học",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ma_mon\": \"{{mon_hoc_ma}}\",\n    \"ten_mon\": \"Môn học Postman đã cập nhật\",\n    \"so_tin_chi\": 4,\n    \"trang_thai\": true\n}" },
+            "url": "{{base_url}}/api/subjects/{{mon_hoc_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "05. Khóa môn học",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"trang_thai\": false\n}" },
+            "url": "{{base_url}}/api/subjects/{{mon_hoc_id}}/status"
+          },
+          "response": []
+        },
+        {
+          "name": "06. Mở khóa môn học hàng loạt",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ids\": [{{mon_hoc_id}}],\n    \"trang_thai\": true\n}" },
+            "url": "{{base_url}}/api/subjects/bulk-status"
+          },
+          "response": []
+        },
+        {
+          "name": "07. Tạo môn tạm cho bulk-delete",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Tạo môn tạm thành công', () => pm.response.to.have.status(201));",
+                "pm.collectionVariables.set('mon_hoc_bulk_id', pm.response.json().data.id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ma_mon\": \"DEL{{$timestamp}}\",\n    \"ten_mon\": \"Môn tạm để xóa hàng loạt\",\n    \"so_tin_chi\": 1\n}" },
+            "url": "{{base_url}}/api/subjects"
+          },
+          "response": []
+        },
+        {
+          "name": "08. Xóa môn học hàng loạt",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ids\": [{{mon_hoc_bulk_id}}, 999999999]\n}" },
+            "url": "{{base_url}}/api/subjects/bulk-delete"
+          },
+          "response": []
+        },
+        {
+          "name": "09. Xóa môn học",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/subjects/{{mon_hoc_id}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 — Phòng học (CRUD + bulk)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "01. Tạo phòng học",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Tạo phòng học thành công', () => pm.response.to.have.status(201));",
+                "pm.collectionVariables.set('phong_hoc_id', pm.response.json().data.id);",
+                "pm.collectionVariables.set('phong_hoc_ma', pm.response.json().data.ma_phong);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ma_phong\": \"PM{{$timestamp}}\",\n    \"ten_phong\": \"Phòng kiểm thử Postman\",\n    \"suc_chua\": 40,\n    \"trang_thai\": true\n}" },
+            "url": "{{base_url}}/api/rooms"
+          },
+          "response": []
+        },
+        {
+          "name": "02. Danh sách + tìm kiếm phòng học",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/rooms?q={{phong_hoc_ma}}&trang_thai=true&per_page=10"
+          },
+          "response": []
+        },
+        {
+          "name": "03. Chi tiết phòng học",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/rooms/{{phong_hoc_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "04. Cập nhật phòng học",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ma_phong\": \"{{phong_hoc_ma}}\",\n    \"ten_phong\": \"Phòng Postman đã cập nhật\",\n    \"suc_chua\": 60,\n    \"trang_thai\": true\n}" },
+            "url": "{{base_url}}/api/rooms/{{phong_hoc_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "05. Khóa phòng học",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"trang_thai\": false\n}" },
+            "url": "{{base_url}}/api/rooms/{{phong_hoc_id}}/status"
+          },
+          "response": []
+        },
+        {
+          "name": "06. Mở khóa phòng học hàng loạt",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ids\": [{{phong_hoc_id}}],\n    \"trang_thai\": true\n}" },
+            "url": "{{base_url}}/api/rooms/bulk-status"
+          },
+          "response": []
+        },
+        {
+          "name": "07. Tạo phòng tạm cho bulk-delete",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Tạo phòng tạm thành công', () => pm.response.to.have.status(201));",
+                "pm.collectionVariables.set('phong_hoc_bulk_id', pm.response.json().data.id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ma_phong\": \"DEL{{$timestamp}}\",\n    \"ten_phong\": \"Phòng tạm để xóa hàng loạt\",\n    \"suc_chua\": 30\n}" },
+            "url": "{{base_url}}/api/rooms"
+          },
+          "response": []
+        },
+        {
+          "name": "08. Xóa phòng học hàng loạt",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"ids\": [{{phong_hoc_bulk_id}}, 999999999]\n}" },
+            "url": "{{base_url}}/api/rooms/bulk-delete"
+          },
+          "response": []
+        },
+        {
+          "name": "09. Xóa phòng học",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/rooms/{{phong_hoc_id}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 — Kiểm tra lỗi & phân quyền",
       "item": [
         {
           "name": "Không có token → 401",
