@@ -114,7 +114,7 @@ src/app/
 | Mã | Màn hình | Route | Ghi chú |
 |---|---|---|---|
 | SCR-10 ✅ | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên (+email phụ), lớp, giới tính, ngày sinh, trạng thái, thao tác. Bộ lọc: tìm kiếm, khóa, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột. Phân trang. **Chọn nhiều dòng → thanh hành động: Kích hoạt / Khóa / Xóa** (FR-02.05b, FR-02.07). Xong với mock. |
-| SCR-11 | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form; sau khi tạo hiện dialog chứa `mat_khau_ban_dau` + nút copy. Hiện là trang giữ chỗ. |
+| SCR-11 ✅ | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form tạo/cập nhật hồ sơ; tạo thành công hiện dialog chứa `mat_khau_ban_dau` một lần + nút sao chép. Đã hoàn thành với mock. |
 | SCR-12 ✅ | Chi tiết sinh viên | `/sinh-vien/:id` | Ngăn kéo mở từ danh sách, không chuyển trang (giữ vị trí cuộn và bộ lọc). Tải lại theo `id`. Xong với mock. |
 
 > TEACHER thấy bộ cột giới hạn (FR-02.03) và không thấy nút thêm/sửa/xóa.

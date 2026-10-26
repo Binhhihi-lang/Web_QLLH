@@ -75,7 +75,7 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Mock layer | Tuần 2 | ✅ xong | Cờ `useMock: true` đang bật |
 | Auth phía client (AuthService, guard) | Tuần 2 | ⬜ chưa | Dời sang Tuần 8 |
 | CRUD nghiệp vụ + bulk | Tuần 3–9 | ⬜ chưa | Toàn bộ còn lại |
-| Màn hình FE | Tuần 3–9 | 🔶 4/47 | Đăng nhập, dashboard ADMIN, style-guide, danh sách sinh viên (SCR-10) |
+| Màn hình FE | Tuần 3–9 | 🔶 5/47 | Đăng nhập, dashboard ADMIN, style-guide, danh sách và thêm/sửa sinh viên (SCR-10/11) |
 | `openapi.yaml` | Tuần 1 → dần | 🔶 41/113 path | Đã có lô tuần 3–4 (đào tạo + menus + settings) |
 
 **Tổng endpoint:** 11 chạy thật / 113 trong hợp đồng (`04-api-contract.md` mục 18). `openapi.yaml` đã đặc tả 41 path (lô tuần 3–4), phần còn lại sinh dần mỗi thứ Sáu.
@@ -88,6 +88,7 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Dựng 2 component dùng chung còn thiếu | `shared/ui/data-table.ts` (sắp xếp, chọn nhiều dòng, 4 trạng thái), `shared/ui/form-field.ts` |
 | Thêm component phụ trợ | `shared/ui/confirm-dialog.ts`, `date-input.ts`, `dang-xay-dung.ts`, `shared/pipes/ngay-vn.pipe.ts` |
 | Màn SCR-10 danh sách sinh viên | `features/dao-tao/sinh-vien/danh-sach.ts` — khuôn mẫu cho ~40 màn còn lại, kèm ngăn kéo chi tiết SCR-12 |
+| Màn SCR-11 thêm/sửa sinh viên | `features/dao-tao/sinh-vien/form.ts` — tạo/cập nhật theo hợp đồng, validation và dialog mật khẩu ban đầu; đang dùng mock |
 | Thao tác hàng loạt | Nối thật `PATCH /students/bulk-status` + `POST /students/bulk-delete` (BR-31), hiện kết quả từng dòng lỗi |
 | Trang giữ chỗ cho màn chưa làm | `DangXayDung` + khai route cho cả 14 mục sidebar, để bấm vào không rơi về dashboard |
 | Sửa lỗi Escape không đóng popup | `confirm-dialog`, ngăn kéo chi tiết dùng `@HostListener('document:keydown.escape')` + focus vào hộp thoại |

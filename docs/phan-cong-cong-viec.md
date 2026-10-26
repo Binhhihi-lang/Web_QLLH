@@ -216,7 +216,7 @@ Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Cột trạ
 | 04  | Dashboard GIẢNG VIÊN                    | `/dashboard`                       | Đạt (tuần 7)     | Chưa có                    |
 | 05  | Dashboard SINH VIÊN                     | `/dashboard`                       | Đạt (tuần 7)     | Chưa có                    |
 | 10  | Danh sách sinh viên                     | `/sinh-vien`                       | Đức Anh          | Xong (mock + bulk)         |
-| 11  | Thêm/sửa sinh viên                      | `/sinh-vien/them`, `/:id/sua`      | Đức Anh          | Chưa có                    |
+| 11  | Thêm/sửa sinh viên                      | `/sinh-vien/them`, `/:id/sua`      | Đức Anh          | Xong (form + mock)         |
 | 12  | Chi tiết sinh viên                      | `/sinh-vien/:id`                   | Đức Anh          | Xong (ngăn kéo)            |
 | 13  | Danh sách giảng viên                    | `/giang-vien`                      | Đức Anh          | Chưa có                    |
 | 14  | Thêm/sửa giảng viên                     | `/giang-vien/them`, `/:id/sua`     | Đức Anh          | Chưa có                    |

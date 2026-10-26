@@ -1,4 +1,5 @@
 import { HttpParams } from '@angular/common/http';
+import { LopHanhChinh, SinhVien } from '@core/models/dao-tao.model';
 import {
   LOP_HANH_CHINH_MOCK,
   MON_HOC_MOCK,
@@ -63,10 +64,51 @@ export class DaoTaoRegistry {
       return paginate(rows, params, '/api/students');
     }
 
+    if (path === '/students' && method === 'POST') {
+      const ketQua = this.chuanHoaSinhVien(body);
+      const loiDuLieu = this.loiDuLieuSinhVien(ketQua);
+      if (loiDuLieu) return loiDuLieu;
+
+      const lop = ketQua.lop;
+      const sinhVien: SinhVien = {
+        id: Math.max(0, ...this.sinhVien.map((r) => r.id)) + 1,
+        ...ketQua.duLieu,
+        lop_hanh_chinh: lop
+          ? { id: lop.id, ma_lop: lop.ma_lop, ten_lop: lop.ten_lop }
+          : null,
+        avatar_url: null,
+        da_xoa: false,
+      };
+      this.sinhVien.push(sinhVien);
+
+      // Mật khẩu mock cố định để kiểm thử ổn định; backend thật sinh mật khẩu ngẫu nhiên.
+      return ok({ ...sinhVien, mat_khau_ban_dau: 'MockSV2026!!' });
+    }
+
     const chiTietSv = path.match(/^\/students\/(\d+)$/);
     if (chiTietSv && method === 'GET') {
       const sv = this.sinhVien.find((r) => r.id === Number(chiTietSv[1]) && !r.da_xoa);
       return sv ? ok(sv) : loi(MaLoi.NOT_FOUND, 'Không tìm thấy sinh viên.');
+    }
+
+    if (chiTietSv && method === 'PUT') {
+      const id = Number(chiTietSv[1]);
+      const viTri = this.sinhVien.findIndex((r) => r.id === id && !r.da_xoa);
+      if (viTri === -1) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy sinh viên.');
+
+      const ketQua = this.chuanHoaSinhVien(body, id);
+      const loiDuLieu = this.loiDuLieuSinhVien(ketQua);
+      if (loiDuLieu) return loiDuLieu;
+
+      const lop = ketQua.lop;
+      this.sinhVien[viTri] = {
+        ...this.sinhVien[viTri],
+        ...ketQua.duLieu,
+        lop_hanh_chinh: lop
+          ? { id: lop.id, ma_lop: lop.ma_lop, ten_lop: lop.ten_lop }
+          : null,
+      };
+      return ok(this.sinhVien[viTri], 'Đã cập nhật sinh viên.');
     }
 
     if (chiTietSv && method === 'DELETE') {
@@ -154,6 +196,107 @@ export class DaoTaoRegistry {
     }
 
     return undefined;
+  }
+
+  private chuanHoaSinhVien(
+    body: unknown,
+    boQuaId?: number,
+  ): {
+    duLieu: Omit<SinhVien, 'id' | 'lop_hanh_chinh' | 'avatar_url' | 'da_xoa'>;
+    lop: LopHanhChinh | null;
+    errors: Record<string, string[]>;
+    maLoi: typeof MaLoi.DUPLICATE_CODE | typeof MaLoi.DUPLICATE_EMAIL | null;
+  } {
+    const data =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+    const maSv = typeof data['ma_sv'] === 'string' ? data['ma_sv'].trim() : '';
+    const hoTen = typeof data['ho_ten'] === 'string' ? data['ho_ten'].trim() : '';
+    const email = typeof data['email'] === 'string' ? data['email'].trim() : '';
+    const soDienThoai =
+      typeof data['so_dien_thoai'] === 'string' ? data['so_dien_thoai'].trim() : '';
+    const ngaySinh = typeof data['ngay_sinh'] === 'string' ? data['ngay_sinh'] : null;
+    const lopId =
+      data['lop_hanh_chinh_id'] === null ||
+      data['lop_hanh_chinh_id'] === undefined ||
+      data['lop_hanh_chinh_id'] === ''
+        ? null
+        : Number(data['lop_hanh_chinh_id']);
+    const errors: Record<string, string[]> = {};
+    let maLoi: typeof MaLoi.DUPLICATE_CODE | typeof MaLoi.DUPLICATE_EMAIL | null = null;
+    const themLoi = (truong: string, message: string) => {
+      errors[truong] = [...(errors[truong] ?? []), message];
+    };
+
+    if (!maSv) themLoi('ma_sv', 'Mã sinh viên là bắt buộc.');
+    else if (maSv.length > 50) themLoi('ma_sv', 'Mã sinh viên không được vượt quá 50 ký tự.');
+    if (!hoTen) themLoi('ho_ten', 'Họ tên là bắt buộc.');
+    else if (hoTen.length > 255) themLoi('ho_ten', 'Họ tên không được vượt quá 255 ký tự.');
+    if (!email) themLoi('email', 'Email là bắt buộc.');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) themLoi('email', 'Email không hợp lệ.');
+    else if (
+      this.sinhVien.some(
+        (r) =>
+          r.id !== boQuaId &&
+          r.email.toLocaleLowerCase() === email.toLocaleLowerCase(),
+      ) ||
+      this.giangVien.some((r) => r.email.toLocaleLowerCase() === email.toLocaleLowerCase())
+    ) {
+      themLoi('email', 'Email này đã được sử dụng.');
+      maLoi ??= MaLoi.DUPLICATE_EMAIL;
+    }
+    if (
+      maSv &&
+      this.sinhVien.some((r) => r.id !== boQuaId && r.ma_sv.toLocaleLowerCase() === maSv.toLocaleLowerCase())
+    ) {
+      themLoi('ma_sv', 'Mã sinh viên này đã tồn tại.');
+      maLoi = MaLoi.DUPLICATE_CODE;
+    }
+    if (soDienThoai.length > 20) {
+      themLoi('so_dien_thoai', 'Số điện thoại không được vượt quá 20 ký tự.');
+    }
+    if (data['gioi_tinh'] !== undefined && data['gioi_tinh'] !== null && typeof data['gioi_tinh'] !== 'boolean') {
+      themLoi('gioi_tinh', 'Giới tính không hợp lệ.');
+    }
+    if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
+      themLoi('trang_thai', 'Trạng thái không hợp lệ.');
+    }
+
+    const lop =
+      lopId === null ? null : this.lopHanhChinh.find((r) => r.id === lopId && !r.da_xoa) ?? null;
+    if (lopId !== null && (!Number.isInteger(lopId) || !lop)) {
+      themLoi('lop_hanh_chinh_id', 'Lớp hành chính không hợp lệ.');
+    }
+
+    return {
+      duLieu: {
+        ma_sv: maSv,
+        ho_ten: hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: typeof data['gioi_tinh'] === 'boolean' ? data['gioi_tinh'] : true,
+        email,
+        so_dien_thoai: soDienThoai || null,
+        dia_chi: typeof data['dia_chi'] === 'string' ? data['dia_chi'].trim() || null : null,
+        trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+      },
+      lop,
+      errors,
+      maLoi,
+    };
+  }
+
+  private loiDuLieuSinhVien(
+    ketQua: ReturnType<DaoTaoRegistry['chuanHoaSinhVien']>,
+  ): object | null {
+    if (ketQua.maLoi) {
+      const message =
+        ketQua.maLoi === MaLoi.DUPLICATE_CODE
+          ? 'Mã sinh viên này đã tồn tại.'
+          : 'Email này đã được sử dụng.';
+      return loi(ketQua.maLoi, message, ketQua.errors);
+    }
+    return Object.keys(ketQua.errors).length > 0 ? loiValidation(ketQua.errors) : null;
   }
 
   /**
