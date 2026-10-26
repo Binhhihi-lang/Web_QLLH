@@ -4,7 +4,7 @@
 
 | Phiên bản | Ngày       | Trạng thái              | Căn cứ                                                 |
 | --------- | ---------- | ----------------------- | ------------------------------------------------------ |
-| 1.1       | 25/10/2026 | Đề xuất — chờ nhóm chốt | `docs/08-roadmap.md` + trạng thái code nhánh `develop` |
+| 1.2       | 26/10/2026 | Đề xuất — chờ nhóm chốt | `docs/08-roadmap.md` + trạng thái code nhánh `develop` |
 
 ---
 
@@ -31,16 +31,22 @@ Câu hỏi đặt ra: kiến trúc hiện tại có đủ để hai bên làm vi
 
 1. **Việc tách là khả thi.** Frontend và backend tách được thật, nhờ mock layer ở tầng HTTP interceptor và bộ hợp đồng API viết trước. Đức Anh và Đạt không cần chờ Tiến một ngày nào.
 2. **Điều kiện đã đạt.** Bốn điểm lệch đã sửa: đường dẫn API, tên trường `label`, tách ba file dùng chung, và 10 test khoá quy ước để không lệch lại.
-3. **Nút thắt nằm ở backend.** Một mình Tiến không gánh nổi 102 endpoint còn lại trong 8 tuần. Đây là rủi ro lớn nhất, lớn hơn mọi rủi ro kỹ thuật khác. Cách xử lý ở [mục 9](#9-rủi-ro-và-cách-xử-lý).
+3. **Khối lượng backend vẫn là rủi ro.** Lô quản lý sinh viên, giảng viên và lớp hành chính đã có API; còn 77 endpoint trong hợp đồng cần triển khai. Cách xử lý ở [mục 9](#9-rủi-ro-và-cách-xử-lý).
 
 ### Con số cần nhớ
 
 | Hạng mục     | Đã xong                                                              | Còn lại | Ai làm        |
 | ------------ | -------------------------------------------------------------------- | ------- | ------------- |
-| Endpoint API | 11                                                                   | 102     | Tiến + PM     |
+| Endpoint API | 36 endpoint theo hợp đồng + 1 route tiện ích                         | 77      | Tiến + PM     |
 | Hợp đồng     | 41/113 path trong `openapi.yaml` (đủ cho tuần 3–4)                    | 72      | PM            |
-| Màn hình     | 4 (đăng nhập, dashboard ADMIN, style-guide, danh sách sinh viên)      | ~43     | Đức Anh + Đạt |
+| Màn hình     | 9 (đăng nhập, dashboard ADMIN, style-guide, SCR-10–15)                | 38      | Đức Anh + Đạt |
 | Thời gian    | 2 tuần / 10 tuần                                                     | 8 tuần  | —             |
+
+**Cập nhật 26/10:** Backend đã có các API quản lý `students`, `teachers` và
+`admin-classes`; frontend sinh viên/giảng viên đã gọi các API tương ứng qua
+service. Chưa hoàn tất E2E: API yêu cầu bearer token nhưng AuthService/interceptor
+phía FE còn thiếu. Chi tiết trạng thái từng màn ở [mục 6](#6-phụ-lục-màn-hình-thuộc-về-ai)
+và [docs/08-roadmap.md](08-roadmap.md).
 
 ### Cách chia việc trong một câu
 
@@ -48,10 +54,25 @@ Câu hỏi đặt ra: kiến trúc hiện tại có đủ để hai bên làm vi
 
 | Vai trò        | Thành viên | Phụ trách chính                                       | Nhánh làm việc             |
 | -------------- | ---------- | ----------------------------------------------------- | -------------------------- |
-| PM / điều phối | Bạn        | Hợp đồng API, tài liệu, merge, hạ tầng, API khuôn mẫu | `develop` + `feature/pm-*` |
+| PM / điều phối | Bạn        | Hợp đồng API, tài liệu, merge, hạ tầng, API khuôn mẫu, **Auth + phân quyền FE** | `develop` + `feature/pm-*` |
 | Frontend 1     | Đức Anh    | Toàn bộ màn đào tạo + CRUD                            | `feature/fe-dao-tao`       |
 | Frontend 2     | Đạt        | Toàn bộ màn học vụ + dashboard + quản trị             | `feature/fe-hoc-vu`        |
 | Backend        | Tiến       | Phần lõi API nghiệp vụ                                | `feature/be-*`             |
+
+### Phạm vi Auth và phân quyền do PM phụ trách
+
+- **Đã triển khai theo API hiện có:** đăng nhập, lưu token theo lựa chọn ghi nhớ,
+  tải hồ sơ `/auth/me`, bearer interceptor, xử lý phiên hết hạn (401), đăng xuất,
+  đổi mật khẩu bắt buộc và guard theo vai trò/chính chủ. Ba cổng đăng nhập riêng
+  theo vai trò; sinh viên dùng mã sinh viên, ADMIN/giảng viên dùng email.
+- **Phần UI:** lọc menu và chặn truy cập trực tiếp vào route theo vai trò trong
+  `docs/05-screens.md`. Đây là lớp bảo vệ trải nghiệm; backend Policy vẫn là nơi
+  bắt buộc kiểm tra quyền và quyền sở hữu dữ liệu.
+- **Chưa triển khai:** đăng ký tài khoản công khai (để bàn riêng) và quên mật khẩu
+  công khai (chưa có API/SMTP đã xác nhận). Người dùng quên mật khẩu hiện liên hệ
+  phòng đào tạo/Admin để được hỗ trợ; không tạo route giả hoặc giả lập luồng gửi mail.
+- **Còn cần tích hợp:** kiểm tra đăng nhập với backend đang chạy và hoàn tất ma trận
+  E2E theo ba vai trò sau khi cấu hình môi trường phát triển.
 
 ---
 
@@ -203,24 +224,24 @@ Cột "Bàn giao" là điều kiện để tuần đó được coi là xong —
 
 ## 6. Phụ lục: màn hình thuộc về ai
 
-Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Cột trạng thái tính đến 25/10/2026.
+Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Cột trạng thái cập nhật 26/10/2026.
 
 > Ghi chú: SCR-06 → 09, 34, 44, 46 không tồn tại trong `docs/05-screens.md` — số được cấp theo nhóm và có khoảng trống, không phải thiếu màn hình. Tổng cộng **47 màn** (gồm SCR-02B).
 
 | SCR | Màn hình                                | Đường dẫn                          | Phụ trách        | Trạng thái                 |
 | --- | --------------------------------------- | ---------------------------------- | ---------------- | -------------------------- |
-| 01  | Đăng nhập                               | `/dang-nhap`                       | PM               | Có giao diện, chưa nối API |
-| 02  | Đổi mật khẩu                            | `/doi-mat-khau`                    | Đức Anh (tuần 8) | Chưa có                    |
+| 01  | Đăng nhập 3 vai trò                     | `/dang-nhap/admin`, `/dang-nhap/giang-vien`, `/dang-nhap/sinh-vien` | PM | Ba giao diện riêng; sinh viên dùng mã SV; API + đối chiếu role đã nối, chờ E2E |
+| 02  | Đổi mật khẩu                            | `/doi-mat-khau`                    | PM               | Giao diện + gọi API; chờ E2E |
 | 02B | Ảnh đại diện (dialog trên header)       | —                                  | Đức Anh (tuần 8) | Chưa có                    |
 | 03  | Dashboard ADMIN                         | `/dashboard`                       | Đạt (tuần 9)     | Xong (dùng mock)           |
 | 04  | Dashboard GIẢNG VIÊN                    | `/dashboard`                       | Đạt (tuần 7)     | Chưa có                    |
 | 05  | Dashboard SINH VIÊN                     | `/dashboard`                       | Đạt (tuần 7)     | Chưa có                    |
-| 10  | Danh sách sinh viên                     | `/sinh-vien`                       | Đức Anh          | Xong (mock + bulk)         |
-| 11  | Thêm/sửa sinh viên                      | `/sinh-vien/them`, `/:id/sua`      | Đức Anh          | Xong (form + mock)         |
-| 12  | Chi tiết sinh viên                      | `/sinh-vien/:id`                   | Đức Anh          | Xong (ngăn kéo)            |
-| 13  | Danh sách giảng viên                    | `/giang-vien`                       | Đức Anh          | Xong (tìm/lọc + bulk mock) |
-| 14  | Thêm/sửa giảng viên                     | `/giang-vien/them`, `/:id/sua`     | Đức Anh          | Xong (form + mock)         |
-| 15  | Chi tiết giảng viên                     | `/giang-vien/:id`                  | Đức Anh          | Xong (hồ sơ + mock)        |
+| 10  | Danh sách sinh viên                     | `/sinh-vien`                       | Đức Anh          | UI + service API xong; E2E chờ auth |
+| 11  | Thêm/sửa sinh viên                      | `/sinh-vien/them`, `/:id/sua`      | Đức Anh          | Form + service API xong; E2E chờ auth |
+| 12  | Chi tiết sinh viên                      | `/sinh-vien/:id`                   | Đức Anh          | Ngăn kéo + service API xong; E2E chờ auth |
+| 13  | Danh sách giảng viên                    | `/giang-vien`                      | Đức Anh          | UI + service API xong; E2E chờ auth |
+| 14  | Thêm/sửa giảng viên                     | `/giang-vien/them`, `/:id/sua`     | Đức Anh          | Form + service API xong; E2E chờ auth |
+| 15  | Chi tiết giảng viên                     | `/giang-vien/:id`                  | Đức Anh          | Hồ sơ + service API xong; E2E chờ auth |
 | 16  | Danh sách lớp hành chính                | `/lop-hanh-chinh`                  | Đức Anh          | Chưa có                    |
 | 17  | Thêm/sửa lớp                            | `/lop-hanh-chinh/them`, `/:id/sua` | Đức Anh          | Chưa có                    |
 | 18  | Chi tiết lớp + gán sinh viên            | `/lop-hanh-chinh/:id`              | Đức Anh          | Chưa có                    |

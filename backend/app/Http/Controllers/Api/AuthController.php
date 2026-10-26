@@ -22,12 +22,21 @@ class AuthController extends Controller
      */
     public function dangNhap(DangNhapRequest $request): JsonResponse
     {
-        $nguoiDung = User::query()
-            ->where('email', $request->validated('email'))
-            ->first();
+        $duLieu = $request->validated();
+        $truyVanNguoiDung = User::query();
 
-        if ($nguoiDung === null || ! Hash::check($request->validated('password'), $nguoiDung->password)) {
-            throw new LoiNghiepVu('AUTH_INVALID', 'Email hoặc mật khẩu không đúng.', 401);
+        if (isset($duLieu['ma_sv'])) {
+            $truyVanNguoiDung
+                ->where('vai_tro', User::SINH_VIEN)
+                ->whereHas('sinhVien', fn ($truyVan) => $truyVan->where('ma_sv', $duLieu['ma_sv']));
+        } else {
+            $truyVanNguoiDung->where('email', $duLieu['email']);
+        }
+
+        $nguoiDung = $truyVanNguoiDung->first();
+
+        if ($nguoiDung === null || ! Hash::check($duLieu['password'], $nguoiDung->password)) {
+            throw new LoiNghiepVu('AUTH_INVALID', 'Thông tin đăng nhập không đúng.', 401);
         }
 
         if (! $nguoiDung->trang_thai) {

@@ -50,6 +50,45 @@ class XacThucTest extends TestCase
         $this->assertNotEmpty($phanHoi->json('data.token'));
     }
 
+    public function test_sinh_vien_dang_nhap_bang_ma_sinh_vien(): void
+    {
+        $sinhVien = SinhVien::factory()->create(['ma_sv' => 'SV000123']);
+
+        $this->postJson('/api/auth/login', [
+            'ma_sv' => $sinhVien->ma_sv,
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.nguoi_dung.vai_tro', User::SINH_VIEN);
+    }
+
+    public function test_ma_sinh_vien_khong_dang_nhap_duoc_voi_tai_khoan_khac_vai_tro(): void
+    {
+        $admin = $this->taoNguoiDung();
+        SinhVien::factory()->create([
+            'ma_sv' => 'SV000123',
+            'user_id' => $admin->id,
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'ma_sv' => 'SV000123',
+            'password' => 'password',
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('ma_loi', 'AUTH_INVALID');
+    }
+
+    public function test_dang_nhap_tu_choi_khi_gui_ca_email_va_ma_sinh_vien(): void
+    {
+        $this->postJson('/api/auth/login', [
+            'email' => 'admin@example.com',
+            'ma_sv' => 'SV000123',
+            'password' => 'password',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('ma_loi', 'VALIDATION_ERROR');
+    }
+
     public function test_dang_nhap_sai_mat_khau_tra_401_auth_invalid(): void
     {
         $this->taoNguoiDung();

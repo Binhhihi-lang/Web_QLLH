@@ -1,7 +1,7 @@
 # 00 — Mục lục tài liệu dự án QLLH
 
 **Hệ thống quản lý lớp học** — Laravel REST API + Angular + MySQL
-Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-25
+Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-26
 
 ---
 

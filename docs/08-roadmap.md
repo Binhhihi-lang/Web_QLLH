@@ -36,11 +36,11 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 |---|---|---|
 | Auth API | Login, logout, me, change-password, `must_change_password` middleware, rate limit | ✅ BE xong |
 | Policy khung | `LopHocPhanPolicy`, `SinhVienPolicy`, `DiemPolicy`, `DiemDanhPolicy` | ✅ BE xong (chưa endpoint nào gọi — chờ CRUD Tuần 3) |
-| FE core | Auth service, interceptor (gắn token, xử lý 401/403), guard (auth, role, must-change-password), **bộ chuyển chế độ xem vai trò cho ADMIN (SCR-52/53)** | ⬜ FE — dời sang Tuần 8 |
+| FE core | Auth service, bearer interceptor (xử lý 401), guard (auth, role, must-change-password), ba cổng đăng nhập riêng | 🔶 Auth/guard/ba cổng đã triển khai; E2E với backend còn chờ; SCR-52/53 còn lại |
 | FE layout | Layout chính, sidebar, header, footer | ✅ FE xong (menu khai cứng, chưa đọc `/api/menus`) |
 | FE shared | `pagination`, `search-input`, `status-badge`, `empty-state`, `loading`, `page-header`, `app-button`, `app-card`, `app-alert` | ✅ 9/11 xong; còn `data-table`, `form-field` |
 | Test | TC-01, TC-02, ma trận phân quyền khung | ✅ 46 test BE (12 test MySQL thật) |
-| **Bàn giao** | Đăng nhập bằng 3 vai trò trên Angular; sidebar khác nhau; bắt đổi mật khẩu lần đầu | 🔶 một phần — layout + trang đăng nhập có, chưa nối API |
+| **Bàn giao** | Đăng nhập bằng 3 vai trò trên Angular; sidebar khác nhau; bắt đổi mật khẩu lần đầu | 🔶 UI/API + lọc menu/route đã có; chờ E2E với backend |
 
 **Kết quả BE Tuần 2 (2026-10-23):**
 - 4 endpoint auth: `POST /api/auth/login` (rate limit 5/phút), `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/change-password`.
@@ -59,7 +59,7 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 
 ---
 
-## Trạng thái thực tế tại 2026-10-25 (sau đợt sửa chuẩn bị chia việc nhóm 4)
+## Trạng thái thực tế tại 2026-10-26
 
 Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng để biết tuần nào thực sự đã xong.
 
@@ -70,15 +70,19 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Auth (4 endpoint) | Tuần 2 | ✅ xong | Có throttle, middleware đổi mật khẩu |
 | Ảnh đại diện (Cloudinary) | Tuần 2 | ✅ xong code | **Cần điền `CLOUDINARY_*` vào `.env` mới chạy thật** |
 | Options (6 endpoint) | Tuần 1 | ✅ xong | |
-| Policy | Tuần 2 | 🔶 khai báo xong, **chưa endpoint nào gọi** | Chờ CRUD Tuần 3 |
+| Phân quyền hồ sơ | Tuần 2–3 | 🔶 một phần | `SinhVienPolicy` được gọi ở endpoint sinh viên; `GiangVienController` kiểm tra quyền xem/sửa hồ sơ chính chủ; policy cho module khác chờ triển khai |
 | Design system + layout FE | Tuần 2 | ✅ xong | 14 component `shared/ui`, `/style-guide`, dark mode |
-| Mock layer | Tuần 2 | ✅ xong | Cờ `useMock: true` đang bật |
-| Auth phía client (AuthService, guard) | Tuần 2 | ⬜ chưa | Dời sang Tuần 8 |
-| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 FE dùng mock | FE đã có SCR-10/11 và cụm giảng viên SCR-13–15; API backend tương ứng chưa triển khai |
-| Màn hình FE | Tuần 3–9 | 🔶 8/47 | Đăng nhập, dashboard ADMIN, style-guide, sinh viên (SCR-10/11) và cụm giảng viên (SCR-13–15) |
+| Mock layer | Tuần 2 | ✅ xong | `environment.useMock` bật/tắt interceptor; `false` gửi request tới backend thật |
+| Auth phía client (AuthService, bearer interceptor, auth/role/password guard, ba giao diện login) | Tuần 2 (dời sang Tuần 8) | 🔶 triển khai; 10 test FE auth + 19 test BE auth pass; Lighthouse login production + gzip: Performance 99, Accessibility 95, LCP 1.9 s, CLS 0.021 | Ba vai trò responsive 320/768/1024/1440 px; E2E cần tài khoản thử được chỉ định; SCR-52/53 còn lại |
+| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 triển khai một phần | Backend có 8 route mỗi nhóm `students`, `teachers`, `admin-classes`; FE có SCR-10–15 và service gọi đúng endpoint. Auth FE đã được nối; E2E vẫn cần backend/DB sẵn sàng |
+| Đăng ký công khai / quên mật khẩu | Chưa chốt | ⏸ hoãn | Đăng ký chờ PM chốt phạm vi; quên mật khẩu công khai chưa có API/SMTP. Tạm hướng dẫn liên hệ phòng đào tạo/Admin |
+| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; các module nghiệp vụ khác còn trong kế hoạch |
 | `openapi.yaml` | Tuần 1 → dần | 🔶 41/113 path | Đã có lô tuần 3–4 (đào tạo + menus + settings) |
 
-**Tổng endpoint:** 11 chạy thật / 113 trong hợp đồng (`04-api-contract.md` mục 18). `openapi.yaml` đã đặc tả 41 path (lô tuần 3–4), phần còn lại sinh dần mỗi thứ Sáu.
+**Tổng endpoint:** 36 route Laravel khớp hợp đồng / 113 endpoint được mô tả trong
+[`04-api-contract.md`](04-api-contract.md) mục 18. Trong đó `PUT /api/me` vẫn
+chưa có route Laravel; ngoài ra còn `GET /api/user`, route tiện ích chưa có trong
+hợp đồng. `openapi.yaml` đã đặc tả 41 path; 72 path còn lại được bổ sung theo từng lô.
 
 **Đợt sửa 2026-10-25 — chuẩn bị chia việc cho nhóm 4:**
 
@@ -88,9 +92,9 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Dựng 2 component dùng chung còn thiếu | `shared/ui/data-table.ts` (sắp xếp, chọn nhiều dòng, 4 trạng thái), `shared/ui/form-field.ts` |
 | Thêm component phụ trợ | `shared/ui/confirm-dialog.ts`, `date-input.ts`, `dang-xay-dung.ts`, `shared/pipes/ngay-vn.pipe.ts` |
 | Màn SCR-10 danh sách sinh viên | `features/dao-tao/sinh-vien/danh-sach.ts` — khuôn mẫu cho ~40 màn còn lại, kèm ngăn kéo chi tiết SCR-12 |
-| Màn SCR-11 thêm/sửa sinh viên | `features/dao-tao/sinh-vien/form.ts` — tạo/cập nhật theo hợp đồng, validation và dialog mật khẩu ban đầu; đang dùng mock |
-| Cụm SCR-13–15 giảng viên | Danh sách, chi tiết, thêm/sửa và thao tác hàng loạt; bấm dòng để xem chi tiết, mỗi dòng có Sửa/Xóa, xóa mềm xác nhận và chặn theo lớp học phần thuộc học kỳ chưa đóng; đang dùng mock |
-| Thao tác hàng loạt | Nối thật `PATCH /students/bulk-status` + `POST /students/bulk-delete` (BR-31), hiện kết quả từng dòng lỗi |
+| Màn SCR-11 thêm/sửa sinh viên | `features/dao-tao/sinh-vien/form.ts` — tạo/cập nhật qua `SinhVienService`, validation và dialog mật khẩu ban đầu; mock vẫn dùng được khi bật `environment.useMock` |
+| Cụm SCR-13–15 giảng viên | Danh sách, chi tiết, thêm/sửa, sửa số điện thoại chính chủ và thao tác hàng loạt qua `GiangVienService`; xóa mềm có xác nhận và chặn theo lớp học phần thuộc học kỳ chưa đóng |
+| Thao tác hàng loạt | API `PATCH /students/bulk-status`, `POST /students/bulk-delete`, `PATCH /teachers/bulk-status`, `POST /teachers/bulk-delete`; hiện kết quả từng dòng lỗi |
 | Trang giữ chỗ cho màn chưa làm | `DangXayDung` + khai route cho cả 14 mục sidebar, để bấm vào không rơi về dashboard |
 | Sửa lỗi Escape không đóng popup | `confirm-dialog`, ngăn kéo chi tiết dùng `@HostListener('document:keydown.escape')` + focus vào hộp thoại |
 | Bỏ icon Unicode | `⚠`, `✕`, `▤`, `↕`, `↑↓`, `◍`, `⌕` → Material Icons |

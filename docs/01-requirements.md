@@ -157,6 +157,7 @@ Chi tiết cột, kiểu dữ liệu, index và ràng buộc: [03-data-model.md]
 | ID | Chức năng | Mô tả | Ưu tiên |
 |---|---|---|---|
 | FR-01.01 | Đăng nhập | `POST /api/auth/login` bằng email + password. Kiểm tra tài khoản, mật khẩu, `trang_thai`. Trả Bearer token + thông tin user + cờ `must_change_password`. Giới hạn 5 lần/phút/IP. | Must |
+| FR-01.01a | Đăng nhập sinh viên bằng mã | `POST /api/auth/login` nhận `ma_sv` + password, tra tài khoản qua hồ sơ sinh viên. Giao diện cổng sinh viên chỉ chấp nhận tài khoản có role `SINH_VIEN`; frontend kiểm tra role backend trả về. | Must |
 | FR-01.02 | Đăng xuất | Thu hồi token hiện tại. | Must |
 | FR-01.03 | Quản lý tài khoản | ADMIN xem, tạo, cập nhật, khóa/mở, đặt lại mật khẩu. Đặt lại mật khẩu = cấp mật khẩu mới ngẫu nhiên, trả một lần, đặt `must_change_password = true`. | Must |
 | FR-01.04 | Phân quyền | Role ADMIN/TEACHER/STUDENT + Policy kiểm tra sở hữu trên server. Không chỉ ẩn nút ở FE. | Must |

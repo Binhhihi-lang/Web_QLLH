@@ -186,6 +186,16 @@ Request:
 { "email": "admin@example.com", "password": "password" }
 ```
 
+Sinh viên đăng nhập bằng mã sinh viên:
+```json
+{ "ma_sv": "SV2026001", "password": "password" }
+```
+
+Chỉ gửi một định danh: `email` tiếp tục được hỗ trợ cho tài khoản đã có email;
+`ma_sv` chỉ tra hồ sơ sinh viên gắn với tài khoản và không dùng được cho vai trò
+khác. Các cổng frontend ADMIN/giảng viên dùng email, cổng sinh viên dùng mã sinh
+viên, rồi kiểm tra `vai_tro` trong response có khớp vai trò đã chọn hay không.
+
 Response 200:
 ```json
 {

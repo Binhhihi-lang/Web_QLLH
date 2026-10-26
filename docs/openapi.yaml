@@ -51,12 +51,21 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, password]
+              required: [password]
+              oneOf:
+                - required: [email]
+                - required: [ma_sv]
               properties:
                 email:
                   type: string
                   format: email
                   example: admin@example.com
+                  description: Dùng cho tài khoản ADMIN hoặc giảng viên.
+                ma_sv:
+                  type: string
+                  maxLength: 50
+                  example: SV2026001
+                  description: Dùng cho tài khoản sinh viên.
                 password:
                   type: string
                   example: password

@@ -3,6 +3,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { MockRegistry } from '@core/mock/mock-registry';
 import { mockInterceptor } from '@core/mock/mock.interceptor';
+import { authInterceptor } from '@core/auth/auth.interceptor';
 import { environment } from '@env/environment';
 import { routes } from './app.routes';
 
@@ -13,7 +14,7 @@ export const appConfig: ApplicationConfig = {
     // MockRegistry là stateful (nhớ các thao tác ghi) nên phải là singleton.
     MockRegistry,
     provideHttpClient(
-      withInterceptors(environment.useMock ? [mockInterceptor] : []),
+      withInterceptors(environment.useMock ? [authInterceptor, mockInterceptor] : [authInterceptor]),
     ),
   ],
 };

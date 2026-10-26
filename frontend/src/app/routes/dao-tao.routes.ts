@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from '@core/auth/auth.guard';
 import { DangXayDung } from '@shared/ui/dang-xay-dung';
 
 /**
@@ -16,16 +17,22 @@ export const daoTaoRoutes: Routes = [
   // SCR-10/11/12 — Sinh viên
   {
     path: 'sinh-vien',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'] },
     loadComponent: () =>
       import('@features/dao-tao/sinh-vien/danh-sach').then((m) => m.SinhVienDanhSach),
   },
   {
     path: 'sinh-vien/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
     loadComponent: () =>
       import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
   },
   {
     path: 'sinh-vien/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
     loadComponent: () =>
       import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
   },
@@ -33,21 +40,29 @@ export const daoTaoRoutes: Routes = [
   // SCR-13/14/15 — Giảng viên
   {
     path: 'giang-vien',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'] },
     loadComponent: () =>
       import('@features/dao-tao/giang-vien/danh-sach').then((m) => m.GiangVienDanhSach),
   },
   {
     path: 'giang-vien/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
     loadComponent: () =>
       import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
   },
   {
     path: 'giang-vien/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ownTeacherProfile: true },
     loadComponent: () =>
       import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
   },
   {
     path: 'giang-vien/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ownTeacherProfile: true },
     loadComponent: () =>
       import('@features/dao-tao/giang-vien/chi-tiet').then((m) => m.GiangVienChiTiet),
   },
@@ -55,29 +70,33 @@ export const daoTaoRoutes: Routes = [
   // SCR-16/17/18 — Lớp hành chính
   {
     path: 'lop-hanh-chinh',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-16', title: 'Lớp hành chính' },
     loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-16', title: 'Lớp hành chính' },
   },
 
   // SCR-19/20 — Môn học
   {
     path: 'mon-hoc',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-19', title: 'Môn học' },
     loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-19', title: 'Môn học' },
   },
 
   // SCR-21/22 — Học kỳ
   {
     path: 'hoc-ky',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-21', title: 'Học kỳ' },
     loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-21', title: 'Học kỳ' },
   },
 
   // SCR-23/24 — Phòng học
   {
     path: 'phong-hoc',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-23', title: 'Phòng học' },
     loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-23', title: 'Phòng học' },
   },
 ];
 

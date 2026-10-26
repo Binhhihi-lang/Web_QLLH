@@ -8,11 +8,48 @@ import { NhomMenu } from './dao-tao.menu';
 export const HOC_VU_MENU: NhomMenu = {
   tieu_de: 'Học vụ',
   muc: [
-    { nhan: 'Lớp học phần', duong_dan: '/lop-hoc-phan', icon: 'class' },
-    { nhan: 'Đăng ký', duong_dan: '/dang-ky', icon: 'how_to_reg' },
-    { nhan: 'Lịch học', duong_dan: '/lich-hoc', icon: 'calendar_month' },
-    { nhan: 'Điểm danh', duong_dan: '/diem-danh', icon: 'fact_check' },
-    { nhan: 'Điểm', duong_dan: '/diem', icon: 'grading' },
+    {
+      nhan: 'Lớp học phần',
+      duong_dan: '/lop-hoc-phan',
+      icon: 'class',
+      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+    },
+    {
+      nhan: 'Đăng ký',
+      duong_dan: '/dang-ky',
+      icon: 'how_to_reg',
+      vai_tro: ['ADMIN'],
+    },
+    {
+      nhan: 'Đăng ký của tôi',
+      duong_dan: '/dang-ky-cua-toi',
+      icon: 'how_to_reg',
+      vai_tro: ['SINH_VIEN'],
+    },
+    {
+      nhan: 'Lịch học',
+      duong_dan: '/lich-hoc',
+      icon: 'calendar_month',
+      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+    },
+    {
+      nhan: 'Điểm danh',
+      duong_dan: '/diem-danh',
+      icon: 'fact_check',
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
+    },
+    {
+      nhan: 'Nhập điểm',
+      duong_dan: '/diem',
+      icon: 'grading',
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
+    },
+    {
+      nhan: 'Điểm của tôi',
+      duong_dan: '/diem-cua-toi',
+      icon: 'grade',
+      vai_tro: ['SINH_VIEN'],
+    },
   ],
 };
 

@@ -17,7 +17,8 @@ class DangNhapRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required_without:ma_sv', 'prohibits:ma_sv', 'email', 'max:255'],
+            'ma_sv' => ['required_without:email', 'prohibits:email', 'string', 'max:50'],
             'password' => ['required', 'string'],
         ];
     }
@@ -30,6 +31,7 @@ class DangNhapRequest extends FormRequest
         return [
             'email.required' => 'Vui lòng nhập email.',
             'email.email' => 'Email không đúng định dạng.',
+            'ma_sv.required_without' => 'Vui lòng nhập email hoặc mã sinh viên.',
             'password.required' => 'Vui lòng nhập mật khẩu.',
         ];
     }

@@ -63,7 +63,10 @@ src/app/
 
 ```
 /                     → redirect theo vai trò
-/dang-nhap            → SCR-01
+/dang-nhap            → chuyển tiếp đến cổng quản trị (tương thích route cũ)
+/dang-nhap/admin      → SCR-01A (ADMIN)
+/dang-nhap/giang-vien → SCR-01B (GIANG_VIEN)
+/dang-nhap/sinh-vien  → SCR-01C (SINH_VIEN, dùng mã sinh viên)
 /doi-mat-khau         → SCR-02
 /dashboard            → SCR-03/04/05 (theo vai trò)
 /sinh-vien            → SCR-10 (ADMIN, TEACHER)
@@ -78,10 +81,20 @@ src/app/
 /lich-hoc             → SCR-35
 /diem-danh            → SCR-38
 /diem                 → SCR-41
+/diem-cua-toi         → SCR-42 (STUDENT)
 /thung-rac            → SCR-45 (ADMIN)
 /menu                 → SCR-47 (ADMIN)
 /cau-hinh             → SCR-49 (ADMIN)
 ```
+
+Ba cổng SCR-01 gọi chung `POST /api/auth/login`: ADMIN/giảng viên gửi `email`,
+sinh viên gửi `ma_sv`; mỗi cổng có nhận diện, nội dung và màu nhấn riêng, sau đó
+đối chiếu vai trò response của backend. Phiên đăng nhập được khôi phục qua
+`GET /api/auth/me`, token Bearer được gắn vào request API và phiên bị xóa khi
+request có token nhận 401. SCR-02 gọi `POST /api/auth/change-password`; tài khoản
+có `must_change_password` chỉ được tiếp tục vào route này. Route nghiệp vụ và menu
+được lọc theo vai trò, nhưng quyền truy cập dữ liệu vẫn phải được backend kiểm tra.
+Chưa có đăng ký công khai hoặc API quên mật khẩu; người dùng liên hệ phòng đào tạo/Admin.
 
 **Guard:**
 - `authGuard`: chưa đăng nhập → `/dang-nhap`.
@@ -97,8 +110,10 @@ src/app/
 
 | Mã | Màn hình | Route | Vai trò | Thành phần chính |
 |---|---|---|---|---|
-| SCR-01 | Đăng nhập | `/dang-nhap` | công khai | Form email/password, thông báo lỗi, loading |
-| SCR-02 | Đổi mật khẩu | `/doi-mat-khau` | mọi vai trò | 3 ô mật khẩu, validate độ mạnh, cảnh báo khi bắt buộc đổi |
+| SCR-01A | Đăng nhập quản trị | `/dang-nhap/admin` | công khai | Giao diện nhận diện quản trị; email/password; xác minh role `ADMIN` |
+| SCR-01B | Đăng nhập giảng viên | `/dang-nhap/giang-vien` | công khai | Giao diện nhận diện giảng viên; email/password; xác minh role `GIANG_VIEN` |
+| SCR-01C | Đăng nhập sinh viên | `/dang-nhap/sinh-vien` | công khai | Giao diện nhận diện sinh viên; mã sinh viên/password (`ma_sv`); xác minh role `SINH_VIEN` |
+| SCR-02 | Đổi mật khẩu | `/doi-mat-khau` | mọi vai trò đã đăng nhập | Form gọi API, kiểm tra mật khẩu mới/xác nhận; bắt buộc khi `must_change_password = true` |
 | SCR-02B | 🆕 Ảnh đại diện | Dialog trên header (mọi trang) | mọi vai trò | Chọn ảnh → xem trước → tải lên; nút "Gỡ ảnh". Hiển thị ảnh tròn 32 px ở header, `avatar_url` null thì hiện chữ cái đầu tên trên nền màu theo vai trò |
 
 ### 3.2. Dashboard
@@ -113,15 +128,25 @@ src/app/
 
 | Mã | Màn hình | Route | Ghi chú |
 |---|---|---|---|
-| SCR-10 ✅ | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên (+email phụ), lớp, giới tính, ngày sinh, trạng thái, thao tác. Bộ lọc: tìm kiếm, khóa, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột. Phân trang. **Chọn nhiều dòng → thanh hành động: Kích hoạt / Khóa / Xóa** (FR-02.05b, FR-02.07). Xong với mock. |
-| SCR-11 ✅ | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form tạo/cập nhật hồ sơ; tạo thành công hiện dialog chứa `mat_khau_ban_dau` một lần + nút sao chép. Đã hoàn thành với mock. |
-| SCR-12 ✅ | Chi tiết sinh viên | `/sinh-vien/:id` | Ngăn kéo mở từ danh sách, không chuyển trang (giữ vị trí cuộn và bộ lọc). Tải lại theo `id`. Xong với mock. |
+| SCR-10 ✅ | Danh sách sinh viên | `/sinh-vien` | Bảng: mã, họ tên (+email phụ), lớp, giới tính, ngày sinh, trạng thái, thao tác. Bộ lọc: tìm kiếm, khóa, lớp hành chính, giới tính, trạng thái, khoảng ngày sinh. Sắp xếp cột, phân trang, chọn nhiều dòng để kích hoạt/khóa/xóa. Kết nối `GET /api/students` và API bulk qua `SinhVienService`; mock vẫn có thể bật theo `environment.useMock`. |
+| SCR-11 ✅ | Thêm/Sửa sinh viên | `/sinh-vien/them`, `/sinh-vien/:id/sua` | Form tạo/cập nhật hồ sơ qua API. Khi tạo thành công, dialog hiện `mat_khau_ban_dau` một lần và có nút sao chép. |
+| SCR-12 ✅ | Chi tiết sinh viên | `/sinh-vien/:id` | Ngăn kéo mở từ danh sách, không chuyển trang (giữ vị trí cuộn và bộ lọc). Tải chi tiết theo `id` qua API. |
 
 > TEACHER thấy bộ cột giới hạn (FR-02.03) và không thấy nút thêm/sửa/xóa.
+
+Danh sách, form và chi tiết dùng `SinhVienService`; `environment.useMock = true` thì
+request được mock interceptor xử lý, còn `false` thì gọi backend Laravel theo
+`apiBaseUrl`.
 
 **Quy ước cột "Lớp" ở mọi màn danh sách:** hiện **mã lớp** (`CNTT-K65-01`), không
 hiện tên đầy đủ (`Công nghệ thông tin K65 - Lớp 01`). Tên đầy đủ dài gấp ba mã,
 làm bảng tràn ngang trên máy hẹp; vẫn tra được qua tooltip và ở ngăn kéo chi tiết.
+
+**Tích hợp API:** các màn sinh viên/giảng viên đã gọi `SinhVienService` /
+`GiangVienService` theo endpoint trong hợp đồng. `environment.useMock = true` thì
+interceptor trả dữ liệu giả; `false` thì request đi tới backend. Tuy nhiên, luồng
+xác thực phía Angular chưa hoàn tất; vì các API này yêu cầu bearer token, chế độ
+gọi backend cần có token hợp lệ, nếu không sẽ nhận 401.
 
 **Quy ước thao tác hàng loạt:** luôn hỏi xác nhận kèm số lượng; sau khi xong hiện
 khối kết quả `thanh_cong / that_bai` **kèm danh sách dòng lỗi và lý do từng dòng**,
@@ -131,9 +156,12 @@ giữ lại các dòng lỗi trong trạng thái đã chọn để người dùn
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-13 | Danh sách giảng viên | `/giang-vien` | ADMIN — tìm theo mã/tên/email, lọc chuyên môn/trạng thái, phân trang; chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-04.02, FR-04.04b, FR-04.06; xóa áp dụng FR-04.05) |
-| SCR-14 | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN — bắt buộc mã, họ tên, email; tạo tài khoản hiển thị mật khẩu ban đầu một lần |
-| SCR-15 | Chi tiết giảng viên | `/giang-vien/:id` | ADMIN, TEACHER (bản thân) — xem thông tin hồ sơ, liên hệ, chuyên môn và trạng thái |
+| SCR-13 ✅ | Danh sách giảng viên | `/giang-vien` | ADMIN — tìm theo mã/tên/email, lọc chuyên môn/trạng thái, sắp xếp và phân trang; chọn nhiều dòng để kích hoạt/khóa/xóa. Kết nối `/api/teachers` qua `GiangVienService`; mỗi dòng cũng có thao tác sửa/xóa. |
+| SCR-14 ✅ | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN — bắt buộc mã, họ tên, email; tạo tài khoản qua API và hiển thị mật khẩu ban đầu một lần. |
+| SCR-15 ✅ | Chi tiết giảng viên | `/giang-vien/:id` | ADMIN, TEACHER (bản thân) — xem hồ sơ, liên hệ, chuyên môn và trạng thái qua API. TEACHER chỉ được sửa số điện thoại của chính mình. |
+
+Các màn giảng viên dùng `GiangVienService`; mock interceptor có thể bật/tắt
+theo `environment.useMock`, giống luồng sinh viên.
 
 ### 3.5. Lớp hành chính
 

@@ -1,15 +1,17 @@
-import { Component, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
+import { AuthService } from '@core/auth/auth.service';
 import { AppFooter } from '@core/layout/footer';
 import { Header } from '@core/layout/header';
 import { MucMenu, Sidebar } from '@core/layout/sidebar';
+import { AppAlert } from '@shared/ui/app-alert';
 
 /**
  * Khung ứng dụng cho mọi màn NGHIỆP VỤ.
  *
  * Trang đăng nhập / đăng ký / quên mật khẩu KHÔNG dùng layout này — chúng
- * đứng riêng toàn màn hình, vì hiện sidebar cho người chưa đăng nhập là vô
- * nghĩa và làm lộ cấu trúc hệ thống.
+ * đứng riêng toàn màn hình
  *
  * Mobile: sidebar ẩn hẳn thành drawer, mở bằng nút menu ở header. Dùng lớp
  * phủ mờ để bấm ra ngoài là đóng.
@@ -17,7 +19,7 @@ import { MucMenu, Sidebar } from '@core/layout/sidebar';
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, Sidebar, Header, AppFooter],
+  imports: [RouterOutlet, Sidebar, Header, AppFooter, AppAlert],
   template: `
     <div class="khung">
       <!-- Lớp phủ chỉ tồn tại ở mobile khi drawer mở. -->
@@ -27,18 +29,24 @@ import { MucMenu, Sidebar } from '@core/layout/sidebar';
 
       <div class="sidebar-wrap" [class.mo]="moDrawer()">
         <app-sidebar
-          [vaiTro]="'ADMIN'"
+          [vaiTro]="vaiTro()"
           (chonMuc)="khiChonMenu($event)"
         />
       </div>
 
       <div class="cot-phai">
         <app-header
+          [hoTen]="nguoiDung()?.name ?? ''"
+          [email]="nguoiDung()?.email ?? ''"
+          [vaiTro]="nguoiDung()?.vai_tro ?? ''"
           (moMenu)="moDrawer.set(true)"
           (hanhDong)="khiChonHanhDong($event)"
         />
 
         <main class="noi-dung">
+          @if (loi()) {
+            <app-alert muc="danger" title="Không thể hoàn tất thao tác">{{ loi() }}</app-alert>
+          }
           <router-outlet />
         </main>
 
@@ -109,9 +117,13 @@ import { MucMenu, Sidebar } from '@core/layout/sidebar';
   `,
 })
 export class MainLayout {
-  readonly moDrawer = signal(false);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
-  constructor(private readonly router: Router) {}
+  readonly moDrawer = signal(false);
+  readonly loi = signal<string | null>(null);
+  readonly nguoiDung = this.auth.nguoiDung;
+  readonly vaiTro = computed(() => this.nguoiDung()?.vai_tro ?? '');
 
   /** Bấm menu ở mobile thì đóng drawer, nếu không nó che màn vừa mở. */
   khiChonMenu(_muc: MucMenu): void {
@@ -128,13 +140,20 @@ export class MainLayout {
         void this.router.navigate(['/doi-mat-khau']);
         break;
       case 'dang-xuat':
-        // Chưa có AuthService — khi nối backend sẽ gọi /api/auth/logout rồi
-        // mới điều hướng. Hiện chỉ điều hướng để thấy luồng.
-        void this.router.navigate(['/dang-nhap']);
+        this.loi.set(null);
+        this.auth.dangXuat().subscribe({
+          next: () => void this.router.navigate(['/dang-nhap']),
+          error: (loi: unknown) => this.loi.set(this.thongBaoLoi(loi)),
+        });
         break;
       case 'ho-so':
         // Màn hồ sơ cá nhân chưa thuộc phạm vi tuần này.
         break;
     }
+  }
+
+  private thongBaoLoi(loi: unknown): string {
+    if (!(loi instanceof HttpErrorResponse)) return 'Không thể đăng xuất lúc này. Vui lòng thử lại.';
+    return loi.error?.message ?? 'Máy chủ không thể hoàn tất yêu cầu đăng xuất.';
   }
 }

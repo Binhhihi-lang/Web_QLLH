@@ -486,9 +486,9 @@
     </div>
     <div class="hop-trang-thai">
       <div>
-        <strong>Đang ở đâu:</strong> xong phần nền tảng (schema, model, xác thực, phân quyền, envelope lỗi) và
-        xong frontend nền (design system, layout, dashboard, mock layer). Nghiệp vụ CRUD bắt đầu từ tuần 3.
-        Backend hiện chạy thật <b>11 endpoint</b> trên tổng số <b>113 endpoint</b> trong hợp đồng.
+        <strong>Đang ở đâu:</strong> xong phần nền tảng và đã có lô quản lý sinh viên, giảng viên, lớp hành chính.
+        Các màn sinh viên/giảng viên đã có service gọi API Laravel; mock layer vẫn dùng được để phát triển độc lập.
+        Tích hợp end-to-end còn chờ AuthService và interceptor bearer token phía Angular.
       </div>
     </div>
   </header>
@@ -1111,11 +1111,12 @@ database/
 ├── core/
 │   ├── layout/       <span class="c">main-layout · sidebar · header · footer</span>
 │   ├── models/       <span class="c">dao-tao.model.ts — kiểu dữ liệu sinh từ hợp đồng API</span>
-│   ├── services/     <span class="c">dashboard.service.ts — gọi HttpClient, không biết mock hay thật</span>
+│   ├── services/     <span class="c">sinh-vien.service.ts · giang-vien.service.ts · dashboard.service.ts</span>
 │   └── mock/         <span class="c">interceptor · registry · response helper · data/*.mock.ts</span>
-├── shared/ui/        <span class="c">9 component: button, card, alert, badge, empty, loading,</span>
-│                     <span class="c">                page-header, search-input, pagination</span>
-└── features/         <span class="c">auth/login · dashboard · style-guide</span>
+├── features/
+│   ├── dao-tao/      <span class="c">sinh-vien · giang-vien (danh sách, form, chi tiết)</span>
+│   └── auth/login · dashboard · style-guide
+└── shared/ui/        <span class="c">component dùng chung: button, table, form, alert, dialog, ...</span>
 
 src/_tokens.scss        <span class="c">nguồn chân lý duy nhất cho màu, chữ, bo góc, đổ bóng</span>
 src/material-theme.scss <span class="c">Material 3 đọc lại token ở trên</span>
@@ -1123,7 +1124,7 @@ tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex
 
     <h3>Mock layer — điểm thiết kế đáng nói nhất</h3>
     <p>
-      Backend mới có 11 endpoint nhưng giao diện cần dữ liệu cho hàng chục màn. Cách làm: một
+      Backend được triển khai theo từng lô; giao diện có thể cần dữ liệu trước khi API tương ứng sẵn sàng. Cách làm: một
       <b>HTTP interceptor</b> chặn request khi cờ <code>useMock</code> bật, trả dữ liệu giả <b>đúng envelope và đúng mã HTTP</b>.
       Service và component viết y như khi gọi thật, nên tắt mock chỉ cần đổi một dòng trong <code>environment.ts</code>.
     </p>
@@ -1218,7 +1219,7 @@ tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex
           <tr>
             <td>Phân quyền</td>
             <td><span class="nhan warn">Một phần</span></td>
-            <td><small>4 Policy đã khai và gắn vào Gate; ADMIN bỏ qua mọi kiểm tra. Nhưng chưa endpoint nghiệp vụ nào gọi Policy vì CRUD chưa có.</small></td>
+            <td><small><code>SinhVienPolicy</code> được dùng ở endpoint sinh viên; <code>GiangVienController</code> kiểm tra quyền xem/sửa hồ sơ chính chủ. Các module khác triển khai theo từng lô.</small></td>
           </tr>
           <tr>
             <td>Options (dropdown)</td>
@@ -1232,18 +1233,18 @@ tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex
           </tr>
           <tr>
             <td>CRUD nghiệp vụ + bulk</td>
-            <td><span class="nhan off">Chưa code</span></td>
-            <td><small>Mới là hợp đồng trong tài liệu. Đây là toàn bộ tuần 3–9.</small></td>
+            <td><span class="nhan warn">Một phần</span></td>
+            <td><small>Đã có API <code>students</code>, <code>teachers</code>, <code>admin-classes</code> (8 route mỗi nhóm), gồm CRUD và xử lý hàng loạt; các module còn lại đang chờ.</small></td>
           </tr>
           <tr>
             <td>Frontend nền</td>
             <td><span class="nhan ok">Xong</span></td>
-            <td><small>Design system, layout, dashboard ADMIN, trang đăng nhập, mock layer. 16 test Vitest pass.</small></td>
+            <td><small>Design system, layout, dashboard ADMIN, trang đăng nhập, mock layer; đã có test Vitest cho các service/màn hình.</small></td>
           </tr>
           <tr>
             <td>Frontend nghiệp vụ</td>
-            <td><span class="nhan off">Chưa code</span></td>
-            <td><small>Sidebar đã khai ~14 mục nhưng chỉ 3 route tồn tại; các mục còn lại rơi về dashboard.</small></td>
+            <td><span class="nhan warn">Một phần</span></td>
+            <td><small>SCR-10–15 có danh sách, form, chi tiết sinh viên/giảng viên và service API; E2E chờ AuthService/interceptor bearer token. Các màn nghiệp vụ khác vẫn trong kế hoạch.</small></td>
           </tr>
           <tr>
             <td>Auth phía client</td>
@@ -1254,28 +1255,16 @@ tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex
       </table>
     </div>
 
-    <h3>Năm điểm lệch nên sửa trước khi nối hai nửa</h3>
+    <h3>Điểm cần lưu ý khi tích hợp</h3>
     <ol>
       <li>
-        <b>Tên endpoint options không khớp.</b> Mock của frontend dùng <code>/options/lop-hanh-chinh</code>,
-        <code>/options/mon-hoc</code>, <code>/options/hoc-ky</code>, <code>/options/giang-vien</code>;
-        backend khai <code>/options/admin-classes</code>, <code>/options/subjects</code>, <code>/options/semesters</code>,
-        <code>/options/teachers</code>. Tắt mock là mọi dropdown nhận 404.
+        <b>Chế độ mock là tùy chọn.</b> <code>environment.useMock</code> bật interceptor dữ liệu giả;
+        khi tắt, service gửi request tới backend theo <code>apiBaseUrl</code>. Các route quản lý
+        yêu cầu bearer token; nếu FE chưa gắn token thì request sẽ nhận 401.
       </li>
       <li>
-        <b>Tên trường trong options khác nhau.</b> Backend trả <code>label</code>, mock và model frontend đọc <code>nhan</code>.
-      </li>
-      <li>
-        <b>Middleware khóa tài khoản đã đăng ký nhưng chưa gắn vào route.</b> Alias <code>tai.khoan.hoat.dong</code> có trong
-        <code>bootstrap/app.php</code> nhưng không nhóm route nào dùng. Hiện BR-30 mới được chặn ở bước đăng nhập, nên token
-        cấp trước khi khóa vẫn dùng được tới 7 ngày.
-      </li>
-      <li>
-        <b>Còn một route ngoài hợp đồng:</b> <code>GET /api/user</code> trả nguyên model User, không qua Resource.
-      </li>
-      <li>
-        <b>Cờ mock đang bật</b> (<code>useMock: true</code>), nên toàn bộ giao diện hiện chạy trên dữ liệu giả — cần nói rõ điều này
-        khi demo, tránh hiểu nhầm là đã nối backend.
+        <b>Route tiện ích ngoài hợp đồng:</b> <code>GET /api/user</code> trả model User trực tiếp;
+        không dùng route này thay cho các resource đã chuẩn hóa.
       </li>
     </ol>
   </section>
@@ -1322,7 +1311,7 @@ tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex
       </div>
       <div class="buoc">
         <div class="ten">Đã chạy được gì
-          <span>Demo: đăng nhập thật lấy token, gọi endpoint options, dashboard ADMIN, trang style-guide đổi sáng/tối. Nói thẳng phần CRUD còn là hợp đồng — kèm lộ trình 10 tuần.</span>
+          <span>Demo: dashboard ADMIN, style-guide và bộ màn quản lý sinh viên/giảng viên. Khi gọi backend thật cần bearer token; AuthService phía Angular vẫn đang chờ hoàn thiện.</span>
         </div>
         <div class="giay">1 phút</div>
       </div>
@@ -1337,7 +1326,7 @@ tailwind.config.js      <span class="c">màu trỏ var(--color-*) — không hex
   </section>
 
   <footer>
-    <span>QLLH · tài liệu v0.4 · nhánh <span class="mono">develop</span> · cập nhật 2026-10-24</span>
+    <span>QLLH · tài liệu v0.4 · nhánh <span class="mono">develop</span> · cập nhật 2026-10-26</span>
     <span>Nguồn: <span class="mono">docs/00-index.md</span> → <span class="mono">08-roadmap.md</span></span>
   </footer>
 

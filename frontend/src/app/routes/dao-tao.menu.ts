@@ -23,11 +23,41 @@ export interface NhomMenu {
 export const DAO_TAO_MENU: NhomMenu = {
   tieu_de: 'Đào tạo',
   muc: [
-    { nhan: 'Sinh viên', duong_dan: '/sinh-vien', icon: 'school' },
-    { nhan: 'Giảng viên', duong_dan: '/giang-vien', icon: 'person' },
-    { nhan: 'Lớp hành chính', duong_dan: '/lop-hanh-chinh', icon: 'groups' },
-    { nhan: 'Môn học', duong_dan: '/mon-hoc', icon: 'menu_book' },
-    { nhan: 'Học kỳ', duong_dan: '/hoc-ky', icon: 'date_range' },
-    { nhan: 'Phòng học', duong_dan: '/phong-hoc', icon: 'meeting_room' },
+    {
+      nhan: 'Sinh viên',
+      duong_dan: '/sinh-vien',
+      icon: 'school',
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
+    },
+    {
+      nhan: 'Giảng viên',
+      duong_dan: '/giang-vien',
+      icon: 'person',
+      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+    },
+    {
+      nhan: 'Lớp hành chính',
+      duong_dan: '/lop-hanh-chinh',
+      icon: 'groups',
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
+    },
+    {
+      nhan: 'Môn học',
+      duong_dan: '/mon-hoc',
+      icon: 'menu_book',
+      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+    },
+    {
+      nhan: 'Học kỳ',
+      duong_dan: '/hoc-ky',
+      icon: 'date_range',
+      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+    },
+    {
+      nhan: 'Phòng học',
+      duong_dan: '/phong-hoc',
+      icon: 'meeting_room',
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
+    },
   ],
 };

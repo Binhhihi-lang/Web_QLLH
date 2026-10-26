@@ -10,7 +10,9 @@ use App\Models\LopHocPhan;
 use App\Models\NhatKy;
 use App\Models\SinhVien;
 use App\Models\User;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -123,6 +125,153 @@ class QuanLyTuan3Test extends TestCase
 
         $this->assertFalse($mot->fresh()->trang_thai);
         $this->assertFalse($hai->fresh()->trang_thai);
+    }
+
+    public function test_bulk_status_sinh_vien_xu_ly_nhieu_ban_ghi_bang_so_truy_van_co_gioi_han(): void
+    {
+        $lop = LopHanhChinh::factory()->create();
+        $sinhViens = SinhVien::factory()->count(100)->create([
+            'lop_hanh_chinh_id' => $lop->id,
+        ]);
+        $token = $sinhViens->first()->user->createToken('test');
+        $soTruyVan = 0;
+
+        DB::listen(function (QueryExecuted $query) use (&$soTruyVan) {
+            $soTruyVan++;
+        });
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->patchJson('/api/students/bulk-status', [
+                'ids' => $sinhViens->modelKeys(),
+                'trang_thai' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.thanh_cong', 100)
+            ->assertJsonPath('data.that_bai', 0);
+
+        $this->assertLessThan(20, $soTruyVan);
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
+        $this->assertSame(100, NhatKy::query()->where('hanh_dong', NhatKy::KHOA)->count());
+        $this->assertSame(100, SinhVien::query()->where('trang_thai', false)->count());
+    }
+
+    public function test_bulk_status_giang_vien_dong_bo_tai_khoan_va_ghi_nhat_ky(): void
+    {
+        $giangViens = GiangVien::factory()->count(100)->create();
+        $soTruyVan = 0;
+
+        DB::listen(function (QueryExecuted $query) use (&$soTruyVan) {
+            $soTruyVan++;
+        });
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->patchJson('/api/teachers/bulk-status', [
+                'ids' => $giangViens->modelKeys(),
+                'trang_thai' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.thanh_cong', 100)
+            ->assertJsonPath('data.that_bai', 0);
+
+        $this->assertLessThan(20, $soTruyVan);
+        $this->assertSame(100, User::query()->where('trang_thai', false)->whereIn(
+            'id',
+            $giangViens->pluck('user_id'),
+        )->count());
+        $this->assertSame(100, NhatKy::query()
+            ->where('doi_tuong_loai', 'giang_vien')
+            ->where('hanh_dong', NhatKy::KHOA)
+            ->count());
+    }
+
+    public function test_bulk_xoa_sinh_vien_xoa_mềm_theo_lo_va_thu_hoi_token(): void
+    {
+        $sinhViens = SinhVien::factory()->count(100)->create();
+        $token = $sinhViens->first()->user->createToken('test');
+        $soTruyVan = 0;
+
+        DB::listen(function (QueryExecuted $query) use (&$soTruyVan) {
+            $soTruyVan++;
+        });
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/students/bulk-delete', ['ids' => $sinhViens->modelKeys()])
+            ->assertOk()
+            ->assertJsonPath('data.thanh_cong', 100)
+            ->assertJsonPath('data.that_bai', 0);
+
+        $this->assertLessThan(20, $soTruyVan);
+        $this->assertSame(100, SinhVien::onlyTrashed()->count());
+        $this->assertSame(100, User::onlyTrashed()->whereIn('id', $sinhViens->pluck('user_id'))->count());
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
+        $this->assertSame(100, NhatKy::query()
+            ->where('doi_tuong_loai', 'sinh_vien')
+            ->where('hanh_dong', NhatKy::XOA)
+            ->count());
+    }
+
+    public function test_bulk_xoa_giang_vien_xoa_mềm_theo_lo_va_thu_hoi_token(): void
+    {
+        $giangViens = GiangVien::factory()->count(100)->create();
+        $token = $giangViens->first()->user->createToken('test');
+        $soTruyVan = 0;
+
+        DB::listen(function (QueryExecuted $query) use (&$soTruyVan) {
+            $soTruyVan++;
+        });
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/teachers/bulk-delete', ['ids' => $giangViens->modelKeys()])
+            ->assertOk()
+            ->assertJsonPath('data.thanh_cong', 100)
+            ->assertJsonPath('data.that_bai', 0);
+
+        $this->assertLessThan(20, $soTruyVan);
+        $this->assertSame(100, GiangVien::onlyTrashed()->count());
+        $this->assertSame(100, User::onlyTrashed()->whereIn('id', $giangViens->pluck('user_id'))->count());
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
+        $this->assertSame(100, NhatKy::query()
+            ->where('doi_tuong_loai', 'giang_vien')
+            ->where('hanh_dong', NhatKy::XOA)
+            ->count());
+    }
+
+    public function test_bulk_xoa_sinh_vien_tra_phan_tu_thanh_cong_that_bai_va_khong_ton_tai(): void
+    {
+        $duocXoa = SinhVien::factory()->create();
+        $biChan = SinhVien::factory()->create();
+        $lopHocPhan = LopHocPhan::factory()->create();
+        DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $biChan->id,
+            'lop_hoc_phan_id' => $lopHocPhan->id,
+            'trang_thai' => DangKyHocPhan::ACTIVE,
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/students/bulk-delete', ['ids' => [$duocXoa->id, $biChan->id, 999999]])
+            ->assertOk()
+            ->assertJsonPath('data.thanh_cong', 1)
+            ->assertJsonPath('data.that_bai', 2)
+            ->assertJsonPath('data.chi_tiet.1.ma_loi', 'DELETE_BLOCKED')
+            ->assertJsonPath('data.chi_tiet.2.ma_loi', 'NOT_FOUND');
+
+        $this->assertSoftDeleted('sinh_vien', ['id' => $duocXoa->id]);
+        $this->assertDatabaseHas('sinh_vien', ['id' => $biChan->id, 'deleted_at' => null]);
+    }
+
+    public function test_bulk_xoa_giang_vien_van_chan_giang_vien_dang_phu_trach_lop(): void
+    {
+        $biChan = GiangVien::factory()->create();
+        LopHocPhan::factory()->create(['giang_vien_id' => $biChan->id]);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/teachers/bulk-delete', ['ids' => [$biChan->id]])
+            ->assertOk()
+            ->assertJsonPath('data.thanh_cong', 0)
+            ->assertJsonPath('data.that_bai', 1)
+            ->assertJsonPath('data.chi_tiet.0.ma_loi', 'DELETE_BLOCKED');
+
+        $this->assertDatabaseHas('giang_vien', ['id' => $biChan->id, 'deleted_at' => null]);
     }
 
     public function test_bulk_rong_bi_tu_choi(): void

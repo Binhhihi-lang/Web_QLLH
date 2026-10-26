@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\LoiNghiepVu;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuanLy\BulkRequest;
 use App\Http\Requests\QuanLy\SinhVienRequest;
@@ -109,36 +108,23 @@ class SinhVienController extends Controller
 
     public function capNhatTrangThaiHangLoat(BulkRequest $request): JsonResponse
     {
-        return $this->phanHoiHangLoat($request->validated('ids'), function (SinhVien $sinhVien) use ($request) {
-            $this->service->doiTrangThaiSinhVien($sinhVien, $request->boolean('trang_thai'));
-        });
+        $chiTiet = $this->service->doiTrangThaiSinhVienHangLoat(
+            $request->validated('ids'),
+            $request->boolean('trang_thai'),
+        );
+
+        return $this->phanHoiKetQuaHangLoat($chiTiet);
     }
 
     public function xoaHangLoat(BulkRequest $request): JsonResponse
     {
-        return $this->phanHoiHangLoat($request->validated('ids'), fn (SinhVien $sinhVien) => $this->service->xoaSinhVien($sinhVien));
+        $chiTiet = $this->service->xoaSinhVienHangLoat($request->validated('ids'));
+
+        return $this->phanHoiKetQuaHangLoat($chiTiet);
     }
 
-    private function phanHoiHangLoat(array $ids, callable $xuLy): JsonResponse
+    private function phanHoiKetQuaHangLoat(array $chiTiet): JsonResponse
     {
-        $chiTiet = [];
-
-        foreach ($ids as $id) {
-            $sinhVien = SinhVien::query()->find($id);
-            if ($sinhVien === null) {
-                $chiTiet[] = ['id' => $id, 'ket_qua' => 'THAT_BAI', 'ma_loi' => 'NOT_FOUND', 'message' => 'Không tìm thấy sinh viên.'];
-
-                continue;
-            }
-
-            try {
-                $xuLy($sinhVien);
-                $chiTiet[] = ['id' => $id, 'ket_qua' => 'THANH_CONG'];
-            } catch (LoiNghiepVu $e) {
-                $chiTiet[] = ['id' => $id, 'ket_qua' => 'THAT_BAI', 'ma_loi' => $e->maLoi, 'message' => $e->getMessage()];
-            }
-        }
-
         $thanhCong = count(array_filter($chiTiet, fn ($dong) => $dong['ket_qua'] === 'THANH_CONG'));
 
         return $this->success([
