@@ -26,7 +26,7 @@ export const mockInterceptor: HttpInterceptorFn = (req, next) => {
 
   const body = result as { success: boolean; ma_loi?: string };
   const httpStatus = body.success
-    ? req.method === 'POST' && req.url.endsWith('/students')
+    ? req.method === 'POST' && ['/students', '/teachers'].some((path) => req.url.endsWith(path))
       ? 201
       : 200
     : statusFor(body.ma_loi ?? '');

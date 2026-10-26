@@ -33,8 +33,23 @@ export const daoTaoRoutes: Routes = [
   // SCR-13/14/15 — Giảng viên
   {
     path: 'giang-vien',
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-    data: { ma: 'SCR-13', title: 'Giảng viên' },
+    loadComponent: () =>
+      import('@features/dao-tao/giang-vien/danh-sach').then((m) => m.GiangVienDanhSach),
+  },
+  {
+    path: 'giang-vien/them',
+    loadComponent: () =>
+      import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
+  },
+  {
+    path: 'giang-vien/:id/sua',
+    loadComponent: () =>
+      import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
+  },
+  {
+    path: 'giang-vien/:id',
+    loadComponent: () =>
+      import('@features/dao-tao/giang-vien/chi-tiet').then((m) => m.GiangVienChiTiet),
   },
 
   // SCR-16/17/18 — Lớp hành chính

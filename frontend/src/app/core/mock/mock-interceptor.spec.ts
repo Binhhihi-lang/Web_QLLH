@@ -43,4 +43,20 @@ describe('mockInterceptor', () => {
 
     expect(response.status).toBe(201);
   });
+
+  it('returns 201 when a teacher is created', async () => {
+    const response = await firstValueFrom(
+      http.post(
+        'http://localhost:8000/api/teachers',
+        {
+          ma_gv: 'GV-MOCK-201',
+          ho_ten: 'Giảng viên mới',
+          email: 'gv-mock-201@example.edu.vn',
+        },
+        { observe: 'response' },
+      ),
+    );
+
+    expect(response.status).toBe(201);
+  });
 });

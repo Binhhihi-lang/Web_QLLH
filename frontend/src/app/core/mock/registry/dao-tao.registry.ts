@@ -1,5 +1,5 @@
 import { HttpParams } from '@angular/common/http';
-import { LopHanhChinh, SinhVien } from '@core/models/dao-tao.model';
+import { GiangVien, LopHanhChinh, SinhVien } from '@core/models/dao-tao.model';
 import {
   LOP_HANH_CHINH_MOCK,
   MON_HOC_MOCK,
@@ -19,6 +19,7 @@ import {
   searchBy,
   sortBy,
 } from '@core/mock/mock-response';
+import { LOP_HOC_PHAN_MOCK } from '@core/mock/data/hoc-vu.mock';
 
 /**
  * Mock cho nhóm ĐÀO TẠO — thuộc Đức Anh.
@@ -139,10 +140,67 @@ export class DaoTaoRegistry {
 
     // ---------- Giảng viên ----------
     if (path === '/teachers' && method === 'GET') {
-      let rows = searchBy(this.giangVien, params.get('q'), ['ma_gv', 'ho_ten', 'email']);
+      let rows = this.giangVien.filter((r) => !r.da_xoa);
+      rows = searchBy(rows, params.get('q'), ['ma_gv', 'ho_ten', 'email']);
       rows = filterBy(rows, params, ['chuyen_mon', 'trang_thai']);
       rows = sortBy(rows, params, 'ma_gv');
       return paginate(rows, params, '/api/teachers');
+    }
+    if (path === '/teachers' && method === 'POST') {
+      const ketQua = this.chuanHoaGiangVien(body);
+      const loiDuLieu = this.loiDuLieuGiangVien(ketQua);
+      if (loiDuLieu) return loiDuLieu;
+
+      const giangVien: GiangVien = {
+        id: Math.max(0, ...this.giangVien.map((r) => r.id)) + 1,
+        ...ketQua.duLieu,
+        avatar_url: null,
+        da_xoa: false,
+      };
+      this.giangVien.push(giangVien);
+      return ok({ ...giangVien, mat_khau_ban_dau: 'MockGV2026!!' });
+    }
+    const chiTietGv = path.match(/^\/teachers\/(\d+)$/);
+    if (chiTietGv && method === 'GET') {
+      const gv = this.giangVien.find((r) => r.id === Number(chiTietGv[1]) && !r.da_xoa);
+      return gv ? ok(gv) : loi(MaLoi.NOT_FOUND, 'Không tìm thấy giảng viên.');
+    }
+    if (chiTietGv && method === 'PUT') {
+      const id = Number(chiTietGv[1]);
+      const viTri = this.giangVien.findIndex((r) => r.id === id && !r.da_xoa);
+      if (viTri === -1) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy giảng viên.');
+
+      const ketQua = this.chuanHoaGiangVien(body, id);
+      const loiDuLieu = this.loiDuLieuGiangVien(ketQua);
+      if (loiDuLieu) return loiDuLieu;
+
+      this.giangVien[viTri] = { ...this.giangVien[viTri], ...ketQua.duLieu };
+      return ok(this.giangVien[viTri], 'Đã cập nhật giảng viên.');
+    }
+    if (chiTietGv && method === 'DELETE') {
+      const id = Number(chiTietGv[1]);
+      const viTri = this.giangVien.findIndex((r) => r.id === id && !r.da_xoa);
+      if (viTri === -1) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy giảng viên.');
+
+      const loiNghiepVu = this.loiChanXoaGiangVien(id);
+      if (loiNghiepVu) return loi(loiNghiepVu.ma_loi, loiNghiepVu.message);
+
+      this.giangVien[viTri] = { ...this.giangVien[viTri], da_xoa: true };
+      return ok(null, 'Đã xóa giảng viên.');
+    }
+    if (path === '/teachers/bulk-status' && method === 'PATCH') {
+      return this.hangLoat(this.giangVien, body, (r, trangThai) => ({
+        ...r,
+        trang_thai: trangThai,
+      }));
+    }
+    if (path === '/teachers/bulk-delete' && method === 'POST') {
+      return this.hangLoat(
+        this.giangVien,
+        body,
+        (r) => ({ ...r, da_xoa: true }),
+        (r) => this.loiChanXoaGiangVien(r.id),
+      );
     }
 
     // ---------- Môn học ----------
@@ -299,6 +357,102 @@ export class DaoTaoRegistry {
     return Object.keys(ketQua.errors).length > 0 ? loiValidation(ketQua.errors) : null;
   }
 
+  private chuanHoaGiangVien(body: unknown, boQuaId?: number): {
+    duLieu: Omit<GiangVien, 'id' | 'avatar_url' | 'da_xoa'>;
+    errors: Record<string, string[]>;
+    maLoi: typeof MaLoi.DUPLICATE_CODE | typeof MaLoi.DUPLICATE_EMAIL | null;
+  } {
+    const data =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+    const maGv = typeof data['ma_gv'] === 'string' ? data['ma_gv'].trim() : '';
+    const hoTen = typeof data['ho_ten'] === 'string' ? data['ho_ten'].trim() : '';
+    const email = typeof data['email'] === 'string' ? data['email'].trim() : '';
+    const soDienThoai =
+      typeof data['so_dien_thoai'] === 'string' ? data['so_dien_thoai'].trim() : '';
+    const chuyenMon = typeof data['chuyen_mon'] === 'string' ? data['chuyen_mon'].trim() : '';
+    const errors: Record<string, string[]> = {};
+    let maLoi: typeof MaLoi.DUPLICATE_CODE | typeof MaLoi.DUPLICATE_EMAIL | null = null;
+    const themLoi = (field: string, message: string) => {
+      errors[field] = [...(errors[field] ?? []), message];
+    };
+
+    if (!maGv) themLoi('ma_gv', 'Mã giảng viên là bắt buộc.');
+    else if (maGv.length > 50) themLoi('ma_gv', 'Mã giảng viên không được vượt quá 50 ký tự.');
+    if (!hoTen) themLoi('ho_ten', 'Họ tên là bắt buộc.');
+    else if (hoTen.length > 255) themLoi('ho_ten', 'Họ tên không được vượt quá 255 ký tự.');
+    if (!email) themLoi('email', 'Email là bắt buộc.');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) themLoi('email', 'Email không hợp lệ.');
+    else if (
+      this.giangVien.some(
+        (r) => r.id !== boQuaId && r.email.toLocaleLowerCase() === email.toLocaleLowerCase(),
+      ) ||
+      this.sinhVien.some((r) => r.email.toLocaleLowerCase() === email.toLocaleLowerCase())
+    ) {
+      themLoi('email', 'Email này đã được sử dụng.');
+      maLoi = MaLoi.DUPLICATE_EMAIL;
+    }
+    if (
+      maGv &&
+      this.giangVien.some(
+        (r) => r.id !== boQuaId && r.ma_gv.toLocaleLowerCase() === maGv.toLocaleLowerCase(),
+      )
+    ) {
+      themLoi('ma_gv', 'Mã giảng viên này đã tồn tại.');
+      maLoi = MaLoi.DUPLICATE_CODE;
+    }
+    if (soDienThoai.length > 20) {
+      themLoi('so_dien_thoai', 'Số điện thoại không được vượt quá 20 ký tự.');
+    }
+    if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
+      themLoi('trang_thai', 'Trạng thái không hợp lệ.');
+    }
+
+    return {
+      duLieu: {
+        ma_gv: maGv,
+        ho_ten: hoTen,
+        email,
+        so_dien_thoai: soDienThoai || null,
+        chuyen_mon: chuyenMon || null,
+        trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+      },
+      errors,
+      maLoi,
+    };
+  }
+
+  private loiDuLieuGiangVien(
+    ketQua: ReturnType<DaoTaoRegistry['chuanHoaGiangVien']>,
+  ): object | null {
+    if (ketQua.maLoi) {
+      const message =
+        ketQua.maLoi === MaLoi.DUPLICATE_CODE
+          ? 'Mã giảng viên này đã tồn tại.'
+          : 'Email này đã được sử dụng.';
+      return loi(ketQua.maLoi, message, ketQua.errors);
+    }
+    return Object.keys(ketQua.errors).length > 0 ? loiValidation(ketQua.errors) : null;
+  }
+
+  private loiChanXoaGiangVien(
+    id: number,
+  ): { ma_loi: typeof MaLoi.DELETE_BLOCKED; message: string } | null {
+    const conLopDangMo = LOP_HOC_PHAN_MOCK.some(
+      (lop) =>
+        lop.giang_vien.id === id &&
+        !lop.da_xoa &&
+        lop.hoc_ky.trang_thai !== 'CLOSED',
+    );
+    return conLopDangMo
+      ? {
+          ma_loi: MaLoi.DELETE_BLOCKED,
+          message: 'Giảng viên còn phụ trách lớp học phần thuộc học kỳ chưa đóng.',
+        }
+      : null;
+  }
+
   /**
    * Xử lý hàng loạt theo BR-31: từng dòng độc lập, luôn 200, rỗng → 422.
    *
@@ -310,6 +464,7 @@ export class DaoTaoRegistry {
     nguon: T[],
     body: unknown,
     apDung: (row: T, trangThai: boolean) => T,
+    kiemTra?: (row: T) => { ma_loi: string; message: string } | null,
   ): object {
     const duLieu = (body ?? {}) as { ids?: unknown; trang_thai?: unknown };
     const ids = Array.isArray(duLieu.ids) ? duLieu.ids : null;
@@ -339,6 +494,16 @@ export class DaoTaoRegistry {
       }
 
       const viTri = nguon.findIndex((r) => r.id === id);
+      const loiNghiepVu = kiemTra?.(nguon[viTri]);
+      if (loiNghiepVu) {
+        chiTiet.push({
+          id,
+          ket_qua: 'THAT_BAI',
+          ma_loi: loiNghiepVu.ma_loi,
+          message: loiNghiepVu.message,
+        });
+        continue;
+      }
       nguon[viTri] = apDung(nguon[viTri], trangThai);
       chiTiet.push({ id, ket_qua: 'THANH_CONG' });
     }

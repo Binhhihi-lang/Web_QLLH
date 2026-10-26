@@ -74,8 +74,8 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Design system + layout FE | Tuần 2 | ✅ xong | 14 component `shared/ui`, `/style-guide`, dark mode |
 | Mock layer | Tuần 2 | ✅ xong | Cờ `useMock: true` đang bật |
 | Auth phía client (AuthService, guard) | Tuần 2 | ⬜ chưa | Dời sang Tuần 8 |
-| CRUD nghiệp vụ + bulk | Tuần 3–9 | ⬜ chưa | Toàn bộ còn lại |
-| Màn hình FE | Tuần 3–9 | 🔶 5/47 | Đăng nhập, dashboard ADMIN, style-guide, danh sách và thêm/sửa sinh viên (SCR-10/11) |
+| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 FE dùng mock | FE đã có SCR-10/11 và cụm giảng viên SCR-13–15; API backend tương ứng chưa triển khai |
+| Màn hình FE | Tuần 3–9 | 🔶 8/47 | Đăng nhập, dashboard ADMIN, style-guide, sinh viên (SCR-10/11) và cụm giảng viên (SCR-13–15) |
 | `openapi.yaml` | Tuần 1 → dần | 🔶 41/113 path | Đã có lô tuần 3–4 (đào tạo + menus + settings) |
 
 **Tổng endpoint:** 11 chạy thật / 113 trong hợp đồng (`04-api-contract.md` mục 18). `openapi.yaml` đã đặc tả 41 path (lô tuần 3–4), phần còn lại sinh dần mỗi thứ Sáu.
@@ -89,6 +89,7 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Thêm component phụ trợ | `shared/ui/confirm-dialog.ts`, `date-input.ts`, `dang-xay-dung.ts`, `shared/pipes/ngay-vn.pipe.ts` |
 | Màn SCR-10 danh sách sinh viên | `features/dao-tao/sinh-vien/danh-sach.ts` — khuôn mẫu cho ~40 màn còn lại, kèm ngăn kéo chi tiết SCR-12 |
 | Màn SCR-11 thêm/sửa sinh viên | `features/dao-tao/sinh-vien/form.ts` — tạo/cập nhật theo hợp đồng, validation và dialog mật khẩu ban đầu; đang dùng mock |
+| Cụm SCR-13–15 giảng viên | Danh sách, chi tiết, thêm/sửa và thao tác hàng loạt; bấm dòng để xem chi tiết, mỗi dòng có Sửa/Xóa, xóa mềm xác nhận và chặn theo lớp học phần thuộc học kỳ chưa đóng; đang dùng mock |
 | Thao tác hàng loạt | Nối thật `PATCH /students/bulk-status` + `POST /students/bulk-delete` (BR-31), hiện kết quả từng dòng lỗi |
 | Trang giữ chỗ cho màn chưa làm | `DangXayDung` + khai route cho cả 14 mục sidebar, để bấm vào không rơi về dashboard |
 | Sửa lỗi Escape không đóng popup | `confirm-dialog`, ngăn kéo chi tiết dùng `@HostListener('document:keydown.escape')` + focus vào hộp thoại |
@@ -96,7 +97,7 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Tách mock theo nhóm | `hoc-vu.mock.ts` riêng, Đạt không còn sửa file của Đức Anh |
 | Sửa lỗi ô "Số dòng" phân trang | `[value]` trên `<select>` không khớp option render bằng `@for` → chọn bằng `[selected]`; có test hồi quy |
 
-**Test FE:** 49/49 pass (`registry-probe.spec.ts` 18, `shared-components.spec.ts` 14, `design-system.spec.ts` 15, `app.spec.ts` 2).
+**Test FE:** 88/88 pass (10 test files), bao gồm kiểm thử CRUD, xóa mềm đơn, thao tác hàng loạt và điều hướng chi tiết giảng viên.
 
 **Đã đồng bộ FE với hợp đồng (2026-10-24, nhánh `develop`):**
 

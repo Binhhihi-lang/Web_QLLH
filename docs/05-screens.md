@@ -131,9 +131,9 @@ giữ lại các dòng lỗi trong trạng thái đã chọn để người dùn
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-13 | Danh sách giảng viên | `/giang-vien` | ADMIN — chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-04.04b, FR-04.06) |
-| SCR-14 | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN |
-| SCR-15 | Chi tiết giảng viên | `/giang-vien/:id` | ADMIN, TEACHER (bản thân) |
+| SCR-13 | Danh sách giảng viên | `/giang-vien` | ADMIN — tìm theo mã/tên/email, lọc chuyên môn/trạng thái, phân trang; chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-04.02, FR-04.04b, FR-04.06; xóa áp dụng FR-04.05) |
+| SCR-14 | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN — bắt buộc mã, họ tên, email; tạo tài khoản hiển thị mật khẩu ban đầu một lần |
+| SCR-15 | Chi tiết giảng viên | `/giang-vien/:id` | ADMIN, TEACHER (bản thân) — xem thông tin hồ sơ, liên hệ, chuyên môn và trạng thái |
 
 ### 3.5. Lớp hành chính
 
