@@ -2,6 +2,7 @@ import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { DaoTaoRegistry } from '@core/mock/registry/dao-tao.registry';
 import { HocVuRegistry } from '@core/mock/registry/hoc-vu.registry';
+import { AuthRegistry } from '@core/mock/registry/auth.registry';
 import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
 
 /**
@@ -24,6 +25,7 @@ import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
 export class MockRegistry {
   private readonly daoTao = new DaoTaoRegistry();
   private readonly hocVu = new HocVuRegistry();
+  private readonly auth = new AuthRegistry();
 
   private readonly nguon = [this.daoTao, this.hocVu];
 
@@ -31,9 +33,12 @@ export class MockRegistry {
     method: string,
     urlWithParams: string,
     body: unknown = null,
+    authorization: string | null = null,
   ): ApiResponse<unknown> | Record<string, unknown> | undefined {
     const path = stripOrigin(urlWithParams).split('?')[0];
     const params: HttpParams = readParams(urlWithParams);
+    const ketQuaAuth = this.auth.resolve(method, path, body, authorization);
+    if (ketQuaAuth !== undefined) return ketQuaAuth;
 
     for (const nguon of this.nguon) {
       const ketQua = nguon.resolve(method, path, params, body);

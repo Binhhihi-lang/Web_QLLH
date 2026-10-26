@@ -54,6 +54,37 @@ describe('LoginPage', () => {
     expect(root.querySelector('a[routerLink="/dang-nhap/giang-vien"]')).not.toBeNull();
   });
 
+  it('shows mock credentials on the matching demo login portal', () => {
+    const { fixture } = taoTrang('SINH_VIEN');
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.textContent).toContain('2000000');
+    expect(root.textContent).toContain('QllhMock2026!');
+
+    root.querySelector<HTMLButtonElement>('.tai-khoan-mau button')?.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.taiKhoan()).toBe('2000000');
+    expect(fixture.componentInstance.matKhau()).toBe('QllhMock2026!');
+  });
+
+  it('toggles password visibility with an accessible eye icon button', () => {
+    const { fixture } = taoTrang('ADMIN');
+    const root = fixture.nativeElement as HTMLElement;
+    const password = root.querySelector<HTMLInputElement>('#mat-khau')!;
+    const button = root.querySelector<HTMLButtonElement>('.hien')!;
+
+    expect(password.type).toBe('password');
+    expect(button.querySelector('svg')).not.toBeNull();
+    expect(button.textContent?.trim()).toBe('');
+    expect(button.getAttribute('aria-label')).toBe('Hiện mật khẩu');
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(password.type).toBe('text');
+    expect(button.getAttribute('aria-label')).toBe('Ẩn mật khẩu');
+  });
+
   it('uses the teacher portal identity and email field', () => {
     const { fixture } = taoTrang('GIANG_VIEN');
     const root = fixture.nativeElement as HTMLElement;

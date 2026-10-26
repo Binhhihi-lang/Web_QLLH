@@ -96,6 +96,15 @@ có `must_change_password` chỉ được tiếp tục vào route này. Route ng
 được lọc theo vai trò, nhưng quyền truy cập dữ liệu vẫn phải được backend kiểm tra.
 Chưa có đăng ký công khai hoặc API quên mật khẩu; người dùng liên hệ phòng đào tạo/Admin.
 
+Khi `environment.useMock = true`, ba cổng hiển thị nút **Điền tài khoản mẫu**
+để thử đăng nhập và vào các màn theo vai trò. Tài khoản mẫu: ADMIN
+`admin@qllh.test`, giảng viên `gv0001@university.edu.vn`, sinh viên `2000000`;
+mật khẩu dùng chung `QllhMock2026!`. Mock hỗ trợ đăng nhập, khôi phục phiên,
+đăng xuất và đổi mật khẩu; các tài khoản này chỉ dùng với mock, không dùng được
+để đăng nhập Backend thật. Dữ liệu đổi mật khẩu chỉ giữ trong bộ nhớ phiên mock,
+tải lại ứng dụng sẽ khôi phục mật khẩu mẫu ban đầu. Khi `useMock = false`, thông
+tin thử nghiệm không hiển thị.
+
 **Guard:**
 - `authGuard`: chưa đăng nhập → `/dang-nhap`.
 - `roleGuard(['ADMIN'])`: sai vai trò → `/dashboard` kèm thông báo.
@@ -144,9 +153,8 @@ làm bảng tràn ngang trên máy hẹp; vẫn tra được qua tooltip và ở
 
 **Tích hợp API:** các màn sinh viên/giảng viên đã gọi `SinhVienService` /
 `GiangVienService` theo endpoint trong hợp đồng. `environment.useMock = true` thì
-interceptor trả dữ liệu giả; `false` thì request đi tới backend. Tuy nhiên, luồng
-xác thực phía Angular chưa hoàn tất; vì các API này yêu cầu bearer token, chế độ
-gọi backend cần có token hợp lệ, nếu không sẽ nhận 401.
+interceptor trả dữ liệu giả, bao gồm luồng đăng nhập và phiên người dùng; `false`
+thì auth và API nghiệp vụ gọi Backend Laravel, cần tài khoản Backend hợp lệ.
 
 **Quy ước thao tác hàng loạt:** luôn hỏi xác nhận kèm số lượng; sau khi xong hiện
 khối kết quả `thanh_cong / that_bai` **kèm danh sách dòng lỗi và lý do từng dòng**,

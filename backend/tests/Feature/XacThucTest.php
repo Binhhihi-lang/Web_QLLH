@@ -17,6 +17,19 @@ class XacThucTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_frontend_dev_origins_duoc_phep_preflight_cors(): void
+    {
+        foreach (['http://localhost:4200', 'http://127.0.0.1:4200'] as $origin) {
+            $phanHoi = $this->call('OPTIONS', '/api/auth/login', [], [], [], [
+                'HTTP_ORIGIN' => $origin,
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
+                'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'content-type',
+            ]);
+
+            $phanHoi->assertNoContent()->assertHeader('Access-Control-Allow-Origin', $origin);
+        }
+    }
+
     private function taoNguoiDung(string $vaiTro = User::ADMIN, array $thuocTinh = []): User
     {
         return User::factory()->create(array_merge([

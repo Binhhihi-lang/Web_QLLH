@@ -1,10 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, map } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
+import { TAI_KHOAN_DANG_NHAP_MOCK } from '@core/mock/registry/auth.registry';
 import { VaiTro } from '@core/models/dao-tao.model';
+import { environment } from '@env/environment';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 
@@ -106,6 +108,17 @@ const CONG_DANG_NHAP: Record<VaiTro, CongDangNhap> = {
             <p>{{ cong().moTa }}</p>
           </div>
 
+          @if (dangDungMock && taiKhoanMau(); as taiKhoan) {
+            <aside class="tai-khoan-mau" aria-label="Thông tin đăng nhập thử nghiệm">
+              <div>
+                <strong>Tài khoản thử nghiệm</strong>
+                <span>{{ cong().nhanTaiKhoan }}: {{ taiKhoan.taiKhoan }}</span>
+                <span>Mật khẩu: {{ taiKhoan.matKhau }}</span>
+              </div>
+              <button type="button" (click)="dienTaiKhoanMau()">Điền tài khoản mẫu</button>
+            </aside>
+          }
+
           @if (loi()) {
             <app-alert muc="danger" title="Đăng nhập không thành công">{{ loi() }}</app-alert>
           }
@@ -146,8 +159,20 @@ const CONG_DANG_NHAP: Record<VaiTro, CongDangNhap> = {
                   class="hien"
                   (click)="hienMatKhau.update((v) => !v)"
                   [attr.aria-label]="hienMatKhau() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+                  [attr.aria-pressed]="hienMatKhau()"
                 >
-                  {{ hienMatKhau() ? 'Ẩn' : 'Hiện' }}
+                  @if (hienMatKhau()) {
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a15.8 15.8 0 01-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.6 10.6 0 004.1-.8"
+                      />
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  }
                 </button>
               </div>
             </div>
@@ -356,6 +381,42 @@ const CONG_DANG_NHAP: Record<VaiTro, CongDangNhap> = {
       font-weight: 700;
     }
 
+    .tai-khoan-mau {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface-alt);
+      color: var(--color-ink-muted);
+      font-size: 12px;
+    }
+
+    .tai-khoan-mau div {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .tai-khoan-mau strong {
+      color: var(--color-ink);
+    }
+
+    .tai-khoan-mau button {
+      flex: none;
+      border: 0;
+      border-radius: var(--radius-sm);
+      padding: 7px 9px;
+      background: var(--portal-soft);
+      color: var(--portal-primary);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
     .dau p {
       margin: 5px 0 0;
       font-size: var(--text-small);
@@ -439,16 +500,24 @@ const CONG_DANG_NHAP: Record<VaiTro, CongDangNhap> = {
       transform: translateY(-50%);
       display: grid;
       place-items: center;
-      min-width: 42px;
-      height: 30px;
+      width: 42px;
+      height: 36px;
       padding: 0 4px;
       border: none;
       border-radius: var(--radius-sm);
       background: transparent;
       color: var(--portal-primary);
-      font-size: 12px;
-      font-weight: 600;
       cursor: pointer;
+    }
+
+    .hien svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.7;
     }
 
     .hien:hover {
@@ -581,6 +650,10 @@ export class LoginPage {
     this.route.data.pipe(map((data) => this.layCongDangNhap(data['vaiTroDangNhap']))),
     { initialValue: CONG_DANG_NHAP.ADMIN },
   );
+  readonly dangDungMock = environment.useMock;
+  readonly taiKhoanMau = computed(() =>
+    TAI_KHOAN_DANG_NHAP_MOCK.find((taiKhoan) => taiKhoan.vaiTro === this.cong().vaiTro),
+  );
 
   readonly taiKhoan = signal('');
   readonly matKhau = signal('');
@@ -588,6 +661,13 @@ export class LoginPage {
   readonly hienMatKhau = signal(false);
   readonly dangGui = signal(false);
   readonly loi = signal<string | null>(null);
+
+  dienTaiKhoanMau(): void {
+    const taiKhoan = this.taiKhoanMau();
+    if (!taiKhoan) return;
+    this.taiKhoan.set(taiKhoan.taiKhoan);
+    this.matKhau.set(taiKhoan.matKhau);
+  }
 
   private layCongDangNhap(vaiTro: unknown): CongDangNhap {
     if (vaiTro === 'ADMIN' || vaiTro === 'GIANG_VIEN' || vaiTro === 'SINH_VIEN') {

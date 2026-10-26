@@ -44,8 +44,13 @@ Câu hỏi đặt ra: kiến trúc hiện tại có đủ để hai bên làm vi
 
 **Cập nhật 26/10:** Backend đã có các API quản lý `students`, `teachers` và
 `admin-classes`; frontend sinh viên/giảng viên đã gọi các API tương ứng qua
-service. Chưa hoàn tất E2E: API yêu cầu bearer token nhưng AuthService/interceptor
-phía FE còn thiếu. Chi tiết trạng thái từng màn ở [mục 6](#6-phụ-lục-màn-hình-thuộc-về-ai)
+service. AuthService/interceptor đã được triển khai trong commit `cf8d36c`.
+Smoke test trình duyệt ngày 26/10 đã đăng nhập cả ba vai trò, tải hồ sơ
+`/auth/me` và xác nhận menu theo vai trò từ backend thật. CORS ban đầu chỉ cho
+phép `localhost:4200`, trong khi frontend chạy ở `127.0.0.1:4200`; cấu hình đã
+bổ sung cả hai origin. E2E đầy đủ cho thao tác ghi CRUD vẫn cần làm; dashboard
+đang gọi `GET /api/dashboard/admin` nhưng backend chưa có route này.
+Chi tiết trạng thái từng màn ở [mục 6](#6-phụ-lục-màn-hình-thuộc-về-ai)
 và [docs/08-roadmap.md](08-roadmap.md).
 
 ### Cách chia việc trong một câu
@@ -71,8 +76,10 @@ và [docs/08-roadmap.md](08-roadmap.md).
 - **Chưa triển khai:** đăng ký tài khoản công khai (để bàn riêng) và quên mật khẩu
   công khai (chưa có API/SMTP đã xác nhận). Người dùng quên mật khẩu hiện liên hệ
   phòng đào tạo/Admin để được hỗ trợ; không tạo route giả hoặc giả lập luồng gửi mail.
-- **Còn cần tích hợp:** kiểm tra đăng nhập với backend đang chạy và hoàn tất ma trận
-  E2E theo ba vai trò sau khi cấu hình môi trường phát triển.
+- **Đã smoke test:** đăng nhập cả ba vai trò, tải hồ sơ `/auth/me` và xác nhận menu
+  theo vai trò qua backend thật trên trình duyệt.
+- **Còn cần tích hợp:** E2E các thao tác ghi CRUD và dashboard; endpoint
+  `GET /api/dashboard/admin` chưa có route backend nên màn thống kê hiện báo lỗi.
 
 ---
 
