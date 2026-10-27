@@ -18,8 +18,7 @@ describe('MockRegistry khớp hợp đồng API', () => {
     r = TestBed.inject(MockRegistry);
   });
 
-  const goi = (path: string) =>
-    r.resolve('GET', `http://localhost:8000/api${path}`, null) as any;
+  const goi = (path: string) => r.resolve('GET', `http://localhost:8000/api${path}`, null) as any;
 
   it('dùng đường dẫn tiếng Anh của hợp đồng', () => {
     for (const p of [
@@ -55,14 +54,7 @@ describe('MockRegistry khớp hợp đồng API', () => {
   });
 
   it('options dùng đúng tên đường dẫn hợp đồng', () => {
-    for (const p of [
-      'admin-classes',
-      'subjects',
-      'semesters',
-      'teachers',
-      'rooms',
-      'sections',
-    ]) {
+    for (const p of ['admin-classes', 'subjects', 'semesters', 'teachers', 'rooms', 'sections']) {
       expect(goi(`/options/${p}`), p).toBeDefined();
     }
   });
@@ -148,7 +140,11 @@ describe('MockRegistry khớp hợp đồng API', () => {
     try {
       const xoa = r.resolve('DELETE', `http://localhost:8000/api/teachers/${id}`, null) as any;
       const danhSachSauXoa = goi('/teachers?per_page=100');
-      const xoaLanHai = r.resolve('DELETE', `http://localhost:8000/api/teachers/${id}`, null) as any;
+      const xoaLanHai = r.resolve(
+        'DELETE',
+        `http://localhost:8000/api/teachers/${id}`,
+        null,
+      ) as any;
 
       expect(xoa.success).toBe(true);
       expect(danhSachSauXoa.data.some((gv: any) => gv.id === id)).toBe(false);
@@ -218,11 +214,7 @@ describe('MockRegistry khớp hợp đồng API', () => {
       lop_hanh_chinh_id: hienTai.lop_hanh_chinh.id,
       trang_thai: hienTai.trang_thai,
     };
-    const sua = r.resolve(
-      'PUT',
-      `http://localhost:8000/api/students/${hienTai.id}`,
-      body,
-    ) as any;
+    const sua = r.resolve('PUT', `http://localhost:8000/api/students/${hienTai.id}`, body) as any;
     const khongTonTai = r.resolve('PUT', 'http://localhost:8000/api/students/999999', body) as any;
 
     expect(sua.success).toBe(true);
@@ -241,7 +233,9 @@ describe('MockRegistry khớp hợp đồng API', () => {
     bulk('/students/bulk-status', { ids, trang_thai: trangThai }, 'PATCH');
 
   it('bulk-status đổi trạng thái nhiều dòng và trả 200 kèm chi_tiet', () => {
-    const ids = goi('/students').data.slice(0, 3).map((s: any) => s.id);
+    const ids = goi('/students')
+      .data.slice(0, 3)
+      .map((s: any) => s.id);
     const res = bulkStatus(ids, false);
 
     expect(res.success).toBe(true);
@@ -277,7 +271,9 @@ describe('MockRegistry khớp hợp đồng API', () => {
   });
 
   it('bulk-delete ẩn bản ghi khỏi danh sách', () => {
-    const ids = goi('/students').data.slice(0, 2).map((s: any) => s.id);
+    const ids = goi('/students')
+      .data.slice(0, 2)
+      .map((s: any) => s.id);
     const truoc = goi('/students?per_page=100').meta.total;
 
     expect(bulk('/students/bulk-delete', { ids }).data.thanh_cong).toBe(2);
@@ -296,7 +292,9 @@ describe('MockRegistry khớp hợp đồng API', () => {
   });
 
   it('bulk-status giảng viên đổi trạng thái theo từng dòng', () => {
-    const ids = goi('/teachers').data.slice(0, 2).map((gv: any) => gv.id);
+    const ids = goi('/teachers')
+      .data.slice(0, 2)
+      .map((gv: any) => gv.id);
     const res = bulk('/teachers/bulk-status', { ids, trang_thai: false }, 'PATCH');
 
     expect(res.success).toBe(true);
@@ -362,5 +360,90 @@ describe('MockRegistry khớp hợp đồng API', () => {
     expect(updated.success).toBe(true);
     expect(updated.data.ho_ten).toBe('Tên giảng viên đã cập nhật');
     expect(goi(`/teachers/${id}`).data.id).toBe(id);
+  });
+
+  it('lớp học phần hỗ trợ tạo, cập nhật, đổi trạng thái và xóa mềm', () => {
+    const original = LOP_HOC_PHAN_MOCK[0];
+    const body = {
+      ma_lop_hp: 'TEST-SECTION-MOCK',
+      mon_hoc_id: original.mon_hoc.id,
+      hoc_ky_id: original.hoc_ky.id,
+      giang_vien_id: original.giang_vien.id,
+      si_so_toi_da: 48,
+      nam_thu: null,
+      trang_thai: 'OPEN',
+    };
+    const tao = r.resolve('POST', 'http://localhost:8000/api/sections', body) as any;
+    const capNhat = r.resolve('PUT', `http://localhost:8000/api/sections/${tao.data.id}`, {
+      ...body,
+      si_so_toi_da: 50,
+    }) as any;
+    const doiTrangThai = r.resolve(
+      'PATCH',
+      `http://localhost:8000/api/sections/${tao.data.id}/status`,
+      { trang_thai: 'CANCELLED' },
+    ) as any;
+
+    expect(tao.success).toBe(true);
+    expect(capNhat.data.si_so_toi_da).toBe(50);
+    expect(doiTrangThai.data.trang_thai).toBe('CANCELLED');
+    expect(
+      (r.resolve('DELETE', `http://localhost:8000/api/sections/${tao.data.id}`) as any).success,
+    ).toBe(true);
+    expect(
+      (r.resolve('GET', `http://localhost:8000/api/sections/${tao.data.id}`) as any).ma_loi,
+    ).toBe('NOT_FOUND');
+  });
+
+  it('từ chối sửa lớp học phần không tồn tại và validate mã trùng trong học kỳ', () => {
+    const original = LOP_HOC_PHAN_MOCK[0];
+    const body = {
+      ma_lop_hp: original.ma_lop_hp,
+      mon_hoc_id: original.mon_hoc.id,
+      hoc_ky_id: original.hoc_ky.id,
+      giang_vien_id: original.giang_vien.id,
+      si_so_toi_da: original.si_so_toi_da,
+      nam_thu: original.nam_thu,
+      trang_thai: original.trang_thai,
+    };
+    const missing = r.resolve('PUT', 'http://localhost:8000/api/sections/999999', body) as any;
+    const duplicate = r.resolve('POST', 'http://localhost:8000/api/sections', body) as any;
+
+    expect(missing.ma_loi).toBe('NOT_FOUND');
+    expect(duplicate.success).toBe(false);
+    expect(duplicate.ma_loi).toBe('VALIDATION_ERROR');
+  });
+
+  it('không cho chốt điểm khi còn thiếu điểm thành phần', () => {
+    const id = LOP_HOC_PHAN_MOCK[0].id;
+    const loaded = r.resolve('GET', `http://localhost:8000/api/sections/${id}/grades`) as any;
+    const rows = loaded.data.map((row: any, index: number) =>
+      index === 0 ? { ...row, diem_cuoi_ky: null } : row,
+    );
+    r.resolve('PUT', `http://localhost:8000/api/sections/${id}/grades`, { diem: rows });
+
+    const finalize = r.resolve(
+      'POST',
+      `http://localhost:8000/api/sections/${id}/finalize`,
+      {},
+    ) as any;
+    expect(finalize.success).toBe(false);
+    expect(finalize.ma_loi).toBe('GRADE_INCOMPLETE');
+  });
+
+  it('hủy đăng ký lớp học phần sẽ loại sinh viên khỏi danh sách ACTIVE', () => {
+    const id = LOP_HOC_PHAN_MOCK[0].id;
+    const students = r.resolve('GET', `http://localhost:8000/api/sections/${id}/students`) as any;
+    const enrollmentId = students.data[0].dang_ky_hoc_phan_id;
+    const canceled = r.resolve('DELETE', `http://localhost:8000/api/enrollments/${enrollmentId}`, {
+      ly_do: 'Điều chỉnh đăng ký',
+    }) as any;
+    const after = r.resolve('GET', `http://localhost:8000/api/sections/${id}/students`) as any;
+
+    expect(canceled.success).toBe(true);
+    expect(after.data).toHaveLength(students.data.length - 1);
+    expect(after.data.some((student: any) => student.dang_ky_hoc_phan_id === enrollmentId)).toBe(
+      false,
+    );
   });
 });

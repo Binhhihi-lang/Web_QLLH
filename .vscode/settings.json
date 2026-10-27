@@ -1,0 +1,5 @@
+{
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:LOCALAPPDATA}\\Programs\\node-v22.22.3;${workspaceFolder}\\frontend\\node_modules\\.bin;${env:Path}"
+  }
+}
