@@ -28,6 +28,7 @@ class MonHocController extends Controller
             'sort_by' => ['sometimes', 'in:id,ma_mon,ten_mon,so_tin_chi,trang_thai'],
             'sort_dir' => ['sometimes', 'in:asc,desc'],
             'trang_thai' => ['sometimes', 'in:true,false,1,0'],
+            'so_tin_chi' => ['sometimes', 'integer', 'between:1,10'],
         ]);
 
         $query = MonHoc::query()
@@ -39,6 +40,10 @@ class MonHocController extends Controller
             ->when($request->has('trang_thai'), fn ($query) => $query->where(
                 'trang_thai',
                 $request->boolean('trang_thai'),
+            ))
+            ->when($request->has('so_tin_chi'), fn ($query) => $query->where(
+                'so_tin_chi',
+                $request->integer('so_tin_chi'),
             ))
             ->orderBy($request->input('sort_by', 'id'), $request->input('sort_dir', 'asc'));
 

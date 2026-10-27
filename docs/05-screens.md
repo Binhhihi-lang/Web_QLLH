@@ -188,7 +188,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-19 | Danh sách môn học | `/mon-hoc` | mọi vai trò (chỉ xem với TEACHER/STUDENT). ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-05.04) |
+| SCR-19 | Danh sách và chi tiết môn học | `/mon-hoc`, `/mon-hoc/:id` | mọi vai trò (chỉ xem với TEACHER/STUDENT). Tìm theo mã/tên; lọc trạng thái và số tín chỉ; chọn dòng để xem chi tiết. ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-05.04) |
 | SCR-20 | Thêm/Sửa môn học | `/mon-hoc/them`, `/:id/sua` | ADMIN |
 | SCR-21 | Danh sách học kỳ | `/hoc-ky` | mọi vai trò | Cột: mã, tên, năm học, kỳ thứ, khoảng ngày, đợt đăng ký, trạng thái |
 | SCR-22 | Thêm/Sửa học kỳ | `/hoc-ky/them`, `/:id/sua` | ADMIN — có nút chuyển trạng thái. Chỉ hiện nút cho bước kế tiếp hợp lệ: `UPCOMING` → "Bắt đầu kỳ", `ONGOING` → "Đóng kỳ"; `CLOSED` không có nút (BR-24) |

@@ -26,15 +26,13 @@ export const daoTaoRoutes: Routes = [
     path: 'sinh-vien/them',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },
-    loadComponent: () =>
-      import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
+    loadComponent: () => import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
   },
   {
     path: 'sinh-vien/:id/sua',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },
-    loadComponent: () =>
-      import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
+    loadComponent: () => import('@features/dao-tao/sinh-vien/form').then((m) => m.SinhVienForm),
   },
 
   // SCR-13/14/15 — Giảng viên
@@ -49,15 +47,13 @@ export const daoTaoRoutes: Routes = [
     path: 'giang-vien/them',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'] },
-    loadComponent: () =>
-      import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
+    loadComponent: () => import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
   },
   {
     path: 'giang-vien/:id/sua',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ownTeacherProfile: true },
-    loadComponent: () =>
-      import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
+    loadComponent: () => import('@features/dao-tao/giang-vien/form').then((m) => m.GiangVienForm),
   },
   {
     path: 'giang-vien/:id',
@@ -80,7 +76,26 @@ export const daoTaoRoutes: Routes = [
     path: 'mon-hoc',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-19', title: 'Môn học' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/dao-tao/mon-hoc/danh-sach').then((m) => m.MonHocDanhSach),
+  },
+  {
+    path: 'mon-hoc/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-20', title: 'Thêm môn học' },
+    loadComponent: () => import('@features/dao-tao/mon-hoc/form').then((m) => m.MonHocForm),
+  },
+  {
+    path: 'mon-hoc/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-19', title: 'Chi tiết môn học' },
+    loadComponent: () => import('@features/dao-tao/mon-hoc/chi-tiet').then((m) => m.MonHocChiTiet),
+  },
+  {
+    path: 'mon-hoc/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-20', title: 'Sửa môn học' },
+    loadComponent: () => import('@features/dao-tao/mon-hoc/form').then((m) => m.MonHocForm),
   },
 
   // SCR-21/22 — Học kỳ

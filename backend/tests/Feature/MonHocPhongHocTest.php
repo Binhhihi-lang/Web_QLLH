@@ -106,6 +106,7 @@ class MonHocPhongHocTest extends TestCase
             'ma_mon' => 'MA1001',
             'ten_mon' => 'Toán rời rạc',
             'trang_thai' => true,
+            'so_tin_chi' => 4,
         ]);
 
         $this->actingAs($this->admin, 'sanctum')
@@ -113,6 +114,15 @@ class MonHocPhongHocTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.ma_mon', 'CS1002');
+
+        $this->getJson('/api/subjects?so_tin_chi=4&trang_thai=true')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.ma_mon', 'MA1001');
+
+        $this->getJson('/api/subjects?so_tin_chi=11')
+            ->assertUnprocessable()
+            ->assertJsonPath('ma_loi', 'VALIDATION_ERROR');
     }
 
     public function test_admin_thuc_hien_crud_phong_hoc_va_ghi_nhat_ky_khi_xoa(): void
