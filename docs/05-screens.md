@@ -167,7 +167,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-16 | Danh sách lớp hành chính | `/lop-hanh-chinh` | ADMIN, TEACHER | Cột: mã, tên, khóa, ngành, sĩ số. Lọc theo khóa/ngành |
+| SCR-16 | Danh sách lớp hành chính | `/lop-hanh-chinh` | ADMIN, TEACHER | Cột: mã, tên, khóa, ngành, sĩ số, trạng thái. Lọc/tìm kiếm/phân trang; ADMIN xóa mềm từng lớp, bị chặn khi còn sinh viên chưa xóa (FR-03.05) |
 | SCR-17 | Thêm/Sửa lớp | `/lop-hanh-chinh/them`, `/:id/sua` | ADMIN | Trường: mã, tên, **khóa** (`khoa_hoc`), ngành, năm nhập học, mô tả |
 | SCR-18 | Chi tiết lớp + gán sinh viên | `/lop-hanh-chinh/:id` | ADMIN (dialog chọn nhiều sinh viên) |
 

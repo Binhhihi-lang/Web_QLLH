@@ -17,7 +17,12 @@ export const mockInterceptor: HttpInterceptorFn = (req, next) => {
   // Dùng `urlWithParams`, KHÔNG dùng `url`: `req.url` không chứa query string,
   // nên mọi bộ lọc/tìm kiếm đều không tới được mock và màn hình luôn hiện dữ
   // liệu chưa lọc mà không báo lỗi.
-  const result = registry.resolve(req.method, req.urlWithParams, req.body);
+  const result = registry.resolve(
+    req.method,
+    req.urlWithParams,
+    req.body,
+    req.headers.get('Authorization'),
+  );
 
   // Không có mock cho đường dẫn này -> để request đi tiếp ra mạng thật.
   if (result === undefined) {

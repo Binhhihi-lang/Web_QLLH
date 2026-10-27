@@ -59,4 +59,44 @@ describe('mockInterceptor', () => {
 
     expect(response.status).toBe(201);
   });
+
+  it('logs in with the demo admin and returns the matching mock user', async () => {
+    const response = await firstValueFrom(
+      http.post<{ data: { token: string; nguoi_dung: { vai_tro: string } } }>(
+        'http://localhost:8000/api/auth/login',
+        { email: 'admin@example.com', password: 'password' },
+      ),
+    );
+
+    expect(response.data.token).toMatch(/^mock-access-/);
+    expect(response.data.nguoi_dung.vai_tro).toBe('ADMIN');
+  });
+
+  it('requires a valid mock bearer token for the current-user endpoint', async () => {
+    const login = await firstValueFrom(
+      http.post<{ data: { token: string } }>('http://localhost:8000/api/auth/login', {
+        email: 'admin@example.com',
+        password: 'password',
+      }),
+    );
+    const currentUser = await firstValueFrom(
+      http.get<{ data: { email: string } }>('http://localhost:8000/api/auth/me', {
+        headers: { Authorization: `Bearer ${login.data.token}` },
+      }),
+    );
+
+    expect(currentUser.data.email).toBe('admin@example.com');
+  });
+
+  it('rejects invalid mock credentials with HTTP 401', async () => {
+    const error = await firstValueFrom(
+      http.post('http://localhost:8000/api/auth/login', {
+        email: 'admin@example.com',
+        password: 'wrong-password',
+      }),
+    ).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(HttpErrorResponse);
+    expect((error as HttpErrorResponse).status).toBe(401);
+  });
 });
