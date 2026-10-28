@@ -4,6 +4,7 @@
 
 | Phiên bản | Ngày       | Trạng thái              | Căn cứ                                                 |
 | --------- | ---------- | ----------------------- | ------------------------------------------------------ |
+| 1.3       | 27/10/2026 | Đề xuất — chờ nhóm chốt | `docs/08-roadmap.md` + trạng thái code nhánh `pm-menu-cau-hinh` (SCR-47/48 xong) |
 | 1.2       | 26/10/2026 | Đề xuất — chờ nhóm chốt | `docs/08-roadmap.md` + trạng thái code nhánh `develop` |
 
 ---
@@ -31,15 +32,15 @@ Câu hỏi đặt ra: kiến trúc hiện tại có đủ để hai bên làm vi
 
 1. **Việc tách là khả thi.** Frontend và backend tách được thật, nhờ mock layer ở tầng HTTP interceptor và bộ hợp đồng API viết trước. Đức Anh và Đạt không cần chờ Tiến một ngày nào.
 2. **Điều kiện đã đạt.** Bốn điểm lệch đã sửa: đường dẫn API, tên trường `label`, tách ba file dùng chung, và 18 case test khoá quy ước để không lệch lại.
-3. **Khối lượng backend vẫn là rủi ro.** Đã có 52/113 endpoint theo hợp đồng; còn 61 endpoint cần triển khai. Cách xử lý ở [mục 9](#9-rủi-ro-và-cách-xử-lý).
+3. **Khối lượng backend vẫn là rủi ro.** Đã có 59/113 endpoint theo hợp đồng; còn 54 endpoint cần triển khai. Cách xử lý ở [mục 9](#9-rủi-ro-và-cách-xử-lý).
 
 ### Con số cần nhớ
 
 | Hạng mục     | Đã xong                                                              | Còn lại | Ai làm        |
 | ------------ | -------------------------------------------------------------------- | ------- | ------------- |
-| Endpoint API | 52 endpoint theo hợp đồng + 1 route tiện ích                         | 61      | Tiến + PM     |
+| Endpoint API | 59 endpoint theo hợp đồng + 1 route tiện ích                         | 54      | Tiến + PM     |
 | Hợp đồng     | 41 path / 65 operation trong `openapi.yaml`                          | 48 operation | PM       |
-| Màn hình     | 9 (đăng nhập, dashboard ADMIN, style-guide, SCR-10–15)                | 38      | Đức Anh + Đạt |
+| Màn hình     | 11 (đăng nhập, dashboard ADMIN, style-guide, SCR-10–15, SCR-47/48)    | 36      | Đức Anh + Đạt |
 | Thời gian    | 2 tuần / 10 tuần                                                     | 8 tuần  | —             |
 
 **Cập nhật tiến độ:** Backend đã có các API quản lý `students`, `teachers`,
@@ -54,6 +55,39 @@ bổ sung cả hai origin. E2E đầy đủ cho thao tác ghi CRUD vẫn cần l
 đang gọi `GET /api/dashboard/admin` nhưng backend chưa có route này.
 Chi tiết trạng thái từng màn ở [mục 6](#6-phụ-lục-màn-hình-thuộc-về-ai)
 và [docs/08-roadmap.md](08-roadmap.md).
+
+**Cập nhật 2026-10-27 — nhánh `pm-menu-cau-hinh` (Đạt, thuộc tuần 4):**
+
+- **Đã xong SCR-47 (quản lý menu):** danh sách menu (kể cả mục đang ẩn) qua
+  `GET /api/menus?quan_ly=1`, thêm mới bằng form tại chỗ ở `/menu`, ẩn/hiện,
+  xoá có hộp thoại xác nhận, trang chi tiết `/menu/:id`, trang sửa
+  `/menu/:id/sua`. Sidebar và menu đầu trang đọc menu từ API nên vừa lưu là
+  thấy ngay, không phải tải lại trang.
+- **Backend `settings` đã xong** (`GET`/`PUT /api/settings`); SCR-49 mới là
+  trang giữ chỗ, chưa có giao diện.
+- **Hai quyết định chốt trong đợt này** (Đạt hỏi PM, PM chốt — các bạn FE cần
+  biết khi làm màn mới):
+  1. **Đường dẫn không khớp route tách làm hai kết cục**, không gộp: URL có
+     trong bảng `menus` → màn "Màn hình *tên mục* chưa làm" **trong layout**;
+     URL không ai khai → **404 đứng riêng, không sidebar/header/footer**. Cả
+     hai đều không quay về `/dashboard` như trước.
+  2. **Được phép khai menu trước cho màn chưa code.** Form menu cảnh báo
+     nhưng vẫn lưu đường dẫn nội bộ chưa có route (để khai trước cho tuần sau);
+     chỉ chặn khi không phải đường dẫn bắt đầu bằng `/` hoặc địa chỉ http(s).
+  3. **Menu phải khớp quyền route.** `menu.vai_tro` ghi vai trò **hẹp nhất** được
+     thấy mục, và **ADMIN luôn thấy tất cả** (ADMIN là superuser). Trước đây bộ
+     lọc so khớp tuyệt đối nên ADMIN mở được `/dang-ky`, `/diem-danh` mà sidebar
+     lại giấu; menu "Đăng ký" còn trỏ nhầm vào SCR-30 (chỉ ADMIN) nhưng gắn
+     `SINH_VIEN` khiến sinh viên bấm vào bị đá về dashboard. Đã sửa ở
+     `core/utils/menu-vai-tro.ts` + seed mock + `MenuSeeder.php`, và có test
+     `core/utils/menu-route-nhat-quan.spec.ts` khoá quan hệ menu ↔ route.
+     **Khi thêm màn mới: thêm mục menu với `vai_tro` khớp `data.roles` của route.**
+  - Hệ quả cho người làm màn mới: khai route vào `routes/dao-tao.routes.ts` /
+    `routes/hoc-vu.routes.ts` như cũ. Màn nào chưa làm thì để `DangXayDung`,
+    hoặc bỏ hẳn route và để wildcard hiện trang "chưa làm" theo tên mục menu.
+- Kiểm thử: `ng test` 158/158 pass, `ng build` sạch, kiểm chứng trên Chrome
+  thật (ba luồng chính, dark mode, mobile 390px, console 0 lỗi).
+- **Chưa commit, chưa merge** — Đạt tự commit.
 
 ### Cách chia việc trong một câu
 
@@ -194,8 +228,11 @@ Quy tắc duy nhất: **mỗi thư mục có đúng một người được sử
 | `frontend/src/app/features/dao-tao/**`                       | Đức Anh      | Đọc                              |
 | `frontend/src/app/features/hoc-vu/**`                        | Đạt          | Đọc                              |
 | `frontend/src/app/features/dashboard/**`                     | Đạt          | SCR-03–05; PM tích hợp route chung |
-| SCR-47–51 quản trị (feature code; thư mục chưa tạo)            | Đạt          | PM tích hợp route/menu dùng chung |
+| `frontend/src/app/features/hoc-vu/menu/**` (SCR-47/48)         | Đạt          | PM tích hợp route/menu dùng chung |
+| SCR-49–51 quản trị còn lại (feature code; thư mục chưa tạo)     | Đạt          | PM tích hợp route/menu dùng chung |
 | SCR-45 thùng rác (feature code; thư mục chưa tạo)              | PM           | Đạt đọc |
+| `frontend/src/app/features/not-found/**` (404 + trang "chưa làm") | PM        | Đọc                              |
+| `frontend/src/app/core/auth/trang-chua-lam.guard.ts`          | PM           | Đọc                              |
 | `frontend/src/app/features/auth/**`                          | PM           | Đọc                              |
 | `frontend/src/app/shared/**`                                 | PM           | Đọc. Cần thêm component → báo PM |
 | `frontend/src/app/core/**` (layout, models, services, mock)  | PM           | Đọc                              |
@@ -224,8 +261,8 @@ Cột "Bàn giao" là điều kiện để tuần đó được coi là xong —
 | Tuần           | Tiến — Backend lõi                                                                                                                             | Đức Anh — FE đào tạo                                                                                    | Đạt — FE học vụ                                                                                        | PM                                                                                                                |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | **0** (2 ngày) | — (chờ hợp đồng)                                                                                                                               | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                            | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                           | ✅ Khung dùng chung đã dựng; test registry 18 case. |
-| **3**          | CRUD `students` + `teachers` + `admin-classes`; tạo kèm tài khoản, trả mật khẩu một lần; bulk-status + bulk-delete; BR-30 thu hồi token, BR-31 | SCR-10 → 18 (sinh viên, giảng viên, lớp hành chính)                                                       | —                                                                                                      | CRUD `subjects` + `rooms` (đã có code và test; chưa commit/merge); review PR |
-| **4**          | CRUD `semesters` (vòng đời trạng thái, BR-24/25) + hoàn thiện `/options/*`                                                                     | SCR-19 → 24 (môn học, học kỳ, phòng học)                                                                 | SCR-47 → 51 (quản trị: menu, cấu hình, người dùng)                                                     | CRUD `menus` + `settings`; Docker Compose staging; E2E `/options/*` |
+| **3**          | CRUD `students` + `teachers` + `admin-classes`; tạo kèm tài khoản, trả mật khẩu một lần; bulk-status + bulk-delete; BR-30 thu hồi token, BR-31 | SCR-10 → 18 (sinh viên, giảng viên, lớp hành chính)                                                       | —                                                                                                      | CRUD `subjects` + `rooms` ✅ đã merge cùng 9 test; review PR |
+| **4**          | CRUD `semesters` (vòng đời trạng thái, BR-24/25) + hoàn thiện `/options/*`                                                                     | SCR-19 → 24 (môn học, học kỳ, phòng học)                                                                 | SCR-47 → 51 (quản trị: menu, cấu hình, người dùng) — **SCR-47/48 xong 27/10**                          | CRUD `menus` + `settings` ✅ (`menus` 5 + `settings` 2 endpoint); Docker Compose staging; E2E `/options/*` |
 | **5**          | CRUD `sections` lõi + đổi trạng thái + FR-08.05 kiểm tra hợp lệ + Policy theo vai trò                                                          | —                                                                                                        | SCR-25 → 28 (lớp học phần): danh sách, form, chi tiết, sinh viên của lớp                                | Sinh OpenAPI lô 6–7; `/sections/{id}/students` + attendance-summary; bắt đầu bộ test E2E |
 | **6**          | `ScheduleService`: trùng phòng / giảng viên / sinh viên (BR-06, BR-22) + `/schedules` — phần khó nhất tuần                                     | —                                                                                                        | SCR-35 → 37 (lịch tuần/tháng, thêm buổi, sinh lịch)                                                    | CRUD `sessions` + sinh lịch hàng tuần; SCR-45 (thùng rác); seeder dữ liệu demo; rà test plan |
 | **7**          | `EnrollmentService` lõi: sĩ số, trùng lịch, năm thứ, đợt đăng ký, khóa dòng tranh chấp chỗ cuối (BR-08/09/23/26)                               | —                                                                                                        | SCR-30 → 33 (đăng ký)                                                                                   | `/enrollments` (CRUD) + `/enrollments/bulk` + `/me/enrollments` + hủy; test tranh chấp chỗ cuối                   |
@@ -283,9 +320,9 @@ Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Quy tắc s
 | 42  | Điểm của tôi + CPA                      | `/diem-cua-toi`                    | Đạt (tuần 9)    | Chưa có                    |
 | 43  | Lịch sử sửa điểm                        | `/lop-hoc-phan/:id/diem/lich-su`   | Đạt (tuần 9)    | Chưa có                    |
 | 45  | Thùng rác                               | `/thung-rac`                       | PM               | Chưa có                    |
-| 47  | Quản lý menu                            | `/menu`                            | Đạt (tuần 4)     | Chưa có                    |
-| 48  | Thêm/sửa menu                           | `/menu/them`, `/:id/sua`           | Đạt (tuần 4)     | Chưa có                    |
-| 49  | Cấu hình                                | `/cau-hinh`                        | Đạt (tuần 4)     | Chưa có                    |
+| 47  | Quản lý menu                            | `/menu`                            | Đạt (tuần 4)     | ✅ Xong (nhánh `pm-menu-cau-hinh`) |
+| 48  | Sửa menu                                | `/menu/:id/sua`                    | Đạt (tuần 4)     | ✅ Xong; thêm menu bằng form tại chỗ ở `/menu`, không có route `/menu/them` |
+| 49  | Cấu hình                                | `/cau-hinh`                        | Đạt (tuần 4)     | 🔶 BE xong (`GET`/`PUT /settings`); FE còn trang giữ chỗ |
 | 50  | Quản lý người dùng                      | `/nguoi-dung`                      | Đạt (tuần 4)     | Chưa có                    |
 | 51  | Thêm/sửa người dùng                     | `/nguoi-dung/them`, `/:id/sua`     | Đạt (tuần 4)     | Chưa có                    |
 | 52  | Nút xem theo vai trò (ADMIN)            | header                             | PM (tuần 8)      | Chưa có                    |

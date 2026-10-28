@@ -1,19 +1,16 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { DAO_TAO_MENU, MucMenu, NhomMenu } from '../../routes/dao-tao.menu';
-import { HE_THONG_MENU, HOC_VU_MENU } from '../../routes/hoc-vu.menu';
+import { MucMenu } from '../../routes/dao-tao.menu';
+import { MenuApi, MenuService } from '@core/services/menu.service';
+import { vaiTroDuocThayMenu } from '@core/utils/menu-vai-tro';
 
-export type { MucMenu, NhomMenu };
+export type { MucMenu, NhomMenu } from '../../routes/dao-tao.menu';
 
 /**
  * Sidebar điều hướng.
  *
- * Nguồn menu là hai file khai báo theo nhóm (`routes/dao-tao.menu.ts`,
- * `routes/hoc-vu.menu.ts`), không lấy từ API như SCR-47: dự án có 10 tuần, menu
- * động là hạng mục Should. Khi backend có `/api/menus` thì thay nguồn dữ liệu,
- * phần render giữ nguyên.
- *
- * Lọc theo vai trò ngay tại component để màn ADMIN không thấy mục của STUDENT.
+ * Menu đang hoạt động được tải từ API; vai trò được lọc ở backend và kiểm tra
+ * lại tại component để menu giả lập cũng tuân theo cùng quy tắc.
  */
 @Component({
   selector: 'app-sidebar',
@@ -31,26 +28,52 @@ export type { MucMenu, NhomMenu };
         }
       </div>
 
-      <nav class="menu">
-        @for (nhom of nhomHienThi(); track nhom.tieu_de) {
-          <div class="nhom">
-            @if (!thuGon()) {
-              <div class="nhom-tieu-de">{{ nhom.tieu_de }}</div>
-            }
-            @for (muc of nhom.muc; track muc.duong_dan) {
-              <a
-                [routerLink]="muc.duong_dan"
-                routerLinkActive="active"
-                [title]="thuGon() ? muc.nhan : ''"
-                (click)="chonMuc.emit(muc)"
-              >
-                <span class="material-icons ic">{{ muc.icon }}</span>
-                @if (!thuGon()) {
-                  <span class="nhan">{{ muc.nhan }}</span>
-                }
-              </a>
-            }
+      <nav class="menu" aria-label="Điều hướng chính" [attr.aria-busy]="dangTai()">
+        @if (dangTai()) {
+          <p class="trang-thai" role="status">Đang tải menu…</p>
+        } @else if (loi()) {
+          <div class="loi-menu" role="alert">
+            <p>{{ loi() }}</p>
+            <button type="button" (click)="taiMenu()">Thử lại</button>
           </div>
+        } @else if (nhomHienThi().length === 0) {
+          <p class="trang-thai" role="status">Chưa có mục menu nào.</p>
+        } @else {
+          @for (nhom of nhomHienThi(); track nhom.tieu_de) {
+            <div class="nhom">
+              @if (!thuGon()) {
+                <div class="nhom-tieu-de">{{ nhom.tieu_de }}</div>
+              }
+              @for (muc of nhom.muc; track muc.duong_dan) {
+                @if (laUrlNoiBo(muc.duong_dan)) {
+                  <a
+                    [routerLink]="muc.duong_dan"
+                    routerLinkActive="active"
+                    [title]="thuGon() ? muc.nhan : ''"
+                    (click)="chonMuc.emit(muc)"
+                  >
+                    <span class="material-icons ic">{{ muc.icon }}</span>
+                    @if (!thuGon()) {
+                      <span class="nhan">{{ muc.nhan }}</span>
+                    }
+                  </a>
+                } @else {
+                  <a
+                    [href]="muc.duong_dan"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    [title]="thuGon() ? muc.nhan + ' · Mở trong tab mới' : 'Mở trong tab mới'"
+                    (click)="chonMuc.emit(muc)"
+                  >
+                    <span class="material-icons ic">{{ muc.icon }}</span>
+                    @if (!thuGon()) {
+                      <span class="nhan">{{ muc.nhan }}</span>
+                    }
+                  </a>
+                  }
+                }
+            </div>
+          }
         }
       </nav>
 
@@ -134,6 +157,33 @@ export type { MucMenu, NhomMenu };
     .menu::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.16);
       border-radius: 3px;
+    }
+
+    .trang-thai,
+    .loi-menu {
+      margin: 12px 10px;
+      padding: 10px;
+      color: var(--color-sidebar-icon);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .loi-menu {
+      color: #ffffff;
+    }
+
+    .loi-menu p {
+      margin: 0 0 8px;
+    }
+
+    .loi-menu button {
+      padding: 5px 8px;
+      border: 1px solid var(--color-sidebar-line);
+      border-radius: var(--radius);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
     }
 
     .nhom {
@@ -223,37 +273,90 @@ export type { MucMenu, NhomMenu };
   `,
 })
 export class Sidebar {
+  private readonly menuService = inject(MenuService);
+  private readonly taiLaiMenuKhiThayDoi = effect(() => {
+    this.menuService.phienBan();
+    this.taiMenu();
+  });
+
   readonly hocKy = input('Học kỳ 1 · 2025-2026');
   readonly vaiTro = input('ADMIN');
 
   readonly chonMuc = output<MucMenu>();
 
   readonly thuGon = signal(false);
-
-  /**
-   * Menu ghép từ hai file khai báo riêng — mỗi nhóm do một bạn FE sở hữu.
-   * Thêm màn mới thì sửa `routes/dao-tao.menu.ts` hoặc `routes/hoc-vu.menu.ts`,
-   * không sửa file này.
-   */
-  private readonly CAY_MENU: NhomMenu[] = [
-    {
-      tieu_de: 'Tổng quan',
-      muc: [{ nhan: 'Dashboard', duong_dan: '/dashboard', icon: 'dashboard' }],
-    },
-    DAO_TAO_MENU,
-    HOC_VU_MENU,
-    HE_THONG_MENU,
-  ];
+  private readonly menus = signal<MenuApi[]>([]);
+  readonly dangTai = signal(true);
+  readonly loi = signal<string | null>(null);
 
   readonly nhomHienThi = computed(() => {
     const vaiTro = this.vaiTro();
-    return this.CAY_MENU.map((nhom) => ({
-      ...nhom,
-      muc: nhom.muc.filter((m) => !m.vai_tro || m.vai_tro.includes(vaiTro)),
-    })).filter((nhom) => nhom.muc.length > 0);
+    const nhomTheoTen = new Map<string, MucMenu[]>();
+
+    for (const menu of this.menus()) {
+      if (!vaiTroDuocThayMenu(vaiTro, menu.vai_tro)) continue;
+
+      const tenNhom = menu.nhom?.trim() || 'Khác';
+      const mucNhom = nhomTheoTen.get(tenNhom) ?? [];
+      mucNhom.push({
+        nhan: menu.ten,
+        duong_dan: menu.url,
+        icon: this.iconCho(menu.url),
+        ...(menu.vai_tro && menu.vai_tro.length > 0 ? { vai_tro: menu.vai_tro } : {}),
+      });
+      nhomTheoTen.set(tenNhom, mucNhom);
+    }
+
+    return [...nhomTheoTen].map(([tieu_de, muc]) => ({ tieu_de, muc }));
   });
+
+  taiMenu(): void {
+    this.dangTai.set(true);
+    this.loi.set(null);
+    this.menuService.layMenuSidebar().subscribe({
+      next: (menus) => {
+        this.menus.set(menus);
+        this.dangTai.set(false);
+      },
+      error: () => {
+        this.loi.set('Không tải được menu. Kiểm tra kết nối rồi thử lại.');
+        this.dangTai.set(false);
+      },
+    });
+  }
 
   doiThuGon(): void {
     this.thuGon.update((v) => !v);
+  }
+
+  laUrlNoiBo(url: string): boolean {
+    return url.startsWith('/') && !url.startsWith('//');
+  }
+
+  private iconCho(url: string): string {
+    return (
+      {
+        '/dashboard': 'dashboard',
+        '/lop-hoc-phan': 'class',
+        '/lich-hoc': 'calendar_month',
+        '/dang-ky': 'how_to_reg',
+        '/dang-ky-cua-toi': 'how_to_reg',
+        '/diem-danh': 'fact_check',
+        '/diem': 'grading',
+        '/diem-cua-toi': 'grade',
+        '/sinh-vien': 'school',
+        '/giang-vien': 'person',
+        '/lop-hanh-chinh': 'groups',
+        '/mon-hoc': 'menu_book',
+        '/hoc-ky': 'date_range',
+        '/phong-hoc': 'meeting_room',
+        '/nguoi-dung': 'manage_accounts',
+        '/menu': 'menu',
+        '/cau-hinh': 'settings',
+        '/nhat-ky': 'history',
+        '/thung-rac': 'delete',
+        '/tai-khoan': 'account_circle',
+      }[url] ?? 'apps'
+    );
   }
 }

@@ -13,6 +13,6 @@
 
 - Frontend Angular nằm trong `frontend/`; chạy lệnh npm từ thư mục này.
 - Tuân theo design tokens ở `frontend/src/_tokens.scss`, Material theme và Tailwind config hiện có.
-- Bám hợp đồng FE/BE tại `docs/04-api-contract.md` và đặc tả màn hình tại `docs/05-screens.md`.
+- Bám hợp đồng FE/BE tại `docs/04-api-contract.md` và đặc tả màn hình tại `docs/05-screens.md`, `docs/phan-cong-cong-viec.md` đã cập nhật lại .
 - Nhóm học vụ thuộc phạm vi Đạt: routes/menu trong `frontend/src/app/routes/hoc-vu.*`; tránh sửa file thuộc nhóm đào tạo nếu không cần thiết.
 - Không sửa `.vscode/settings.json` trừ khi người dùng yêu cầu rõ ràng.

@@ -66,6 +66,11 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | TC-28 | FR-02.05b, FR-02.07, BR-31 | Bulk sinh viên: 10 chọn, 2 còn đăng ký ACTIVE → 8 xóa được, 2 dòng `DELETE_BLOCKED`; khóa hàng loạt khóa luôn tài khoản |
 | TC-29 | FR-04.04b, FR-04.06 | Bulk giảng viên: xóa bị chặn khi còn phụ trách lớp chưa đóng; khóa thu hồi token |
 | TC-30 | BR-31 | Danh sách rỗng → 422; 501 id → 422; id không tồn tại → dòng `NOT_FOUND`, các dòng khác vẫn thành công |
+| TC-31 | SCR-47/48 | FE — điều hướng không khớp route: URL **có** trong bảng `menus` → trang "Màn hình *tên mục* chưa làm" **trong layout**; URL **không ai khai** → 404 đứng riêng, không sidebar/header/footer; cả hai đều không quay về `/dashboard`. Chưa đăng nhập → về trang đăng nhập kèm `returnUrl` |
+| TC-32 | SCR-48 | FE — form menu: đường dẫn nội bộ chưa có route → cảnh báo nhưng **vẫn lưu** (khai trước cho màn chưa code); `bao-cao` (thiếu `/`) hoặc `javascript:...` → chặn, không gọi API |
+| TC-33 | SCR-47 | FE — menu khớp quyền route: ADMIN thấy **mọi** mục (kể cả `/dang-ky`, `/diem-danh`); vai trò không phải ADMIN chỉ thấy mục của mình; mục nào hiển thị thì route phải cho vai trò đó vào, và ngược lại |
+| TC-34 | SCR-47 | BE — `GET /api/menus` (không `quan_ly`): mỗi vai trò chỉ nhận menu có vai trò mình trong mảng `vai_tro` (hoặc `vai_tro = null`); menu `trang_thai = false` bị loại; **không có ngoại lệ ADMIN** — ADMIN không nhận `/dang-ky-cua-toi`, `/diem-cua-toi` |
+| TC-35 | SCR-48 | BE — `POST`/`PUT /api/menus` nhận `vai_tro` là **mảng**: `["ADMIN","GIANG_VIEN"]` lưu đúng; `[]` chuẩn hóa thành `null` (mọi vai trò); vai trò không hợp lệ hoặc gửi chuỗi đơn → 422 |
 
 ---
 

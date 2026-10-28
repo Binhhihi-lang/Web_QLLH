@@ -1961,6 +1961,246 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "09 — Menu & cấu hình (CRUD)",
+      "description": "Chạy bằng token ADMIN. Tạo menu sẽ lưu ID vào biến menu_id để các request chi tiết, cập nhật và xóa sử dụng.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{token}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "01. Danh sách menu theo vai trò",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/menus?vi_tri=sidebar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menus"
+              ],
+              "query": [
+                {
+                  "key": "vi_tri",
+                  "value": "sidebar"
+                }
+              ]
+            },
+            "description": "Menu được lọc theo vai trò, trạng thái và vị trí của người gọi."
+          },
+          "response": []
+        },
+        {
+          "name": "02. Tạo menu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tạo menu thành công (201)', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('menu_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ten\": \"Kiểm thử menu\",\n  \"url\": \"/kiem-thu-menu\",\n  \"vi_tri\": \"sidebar\",\n  \"nhom\": \"Hệ thống\",\n  \"vai_tro\": [\"ADMIN\"],\n  \"thu_tu\": 90\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menus"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "03. Chi tiết menu",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/menus/{{menu_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menus",
+                "{{menu_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "04. Cập nhật menu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ten\": \"Kiểm thử menu đã sửa\",\n  \"url\": \"/kiem-thu-menu\",\n  \"vi_tri\": \"sidebar\",\n  \"nhom\": \"Hệ thống\",\n  \"vai_tro\": [\"ADMIN\"],\n  \"thu_tu\": 91,\n  \"trang_thai\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menus/{{menu_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menus",
+                "{{menu_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "05. Xóa mềm menu",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/menus/{{menu_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menus",
+                "{{menu_id}}"
+              ]
+            },
+            "description": "Đánh dấu xóa mềm và ghi nhật ký thao tác."
+          },
+          "response": []
+        },
+        {
+          "name": "06. Đọc cấu hình hệ thống",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "settings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "07. Cập nhật trọng số điểm",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diem.trong_so\": {\n    \"chuyen_can\": 0.25,\n    \"giua_ky\": 0.25,\n    \"cuoi_ky\": 0.5\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "settings"
+              ]
+            },
+            "description": "Cập nhật một cấu hình; các khóa không gửi lên phải được giữ nguyên."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -2030,6 +2270,10 @@
     },
     {
       "key": "giang_vien_bulk_id",
+      "value": ""
+    },
+    {
+      "key": "menu_id",
       "value": ""
     }
   ]

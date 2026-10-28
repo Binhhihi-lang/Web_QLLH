@@ -148,12 +148,35 @@ class NenTangTest extends TestCase
         $this->seed(MenuSeeder::class);
 
         $menuSinhVien = Menu::hienThiCho(User::SINH_VIEN)->pluck('url')->all();
+        $menuGiangVien = Menu::hienThiCho(User::GIANG_VIEN)->pluck('url')->all();
         $menuAdmin = Menu::hienThiCho(User::ADMIN)->pluck('url')->all();
 
-        $this->assertContains('/dang-ky', $menuSinhVien);
+        // /dang-ky là SCR-30 đăng ký HỘ, chỉ ADMIN — sinh viên dùng /dang-ky-cua-toi.
+        $this->assertNotContains('/dang-ky', $menuSinhVien);
+        $this->assertContains('/dang-ky-cua-toi', $menuSinhVien);
         $this->assertNotContains('/nguoi-dung', $menuSinhVien);
+
+        $this->assertContains('/diem-danh', $menuGiangVien);
+        $this->assertNotContains('/dang-ky', $menuGiangVien);
+
+        // ADMIN thấy mục có ghi ADMIN, kể cả mục dùng chung với vai trò khác.
         $this->assertContains('/nguoi-dung', $menuAdmin);
-        $this->assertNotContains('/dang-ky', $menuAdmin);
+        $this->assertContains('/dang-ky', $menuAdmin);
+        $this->assertContains('/diem-danh', $menuAdmin);
+
+        // Nhưng KHÔNG thấy hai mục cá nhân của sinh viên: ADMIN không có hồ sơ
+        // sinh viên nên hai trang đó vô nghĩa với ADMIN.
+        $this->assertNotContains('/dang-ky-cua-toi', $menuAdmin);
+        $this->assertNotContains('/diem-cua-toi', $menuAdmin);
+
+        // Mọi mục sinh viên thấy, ADMIN cũng thấy — trừ hai mục cá nhân ở trên.
+        $this->assertSame(
+            ['/dang-ky-cua-toi', '/diem-cua-toi'],
+            array_values(array_diff($menuSinhVien, $menuAdmin)),
+        );
+
+        // Mục giảng viên thấy, ADMIN cũng thấy hết.
+        $this->assertSame([], array_diff($menuGiangVien, $menuAdmin));
     }
 
     public function test_endpoint_options_tra_du_lieu_va_dung_envelope(): void

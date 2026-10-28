@@ -45,6 +45,7 @@ export class HocVuRegistry {
     path: string,
     params: HttpParams,
     body: unknown = null,
+    _vaiTro: string | null = null,
   ): object | undefined {
     const enrollment = path.match(/^\/enrollments\/(\d+)$/);
     if (enrollment && method === 'DELETE') {

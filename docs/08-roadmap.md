@@ -49,13 +49,13 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 - 4 Policy khung + `Gate::before` cho ADMIN.
 - Toàn bộ `/api/options/*` giờ yêu cầu đăng nhập.
 - `config/sanctum.php`: `guard => []` (chỉ Bearer token, không fallback session), `expiration` 7 ngày.
-- Postman collection ban đầu 19 request (21 sau bổ sung ảnh); hiện đã mở rộng lên 67 request.
+- Postman collection ban đầu 19 request (21 sau bổ sung ảnh); hiện có 74 request.
 - Test: `XacThucTest` 16 case, tổng 34 test pass (sau bổ sung MySQL: 46).
 
 **Bổ sung BE (2026-10-24):**
 - `POST /api/me/avatar` + `DELETE /api/me/avatar` (FR-01.10/01.11) qua `CloudinaryService`, cột `users.avatar_url` + `avatar_public_id` (ADR-019). Thiếu cấu hình → 503.
 - Migration v0.4: `khoa_hoc`/`nganh`/`nam_nhap_hoc`, `hoc_ky.nam_hoc`/`ky_thu`, `lop_hoc_phan.nam_thu`.
-- Postman thêm 2 request ảnh (21 request tại thời điểm đó; collection hiện có 67 request).
+- Postman thêm 2 request ảnh (21 request tại thời điểm đó; collection hiện có 74 request).
 
 ---
 
@@ -74,20 +74,20 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Design system + layout FE | Tuần 2 | ✅ xong | 14 component `shared/ui`, `/style-guide`, dark mode |
 | Mock layer | Tuần 2 | ✅ xong | `environment.useMock` bật/tắt interceptor; `false` gửi request tới backend thật |
 | Auth phía client (AuthService, bearer interceptor, auth/role/password guard, ba giao diện login) | Tuần 2 (dời sang Tuần 8) | ✅ Đã triển khai; trình duyệt xác minh đăng nhập cả ba vai trò, `/auth/me` và menu tương ứng với backend thật ngày 26/10; test FE/BE pass | CORS cho phép `localhost:4200` và `127.0.0.1:4200`; dashboard gọi `GET /api/dashboard/admin` nhưng backend chưa có route; SCR-52/53 còn lại, PM phụ trách |
-| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 triển khai một phần | Backend có 8 route mỗi nhóm `students`, `teachers`, `admin-classes`, `subjects`, `rooms`; CRUD `subjects`/`rooms` và 9 test đang ở working tree, chưa commit/merge. FE có SCR-10–15; E2E vẫn cần backend/DB sẵn sàng |
+| CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 triển khai một phần | Backend có 8 route mỗi nhóm `students`, `teachers`, `admin-classes`, `subjects`, `rooms`; CRUD `subjects`/`rooms` đã merge cùng 9 test. Thêm `menus` (5) + `settings` (2) ở nhánh `pm-menu-cau-hinh`. FE có SCR-10–15, SCR-47/48; E2E vẫn cần backend/DB sẵn sàng |
 | Đăng ký công khai / quên mật khẩu | Chưa chốt | ⏸ hoãn | Đăng ký chờ PM chốt phạm vi; quên mật khẩu công khai chưa có API/SMTP. Tạm hướng dẫn liên hệ phòng đào tạo/Admin |
-| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; các module nghiệp vụ khác còn trong kế hoạch. Đức Anh: SCR-10–24; Đạt: SCR-25–43, SCR-03–05, SCR-47–51; PM: auth, màn toàn cục, SCR-45 |
+| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; SCR-47/48 (menu) xong ngày 27/10. Các module nghiệp vụ khác còn trong kế hoạch. Đức Anh: SCR-10–24; Đạt: SCR-25–43, SCR-03–05, SCR-47–51; PM: auth, màn toàn cục, SCR-45 |
 | `openapi.yaml` | Tuần 1 → dần | 🔶 41 path / 65 operation | Đã có 65/113 operation hợp đồng; còn 48 operation cần đặc tả |
 
-**Tổng endpoint:** 52 route Laravel khớp hợp đồng / 113 endpoint được mô tả trong
-[`04-api-contract.md`](04-api-contract.md) mục 18; còn 61 endpoint theo hợp đồng
+**Tổng endpoint:** 59 route Laravel khớp hợp đồng / 113 endpoint được mô tả trong
+[`04-api-contract.md`](04-api-contract.md) mục 18; còn 54 endpoint theo hợp đồng
 chưa có route. Trong đó `PUT /api/me` vẫn chưa có route Laravel; ngoài ra còn
 `GET /api/user`, route tiện ích chưa có trong hợp đồng. Số path OpenAPI (41) là
 khác đơn vị với số operation (65 đã đặc tả, 48 còn lại).
 
 **Kiểm thử và công cụ đã đối chiếu:** backend có 79 test (67 pass, 12 skipped);
 9 test riêng cho CRUD môn học/phòng học đều pass. Pint và `git diff --check`
-đều pass. Postman collection hiện có 67 request.
+đều pass. Postman collection hiện có 74 request; folder menu/cấu hình có 7 request.
 
 **Đợt sửa 2026-10-25 — chuẩn bị chia việc cho nhóm 4:**
 
@@ -153,6 +153,23 @@ registry tách theo nhóm (`core/mock/registry/*`).
 | FE | Đức Anh: SCR-19 → SCR-24; Đạt: SCR-47 → SCR-51 |
 | Test | TC-05 (phần đào tạo), TC-18, TC-19, BR-15, BR-19 |
 | **Bàn giao** | Đủ dữ liệu đào tạo để mở lớp học phần |
+
+**Cập nhật sau khi hoàn tất CRUD môn học/phòng học:** API `menus` (5 endpoint)
+và `settings` (2 endpoint) đã được triển khai trong nhánh `pm-menu-cau-hinh`;
+7/7 feature test riêng pass. Postman có thêm 7 request cho hai nhóm endpoint
+này. Chưa ghi nhận là đã merge.
+
+**Cập nhật 2026-10-27 (nhánh `pm-menu-cau-hinh`):** FE xong SCR-47 (quản lý menu:
+danh sách, thêm tại chỗ, ẩn/hiện, xoá có xác nhận) và SCR-48 (trang sửa menu);
+`settings` mới xong phần backend, SCR-49 còn là trang giữ chỗ. Hai quyết định
+chốt trong đợt này:
+
+- **Đường dẫn không khớp route tách làm hai kết cục.** URL có trong bảng `menus`
+  → màn "chưa làm" trong layout; URL không ai khai → 404 đứng riêng ngoài layout.
+  Cả hai đều KHÔNG quay về dashboard như trước.
+- **Admin được khai menu trước cho màn chưa code.** Form menu cảnh báo nhưng vẫn
+  cho lưu đường dẫn nội bộ hợp lệ chưa có route; chặn nếu không phải đường dẫn
+  nội bộ hay địa chỉ http(s).
 
 ---
 

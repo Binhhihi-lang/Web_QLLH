@@ -74,6 +74,7 @@ src/app/
 /dang-nhap/sinh-vien  → SCR-01C (SINH_VIEN, dùng mã sinh viên)
 /doi-mat-khau         → SCR-02
 /dashboard            → SCR-03/04/05 (theo vai trò)
+/gioi-thieu           → trang giới thiệu (đang xây dựng)
 /sinh-vien            → SCR-10 (ADMIN, TEACHER)
 /giang-vien           → SCR-13
 /lop-hanh-chinh       → SCR-16
@@ -89,8 +90,41 @@ src/app/
 /diem-cua-toi         → SCR-42 (STUDENT)
 /thung-rac            → SCR-45 (ADMIN)
 /menu                 → SCR-47 (ADMIN)
+/menu/:id             → SCR-48 chi tiết menu (ADMIN)
+/menu/:id/sua         → SCR-48 sửa menu (ADMIN); thêm menu bằng form tại chỗ ở `/menu`
 /cau-hinh             → SCR-49 (ADMIN)
 ```
+
+**Đường dẫn không khớp route nào** — hai kết cục khác nhau, không được gộp:
+
+| Trường hợp | Hiển thị |
+|---|---|
+| URL có trong bảng `menus` nhưng màn hình chưa code xong | `TrangChuaLam` — "Màn hình *tên mục* chưa làm", **trong layout**, sidebar vẫn dùng được |
+| URL không ai khai (gõ sai) | `KhongTimThayTrang` — 404, **không layout** (không sidebar/header/footer) |
+
+Phân biệt bằng `laTrangChuaLamGuard` (`canMatch`) đặt trên wildcard trong layout;
+guard trả `false` thì router rơi tiếp xuống wildcard 404 nằm ngoài layout. Nhờ
+vậy admin khai menu trước cho tuần sau được, mà gõ sai đường dẫn vẫn là 404 chứ
+không lặng lẽ về dashboard như trước.
+
+**Menu và route phải nói cùng một chuyện.** `menu.vai_tro` là **mảng** vai trò
+được thấy mục (`null` = mọi vai trò), nên một mục dùng chung cho nhiều vai trò
+viết được trực tiếp, ví dụ `/diem-danh` → `["ADMIN","GIANG_VIEN"]`. **Không có
+ngoại lệ dành cho ADMIN**: mục nào ADMIN không được thấy thì đừng ghi ADMIN vào
+mảng — nhờ vậy ADMIN không thấy `/dang-ky-cua-toi`, `/diem-cua-toi`, hai trang chỉ
+có nghĩa với sinh viên. Giá trị phải khớp `data.roles` của route tương ứng.
+
+Cài đặt: `core/utils/menu-vai-tro.ts` (`vaiTroDuocThayMenu`) cho sidebar và menu
+đầu trang, `Menu::scopeHienThiCho` cho `GET /api/menus` — **hai bên phải lọc
+giống hệt nhau**, sửa một bên thì sửa bên kia.
+
+> **Lỗi đã xảy ra (27/10):** ADMIN mở được `/dang-ky` và `/diem-danh` nhưng
+> sidebar giấu hai mục đó, vì menu gắn `SINH_VIEN`/`GIANG_VIEN` và bộ lọc so
+> khớp tuyệt đối. Ngược lại, menu "Đăng ký" trỏ `/dang-ky` (SCR-30 đăng ký hộ,
+> chỉ ADMIN) nhưng lại gắn `SINH_VIEN` → sinh viên thấy mục rồi bấm vào bị đá về
+> dashboard. Có test khoá quan hệ menu ↔ route ở
+> `core/utils/menu-route-nhat-quan.spec.ts`: thêm màn mới thì phải thêm mục menu
+> với `vai_tro` khớp `data.roles` của route.
 
 Ba cổng SCR-01 gọi chung `POST /api/auth/login`: ADMIN/giảng viên gửi `email`,
 sinh viên gửi `ma_sv`; mỗi cổng có nhận diện, nội dung và màu nhấn riêng, sau đó
@@ -243,8 +277,8 @@ theo `environment.useMock`, giống luồng sinh viên.
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
 | SCR-45 | Thùng rác | `/thung-rac` | ADMIN — chọn loại thực thể, lọc, khôi phục |
-| SCR-47 | Quản lý menu | `/menu` | ADMIN |
-| SCR-48 | Thêm/Sửa menu | `/menu/them`, `/:id/sua` | ADMIN |
+| SCR-47 | Quản lý menu | `/menu` | ADMIN — danh sách (kể cả mục đang ẩn), thêm tại chỗ, ẩn/hiện, xoá có xác nhận |
+| SCR-48 | Chi tiết / Sửa menu | `/menu/:id`, `/menu/:id/sua` | ADMIN — thêm menu dùng form tại chỗ ở `/menu`, không có route `/menu/them` |
 | SCR-49 | Cấu hình | `/cau-hinh` | ADMIN — trọng số điểm, **bảng quy đổi điểm chữ A/B/C/D/F ↔ hệ 4**, số ngày sửa điểm danh |
 | SCR-50 | Quản lý người dùng | `/nguoi-dung` | ADMIN |
 | SCR-51 | Thêm/Sửa người dùng | `/nguoi-dung/them`, `/:id/sua` | ADMIN |

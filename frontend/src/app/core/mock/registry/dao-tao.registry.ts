@@ -41,6 +41,7 @@ export class DaoTaoRegistry {
     path: string,
     params: HttpParams,
     body: unknown = null,
+    _vaiTro: string | null = null,
   ): object | undefined {
     // ---------- Sinh viên ----------
     if (path === '/students' && method === 'GET') {

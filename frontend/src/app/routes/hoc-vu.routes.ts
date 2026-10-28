@@ -14,6 +14,18 @@ export const hocVuRoutes: Routes = [
   // SCR-03/04/05 — Dashboard: SCR-03 đã khai trực tiếp trong app.routes.ts,
   // SCR-04/05 chuyển vào đây khi làm dashboard theo vai trò.
 
+  {
+    path: 'gioi-thieu',
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+      ma: 'Giới thiệu',
+      title: 'Giới thiệu',
+      chiTiet: 'Nội dung trang giới thiệu đang được chuẩn bị.',
+    },
+    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+  },
+
   // SCR-25/26/27/28/29 — Lớp học phần
   {
     path: 'lop-hoc-phan',
@@ -93,10 +105,22 @@ export const hocVuRoutes: Routes = [
 
   // SCR-47/48/49 — Menu & cấu hình
   {
+    path: 'menu/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], editMode: true, title: 'Sửa menu' },
+    loadComponent: () => import('@features/hoc-vu/menu/chi-tiet').then((m) => m.MenuChiTiet),
+  },
+  {
+    path: 'menu/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], title: 'Chi tiết menu' },
+    loadComponent: () => import('@features/hoc-vu/menu/chi-tiet').then((m) => m.MenuChiTiet),
+  },
+  {
     path: 'menu',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'], ma: 'SCR-47', title: 'Quản lý menu' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () => import('@features/hoc-vu/menu/quan-ly').then((m) => m.MenuQuanLy),
   },
   {
     path: 'cau-hinh',

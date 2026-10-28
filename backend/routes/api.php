@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\LopHanhChinhController;
+use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\MonHocController;
 use App\Http\Controllers\Api\OptionController;
 use App\Http\Controllers\Api\PhongHocController;
@@ -48,6 +50,16 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('rooms', [OptionController::class, 'rooms']);
         Route::get('admin-classes', [OptionController::class, 'adminClasses']);
         Route::get('sections', [OptionController::class, 'sections']);
+    });
+
+    Route::get('/menus', [MenuController::class, 'index'])->name('api/menus');
+    Route::middleware('vai.tro:ADMIN')->group(function () {
+        Route::post('/menus', [MenuController::class, 'store'])->name('api/menus/tao');
+        Route::get('/menus/{menu}', [MenuController::class, 'show'])->name('api/menus/chi-tiet');
+        Route::put('/menus/{menu}', [MenuController::class, 'update'])->name('api/menus/cap-nhat');
+        Route::delete('/menus/{menu}', [MenuController::class, 'destroy'])->name('api/menus/xoa');
+        Route::get('/settings', [CauHinhController::class, 'index'])->name('api/settings');
+        Route::put('/settings', [CauHinhController::class, 'update'])->name('api/settings/cap-nhat');
     });
 
     Route::prefix('subjects')->group(function () {

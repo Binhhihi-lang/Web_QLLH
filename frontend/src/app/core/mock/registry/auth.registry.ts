@@ -159,6 +159,14 @@ export class AuthRegistry {
     return ok(null, 'Đổi mật khẩu thành công.');
   }
 
+  /**
+   * Vai trò của người gọi, để các registry khác lọc dữ liệu đúng như backend.
+   * `null` khi chưa đăng nhập hoặc token không hợp lệ.
+   */
+  vaiTroTheoToken(authorization: string | null): string | null {
+    return this.layNguoiDungTheoToken(authorization)?.vai_tro ?? null;
+  }
+
   private layNguoiDungTheoToken(authorization: string | null): NguoiDung | null {
     const token = this.layToken(authorization);
     if (!token || this.tokenBiThuHoi.has(token)) return null;

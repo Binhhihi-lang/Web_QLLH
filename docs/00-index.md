@@ -14,7 +14,7 @@ Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-26
 | [03-data-model.md](03-data-model.md) | ERD, bảng, cột, kiểu, index, ràng buộc | ✅ Đã chốt | Schema database, quy tắc xóa mềm |
 | [04-api-contract.md](04-api-contract.md) | Quy ước API + danh sách endpoint | ✅ Đã chốt | Hợp đồng FE ↔ BE |
 | [openapi.yaml](openapi.yaml) | OpenAPI 3.1 — **41 path, 65 operation** đã đặc tả trong hợp đồng 113 endpoint | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
-| [postman/](postman/) | Collection **67 request** + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
+| [postman/](postman/) | Collection **74 request** + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
 | [05-screens.md](05-screens.md) | Danh sách màn hình + điều hướng Angular | ✅ Đã chốt | Cấu trúc frontend |
 | [06-test-plan.md](06-test-plan.md) | Ma trận FR/BR → test case | ✅ Đã chốt | Kiểm thử |
 | [07-decisions.md](07-decisions.md) | Nhật ký quyết định kiến trúc (ADR) | ✅ Đã chốt | Lý do các lựa chọn |
@@ -97,5 +97,6 @@ Rà soát nghiệp vụ toàn bộ tài liệu, sửa mâu thuẫn nội bộ v�
 ## Cập nhật triển khai và phân công (2026-10-26)
 
 - Phân công màn hình đã thống nhất: Đức Anh phụ trách đào tạo SCR-10–24; Đạt phụ trách học vụ SCR-25–43 và dashboard/quản trị SCR-03–05, SCR-47–51; PM phụ trách xác thực, màn toàn cục và thùng rác. Chi tiết tại [phan-cong-cong-viec.md](phan-cong-cong-viec.md).
-- Backend hiện có 52/113 endpoint theo hợp đồng và 1 route tiện ích; CRUD môn học/phòng học cùng 9 test đang có trong working tree, chưa commit/merge.
-- Postman có 67 request. OpenAPI có 41 path, tương ứng 65 operation; không so sánh số path trực tiếp với tổng endpoint trong hợp đồng.
+- Backend hiện có 59/113 endpoint theo hợp đồng và 1 route tiện ích (CRUD môn học/phòng học đã merge; `menus` 5 + `settings` 2 endpoint đang ở nhánh `pm-menu-cau-hinh`, chưa merge).
+- Postman có 74 request. OpenAPI có 41 path, tương ứng 65 operation; không so sánh số path trực tiếp với tổng endpoint trong hợp đồng.
+- Nhánh `pm-menu-cau-hinh`: FE đã xong SCR-47 (quản lý menu) và SCR-48 (sửa menu; thêm menu bằng form tại chỗ ở `/menu`). Đường dẫn không khớp route nay tách hai kết cục — URL có trong menu ra trang "chưa làm" trong layout, URL không ai khai ra 404 đứng riêng ngoài layout (xem [05-screens.md](05-screens.md) §2).

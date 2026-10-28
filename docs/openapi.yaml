@@ -1680,13 +1680,21 @@ paths:
     get:
       tags: [Menu]
       summary: Danh sách menu — tự lọc theo vai trò người gọi
-      description: Trả mục đang bật (`trang_thai = true`) mà `vai_tro` bằng null hoặc đúng vai trò người gọi. Không phân trang — menu là danh sách ngắn.
+      description: |
+        Mặc định trả mục đang bật (`trang_thai = true`) mà `vai_tro` bằng null
+        hoặc đúng vai trò người gọi. ADMIN có thể gửi `quan_ly=1` để lấy mọi
+        menu chưa xóa, gồm menu đang ẩn và menu của vai trò khác. Không phân trang.
       parameters:
         - name: vi_tri
           in: query
           schema:
             type: string
             enum: [header, sidebar]
+        - name: quan_ly
+          in: query
+          description: Chế độ danh sách quản trị, chỉ dành cho ADMIN
+          schema:
+            type: boolean
       responses:
         "200":
           description: Thành công
@@ -1703,6 +1711,8 @@ paths:
                           $ref: "#/components/schemas/Menu"
         "401":
           $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
     post:
       tags: [Menu]
       summary: Tạo menu (ADMIN)
@@ -1825,7 +1835,7 @@ paths:
     put:
       tags: [Cấu hình]
       summary: Ghi cấu hình hệ thống (ADMIN)
-      description: Ghi từng khoá gửi lên, khoá không gửi giữ nguyên. `diem.bang_quy_doi` bị 422 nếu khoảng chồng lấn, không phủ kín 0–10, hoặc `chu` ngoài A/B/C/D/F.
+      description: Ghi từng khóa gửi lên, khóa không gửi giữ nguyên và trả lại toàn bộ cấu hình. `diem.trong_so` phải có đủ ba trọng số 0–1, tổng bằng 1. `diem.bang_quy_doi` bị 422 nếu khoảng chồng lấn, có khoảng trống, không phủ kín 0–10 hoặc `chu` ngoài A/B/C/D/F; mốc điểm có tối đa hai chữ số thập phân.
       requestBody:
         required: true
         content:
@@ -2506,6 +2516,7 @@ components:
           maxLength: 100
         url:
           type: string
+          description: Đường dẫn nội bộ bắt đầu bằng `/` (không phải `//`), fragment `#...` hoặc URL `http(s)://`.
           description: Bắt đầu bằng `/`, `#` hoặc `http(s)://`
         vi_tri:
           type: string
@@ -2515,9 +2526,11 @@ components:
           nullable: true
           description: Nhóm hiển thị, ví dụ "Đào tạo"
         vai_tro:
-          type: [string, "null"]
-          description: null = mọi vai trò
-          enum: [ADMIN, GIANG_VIEN, SINH_VIEN, null]
+          type: [array, "null"]
+          description: Mảng vai trò được thấy mục; null = mọi vai trò
+          items:
+            type: string
+            enum: [ADMIN, GIANG_VIEN, SINH_VIEN]
         thu_tu:
           type: integer
           default: 0
@@ -2541,8 +2554,11 @@ components:
           maxLength: 100
           nullable: true
         vai_tro:
-          type: [string, "null"]
-          enum: [ADMIN, GIANG_VIEN, SINH_VIEN, null]
+          type: [array, "null"]
+          description: Mảng vai trò được thấy mục; null hoặc [] = mọi vai trò
+          items:
+            type: string
+            enum: [ADMIN, GIANG_VIEN, SINH_VIEN]
         thu_tu:
           type: integer
           default: 0
@@ -2567,8 +2583,10 @@ components:
       type: object
       description: |
         Object khoá → giá trị. Gửi khoá nào ghi khoá đó, không gửi thì giữ nguyên.
-        `diem.bang_quy_doi` bị 422 nếu khoảng chồng lấn, không phủ kín 0–10, hoặc
-        `chu` không thuộc A/B/C/D/F.
+        `diem.trong_so` phải có đủ ba trường 0–1 và tổng bằng 1.
+        `diem.bang_quy_doi` bị 422 nếu khoảng chồng lấn, có khoảng trống,
+        không phủ kín 0–10, mốc vượt quá hai chữ số thập phân hoặc `chu`
+        không thuộc A/B/C/D/F.
       additionalProperties: true
       example:
         diem.trong_so:

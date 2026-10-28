@@ -30,7 +30,7 @@ class MenuFactory extends Factory
     public function chiAdmin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'vai_tro' => User::ADMIN,
+            'vai_tro' => [User::ADMIN],
         ]);
     }
 

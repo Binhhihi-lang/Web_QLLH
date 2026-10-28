@@ -471,15 +471,23 @@ erDiagram
 |---|---|---|---|
 | id | bigint unsigned | PK | |
 | ten | varchar(100) | no | |
-| url | varchar(255) | no | Bắt đầu bằng `/`, `#` hoặc `http(s)://` |
+| url | varchar(2048) | no | Bắt đầu bằng `/`, `#` hoặc `http(s)://`. Khớp `max:2048` trong `MenuRequest` (migration `2026_10_28_000100` nới từ 255) |
 | vi_tri | varchar(20) | no | `header`, `sidebar` |
 | nhom | varchar(100) | yes | |
-| vai_tro | varchar(20) | yes | null = mọi vai trò |
+| vai_tro | json | yes | **Mảng** vai trò được thấy mục, ví dụ `["ADMIN","GIANG_VIEN"]`; null = mọi vai trò |
 | thu_tu | integer | no | mặc định 0 |
 | trang_thai | boolean | no | |
 | created_at, updated_at | timestamp | yes | |
 
-**Index:** `index(vi_tri, vai_tro, trang_thai, thu_tu)`.
+**Index:** `index(vi_tri, trang_thai, thu_tu)`.
+
+> **Vì sao `vai_tro` là mảng (2026-10-27, migration `2026_10_27_000100`):** cột cũ
+> `varchar(20)` chỉ chứa một giá trị nên không diễn đạt được "ADMIN và GIANG_VIEN
+> cùng thấy một mục". Cách chữa tạm khi đó là cho ADMIN thấy tất cả, nhưng như vậy
+> ADMIN lại thấy cả `/dang-ky-cua-toi` và `/diem-cua-toi` — hai trang chỉ có nghĩa
+> với sinh viên. Nay quy ước: **mục hiện khi `vai_tro` chứa vai trò đang xem**,
+> không có ngoại lệ ADMIN. Giá trị phải khớp `data.roles` của route tương ứng.
+
 
 ### 3.17. Bảng hệ thống giữ nguyên
 

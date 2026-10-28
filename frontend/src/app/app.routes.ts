@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { MainLayout } from '@core/layout/main-layout';
 import { authChildGuard, authGuard, guestGuard } from '@core/auth/auth.guard';
+import { laTrangChuaLamGuard } from '@core/auth/trang-chua-lam.guard';
 import { daoTaoRoutes } from './routes/dao-tao.routes';
 import { hocVuRoutes } from './routes/hoc-vu.routes';
 
@@ -70,8 +71,24 @@ export const routes: Routes = [
       // Nhóm đào tạo (Đức Anh) và nhóm học vụ (Đạt) — mỗi nhóm một file.
       ...daoTaoRoutes,
       ...hocVuRoutes,
+
+      // URL có trong bảng menu nhưng chưa có màn hình: hiện "Màn hình X chưa
+      // làm" NGAY TRONG layout, để admin khai menu trước cho tuần sau mà vẫn
+      // điều hướng tiếp được. Guard trả false khi URL không có trong menu →
+      // rơi xuống wildcard 404 bên dưới.
+      {
+        path: '**',
+        canMatch: [laTrangChuaLamGuard],
+        loadComponent: () => import('@features/not-found/trang-chua-lam').then((m) => m.TrangChuaLam),
+      },
     ],
   },
 
-  { path: '**', redirectTo: 'dashboard' },
+  // ---------- 404: KHÔNG có layout ----------
+  // Đường dẫn không ai khai thì đứng riêng toàn màn hình: sidebar/header gợi ý
+  // một hệ thống vẫn dùng được, trong khi URL này không tồn tại.
+  {
+    path: '**',
+    loadComponent: () => import('@features/not-found/not-found').then((m) => m.KhongTimThayTrang),
+  },
 ];

@@ -2,10 +2,15 @@ import {
   Component,
   HostListener,
   computed,
+  effect,
+  inject,
   input,
   output,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { MenuApi, MenuService } from '@core/services/menu.service';
+import { vaiTroDuocThayMenu } from '@core/utils/menu-vai-tro';
 
 /**
  * Header trên cùng.
@@ -20,6 +25,7 @@ import {
 @Component({
   selector: 'app-header',
   standalone: true,
+  imports: [RouterLink],
   template: `
     <header class="header">
       <button
@@ -41,6 +47,21 @@ import {
           aria-label="Tìm kiếm toàn hệ thống"
         />
       </div>
+
+      <nav class="menu-dau-trang" aria-label="Điều hướng đầu trang" [attr.aria-busy]="dangTaiMenu()">
+        @for (menu of menuDauTrang(); track menu.id) {
+          @if (laUrlNoiBo(menu.url)) {
+            <a [routerLink]="menu.url">{{ menu.ten }}</a>
+          } @else {
+            <a [href]="menu.url" target="_blank" rel="noopener noreferrer" title="Mở trong tab mới">
+              {{ menu.ten }}
+            </a>
+          }
+        }
+        @if (loiMenu()) {
+          <span class="loi-menu" role="alert">{{ loiMenu() }}</span>
+        }
+      </nav>
 
       <div class="phai">
         <span class="hoc-ky">{{ hocKy() }}</span>
@@ -184,6 +205,31 @@ import {
 
     .tim input::placeholder {
       color: var(--color-ink-subtle);
+    }
+
+    .menu-dau-trang {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 240px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .menu-dau-trang a {
+      color: var(--color-ink-muted);
+      font-size: 12.5px;
+      text-decoration: none;
+    }
+
+    .menu-dau-trang a:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+
+    .loi-menu {
+      color: var(--color-danger);
+      font-size: var(--text-caption);
     }
 
     .phai {
@@ -376,11 +422,20 @@ export class Header {
   readonly hocKy = input('Học kỳ 1 · 2025-2026');
   readonly soThongBao = input(3);
 
+  private readonly menuService = inject(MenuService);
+  private readonly taiLaiMenuHeaderKhiThayDoi = effect(() => {
+    this.menuService.phienBan();
+    this.taiMenuHeader();
+  });
+
   readonly moMenu = output<void>();
   readonly hanhDong = output<'ho-so' | 'doi-mat-khau' | 'dang-xuat'>();
 
   readonly moDropdown = signal(false);
   readonly toi = signal(false);
+  readonly menuDauTrang = signal<MenuApi[]>([]);
+  readonly dangTaiMenu = signal(true);
+  readonly loiMenu = signal<string | null>(null);
 
   private static readonly TEN_VAI_TRO: Record<string, string> = {
     ADMIN: 'Quản trị viên',
@@ -389,6 +444,27 @@ export class Header {
   };
 
   readonly tenVaiTro = computed(() => Header.TEN_VAI_TRO[this.vaiTro()] ?? this.vaiTro());
+
+  taiMenuHeader(): void {
+    this.dangTaiMenu.set(true);
+    this.loiMenu.set(null);
+    this.menuService.layMenuHeader().subscribe({
+      next: (menus) => {
+        this.menuDauTrang.set(
+          menus.filter((menu) => vaiTroDuocThayMenu(this.vaiTro(), menu.vai_tro)),
+        );
+        this.dangTaiMenu.set(false);
+      },
+      error: () => {
+        this.loiMenu.set('Không tải được liên kết đầu trang.');
+        this.dangTaiMenu.set(false);
+      },
+    });
+  }
+
+  laUrlNoiBo(url: string): boolean {
+    return url.startsWith('/') && !url.startsWith('//');
+  }
 
   /** Lấy chữ đầu của hai từ cuối — "Nguyễn Văn An" → "VA". */
   readonly chuVietTat = computed(() => {

@@ -695,6 +695,10 @@ Response:
 ```
 
 `PUT /api/settings` với `diem.bang_quy_doi` trả 422 nếu khoảng chồng lấn, không phủ kín 0–10, hoặc `chu` không thuộc `A/B/C/D/F`.
+Với `diem.trong_so`, ba trường `chuyen_can`, `giua_ky`, `cuoi_ky` phải nằm trong
+khoảng 0–1 và có tổng bằng 1. Bảng quy đổi phải phủ kín 0–10, không chồng lấn
+hoặc có khoảng trống; các mốc dùng tối đa hai chữ số thập phân. `PUT` chỉ ghi
+các khóa được gửi lên và trả lại toàn bộ cấu hình.
 
 ---
 
@@ -768,7 +772,7 @@ Bộ lọc: `q`, `deleted_by`, `deleted_tu`, `deleted_den`, `page`, `per_page`.
 
 | Method | Endpoint | Quyền |
 |---|---|---|
-| GET | `/api/menus` | mọi vai trò — tự lọc theo `vai_tro` và `trang_thai` |
+| GET | `/api/menus` | mọi vai trò — tự lọc theo `vai_tro` và `trang_thai`; ADMIN có thể gửi `quan_ly=1` để lấy mọi menu chưa xóa, gồm menu đang ẩn và menu của vai trò khác. Không gửi `quan_ly`, mỗi vai trò chỉ nhận menu có vai trò mình trong `vai_tro` (hoặc `vai_tro = null`); **không có ngoại lệ ADMIN** — xem `docs/05-screens.md` §2 |
 | GET | `/api/menus/{id}` | ADMIN |
 | POST | `/api/menus` | ADMIN |
 | PUT | `/api/menus/{id}` | ADMIN |

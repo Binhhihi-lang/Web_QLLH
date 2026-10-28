@@ -35,6 +35,7 @@ class Menu extends Model
     protected function casts(): array
     {
         return [
+            'vai_tro' => 'array',
             'trang_thai' => 'boolean',
             'thu_tu' => 'integer',
         ];
@@ -52,20 +53,40 @@ class Menu extends Model
 
     /**
      * Chỉ lấy menu đang hiển thị và phù hợp với vai trò đang đăng nhập.
-     * Menu có vai_tro = NULL dành cho mọi vai trò.
+     *
+     * `vai_tro` là MẢNG vai trò được thấy mục; NULL = mọi vai trò. Không có
+     * ngoại lệ cho ADMIN: mục nào ADMIN không được thấy thì đừng ghi ADMIN vào
+     * mảng — nhờ vậy ADMIN không thấy "/dang-ky-cua-toi" hay "/diem-cua-toi",
+     * hai trang chỉ có nghĩa với sinh viên.
+     *
+     * FE lọc y hệt ở `core/utils/menu-vai-tro.ts` — sửa bên này thì sửa bên kia.
+     * Khi làm SCR-52 (xem theo vai trò), truyền vào đây vai trò ĐANG XEM.
      */
     public function scopeHienThiCho(Builder $query, ?string $vaiTro): Builder
     {
         return $query
             ->where('trang_thai', true)
-            ->where(function (Builder $q) use ($vaiTro) {
-                $q->whereNull('vai_tro');
-
-                if ($vaiTro !== null) {
-                    $q->orWhere('vai_tro', $vaiTro);
-                }
+            ->when($vaiTro !== null, function (Builder $q) use ($vaiTro) {
+                $q->where(function (Builder $con) use ($vaiTro) {
+                    $con->whereNull('vai_tro')
+                        ->orWhereJsonContains('vai_tro', $vaiTro);
+                });
             })
             ->orderBy('thu_tu')
             ->orderBy('id');
+    }
+
+    /** Vai trò hiện tại có được thấy mục này không — dùng khi đã có model trong tay. */
+    public function hienThiVoi(?string $vaiTro): bool
+    {
+        if (! $this->trang_thai) {
+            return false;
+        }
+
+        if (empty($this->vai_tro)) {
+            return true;
+        }
+
+        return $vaiTro !== null && in_array($vaiTro, $this->vai_tro, true);
     }
 }

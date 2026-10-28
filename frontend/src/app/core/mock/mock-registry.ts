@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { DaoTaoRegistry } from '@core/mock/registry/dao-tao.registry';
 import { HocVuRegistry } from '@core/mock/registry/hoc-vu.registry';
 import { AuthRegistry } from '@core/mock/registry/auth.registry';
+import { MenuRegistry } from '@core/mock/registry/menu.registry';
 import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
 
 /**
@@ -26,8 +27,9 @@ export class MockRegistry {
   private readonly daoTao = new DaoTaoRegistry();
   private readonly hocVu = new HocVuRegistry();
   private readonly auth = new AuthRegistry();
+  private readonly menu = new MenuRegistry();
 
-  private readonly nguon = [this.daoTao, this.hocVu];
+  private readonly nguon = [this.daoTao, this.hocVu, this.menu];
 
   resolve(
     method: string,
@@ -40,8 +42,12 @@ export class MockRegistry {
     const ketQuaAuth = this.auth.resolve(method, path, body, authorization);
     if (ketQuaAuth !== undefined) return ketQuaAuth;
 
+    // Vai trò người gọi — registry cần để lọc dữ liệu đúng như backend. Thiếu
+    // nó thì mock trả về cả mục mà vai trò đó không có quyền thấy.
+    const vaiTro = this.auth.vaiTroTheoToken(authorization);
+
     for (const nguon of this.nguon) {
-      const ketQua = nguon.resolve(method, path, params, body);
+      const ketQua = nguon.resolve(method, path, params, body, vaiTro);
       if (ketQua !== undefined) {
         return ketQua as ApiResponse<unknown>;
       }
