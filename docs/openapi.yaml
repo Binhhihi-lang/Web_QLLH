@@ -1050,6 +1050,7 @@ paths:
         - $ref: "#/components/parameters/SortBy"
         - $ref: "#/components/parameters/SortDir"
         - $ref: "#/components/parameters/TrangThaiLoc"
+        - $ref: "#/components/parameters/SoTinChiLoc"
       responses:
         "200":
           description: Thành công
@@ -1915,6 +1916,15 @@ components:
       description: Lọc theo trạng thái hoạt động.
       schema:
         type: boolean
+
+    SoTinChiLoc:
+      name: so_tin_chi
+      in: query
+      description: Lọc chính xác theo số tín chỉ.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10
 
     IdPath:
       name: id
