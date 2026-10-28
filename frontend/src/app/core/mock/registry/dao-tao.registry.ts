@@ -32,6 +32,7 @@ import { LOP_HOC_PHAN_MOCK } from '@core/mock/data/hoc-vu.mock';
 export class DaoTaoRegistry {
   private sinhVien = SINH_VIEN_MOCK.map((r) => ({ ...r }));
   private lopHanhChinh = LOP_HANH_CHINH_MOCK.map((r) => ({ ...r }));
+  private moTaLop = new Map<number, string | null>();
   private giangVien = GIANG_VIEN_MOCK.map((r) => ({ ...r }));
   private monHoc = MON_HOC_MOCK.map((r) => ({ ...r }));
   private hocKy = HOC_KY_MOCK.map((r) => ({ ...r }));
@@ -133,10 +134,152 @@ export class DaoTaoRegistry {
 
     // ---------- Lớp hành chính ----------
     if (path === '/admin-classes' && method === 'GET') {
-      let rows = searchBy(this.lopHanhChinh, params.get('q'), ['ma_lop', 'ten_lop']);
+      let rows = this.lopHanhChinh.filter((r) => !r.da_xoa);
+      rows = searchBy(rows, params.get('q'), ['ma_lop', 'ten_lop']);
       rows = filterBy(rows, params, ['khoa_hoc', 'nganh', 'trang_thai']);
       rows = sortBy(rows, params, 'ma_lop');
       return paginate(rows, params, '/api/admin-classes');
+    }
+    if (path === '/admin-classes' && method === 'POST') {
+      const ketQua = this.chuanHoaLop(body);
+      const loiDuLieu = this.loiDuLieuLop(ketQua);
+      if (loiDuLieu) return loiDuLieu;
+
+      const lop: LopHanhChinh = {
+        id: Math.max(0, ...this.lopHanhChinh.map((r) => r.id)) + 1,
+        ...ketQua.duLieu,
+        si_so: 0,
+        da_xoa: false,
+      };
+      this.lopHanhChinh.push(lop);
+      this.moTaLop.set(lop.id, ketQua.mo_ta);
+      return ok({ ...lop, mo_ta: ketQua.mo_ta }, 'Tạo lớp hành chính thành công.');
+    }
+
+    const lopHanhChinhId = path.match(/^\/admin-classes\/(\d+)$/);
+    if (lopHanhChinhId && method === 'DELETE') {
+      const id = Number(lopHanhChinhId[1]);
+      const lop = this.lopHanhChinh.find((r) => r.id === id && !r.da_xoa);
+      if (!lop) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy lớp hành chính.');
+      if (this.demSinhVien(id) > 0) {
+        return loi(
+          MaLoi.DELETE_BLOCKED,
+          'Không thể xóa lớp còn sinh viên chưa xóa. Hãy gỡ hoặc chuyển sinh viên trước.',
+        );
+      }
+
+      lop.da_xoa = true;
+      return ok(null, 'Đã xóa lớp hành chính.');
+    }
+    if (lopHanhChinhId && method === 'GET') {
+      const id = Number(lopHanhChinhId[1]);
+      const lop = this.lopHanhChinh.find((r) => r.id === id && !r.da_xoa);
+      return lop
+        ? ok({ ...lop, si_so: this.demSinhVien(id), mo_ta: this.moTaLop.get(id) ?? null })
+        : loi(MaLoi.NOT_FOUND, 'Không tìm thấy lớp hành chính.');
+    }
+    if (lopHanhChinhId && method === 'PUT') {
+      const id = Number(lopHanhChinhId[1]);
+      const index = this.lopHanhChinh.findIndex((r) => r.id === id && !r.da_xoa);
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy lớp hành chính.');
+
+      const ketQua = this.chuanHoaLop(body, id);
+      const loiDuLieu = this.loiDuLieuLop(ketQua);
+      if (loiDuLieu) return loiDuLieu;
+
+      this.lopHanhChinh[index] = { ...this.lopHanhChinh[index], ...ketQua.duLieu };
+      this.moTaLop.set(id, ketQua.mo_ta);
+      this.sinhVien = this.sinhVien.map((student) =>
+        student.lop_hanh_chinh?.id === id
+          ? {
+              ...student,
+              lop_hanh_chinh: {
+                id,
+                ma_lop: ketQua.duLieu.ma_lop,
+                ten_lop: ketQua.duLieu.ten_lop,
+              },
+            }
+          : student,
+      );
+      return ok(
+        {
+          ...this.lopHanhChinh[index],
+          si_so: this.demSinhVien(id),
+          mo_ta: ketQua.mo_ta,
+        },
+        'Cập nhật lớp hành chính thành công.',
+      );
+    }
+
+    const roster = path.match(/^\/admin-classes\/(\d+)\/students$/);
+    if (roster && method === 'GET') {
+      const lopId = Number(roster[1]);
+      if (!this.lopHanhChinh.some((r) => r.id === lopId && !r.da_xoa)) {
+        return loi(MaLoi.NOT_FOUND, 'Không tìm thấy lớp hành chính.');
+      }
+      let rows = this.sinhVien.filter(
+        (r) => !r.da_xoa && r.lop_hanh_chinh?.id === lopId,
+      );
+      rows = searchBy(rows, params.get('q'), ['ma_sv', 'ho_ten', 'email']);
+      rows = sortBy(rows, params, 'ho_ten');
+      return paginate(rows, params, `/api/admin-classes/${lopId}/students`);
+    }
+    if (roster && method === 'POST') {
+      const lopId = Number(roster[1]);
+      const lop = this.lopHanhChinh.find((r) => r.id === lopId && !r.da_xoa);
+      if (!lop) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy lớp hành chính.');
+
+      const ids =
+        body && typeof body === 'object' && !Array.isArray(body)
+          ? (body as Record<string, unknown>)['sinh_vien_ids']
+          : undefined;
+      const errors: Record<string, string[]> = {};
+      if (!Array.isArray(ids)) {
+        errors['sinh_vien_ids'] = ['Danh sách sinh viên phải có từ 1 đến 500 mã.'];
+      } else if (ids.length === 0 || ids.length > 500) {
+        errors['sinh_vien_ids'] = ['Danh sách sinh viên phải có từ 1 đến 500 mã.'];
+      } else if (ids.some((id) => !Number.isInteger(id) || Number(id) <= 0)) {
+        errors['sinh_vien_ids'] = ['Mã sinh viên không hợp lệ.'];
+      } else if (new Set(ids).size !== ids.length) {
+        errors['sinh_vien_ids'] = ['Danh sách không được có mã sinh viên trùng lặp.'];
+      } else if (ids.some((id) => !this.sinhVien.some((sv) => sv.id === id && !sv.da_xoa))) {
+        errors['sinh_vien_ids'] = ['Một hoặc nhiều sinh viên không tồn tại.'];
+      }
+      if (Object.keys(errors).length) return loiValidation(errors);
+
+      const studentIds = ids as number[];
+      for (const id of studentIds) {
+        const student = this.sinhVien.find((sv) => sv.id === id && !sv.da_xoa)!;
+        const previousClassId = student.lop_hanh_chinh?.id;
+        if (previousClassId === lopId) continue;
+
+        if (previousClassId !== undefined) {
+          const previousClass = this.lopHanhChinh.find((item) => item.id === previousClassId);
+          if (previousClass) previousClass.si_so = Math.max(0, previousClass.si_so - 1);
+        }
+        student.lop_hanh_chinh = {
+          id: lop.id,
+          ma_lop: lop.ma_lop,
+          ten_lop: lop.ten_lop,
+        };
+        lop.si_so += 1;
+      }
+      return ok({ so_luong: studentIds.length }, 'Gán sinh viên vào lớp thành công.');
+    }
+
+    const rosterStudent = path.match(/^\/admin-classes\/(\d+)\/students\/(\d+)$/);
+    if (rosterStudent && method === 'DELETE') {
+      const lopId = Number(rosterStudent[1]);
+      const sinhVienId = Number(rosterStudent[2]);
+      const student = this.sinhVien.find(
+        (sv) => sv.id === sinhVienId && !sv.da_xoa && sv.lop_hanh_chinh?.id === lopId,
+      );
+      if (!student) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy sinh viên trong lớp.');
+
+      student.lop_hanh_chinh = null;
+      const lop = this.lopHanhChinh.find((item) => item.id === lopId);
+      if (lop) lop.si_so = Math.max(0, lop.si_so - 1);
+      return ok(null, 'Gỡ sinh viên khỏi lớp thành công.');
     }
 
     // ---------- Giảng viên ----------
@@ -221,8 +364,10 @@ export class DaoTaoRegistry {
 
     // ---------- Options thuộc nhóm đào tạo ----------
     if (path === '/options/admin-classes' && method === 'GET') {
+      let rows = this.lopHanhChinh.filter((r) => !r.da_xoa);
+      if (params.get('tat_ca') !== '1') rows = rows.filter((r) => r.trang_thai);
       return ok(
-        this.lopHanhChinh.map((r) => ({
+        rows.map((r) => ({
           id: r.id,
           label: r.ma_lop,
           khoa_hoc: r.khoa_hoc,
@@ -255,6 +400,89 @@ export class DaoTaoRegistry {
     }
 
     return undefined;
+  }
+
+  private chuanHoaLop(body: unknown, boQuaId?: number): {
+    duLieu: Omit<LopHanhChinh, 'id' | 'si_so' | 'da_xoa'>;
+    mo_ta: string | null;
+    errors: Record<string, string[]>;
+    maLoi: typeof MaLoi.DUPLICATE_CODE | null;
+  } {
+    const data =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+    const maLop = typeof data['ma_lop'] === 'string' ? data['ma_lop'].trim() : '';
+    const tenLop = typeof data['ten_lop'] === 'string' ? data['ten_lop'].trim() : '';
+    const khoaHoc = typeof data['khoa_hoc'] === 'string' ? data['khoa_hoc'].trim() : '';
+    const nganh = typeof data['nganh'] === 'string' ? data['nganh'].trim() : '';
+    const moTa = typeof data['mo_ta'] === 'string' ? data['mo_ta'].trim() : '';
+    const namNhapHoc =
+      data['nam_nhap_hoc'] === null ||
+      data['nam_nhap_hoc'] === undefined ||
+      data['nam_nhap_hoc'] === ''
+        ? null
+        : Number(data['nam_nhap_hoc']);
+    const errors: Record<string, string[]> = {};
+    let maLoi: typeof MaLoi.DUPLICATE_CODE | null = null;
+    const themLoi = (field: string, message: string) => {
+      errors[field] = [...(errors[field] ?? []), message];
+    };
+
+    if (!maLop) themLoi('ma_lop', 'Mã lớp là bắt buộc.');
+    else if (maLop.length > 20) themLoi('ma_lop', 'Mã lớp không được vượt quá 20 ký tự.');
+    if (!tenLop) themLoi('ten_lop', 'Tên lớp là bắt buộc.');
+    else if (tenLop.length > 255) themLoi('ten_lop', 'Tên lớp không được vượt quá 255 ký tự.');
+    if (khoaHoc.length > 20) themLoi('khoa_hoc', 'Khóa học không được vượt quá 20 ký tự.');
+    if (nganh.length > 20) themLoi('nganh', 'Ngành không được vượt quá 20 ký tự.');
+    if (
+      namNhapHoc !== null &&
+      (!Number.isInteger(namNhapHoc) || namNhapHoc < 1900 || namNhapHoc > 2100)
+    ) {
+      themLoi('nam_nhap_hoc', 'Năm nhập học phải là số nguyên từ 1900 đến 2100.');
+    }
+    if (
+      maLop &&
+      this.lopHanhChinh.some(
+        (r) =>
+          r.id !== boQuaId && r.ma_lop.toLocaleLowerCase() === maLop.toLocaleLowerCase(),
+      )
+    ) {
+      themLoi('ma_lop', 'Mã lớp này đã tồn tại.');
+      maLoi = MaLoi.DUPLICATE_CODE;
+    }
+    if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
+      themLoi('trang_thai', 'Trạng thái không hợp lệ.');
+    }
+
+    return {
+      duLieu: {
+        ma_lop: maLop,
+        ten_lop: tenLop,
+        khoa_hoc: khoaHoc || null,
+        nganh: nganh || null,
+        nam_nhap_hoc: namNhapHoc,
+        trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+      },
+      mo_ta: moTa || null,
+      errors,
+      maLoi,
+    };
+  }
+
+  private demSinhVien(lopId: number): number {
+    return this.sinhVien.filter(
+      (student) => !student.da_xoa && student.lop_hanh_chinh?.id === lopId,
+    ).length;
+  }
+
+  private loiDuLieuLop(
+    ketQua: ReturnType<DaoTaoRegistry['chuanHoaLop']>,
+  ): object | null {
+    if (ketQua.maLoi) {
+      return loi(MaLoi.DUPLICATE_CODE, 'Mã lớp này đã tồn tại.', ketQua.errors);
+    }
+    return Object.keys(ketQua.errors).length ? loiValidation(ketQua.errors) : null;
   }
 
   private chuanHoaSinhVien(

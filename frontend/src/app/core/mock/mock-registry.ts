@@ -1,5 +1,6 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { AuthRegistry } from '@core/mock/registry/auth.registry';
 import { DaoTaoRegistry } from '@core/mock/registry/dao-tao.registry';
 import { HocVuRegistry } from '@core/mock/registry/hoc-vu.registry';
 import { AuthRegistry } from '@core/mock/registry/auth.registry';
@@ -24,6 +25,7 @@ import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
  */
 @Injectable()
 export class MockRegistry {
+  private readonly auth = new AuthRegistry();
   private readonly daoTao = new DaoTaoRegistry();
   private readonly hocVu = new HocVuRegistry();
   private readonly auth = new AuthRegistry();
@@ -45,6 +47,9 @@ export class MockRegistry {
     // Vai trò người gọi — registry cần để lọc dữ liệu đúng như backend. Thiếu
     // nó thì mock trả về cả mục mà vai trò đó không có quyền thấy.
     const vaiTro = this.auth.vaiTroTheoToken(authorization);
+
+    const ketQuaAuth = this.auth.resolve(method, path, body, authorization);
+    if (ketQuaAuth !== undefined) return ketQuaAuth;
 
     for (const nguon of this.nguon) {
       const ketQua = nguon.resolve(method, path, params, body, vaiTro);

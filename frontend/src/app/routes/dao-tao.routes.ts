@@ -72,7 +72,31 @@ export const daoTaoRoutes: Routes = [
     path: 'lop-hanh-chinh',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-16', title: 'Lớp hành chính' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/dao-tao/lop-hanh-chinh/danh-sach').then(
+        (m) => m.LopHanhChinhDanhSach,
+      ),
+  },
+  {
+    path: 'lop-hanh-chinh/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-17', title: 'Tạo lớp hành chính' },
+    loadComponent: () =>
+      import('@features/dao-tao/lop-hanh-chinh/form').then((m) => m.LopHanhChinhForm),
+  },
+  {
+    path: 'lop-hanh-chinh/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-17', title: 'Cập nhật lớp hành chính' },
+    loadComponent: () =>
+      import('@features/dao-tao/lop-hanh-chinh/form').then((m) => m.LopHanhChinhForm),
+  },
+  {
+    path: 'lop-hanh-chinh/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-18', title: 'Chi tiết lớp hành chính' },
+    loadComponent: () =>
+      import('@features/dao-tao/lop-hanh-chinh/chi-tiet').then((m) => m.LopHanhChinhChiTiet),
   },
 
   // SCR-19/20 — Môn học
