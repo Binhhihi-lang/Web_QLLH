@@ -38,6 +38,10 @@ tags:
     description: Menu động theo vai trò (SCR-47)
   - name: Cấu hình
     description: Tham số hệ thống dạng khoá–giá trị, gồm bảng quy đổi điểm
+  - name: Dashboard
+    description: Thống kê số liệu tổng quan theo vai trò
+  - name: Thùng rác
+    description: Quản lý bản ghi đã xóa mềm và khôi phục (SCR-45, ADMIN)
 
 paths:
   /auth/login:
@@ -1862,6 +1866,141 @@ paths:
         "422":
           $ref: "#/components/responses/Loi422"
 
+  /dashboard/admin:
+    get:
+      tags: [Dashboard]
+      summary: Dữ liệu thống kê tổng quan cho ADMIN (SCR-03)
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/DashboardAdmin"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+
+  /trash/{type}:
+    get:
+      tags: [Thùng rác]
+      summary: Danh sách bản ghi đã xóa mềm theo loại thực thể (ADMIN)
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [users, students, teachers, admin-classes, subjects, semesters, rooms, sections, sessions, menus]
+          description: Loại thực thể trong thùng rác
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Từ khóa tìm kiếm
+        - name: deleted_by
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: ID người thực hiện xóa
+        - name: deleted_tu
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Ngày xóa từ
+        - name: deleted_den
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Ngày xóa đến
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [10, 25, 50, 100]
+            default: 10
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCongPhanTrang"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+
+  /trash/{type}/{id}/restore:
+    post:
+      tags: [Thùng rác]
+      summary: Khôi phục bản ghi đã xóa mềm (ADMIN)
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [users, students, teachers, admin-classes, subjects, semesters, rooms, sections, sessions, menus]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Khôi phục thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          description: Xung đột nghiệp vụ — bản ghi cha đã bị xóa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loi"
+              example:
+                success: false
+                message: Không thể khôi phục vì bản ghi cha đã bị xóa.
+                ma_loi: RESTORE_PARENT_DELETED
+                errors: null
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2673,6 +2812,104 @@ components:
               message:
                 type: string
                 nullable: true
+
+    DashboardAdmin:
+      type: object
+      required: [the_so_lieu, ty_le_lap_day, lop_sap_mo, dang_ky_gan_day]
+      properties:
+        the_so_lieu:
+          type: array
+          items:
+            $ref: "#/components/schemas/TheSoLieu"
+        ty_le_lap_day:
+          type: array
+          items:
+            $ref: "#/components/schemas/TyLeLapDay"
+        lop_sap_mo:
+          type: array
+          items:
+            $ref: "#/components/schemas/LopSapMo"
+        dang_ky_gan_day:
+          type: array
+          items:
+            $ref: "#/components/schemas/DangKyGanDay"
+
+    TheSoLieu:
+      type: object
+      required: [khoa, label, gia_tri, xu_huong]
+      properties:
+        khoa:
+          type: string
+          enum: [sinh_vien, lop_hoc_phan, dang_ky, cho_dang_ky]
+        label:
+          type: string
+        gia_tri:
+          type: integer
+        don_vi:
+          type: string
+          nullable: true
+        phu_chu:
+          type: string
+        xu_huong:
+          type: string
+          enum: [len, xuong, bang]
+
+    TyLeLapDay:
+      type: object
+      required: [hoc_ky, tong_cho, da_dang_ky]
+      properties:
+        hoc_ky:
+          type: string
+        tong_cho:
+          type: integer
+        da_dang_ky:
+          type: integer
+
+    LopSapMo:
+      type: object
+      required: [id, ma_lop_hp, ten_mon_hoc, ten_giang_vien, si_so, ty_le, trang_thai]
+      properties:
+        id:
+          type: integer
+        ma_lop_hp:
+          type: string
+        ten_mon_hoc:
+          type: string
+        ten_giang_vien:
+          type: string
+        si_so:
+          type: string
+          example: "38/45"
+        ty_le:
+          type: integer
+          minimum: 0
+          maximum: 100
+        trang_thai:
+          type: string
+        nam_thu:
+          type: integer
+          nullable: true
+
+    DangKyGanDay:
+      type: object
+      required: [id, ma_sv, ho_ten, ma_lop_hp, ten_mon_hoc, thoi_gian, trang_thai]
+      properties:
+        id:
+          type: integer
+        ma_sv:
+          type: string
+        ho_ten:
+          type: string
+        ma_lop_hp:
+          type: string
+        ten_mon_hoc:
+          type: string
+        thoi_gian:
+          type: string
+          example: "2026-10-24 09:15:00"
+        trang_thai:
+          type: string
+          enum: [THANH_CONG, DA_HUY]
 
   responses:
     Loi401:

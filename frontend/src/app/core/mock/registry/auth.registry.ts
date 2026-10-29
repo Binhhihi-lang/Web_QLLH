@@ -65,10 +65,27 @@ const NGUOI_DUNG_MOCK: NguoiDung[] = [
 ];
 
 export class AuthRegistry {
-  private readonly taiKhoan: TaiKhoanMock[] = TAI_KHOAN_DANG_NHAP_MOCK.map((thongTin, index) => ({
-    ...thongTin,
-    nguoiDung: NGUOI_DUNG_MOCK[index],
-  }));
+  private readonly taiKhoan: TaiKhoanMock[] = [
+    ...TAI_KHOAN_DANG_NHAP_MOCK.map((thongTin, index) => ({
+      ...thongTin,
+      nguoiDung: NGUOI_DUNG_MOCK[index],
+    })),
+    {
+      vaiTro: 'ADMIN',
+      taiKhoan: 'admin@example.com',
+      matKhau: 'password',
+      nguoiDung: {
+        id: 99,
+        name: 'Quản trị viên',
+        email: 'admin@example.com',
+        avatar_url: null,
+        vai_tro: 'ADMIN',
+        trang_thai: true,
+        must_change_password: false,
+        ho_so: null,
+      },
+    },
+  ];
   private readonly tokenBiThuHoi = new Set<string>();
 
   resolve(

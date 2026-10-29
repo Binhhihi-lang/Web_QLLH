@@ -319,7 +319,7 @@ Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Quy tắc s
 | 41  | Nhập điểm                               | `/lop-hoc-phan/:id/diem`           | Đạt (tuần 9)    | Chưa có                    |
 | 42  | Điểm của tôi + CPA                      | `/diem-cua-toi`                    | Đạt (tuần 9)    | Chưa có                    |
 | 43  | Lịch sử sửa điểm                        | `/lop-hoc-phan/:id/diem/lich-su`   | Đạt (tuần 9)    | Chưa có                    |
-| 45  | Thùng rác                               | `/thung-rac`                       | PM               | Chưa có                    |
+| 45  | Thùng rác                               | `/thung-rac`                       | PM               | ✅ Giao diện + API `/trash/{type}` + khôi phục |
 | 47  | Quản lý menu                            | `/menu`                            | Đạt (tuần 4)     | ✅ Xong (nhánh `pm-menu-cau-hinh`) |
 | 48  | Sửa menu                                | `/menu/:id/sua`                    | Đạt (tuần 4)     | ✅ Xong; thêm menu bằng form tại chỗ ở `/menu`, không có route `/menu/them` |
 | 49  | Cấu hình                                | `/cau-hinh`                        | Đạt (tuần 4)     | 🔶 BE xong (`GET`/`PUT /settings`); FE còn trang giữ chỗ |

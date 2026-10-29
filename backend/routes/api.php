@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ThungRacController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\LopHanhChinhController;
@@ -60,6 +62,9 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::delete('/menus/{menu}', [MenuController::class, 'destroy'])->name('api/menus/xoa');
         Route::get('/settings', [CauHinhController::class, 'index'])->name('api/settings');
         Route::put('/settings', [CauHinhController::class, 'update'])->name('api/settings/cap-nhat');
+        Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('api/dashboard/admin');
+        Route::get('/trash/{type}', [ThungRacController::class, 'index'])->name('api/trash/danh-sach');
+        Route::post('/trash/{type}/{id}/restore', [ThungRacController::class, 'restore'])->name('api/trash/khoi-phuc');
     });
 
     Route::prefix('subjects')->group(function () {

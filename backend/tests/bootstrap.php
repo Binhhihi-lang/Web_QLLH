@@ -23,7 +23,7 @@ $goc = dirname(__DIR__);
 // Repository immutable: biến đã có sẵn (từ phpunit.xml) được ưu tiên.
 $repository = RepositoryBuilder::createWithDefaultAdapters()->immutable()->make();
 
-$moiTruong = $repository->get('APP_ENV');
+$moiTruong = $repository->get('APP_ENV') ?: ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? null);
 $tepEnv = '.env';
 if ($moiTruong && is_file($goc.'/.env.'.$moiTruong)) {
     $tepEnv = '.env.'.$moiTruong;
@@ -31,8 +31,8 @@ if ($moiTruong && is_file($goc.'/.env.'.$moiTruong)) {
 
 Dotenv::create($repository, $goc, $tepEnv)->safeLoad();
 
-$driver = $repository->get('DB_CONNECTION') ?: 'sqlite';
-$database = (string) $repository->get('DB_DATABASE');
+$driver = ($_SERVER['DB_CONNECTION'] ?? $_ENV['DB_CONNECTION'] ?? null) ?: ($repository->get('DB_CONNECTION') ?: 'sqlite');
+$database = (string) (($_SERVER['DB_DATABASE'] ?? $_ENV['DB_DATABASE'] ?? null) ?: $repository->get('DB_DATABASE'));
 
 // DB_URL ghi đè toàn bộ cấu hình rời; từ chối cho chắc chắn.
 if ($repository->get('DB_URL')) {

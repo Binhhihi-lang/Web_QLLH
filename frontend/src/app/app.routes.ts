@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { MainLayout } from '@core/layout/main-layout';
-import { authChildGuard, authGuard, guestGuard } from '@core/auth/auth.guard';
+import { authChildGuard, authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
 import { laTrangChuaLamGuard } from '@core/auth/trang-chua-lam.guard';
 import { daoTaoRoutes } from './routes/dao-tao.routes';
 import { hocVuRoutes } from './routes/hoc-vu.routes';
@@ -66,6 +66,12 @@ export const routes: Routes = [
       {
         path: 'style-guide',
         loadComponent: () => import('@features/style-guide/style-guide').then((m) => m.StyleGuide),
+      },
+      {
+        path: 'thung-rac',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'], ma: 'SCR-45', title: 'Thùng rác' },
+        loadComponent: () => import('@features/thung-rac/thung-rac').then((m) => m.ThungRacPage),
       },
 
       // Nhóm đào tạo (Đức Anh) và nhóm học vụ (Đạt) — mỗi nhóm một file.
