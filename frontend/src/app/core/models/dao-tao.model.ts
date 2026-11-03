@@ -156,6 +156,15 @@ export interface MonHoc {
   da_xoa: boolean;
 }
 
+export interface PhongHoc {
+  id: number;
+  ma_phong: string;
+  ten_phong: string;
+  suc_chua: number;
+  trang_thai: boolean;
+  da_xoa: boolean;
+}
+
 /**
  * Mục trong ô chọn (dropdown) — `/api/options/*`.
  * Trường hiển thị tên là `label`, khớp OptionController và docs/04-api-contract.md.

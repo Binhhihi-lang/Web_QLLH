@@ -1,4 +1,11 @@
-import { GiangVien, HocKy, LopHanhChinh, MonHoc, SinhVien } from '@core/models/dao-tao.model';
+import {
+  GiangVien,
+  HocKy,
+  LopHanhChinh,
+  MonHoc,
+  PhongHoc,
+  SinhVien,
+} from '@core/models/dao-tao.model';
 
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Vũ', 'Võ', 'Đặng', 'Bùi'];
 const DEM_NAM = ['Văn', 'Minh', 'Quốc', 'Hữu', 'Đức', 'Thành', 'Công', 'Tuấn'];
@@ -41,6 +48,19 @@ export const MON_HOC_MOCK: MonHoc[] = [
   { id: 6, ma_mon: 'INT2211', ten_mon: 'Mạng máy tính', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
   { id: 7, ma_mon: 'INT3306', ten_mon: 'Phát triển ứng dụng di động', so_tin_chi: 3, mo_ta: null, trang_thai: false, da_xoa: false },
   { id: 8, ma_mon: 'INT3401', ten_mon: 'Trí tuệ nhân tạo', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+];
+
+export const PHONG_HOC_MOCK: PhongHoc[] = [
+  { id: 1, ma_phong: 'A101', ten_phong: 'Phòng học A101', suc_chua: 40, trang_thai: true, da_xoa: false },
+  { id: 2, ma_phong: 'A102', ten_phong: 'Phòng học A102', suc_chua: 45, trang_thai: true, da_xoa: false },
+  { id: 3, ma_phong: 'A201', ten_phong: 'Phòng học A201', suc_chua: 60, trang_thai: true, da_xoa: false },
+  { id: 4, ma_phong: 'B105', ten_phong: 'Phòng thực hành B105', suc_chua: 35, trang_thai: true, da_xoa: false },
+  { id: 5, ma_phong: 'B203', ten_phong: 'Phòng máy B203', suc_chua: 30, trang_thai: false, da_xoa: false },
+  { id: 6, ma_phong: 'C301', ten_phong: 'Phòng học C301', suc_chua: 50, trang_thai: true, da_xoa: false },
+  { id: 7, ma_phong: 'C302', ten_phong: 'Phòng học C302', suc_chua: 55, trang_thai: true, da_xoa: false },
+  { id: 8, ma_phong: 'LAB01', ten_phong: 'Phòng thí nghiệm 01', suc_chua: 24, trang_thai: true, da_xoa: false },
+  { id: 9, ma_phong: 'H201', ten_phong: 'Hội trường H201', suc_chua: 120, trang_thai: true, da_xoa: false },
+  { id: 10, ma_phong: 'H202', ten_phong: 'Hội trường H202', suc_chua: 180, trang_thai: false, da_xoa: false },
 ];
 
 export const HOC_KY_MOCK: HocKy[] = [

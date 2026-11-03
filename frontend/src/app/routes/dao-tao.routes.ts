@@ -111,7 +111,27 @@ export const daoTaoRoutes: Routes = [
     path: 'phong-hoc',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-23', title: 'Phòng học' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/dao-tao/phong-hoc/danh-sach').then((m) => m.PhongHocDanhSach),
+  },
+  {
+    path: 'phong-hoc/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-24', title: 'Thêm phòng học' },
+    loadComponent: () => import('@features/dao-tao/phong-hoc/form').then((m) => m.PhongHocForm),
+  },
+  {
+    path: 'phong-hoc/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-23', title: 'Chi tiết phòng học' },
+    loadComponent: () =>
+      import('@features/dao-tao/phong-hoc/chi-tiet').then((m) => m.PhongHocChiTiet),
+  },
+  {
+    path: 'phong-hoc/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-24', title: 'Sửa phòng học' },
+    loadComponent: () => import('@features/dao-tao/phong-hoc/form').then((m) => m.PhongHocForm),
   },
 ];
 

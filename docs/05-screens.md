@@ -192,7 +192,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 | SCR-20 | Thêm/Sửa môn học | `/mon-hoc/them`, `/:id/sua` | ADMIN |
 | SCR-21 | Danh sách học kỳ | `/hoc-ky` | mọi vai trò | Cột: mã, tên, năm học, kỳ thứ, khoảng ngày, đợt đăng ký, trạng thái |
 | SCR-22 | Thêm/Sửa học kỳ | `/hoc-ky/them`, `/:id/sua` | ADMIN — có nút chuyển trạng thái. Chỉ hiện nút cho bước kế tiếp hợp lệ: `UPCOMING` → "Bắt đầu kỳ", `ONGOING` → "Đóng kỳ"; `CLOSED` không có nút (BR-24) |
-| SCR-23 | Danh sách phòng học | `/phong-hoc` | ADMIN, TEACHER. ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-07.04) |
+| SCR-23 | Danh sách và chi tiết phòng học | `/phong-hoc`, `/phong-hoc/:id` | ADMIN, TEACHER. Tìm theo mã/tên, lọc trạng thái; chọn dòng để xem chi tiết. ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-07.04) |
 | SCR-24 | Thêm/Sửa phòng học | `/phong-hoc/them`, `/:id/sua` | ADMIN |
 
 ### 3.7. Lớp học phần
