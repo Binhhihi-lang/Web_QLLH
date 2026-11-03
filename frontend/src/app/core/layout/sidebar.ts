@@ -350,6 +350,8 @@ export class Sidebar {
         '/mon-hoc': 'menu_book',
         '/hoc-ky': 'date_range',
         '/phong-hoc': 'meeting_room',
+        '/khoa': 'account_balance',
+        '/nganh': 'account_tree',
         '/nguoi-dung': 'manage_accounts',
         '/menu': 'menu',
         '/cau-hinh': 'settings',

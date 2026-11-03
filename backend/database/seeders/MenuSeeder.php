@@ -38,6 +38,8 @@ class MenuSeeder extends Seeder
             ['ten' => 'Môn học', 'url' => '/mon-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => null, 'thu_tu' => 23],
             ['ten' => 'Học kỳ', 'url' => '/hoc-ky', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => null, 'thu_tu' => 24],
             ['ten' => 'Phòng học', 'url' => '/phong-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN, User::GIANG_VIEN], 'thu_tu' => 25],
+            ['ten' => 'Khoa', 'url' => '/khoa', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN], 'thu_tu' => 26],
+            ['ten' => 'Ngành', 'url' => '/nganh', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN], 'thu_tu' => 27],
 
             // --- Sidebar: Hệ thống ---
             ['ten' => 'Người dùng', 'url' => '/nguoi-dung', 'vi_tri' => 'sidebar', 'nhom' => 'Hệ thống', 'vai_tro' => [User::ADMIN], 'thu_tu' => 30],

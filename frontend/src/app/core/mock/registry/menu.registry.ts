@@ -40,6 +40,8 @@ const MENU_MOCK: MenuMock[] = [
   { id: 10, ten: 'Môn học', url: '/mon-hoc', vi_tri: 'sidebar', nhom: 'Đào tạo', vai_tro: null, thu_tu: 23, trang_thai: true },
   { id: 11, ten: 'Học kỳ', url: '/hoc-ky', vi_tri: 'sidebar', nhom: 'Đào tạo', vai_tro: null, thu_tu: 24, trang_thai: true },
   { id: 12, ten: 'Phòng học', url: '/phong-hoc', vi_tri: 'sidebar', nhom: 'Đào tạo', vai_tro: ['ADMIN', 'GIANG_VIEN'], thu_tu: 25, trang_thai: true },
+  { id: 22, ten: 'Khoa', url: '/khoa', vi_tri: 'sidebar', nhom: 'Đào tạo', vai_tro: ['ADMIN'], thu_tu: 26, trang_thai: true },
+  { id: 23, ten: 'Ngành', url: '/nganh', vi_tri: 'sidebar', nhom: 'Đào tạo', vai_tro: ['ADMIN'], thu_tu: 27, trang_thai: true },
   { id: 13, ten: 'Người dùng', url: '/nguoi-dung', vi_tri: 'sidebar', nhom: 'Hệ thống', vai_tro: ['ADMIN'], thu_tu: 30, trang_thai: true },
   { id: 14, ten: 'Menu', url: '/menu', vi_tri: 'sidebar', nhom: 'Hệ thống', vai_tro: ['ADMIN'], thu_tu: 31, trang_thai: true },
   { id: 15, ten: 'Cấu hình', url: '/cau-hinh', vi_tri: 'sidebar', nhom: 'Hệ thống', vai_tro: ['ADMIN'], thu_tu: 32, trang_thai: true },

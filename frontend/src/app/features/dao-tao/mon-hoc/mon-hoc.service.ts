@@ -1,12 +1,13 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { MonHoc, ThamSoDanhSach } from '@core/models/dao-tao.model';
+import { MonHoc, ThamSoDanhSach, TuyChonKhoa } from '@core/models/dao-tao.model';
 import { KetQuaHangLoat, PaginatedResponse } from '@core/mock/mock-response';
 import { environment } from '@env/environment';
 
 export interface MonHocInput {
   ma_mon: string;
+  khoa_id: number | null;
   ten_mon: string;
   so_tin_chi: number;
   mo_ta: string | null;
@@ -14,6 +15,7 @@ export interface MonHocInput {
 }
 
 export interface ThamSoDanhSachMonHoc extends ThamSoDanhSach {
+  khoa_id?: number;
   trang_thai?: boolean;
   so_tin_chi?: number;
 }
@@ -30,6 +32,12 @@ export class MonHocService {
       params = params.set(key, String(value));
     }
     return this.http.get<PaginatedResponse<MonHoc>>(this.goc, { params });
+  }
+
+  layTuyChonKhoa(): Observable<TuyChonKhoa[]> {
+    return this.http
+      .get<{ data: TuyChonKhoa[] }>(`${environment.apiBaseUrl}/options/khoa`)
+      .pipe(map(({ data }) => data));
   }
 
   layMot(id: number): Observable<MonHoc> {

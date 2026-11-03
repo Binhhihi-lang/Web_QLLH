@@ -59,5 +59,17 @@ export const DAO_TAO_MENU: NhomMenu = {
       icon: 'meeting_room',
       vai_tro: ['ADMIN', 'GIANG_VIEN'],
     },
+    {
+      nhan: 'Khoa',
+      duong_dan: '/khoa',
+      icon: 'account_balance',
+      vai_tro: ['ADMIN'],
+    },
+    {
+      nhan: 'Ngành',
+      duong_dan: '/nganh',
+      icon: 'account_tree',
+      vai_tro: ['ADMIN'],
+    },
   ],
 };

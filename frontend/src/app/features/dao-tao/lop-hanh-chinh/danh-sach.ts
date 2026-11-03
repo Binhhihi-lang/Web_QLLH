@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { LopHanhChinh, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { PageMeta } from '@core/mock/mock-response';
@@ -114,6 +114,7 @@ import { LopHanhChinhService } from './lop-hanh-chinh.service';
       [loi]="loi()"
       [sortBy]="sapXepHienTai().sort_by"
       [sortDir]="sapXepHienTai().sort_dir"
+      [bamDong]="laAdmin()"
       tieuDeRong="Chưa có lớp hành chính phù hợp"
       [moTaRong]="
         coLoc()
@@ -121,6 +122,7 @@ import { LopHanhChinhService } from './lop-hanh-chinh.service';
           : 'Danh sách sẽ hiển thị các lớp hành chính đã được tạo.'
       "
       (sapXep)="doiSapXep($event)"
+      (dongDuocBam)="moChiTiet($event)"
       (thuLai)="tai()"
     >
       <ng-template appOTuyChinh="ma_lop" let-row>
@@ -417,6 +419,7 @@ import { LopHanhChinhService } from './lop-hanh-chinh.service';
 export class LopHanhChinhDanhSach {
   private readonly service = inject(LopHanhChinhService);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   readonly dangTai = signal(true);
   readonly loi = signal<string | null>(null);
@@ -466,6 +469,11 @@ export class LopHanhChinhDanhSach {
       error: () => this.dsNganh.set([]),
     });
     this.tai();
+  }
+
+  moChiTiet(lop: LopHanhChinh): void {
+    if (!this.laAdmin()) return;
+    void this.router.navigate(['/lop-hanh-chinh', lop.id]);
   }
 
   tai(): void {

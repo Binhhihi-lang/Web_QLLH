@@ -122,6 +122,58 @@ export const daoTaoRoutes: Routes = [
     loadComponent: () => import('@features/dao-tao/mon-hoc/form').then((m) => m.MonHocForm),
   },
 
+  // SCR-54 — Quản lý Khoa
+  {
+    path: 'khoa',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-54', title: 'Quản lý Khoa' },
+    loadComponent: () => import('@features/dao-tao/khoa/danh-sach').then((m) => m.KhoaDanhSach),
+  },
+  {
+    path: 'khoa/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-54', title: 'Thêm khoa' },
+    loadComponent: () => import('@features/dao-tao/khoa/form').then((m) => m.KhoaForm),
+  },
+  {
+    path: 'khoa/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-54', title: 'Chi tiết khoa' },
+    loadComponent: () => import('@features/dao-tao/khoa/chi-tiet').then((m) => m.KhoaChiTiet),
+  },
+  {
+    path: 'khoa/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-54', title: 'Sửa khoa' },
+    loadComponent: () => import('@features/dao-tao/khoa/form').then((m) => m.KhoaForm),
+  },
+
+  // SCR-55 — Quản lý Ngành
+  {
+    path: 'nganh',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-55', title: 'Quản lý Ngành' },
+    loadComponent: () => import('@features/dao-tao/nganh/danh-sach').then((m) => m.NganhDanhSach),
+  },
+  {
+    path: 'nganh/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-55', title: 'Thêm ngành' },
+    loadComponent: () => import('@features/dao-tao/nganh/form').then((m) => m.NganhForm),
+  },
+  {
+    path: 'nganh/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-55', title: 'Chi tiết ngành' },
+    loadComponent: () => import('@features/dao-tao/nganh/chi-tiet').then((m) => m.NganhChiTiet),
+  },
+  {
+    path: 'nganh/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-55', title: 'Sửa ngành' },
+    loadComponent: () => import('@features/dao-tao/nganh/form').then((m) => m.NganhForm),
+  },
+
   // SCR-21/22 — Học kỳ
   {
     path: 'hoc-ky',

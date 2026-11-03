@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
-import { MonHoc } from '@core/models/dao-tao.model';
+import { MonHoc, TuyChonKhoa } from '@core/models/dao-tao.model';
 import { KetQuaHangLoat, PageMeta } from '@core/mock/mock-response';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
@@ -67,6 +67,20 @@ type HanhDongHangLoat = { loai: 'trang-thai'; trangThai: boolean } | { loai: 'xo
           (valueChange)="doiTuKhoa($event)"
         />
         <label class="loc">
+          <span>Khoa</span>
+          <select
+            id="loc-khoa-mon"
+            aria-label="Lọc môn học theo khoa"
+            [value]="locKhoa()"
+            (change)="doiLocKhoa($event)"
+          >
+            <option value="">Tất cả khoa</option>
+            @for (khoa of dsKhoa(); track khoa.id) {
+              <option [value]="khoa.id">{{ khoa.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="loc">
           <span>Trạng thái</span>
           <select
             id="loc-trang-thai-mon"
@@ -98,6 +112,13 @@ type HanhDongHangLoat = { loai: 'trang-thai'; trangThai: boolean } | { loai: 'xo
         </div>
       </div>
     </section>
+
+    @if (loiTaiKhoa()) {
+      <app-alert muc="warning" title="Không tải được danh sách khoa">
+        {{ loiTaiKhoa() }}
+        <button type="button" class="thu-lai" (click)="taiKhoa()">Thử lại</button>
+      </app-alert>
+    }
 
     @if (ketQuaHangLoat(); as ketQua) {
       <section class="ket-qua" aria-label="Kết quả thao tác hàng loạt">
@@ -182,6 +203,9 @@ type HanhDongHangLoat = { loai: 'trang-thai'; trangThai: boolean } | { loai: 'xo
     >
       <ng-template appOTuyChinh="so_tin_chi" let-row>
         <span class="tin-chi">{{ row.so_tin_chi }} tín chỉ</span>
+      </ng-template>
+      <ng-template appOTuyChinh="khoa" let-row>
+        {{ row.khoa?.ten_khoa ?? 'Chưa phân khoa' }}
       </ng-template>
       <ng-template appOTuyChinh="mo_ta" let-row>
         <span class="mo-ta" [title]="row.mo_ta ?? ''">{{ row.mo_ta || 'Chưa có mô tả' }}</span>
@@ -569,8 +593,11 @@ export class MonHocDanhSach {
   readonly dangTai = signal(true);
   readonly loi = signal<string | null>(null);
   readonly rows = signal<MonHoc[]>([]);
+  readonly dsKhoa = signal<TuyChonKhoa[]>([]);
+  readonly loiTaiKhoa = signal<string | null>(null);
   readonly meta = signal<PageMeta | null>(null);
   readonly tuKhoa = signal('');
+  readonly locKhoa = signal('');
   readonly locTrangThai = signal('');
   readonly locSoTinChi = signal('');
   readonly daChon = signal<Array<string | number>>([]);
@@ -582,13 +609,14 @@ export class MonHocDanhSach {
   readonly lyDoChanXoa = signal('');
   readonly sapXepHienTai = signal<SapXep>({ sort_by: 'ma_mon', sort_dir: 'asc' });
 
-  private readonly boLoc = signal({ tuKhoa: '', trangThai: '', soTinChi: '' });
+  private readonly boLoc = signal({ tuKhoa: '', khoaId: '', trangThai: '', soTinChi: '' });
   private trang = 1;
   private coTrang: 10 | 25 | 50 | 100 = 10;
 
   readonly cot = computed<CotBang<MonHoc>[]>(() => [
     { khoa: 'ma_mon', nhan: 'Mã môn', sap_xep: true, rong: '125px' },
     { khoa: 'ten_mon', nhan: 'Tên môn học', sap_xep: true, rong: '250px' },
+    { khoa: 'khoa', nhan: 'Khoa', rong: '220px' },
     {
       khoa: 'so_tin_chi',
       nhan: 'Tín chỉ',
@@ -606,11 +634,22 @@ export class MonHocDanhSach {
   );
   readonly coLoc = computed(() => {
     const filter = this.boLoc();
-    return Boolean(filter.tuKhoa || filter.trangThai || filter.soTinChi);
+    return Boolean(filter.tuKhoa || filter.khoaId || filter.trangThai || filter.soTinChi);
   });
 
   constructor() {
+    this.taiKhoa();
     this.tai();
+  }
+
+  taiKhoa(): void {
+    this.loiTaiKhoa.set(null);
+    this.service.layTuyChonKhoa().subscribe({
+      next: (khoa) => this.dsKhoa.set(khoa),
+      error: (error: HttpErrorResponse) => {
+        this.loiTaiKhoa.set(error.error?.message ?? 'Không tải được danh sách khoa.');
+      },
+    });
   }
 
   tai(): void {
@@ -622,6 +661,7 @@ export class MonHocDanhSach {
       page: this.trang,
       per_page: this.coTrang,
       q: filter.tuKhoa || undefined,
+      khoa_id: filter.khoaId === '' ? undefined : Number(filter.khoaId),
       sort_by: sort.sort_by,
       sort_dir: sort.sort_dir,
       trang_thai: filter.trangThai === '' ? undefined : filter.trangThai === 'true',
@@ -654,6 +694,10 @@ export class MonHocDanhSach {
     this.locTrangThai.set((event.target as HTMLSelectElement).value);
   }
 
+  doiLocKhoa(event: Event): void {
+    this.locKhoa.set((event.target as HTMLSelectElement).value);
+  }
+
   doiLocSoTinChi(event: Event): void {
     this.locSoTinChi.set((event.target as HTMLSelectElement).value);
   }
@@ -661,6 +705,7 @@ export class MonHocDanhSach {
   apDungLoc(): void {
     this.boLoc.update((filter) => ({
       ...filter,
+      khoaId: this.locKhoa(),
       trangThai: this.locTrangThai(),
       soTinChi: this.locSoTinChi(),
     }));
@@ -670,9 +715,10 @@ export class MonHocDanhSach {
 
   xoaLoc(): void {
     this.tuKhoa.set('');
+    this.locKhoa.set('');
     this.locTrangThai.set('');
     this.locSoTinChi.set('');
-    this.boLoc.set({ tuKhoa: '', trangThai: '', soTinChi: '' });
+    this.boLoc.set({ tuKhoa: '', khoaId: '', trangThai: '', soTinChi: '' });
     this.trang = 1;
     this.tai();
   }

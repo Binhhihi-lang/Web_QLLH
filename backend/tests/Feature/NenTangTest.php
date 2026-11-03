@@ -163,6 +163,8 @@ class NenTangTest extends TestCase
         $this->assertContains('/nguoi-dung', $menuAdmin);
         $this->assertContains('/dang-ky', $menuAdmin);
         $this->assertContains('/diem-danh', $menuAdmin);
+        $this->assertContains('/khoa', $menuAdmin);
+        $this->assertContains('/nganh', $menuAdmin);
 
         // Nhưng KHÔNG thấy hai mục cá nhân của sinh viên: ADMIN không có hồ sơ
         // sinh viên nên hai trang đó vô nghĩa với ADMIN.

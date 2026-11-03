@@ -1,5 +1,14 @@
 import { HttpParams } from '@angular/common/http';
-import { GiangVien, LopHanhChinh, MonHoc, SinhVien } from '@core/models/dao-tao.model';
+import {
+  GiangVien,
+  Khoa,
+  KhoaRutGon,
+  LopHanhChinh,
+  MonHoc,
+  Nganh,
+  NganhRutGon,
+  SinhVien,
+} from '@core/models/dao-tao.model';
 import {
   LOP_HANH_CHINH_MOCK,
   MON_HOC_MOCK,
@@ -8,8 +17,6 @@ import {
   HOC_KY_MOCK,
   KHOA_MOCK,
   NGANH_MOCK,
-  khoaCuaNganh,
-  nganhRutGon,
 } from '@core/mock/data/dao-tao.mock';
 import {
   KetQuaDong,
@@ -40,6 +47,8 @@ export class DaoTaoRegistry {
   private giangVien = GIANG_VIEN_MOCK.map((r) => ({ ...r }));
   private monHoc = MON_HOC_MOCK.map((r) => ({ ...r }));
   private hocKy = HOC_KY_MOCK.map((r) => ({ ...r }));
+  private khoa = KHOA_MOCK.map((r) => ({ ...r }));
+  private nganh = NGANH_MOCK.map((r) => ({ ...r }));
 
   resolve(
     method: string,
@@ -48,6 +57,9 @@ export class DaoTaoRegistry {
     body: unknown = null,
     _vaiTro: string | null = null,
   ): object | undefined {
+    const danhMucKhoaNganh = this.xuLyKhoaNganh(method, path, params, body);
+    if (danhMucKhoaNganh !== undefined) return danhMucKhoaNganh;
+
     // ---------- Sinh viên ----------
     if (path === '/students' && method === 'GET') {
       // Bản ghi đã xoá mềm không bao giờ lộ ra danh sách — FR-14.01.
@@ -364,9 +376,13 @@ export class DaoTaoRegistry {
       }
       let rows = this.monHoc.filter((r) => !r.da_xoa);
       rows = searchBy(rows, params.get('q'), ['ma_mon', 'ten_mon']);
-      rows = filterBy(rows, params, ['trang_thai', 'so_tin_chi']);
+      rows = filterBy(rows, params, ['khoa_id', 'trang_thai', 'so_tin_chi']);
       rows = sortBy(rows, params, 'ma_mon');
-      return paginate(rows, params, '/api/subjects');
+      return paginate(
+        rows.map((monHoc) => ({ ...monHoc, khoa: this.khoaRutGon(monHoc.khoa_id) })),
+        params,
+        '/api/subjects',
+      );
     }
     if (path === '/subjects' && method === 'POST') {
       const duLieu = this.chuanHoaMonHoc(body);
@@ -485,6 +501,284 @@ export class DaoTaoRegistry {
     return undefined;
   }
 
+  private xuLyKhoaNganh(
+    method: string,
+    path: string,
+    params: HttpParams,
+    body: unknown,
+  ): object | undefined {
+    if (path === '/options/khoa' && method === 'GET') {
+      return ok(
+        this.khoa
+          .filter((khoa) => !khoa.da_xoa && khoa.trang_thai)
+          .sort((a, b) => a.ten_khoa.localeCompare(b.ten_khoa))
+          .map((khoa) => ({ id: khoa.id, label: khoa.ten_khoa, ma_khoa: khoa.ma_khoa })),
+      );
+    }
+
+    if (path === '/options/nganh' && method === 'GET') {
+      const khoaId = params.get('khoa_id');
+      return ok(
+        this.nganh
+          .filter(
+            (nganh) =>
+              !nganh.da_xoa &&
+              nganh.trang_thai &&
+              (khoaId === null || nganh.khoa_id === Number(khoaId)),
+          )
+          .sort((a, b) => a.ten_nganh.localeCompare(b.ten_nganh))
+          .map((nganh) => ({
+            id: nganh.id,
+            label: nganh.ten_nganh,
+            khoa_id: nganh.khoa_id,
+            ma_nganh: nganh.ma_nganh,
+          })),
+      );
+    }
+
+    if (path === '/khoa' && method === 'GET') {
+      let rows = this.khoa.filter((khoa) => !khoa.da_xoa);
+      rows = searchBy(rows, params.get('q'), ['ma_khoa', 'ten_khoa']);
+      rows = filterBy(rows, params, ['trang_thai']);
+      rows = sortBy(rows, params, 'ma_khoa');
+      return paginate(
+        rows.map((khoa) => ({
+          ...khoa,
+          so_nganh: this.nganh.filter((nganh) => nganh.khoa_id === khoa.id && !nganh.da_xoa).length,
+        })),
+        params,
+        '/api/khoa',
+      );
+    }
+
+    if (path === '/khoa' && method === 'POST') {
+      const data = this.bodyRecord(body);
+      const validation = this.chuanHoaKhoa(data);
+      if (validation) return validation;
+      const khoa: Khoa = {
+        id: Math.max(0, ...this.khoa.map((row) => row.id)) + 1,
+        ma_khoa: String(data['ma_khoa']).trim(),
+        ten_khoa: String(data['ten_khoa']).trim(),
+        mo_ta: typeof data['mo_ta'] === 'string' && data['mo_ta'].trim() ? data['mo_ta'].trim() : null,
+        trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+        so_nganh: 0,
+        da_xoa: false,
+      };
+      this.khoa.push(khoa);
+      return ok(khoa, 'Tạo khoa thành công.');
+    }
+
+    const khoaMatch = path.match(/^\/khoa\/(\d+)$/);
+    if (khoaMatch) {
+      const id = Number(khoaMatch[1]);
+      const index = this.khoa.findIndex((khoa) => khoa.id === id && !khoa.da_xoa);
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy khoa.');
+      const khoa = this.khoa[index];
+      if (method === 'GET') {
+        return ok({
+          ...khoa,
+          so_nganh: this.nganh.filter((nganh) => nganh.khoa_id === id && !nganh.da_xoa).length,
+        });
+      }
+      if (method === 'PUT') {
+        const data = this.bodyRecord(body);
+        const validation = this.chuanHoaKhoa(data, id);
+        if (validation) return validation;
+        this.khoa[index] = {
+          ...khoa,
+          ma_khoa: String(data['ma_khoa']).trim(),
+          ten_khoa: String(data['ten_khoa']).trim(),
+          mo_ta: typeof data['mo_ta'] === 'string' && data['mo_ta'].trim() ? data['mo_ta'].trim() : null,
+          trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+        };
+        this.capNhatThamChieuKhoa(id);
+        return ok(this.khoa[index], 'Cập nhật khoa thành công.');
+      }
+      if (method === 'DELETE') {
+        const hasNganh = this.nganh.some((nganh) => nganh.khoa_id === id && !nganh.da_xoa);
+        const hasMonHoc = this.monHoc.some((monHoc) => monHoc.khoa_id === id && !monHoc.da_xoa);
+        if (hasNganh || hasMonHoc) {
+          return loi(MaLoi.DELETE_BLOCKED, 'Không thể xóa khoa còn ngành hoặc môn học.');
+        }
+        this.khoa[index] = { ...khoa, da_xoa: true };
+        return ok(null, 'Xóa khoa thành công.');
+      }
+    }
+
+    if (path === '/nganh' && method === 'GET') {
+      let rows = this.nganh.filter((nganh) => !nganh.da_xoa);
+      rows = searchBy(rows, params.get('q'), ['ma_nganh', 'ten_nganh']);
+      rows = filterBy(rows, params, ['khoa_id', 'trang_thai']);
+      rows = sortBy(rows, params, 'ma_nganh');
+      return paginate(
+        rows.map((nganh) => ({ ...nganh, khoa: this.khoaRutGon(nganh.khoa_id) })),
+        params,
+        '/api/nganh',
+      );
+    }
+
+    if (path === '/nganh' && method === 'POST') {
+      const data = this.bodyRecord(body);
+      const validation = this.chuanHoaNganh(data);
+      if (validation) return validation;
+      const khoaId = Number(data['khoa_id']);
+      const nganh: Nganh = {
+        id: Math.max(0, ...this.nganh.map((row) => row.id)) + 1,
+        khoa_id: khoaId,
+        khoa: this.khoaRutGon(khoaId),
+        ma_nganh: String(data['ma_nganh']).trim(),
+        ten_nganh: String(data['ten_nganh']).trim(),
+        mo_ta: typeof data['mo_ta'] === 'string' && data['mo_ta'].trim() ? data['mo_ta'].trim() : null,
+        trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+        da_xoa: false,
+      };
+      this.nganh.push(nganh);
+      return ok(nganh, 'Tạo ngành thành công.');
+    }
+
+    const nganhMatch = path.match(/^\/nganh\/(\d+)$/);
+    if (nganhMatch) {
+      const id = Number(nganhMatch[1]);
+      const index = this.nganh.findIndex((nganh) => nganh.id === id && !nganh.da_xoa);
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy ngành.');
+      const nganh = this.nganh[index];
+      if (method === 'GET') {
+        return ok({ ...nganh, khoa: this.khoaRutGon(nganh.khoa_id) });
+      }
+      if (method === 'PUT') {
+        const data = this.bodyRecord(body);
+        const validation = this.chuanHoaNganh(data, id);
+        if (validation) return validation;
+        const khoaId = Number(data['khoa_id']);
+        this.nganh[index] = {
+          ...nganh,
+          khoa_id: khoaId,
+          khoa: this.khoaRutGon(khoaId),
+          ma_nganh: String(data['ma_nganh']).trim(),
+          ten_nganh: String(data['ten_nganh']).trim(),
+          mo_ta: typeof data['mo_ta'] === 'string' && data['mo_ta'].trim() ? data['mo_ta'].trim() : null,
+          trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+        };
+        this.capNhatThamChieuNganh(id);
+        return ok(this.nganh[index], 'Cập nhật ngành thành công.');
+      }
+      if (method === 'DELETE') {
+        const hasClass = this.lopHanhChinh.some((lop) => lop.nganh_id === id && !lop.da_xoa);
+        const hasTeacher = this.giangVien.some((giangVien) => giangVien.nganh_id === id && !giangVien.da_xoa);
+        if (hasClass || hasTeacher) {
+          return loi(MaLoi.DELETE_BLOCKED, 'Không thể xóa ngành còn giảng viên hoặc lớp hành chính.');
+        }
+        this.nganh[index] = { ...nganh, da_xoa: true };
+        return ok(null, 'Xóa ngành thành công.');
+      }
+    }
+
+    return undefined;
+  }
+
+  private chuanHoaKhoa(data: Record<string, unknown>, boQuaId?: number): object | null {
+    const maKhoa = typeof data['ma_khoa'] === 'string' ? data['ma_khoa'].trim() : '';
+    const tenKhoa = typeof data['ten_khoa'] === 'string' ? data['ten_khoa'].trim() : '';
+    const errors: Record<string, string[]> = {};
+    if (!maKhoa) errors['ma_khoa'] = ['Mã khoa là bắt buộc.'];
+    else if (maKhoa.length > 20) errors['ma_khoa'] = ['Mã khoa không được vượt quá 20 ký tự.'];
+    if (!tenKhoa) errors['ten_khoa'] = ['Tên khoa là bắt buộc.'];
+    else if (tenKhoa.length > 255) errors['ten_khoa'] = ['Tên khoa không được vượt quá 255 ký tự.'];
+    if (
+      maKhoa &&
+      this.khoa.some((khoa) => khoa.id !== boQuaId && khoa.ma_khoa.toLowerCase() === maKhoa.toLowerCase())
+    ) {
+      errors['ma_khoa'] = ['Mã khoa này đã tồn tại.'];
+    }
+    if (data['mo_ta'] !== null && data['mo_ta'] !== undefined && typeof data['mo_ta'] !== 'string') {
+      errors['mo_ta'] = ['Mô tả không hợp lệ.'];
+    }
+    if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
+      errors['trang_thai'] = ['Trạng thái không hợp lệ.'];
+    }
+    return Object.keys(errors).length ? loiValidation(errors) : null;
+  }
+
+  private chuanHoaNganh(data: Record<string, unknown>, boQuaId?: number): object | null {
+    const khoaId = Number(data['khoa_id']);
+    const maNganh = typeof data['ma_nganh'] === 'string' ? data['ma_nganh'].trim() : '';
+    const tenNganh = typeof data['ten_nganh'] === 'string' ? data['ten_nganh'].trim() : '';
+    const errors: Record<string, string[]> = {};
+    if (!Number.isInteger(khoaId) || !this.khoa.some((khoa) => khoa.id === khoaId && !khoa.da_xoa)) {
+      errors['khoa_id'] = ['Khoa không tồn tại.'];
+    }
+    if (!maNganh) errors['ma_nganh'] = ['Mã ngành là bắt buộc.'];
+    else if (maNganh.length > 20) errors['ma_nganh'] = ['Mã ngành không được vượt quá 20 ký tự.'];
+    if (!tenNganh) errors['ten_nganh'] = ['Tên ngành là bắt buộc.'];
+    else if (tenNganh.length > 255) errors['ten_nganh'] = ['Tên ngành không được vượt quá 255 ký tự.'];
+    if (
+      maNganh &&
+      this.nganh.some((nganh) => nganh.id !== boQuaId && nganh.ma_nganh.toLowerCase() === maNganh.toLowerCase())
+    ) {
+      errors['ma_nganh'] = ['Mã ngành này đã tồn tại.'];
+    }
+    if (
+      tenNganh &&
+      this.nganh.some(
+        (nganh) =>
+          nganh.id !== boQuaId &&
+          nganh.khoa_id === khoaId &&
+          nganh.ten_nganh.toLowerCase() === tenNganh.toLowerCase(),
+      )
+    ) {
+      errors['ten_nganh'] = ['Tên ngành đã tồn tại trong khoa này.'];
+    }
+    if (data['mo_ta'] !== null && data['mo_ta'] !== undefined && typeof data['mo_ta'] !== 'string') {
+      errors['mo_ta'] = ['Mô tả không hợp lệ.'];
+    }
+    if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
+      errors['trang_thai'] = ['Trạng thái không hợp lệ.'];
+    }
+    return Object.keys(errors).length ? loiValidation(errors) : null;
+  }
+
+  private khoaRutGon(id: number | null): KhoaRutGon | null {
+    const khoa = id === null ? undefined : this.khoa.find((row) => row.id === id && !row.da_xoa);
+    return khoa ? { id: khoa.id, ma_khoa: khoa.ma_khoa, ten_khoa: khoa.ten_khoa } : null;
+  }
+
+  private capNhatThamChieuKhoa(khoaId: number): void {
+    const khoa = this.khoaRutGon(khoaId);
+    this.nganh = this.nganh.map((nganh) =>
+      nganh.khoa_id === khoaId ? { ...nganh, khoa } : nganh,
+    );
+    this.monHoc = this.monHoc.map((monHoc) =>
+      monHoc.khoa_id === khoaId ? { ...monHoc, khoa } : monHoc,
+    );
+    this.lopHanhChinh = this.lopHanhChinh.map((lop) =>
+      lop.nganh?.khoa_id === khoaId ? { ...lop, khoa } : lop,
+    );
+  }
+
+  private capNhatThamChieuNganh(nganhId: number): void {
+    const nganh = this.nganhRutGon(nganhId);
+    this.lopHanhChinh = this.lopHanhChinh.map((lop) =>
+      lop.nganh_id === nganhId
+        ? { ...lop, nganh, khoa: this.khoaCuaNganh(nganhId) }
+        : lop,
+    );
+    this.giangVien = this.giangVien.map((giangVien) =>
+      giangVien.nganh_id === nganhId ? { ...giangVien, nganh } : giangVien,
+    );
+  }
+
+  private nganhRutGon(id: number | null): NganhRutGon | null {
+    const nganh = id === null ? undefined : this.nganh.find((row) => row.id === id && !row.da_xoa);
+    return nganh
+      ? { id: nganh.id, ma_nganh: nganh.ma_nganh, ten_nganh: nganh.ten_nganh, khoa_id: nganh.khoa_id }
+      : null;
+  }
+
+  private khoaCuaNganh(id: number | null): KhoaRutGon | null {
+    const nganh = id === null ? undefined : this.nganh.find((row) => row.id === id && !row.da_xoa);
+    return nganh ? this.khoaRutGon(nganh.khoa_id) : null;
+  }
+
   private chuanHoaLop(body: unknown, boQuaId?: number): {
     duLieu: Omit<LopHanhChinh, 'id' | 'si_so' | 'da_xoa'>;
     mo_ta: string | null;
@@ -520,7 +814,7 @@ export class DaoTaoRegistry {
     if (!tenLop) themLoi('ten_lop', 'Tên lớp là bắt buộc.');
     else if (tenLop.length > 255) themLoi('ten_lop', 'Tên lớp không được vượt quá 255 ký tự.');
     if (khoaHoc.length > 20) themLoi('khoa_hoc', 'Khóa học không được vượt quá 20 ký tự.');
-    if (nganhId !== null && !NGANH_MOCK.some((n) => n.id === nganhId)) {
+    if (nganhId !== null && !this.nganh.some((n) => n.id === nganhId && !n.da_xoa)) {
       themLoi('nganh_id', 'Ngành không tồn tại.');
     }
     if (
@@ -549,8 +843,8 @@ export class DaoTaoRegistry {
         ten_lop: tenLop,
         khoa_hoc: khoaHoc || null,
         nganh_id: nganhId,
-        nganh: nganhRutGon(nganhId),
-        khoa: khoaCuaNganh(nganhId),
+        nganh: this.nganhRutGon(nganhId),
+        khoa: this.khoaCuaNganh(nganhId),
         nam_nhap_hoc: namNhapHoc,
         trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
       },
@@ -727,7 +1021,7 @@ export class DaoTaoRegistry {
     if (soDienThoai.length > 20) {
       themLoi('so_dien_thoai', 'Số điện thoại không được vượt quá 20 ký tự.');
     }
-    if (nganhId !== null && !NGANH_MOCK.some((n) => n.id === nganhId)) {
+    if (nganhId !== null && !this.nganh.some((n) => n.id === nganhId && !n.da_xoa)) {
       themLoi('nganh_id', 'Ngành không tồn tại.');
     }
     if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
@@ -741,7 +1035,7 @@ export class DaoTaoRegistry {
         email,
         so_dien_thoai: soDienThoai || null,
         nganh_id: nganhId,
-        nganh: nganhRutGon(nganhId),
+        nganh: this.nganhRutGon(nganhId),
         trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
       },
       errors,
@@ -809,7 +1103,7 @@ export class DaoTaoRegistry {
     if (data['mo_ta'] !== null && data['mo_ta'] !== undefined && typeof data['mo_ta'] !== 'string') {
       themLoi('mo_ta', 'Mô tả không hợp lệ.');
     }
-    if (khoaId !== null && !KHOA_MOCK.some((k) => k.id === khoaId)) {
+    if (khoaId !== null && !this.khoa.some((k) => k.id === khoaId && !k.da_xoa)) {
       themLoi('khoa_id', 'Khoa không tồn tại.');
     }
     if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
@@ -819,7 +1113,7 @@ export class DaoTaoRegistry {
       duLieu: {
         ma_mon: maMon,
         khoa_id: khoaId,
-        khoa: KHOA_MOCK.find((k) => k.id === khoaId) ?? null,
+        khoa: this.khoaRutGon(khoaId),
         ten_mon: tenMon,
         so_tin_chi: soTinChi,
         mo_ta: moTa,

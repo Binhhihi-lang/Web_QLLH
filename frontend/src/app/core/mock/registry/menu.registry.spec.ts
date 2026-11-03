@@ -59,6 +59,8 @@ describe('MenuRegistry', () => {
 
       expect(ketQua.data.some((m) => m.url === '/nguoi-dung')).toBe(true);
       expect(ketQua.data.some((m) => m.url === '/diem-danh')).toBe(true);
+      expect(ketQua.data.some((m) => m.url === '/khoa')).toBe(true);
+      expect(ketQua.data.some((m) => m.url === '/nganh')).toBe(true);
     });
 
     it('hides entries of other roles from a teacher and a student', () => {
@@ -69,6 +71,8 @@ describe('MenuRegistry', () => {
       const cuaSinhVien = danhSach(new MenuRegistry(), SINH_VIEN, { vi_tri: 'sidebar' });
       expect(cuaSinhVien.data.some((m) => m.url === '/diem-danh')).toBe(false);
       expect(cuaSinhVien.data.some((m) => m.url === '/dang-ky-cua-toi')).toBe(true);
+      expect(cuaSinhVien.data.some((m) => m.url === '/khoa')).toBe(false);
+      expect(cuaSinhVien.data.some((m) => m.url === '/nganh')).toBe(false);
     });
 
     it('keeps the two personal student pages away from ADMIN', () => {

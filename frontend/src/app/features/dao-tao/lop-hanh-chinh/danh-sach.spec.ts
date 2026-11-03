@@ -1,5 +1,5 @@
 import { of, throwError } from 'rxjs';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@core/auth/auth.service';
 import { LopHanhChinhService } from './lop-hanh-chinh.service';
@@ -7,6 +7,7 @@ import { LopHanhChinhDanhSach } from './danh-sach';
 
 describe('LopHanhChinhDanhSach', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<LopHanhChinhDanhSach>>;
+  let router: Router;
   let service: {
     layDanhSach: ReturnType<typeof vi.fn>;
     xoa: ReturnType<typeof vi.fn>;
@@ -49,6 +50,7 @@ describe('LopHanhChinhDanhSach', () => {
       ],
     });
     fixture = TestBed.createComponent(LopHanhChinhDanhSach);
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
@@ -60,6 +62,14 @@ describe('LopHanhChinhDanhSach', () => {
     expect(fixture.nativeElement.textContent).toContain('Công nghệ thông tin K65 - Lớp 01');
     expect(fixture.nativeElement.textContent).toContain('42');
     expect(fixture.nativeElement.textContent).toContain('Đang hoạt động');
+  });
+
+  it('navigates to class details when an ADMIN clicks anywhere on a row', () => {
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const row = fixture.nativeElement.querySelector('tbody tr') as HTMLTableRowElement;
+    row.click();
+
+    expect(navigate).toHaveBeenCalledWith(['/lop-hanh-chinh', lop.id]);
   });
 
   it('applies cohort, major, and status filters', () => {

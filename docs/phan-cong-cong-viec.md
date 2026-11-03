@@ -4,6 +4,7 @@
 
 | Phiên bản | Ngày       | Trạng thái              | Căn cứ                                                 |
 | --------- | ---------- | ----------------------- | ------------------------------------------------------ |
+| 1.7       | 03/11/2026 | Bổ sung giao diện Khoa/Ngành | SCR-54/55, lọc Khoa tại SCR-19; menu ADMIN |
 | 1.6       | 29/10/2026 | Bổ sung lưu điểm hàng loạt | Nhánh `fix/luu-diem-phan-cong-tuan`; endpoint `PUT /sections/{id}/grades` + test hồi quy |
 | 1.5       | 29/10/2026 | Đối chiếu cuối ngày     | Xong lớp học phần + người dùng + `PUT /me`: 82/113 endpoint |
 | 1.4       | 29/10/2026 | Đối chiếu code `develop` | Commit `6192548` + đo thật: 62/113 endpoint, test FE/BE |
@@ -161,7 +162,7 @@ và [docs/08-roadmap.md](08-roadmap.md).
 | Hợp đồng API viết trước                 | `docs/04-api-contract.md` (113 endpoint) + `docs/openapi.yaml`                       | Cả hai bên cùng đọc một nguồn. FE biết chính xác URL, tham số, hình dạng JSON trước khi BE viết dòng nào.                   |
 | Mock layer ở tầng interceptor           | `frontend/src/app/core/mock/mock.interceptor.ts`                                     | Chặn request ở tầng HTTP, không phải ở service. Service viết y như khi gọi thật — BE xong chỉ cần tắt mock, không sửa code. |
 | Công tắc một dòng                       | `frontend/src/environments/environment.ts` → `useMock`                               | Bật/tắt mock cho từng giai đoạn mà không đụng component nào.                                                                |
-| Envelope và mã lỗi thống nhất           | `backend/app/Traits/apiResponse.php` + `frontend/src/app/core/mock/mock-response.ts` | Mọi endpoint trả cùng một hình dạng. FE viết một lần hàm xử lý lỗi là dùng cho toàn bộ 47 màn.                              |
+| Envelope và mã lỗi thống nhất           | `backend/app/Traits/apiResponse.php` + `frontend/src/app/core/mock/mock-response.ts` | Mọi endpoint trả cùng một hình dạng. FE viết một lần hàm xử lý lỗi là dùng cho toàn bộ 49 màn.                              |
 | Tên trường tiếng Việt không dấu cố định | `docs/03-data-model.md` + `frontend/src/app/core/models/dao-tao.model.ts`            | Không phải đoán snake_case hay camelCase, không phải dịch tên. Model FE đã khớp schema.                                     |
 
 ### Bốn điểm lệch — đã sửa ngày 25/10
@@ -243,7 +244,7 @@ Hai bạn FE sẽ viết khoảng 44 màn còn lại, trong đó gần 40 màn l
 
 Dựng xong thì cả hai dùng, không ai sửa. Cần thêm tính năng thì báo PM.
 
-14 component trong `shared/ui/` là đủ cho toàn bộ 47 màn.
+14 component trong `shared/ui/` là đủ cho toàn bộ 49 màn.
 
 ---
 
@@ -314,7 +315,7 @@ Cột "Bàn giao" là điều kiện để tuần đó được coi là xong —
 
 Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Quy tắc sở hữu: Đức Anh phụ trách toàn bộ SCR đào tạo 10–24; Đạt phụ trách toàn bộ SCR học vụ 25–43 và dashboard/quản trị 03–05, 47–51; PM phụ trách xác thực, màn toàn cục và thùng rác. Cột trạng thái phản ánh tiến độ đã đối chiếu với code.
 
-> Ghi chú: SCR-06 → 09, 34, 44, 46 không tồn tại trong `docs/05-screens.md` — số được cấp theo nhóm và có khoảng trống, không phải thiếu màn hình. Tổng cộng **47 màn** (gồm SCR-02B).
+> Ghi chú: SCR-06 → 09, 34, 44, 46 không tồn tại trong `docs/05-screens.md` — số được cấp theo nhóm và có khoảng trống, không phải thiếu màn hình. Tổng cộng **49 màn** (gồm SCR-02B, SCR-54 và SCR-55).
 
 | SCR | Màn hình                                | Đường dẫn                          | Phụ trách        | Trạng thái                 |
 | --- | --------------------------------------- | ---------------------------------- | ---------------- | -------------------------- |
@@ -365,6 +366,8 @@ Danh sách đầy đủ SCR-01 → SCR-53 theo `docs/05-screens.md`. Quy tắc s
 | 51  | Thêm/sửa người dùng                     | `/nguoi-dung/them`, `/:id/sua`     | Đạt (tuần 4)     | 🔶 BE xong 29/10 (`POST`/`PUT`/`reset-password`); FE chưa có |
 | 52  | Nút xem theo vai trò (ADMIN)            | header                             | PM (tuần 8)      | Chưa có                    |
 | 53  | Banner đang xem theo vai trò            | toàn cục                           | PM (tuần 8)      | Chưa có                    |
+| 54  | Quản lý Khoa                             | `/khoa`                            | PM               | ✅ FE + API; menu chỉ ADMIN |
+| 55  | Quản lý Ngành                            | `/nganh`                           | PM               | ✅ FE + API; lọc theo Khoa; menu chỉ ADMIN |
 | —   | Trang style-guide                       | `/style-guide`                     | PM               | Xong                       |
 
 ### Cập nhật sau khi phát hiện lỗi lưu điểm 405

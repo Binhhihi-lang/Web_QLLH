@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { KhoaRutGon, TuyChonKhoa } from '@core/models/dao-tao.model';
 import { MonHocService, MonHocInput } from './mon-hoc.service';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
@@ -65,6 +66,26 @@ import { PageHeader } from '@shared/ui/page-header';
               [batBuoc]="true"
               (giaTriChange)="tenMon.set($event)"
             />
+            <label class="truong">
+              <span>Khoa</span>
+              <select
+                id="khoa-mon"
+                [value]="khoaId() ?? ''"
+                [disabled]="dangTaiKhoa()"
+                (change)="doiKhoa($event)"
+              >
+                <option value="">Chưa phân khoa</option>
+                @for (khoa of dsKhoa(); track khoa.id) {
+                  <option [value]="khoa.id">{{ khoa.label }}</option>
+                }
+              </select>
+              @if (loiTaiKhoa()) {
+                <small class="loi-tai-khoa">
+                  {{ loiTaiKhoa() }}
+                  <button type="button" class="thu-lai" (click)="taiKhoa()">Thử lại</button>
+                </small>
+              }
+            </label>
             <app-form-field
               id="so-tin-chi"
               loai="number"
@@ -178,6 +199,22 @@ import { PageHeader } from '@shared/ui/page-header';
       box-shadow: 0 0 0 3px var(--color-primary-soft);
     }
 
+    .loi-tai-khoa {
+      color: var(--color-danger);
+      font-size: var(--text-caption);
+      font-weight: 400;
+    }
+
+    .thu-lai {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--color-primary);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
     app-form-field:last-child {
       grid-column: 1 / -1;
     }
@@ -256,16 +293,20 @@ export class MonHocForm {
   readonly id = this.layId(this.thamSoId);
   readonly laChinhSua = this.thamSoId !== null;
   readonly dangTai = signal(this.laChinhSua);
+  readonly dangTaiKhoa = signal(true);
   readonly dangGui = signal(false);
   readonly daCham = signal(false);
   readonly loiChung = signal('');
   readonly loiTai = signal('');
+  readonly loiTaiKhoa = signal('');
   readonly loiApi = signal<Record<string, string[]>>({});
   readonly maMon = signal('');
   readonly tenMon = signal('');
   readonly soTinChi = signal<string | number>(3);
   readonly moTa = signal('');
   readonly trangThai = signal(true);
+  readonly khoaId = signal<number | null>(null);
+  readonly dsKhoa = signal<TuyChonKhoa[]>([]);
 
   readonly loiMaMon = computed(
     () =>
@@ -291,6 +332,7 @@ export class MonHocForm {
   });
 
   constructor() {
+    this.taiKhoa();
     if (this.laChinhSua && this.id === null) {
       this.dangTai.set(false);
       this.loiTai.set('Mã môn học không hợp lệ.');
@@ -307,6 +349,26 @@ export class MonHocForm {
     this.trangThai.set((event.target as HTMLSelectElement).value === 'true');
   }
 
+  doiKhoa(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.khoaId.set(value === '' ? null : Number(value));
+  }
+
+  taiKhoa(): void {
+    this.dangTaiKhoa.set(true);
+    this.loiTaiKhoa.set('');
+    this.service.layTuyChonKhoa().subscribe({
+      next: (khoa) => {
+        this.dsKhoa.set(this.themKhoaHienTai(khoa));
+        this.dangTaiKhoa.set(false);
+      },
+      error: (error: unknown) => {
+        this.dangTaiKhoa.set(false);
+        this.loiTaiKhoa.set(this.thongBaoLoi(error));
+      },
+    });
+  }
+
   gui(event: Event): void {
     event.preventDefault();
     if (this.dangGui()) return;
@@ -319,6 +381,7 @@ export class MonHocForm {
     this.dangGui.set(true);
     const duLieu: MonHocInput = {
       ma_mon: this.maMon().trim(),
+      khoa_id: this.khoaId(),
       ten_mon: this.tenMon().trim(),
       so_tin_chi: Number(this.soTinChi()),
       mo_ta: this.moTa().trim() || null,
@@ -346,10 +409,12 @@ export class MonHocForm {
     this.service.layMot(id).subscribe({
       next: (monHoc) => {
         this.maMon.set(monHoc.ma_mon);
+        this.khoaId.set(monHoc.khoa_id);
         this.tenMon.set(monHoc.ten_mon);
         this.soTinChi.set(monHoc.so_tin_chi);
         this.moTa.set(monHoc.mo_ta ?? '');
         this.trangThai.set(monHoc.trang_thai);
+        if (monHoc.khoa) this.themKhoaKhongHoatDong(monHoc.khoa);
         this.dangTai.set(false);
       },
       error: (error: unknown) => {
@@ -357,6 +422,23 @@ export class MonHocForm {
         this.loiTai.set(this.thongBaoLoi(error));
       },
     });
+  }
+
+  private themKhoaHienTai(options: TuyChonKhoa[]): TuyChonKhoa[] {
+    const current = this.dsKhoa().find((khoa) => khoa.id === this.khoaId());
+    if (!current || options.some((khoa) => khoa.id === current.id)) return options;
+    const label = current.label.endsWith(' (đã khóa)')
+      ? current.label
+      : `${current.label} (đã khóa)`;
+    return [...options, { ...current, label }];
+  }
+
+  private themKhoaKhongHoatDong(khoa: KhoaRutGon): void {
+    if (this.dsKhoa().some((option) => option.id === khoa.id)) return;
+    this.dsKhoa.update((options) => [
+      ...options,
+      { id: khoa.id, label: `${khoa.ten_khoa} (đã khóa)`, ma_khoa: khoa.ma_khoa },
+    ]);
   }
 
   private xuLyLoi(error: unknown): void {
