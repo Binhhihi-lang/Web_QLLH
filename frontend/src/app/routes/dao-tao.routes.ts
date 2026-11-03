@@ -179,7 +179,27 @@ export const daoTaoRoutes: Routes = [
     path: 'hoc-ky',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-21', title: 'Học kỳ' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/dao-tao/hoc-ky/danh-sach').then((m) => m.HocKyDanhSach),
+  },
+  {
+    path: 'hoc-ky/them',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-22', title: 'Thêm học kỳ' },
+    loadComponent: () => import('@features/dao-tao/hoc-ky/form').then((m) => m.HocKyForm),
+  },
+  {
+    path: 'hoc-ky/:id/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-22', title: 'Sửa học kỳ' },
+    loadComponent: () => import('@features/dao-tao/hoc-ky/form').then((m) => m.HocKyForm),
+  },
+  {
+    path: 'hoc-ky/:id',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-21', title: 'Chi tiết học kỳ' },
+    loadComponent: () =>
+      import('@features/dao-tao/hoc-ky/chi-tiet').then((m) => m.HocKyChiTiet),
   },
 
   // SCR-23/24 — Phòng học

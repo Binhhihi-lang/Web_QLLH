@@ -8,6 +8,8 @@ import {
   Nganh,
   NganhRutGon,
   SinhVien,
+  HocKy,
+  TrangThaiHocKy,
 } from '@core/models/dao-tao.model';
 import {
   LOP_HANH_CHINH_MOCK,
@@ -47,6 +49,7 @@ export class DaoTaoRegistry {
   private giangVien = GIANG_VIEN_MOCK.map((r) => ({ ...r }));
   private monHoc = MON_HOC_MOCK.map((r) => ({ ...r }));
   private hocKy = HOC_KY_MOCK.map((r) => ({ ...r }));
+  private hocKyDaXoa = new Set<number>();
   private khoa = KHOA_MOCK.map((r) => ({ ...r }));
   private nganh = NGANH_MOCK.map((r) => ({ ...r }));
 
@@ -454,9 +457,91 @@ export class DaoTaoRegistry {
 
     // ---------- Học kỳ ----------
     if (path === '/semesters' && method === 'GET') {
-      let rows = filterBy(this.hocKy, params, ['trang_thai', 'nam_hoc', 'ky_thu']);
+      let rows = this.hocKy.filter((row) => !this.hocKyDaXoa.has(row.id));
+      rows = searchBy(rows, params.get('q'), ['ma_hoc_ky', 'ten_hoc_ky']);
+      rows = filterBy(rows, params, ['trang_thai', 'nam_hoc', 'ky_thu']);
       rows = sortBy(rows, params, 'ma_hoc_ky');
       return paginate(rows, params, '/api/semesters');
+    }
+    if (path === '/semesters' && method === 'POST') {
+      const duLieu = this.chuanHoaHocKy(body);
+      if (duLieu.loi) return duLieu.loi;
+      const hocKy: HocKy = {
+        id: Math.max(0, ...this.hocKy.map((row) => row.id)) + 1,
+        ...duLieu.giaTri,
+        trang_thai: 'UPCOMING',
+        dang_mo_dang_ky: false,
+      };
+      this.hocKy.push(hocKy);
+      return ok(hocKy, 'Tạo học kỳ thành công.');
+    }
+
+    const doiTrangThaiHocKy = path.match(/^\/semesters\/(\d+)\/status$/);
+    if (doiTrangThaiHocKy && method === 'PATCH') {
+      const id = Number(doiTrangThaiHocKy[1]);
+      const hocKy = this.hocKy.find((row) => row.id === id && !this.hocKyDaXoa.has(row.id));
+      if (!hocKy) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy học kỳ.');
+
+      const buocTiepTheo: Partial<Record<TrangThaiHocKy, TrangThaiHocKy>> = {
+        UPCOMING: 'ONGOING',
+        ONGOING: 'CLOSED',
+      };
+      const trangThaiTiepTheo = buocTiepTheo[hocKy.trang_thai];
+      if (!trangThaiTiepTheo || this.bodyRecord(body)['trang_thai'] !== trangThaiTiepTheo) {
+        return loi(
+          MaLoi.SEMESTER_TRANSITION_INVALID,
+          'Chỉ được chuyển trạng thái theo thứ tự UPCOMING → ONGOING → CLOSED.',
+        );
+      }
+      if (
+        trangThaiTiepTheo === 'ONGOING' &&
+        this.hocKy.some(
+          (row) =>
+            row.id !== id &&
+            row.trang_thai === 'ONGOING' &&
+            !this.hocKyDaXoa.has(row.id),
+        )
+      ) {
+        return loi(MaLoi.SEMESTER_TRANSITION_INVALID, 'Đã có học kỳ khác đang diễn ra.');
+      }
+
+      const updated = { ...hocKy, trang_thai: trangThaiTiepTheo };
+      this.hocKy = this.hocKy.map((row) => (row.id === id ? updated : row));
+      return ok(updated, 'Cập nhật trạng thái học kỳ thành công.');
+    }
+
+    const chiTietHocKy = path.match(/^\/semesters\/(\d+)$/);
+    if (chiTietHocKy) {
+      const id = Number(chiTietHocKy[1]);
+      const index = this.hocKy.findIndex(
+        (row) => row.id === id && !this.hocKyDaXoa.has(row.id),
+      );
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy học kỳ.');
+
+      if (method === 'GET') return ok(this.hocKy[index]);
+      if (method === 'PUT') {
+        if (this.hocKy[index].trang_thai === 'CLOSED') {
+          return loi(MaLoi.SEMESTER_CLOSED, 'Học kỳ đã đóng, chỉ được xem.');
+        }
+        const duLieu = this.chuanHoaHocKy(body, id);
+        if (duLieu.loi) return duLieu.loi;
+        const updated = { ...this.hocKy[index], ...duLieu.giaTri };
+        this.hocKy[index] = updated;
+        return ok(updated, 'Cập nhật học kỳ thành công.');
+      }
+      if (method === 'DELETE') {
+        if (this.hocKy[index].trang_thai !== 'UPCOMING') {
+          return loi(MaLoi.DELETE_BLOCKED, 'Chỉ được xóa học kỳ sắp diễn ra.');
+        }
+        const hasSections = LOP_HOC_PHAN_MOCK.some(
+          (section) => section.hoc_ky.id === id && !section.da_xoa,
+        );
+        if (hasSections) {
+          return loi(MaLoi.SEMESTER_HAS_SECTIONS, 'Học kỳ còn lớp học phần chưa xóa.');
+        }
+        this.hocKyDaXoa.add(id);
+        return ok(null, 'Đã xóa học kỳ.');
+      }
     }
 
     // ---------- Options thuộc nhóm đào tạo ----------
@@ -485,7 +570,7 @@ export class DaoTaoRegistry {
     }
     if (path === '/options/semesters' && method === 'GET') {
       return ok(
-        this.hocKy.map((r) => ({
+        this.hocKy.filter((row) => !this.hocKyDaXoa.has(row.id)).map((r) => ({
           id: r.id,
           label: r.ten_hoc_ky,
           nam_hoc: r.nam_hoc,
@@ -1152,6 +1237,142 @@ export class DaoTaoRegistry {
     return body !== null && typeof body === 'object' && !Array.isArray(body)
       ? (body as Record<string, unknown>)
       : {};
+  }
+
+  private chuanHoaHocKy(
+    body: unknown,
+    boQuaId?: number,
+  ): { giaTri: Omit<HocKy, 'id' | 'trang_thai' | 'dang_mo_dang_ky'>; loi: object | null } {
+    const data = this.bodyRecord(body);
+    const maHocKy = typeof data['ma_hoc_ky'] === 'string' ? data['ma_hoc_ky'].trim() : '';
+    const tenHocKy = typeof data['ten_hoc_ky'] === 'string' ? data['ten_hoc_ky'].trim() : '';
+    const namHoc = typeof data['nam_hoc'] === 'string' ? data['nam_hoc'].trim() : '';
+    const kyThu = Number(data['ky_thu']);
+    const ngayBatDau = typeof data['ngay_bat_dau'] === 'string' ? data['ngay_bat_dau'] : '';
+    const ngayKetThuc = typeof data['ngay_ket_thuc'] === 'string' ? data['ngay_ket_thuc'] : '';
+    const moDangKy = typeof data['mo_dang_ky_luc'] === 'string' ? data['mo_dang_ky_luc'] : '';
+    const dongDangKy = typeof data['dong_dang_ky_luc'] === 'string' ? data['dong_dang_ky_luc'] : '';
+    const errors: Record<string, string[]> = {};
+
+    if (!maHocKy) errors['ma_hoc_ky'] = ['Mã học kỳ là bắt buộc.'];
+    else if (maHocKy.length > 20) errors['ma_hoc_ky'] = ['Mã học kỳ không được vượt quá 20 ký tự.'];
+    if (!tenHocKy) errors['ten_hoc_ky'] = ['Tên học kỳ là bắt buộc.'];
+    else if (tenHocKy.length > 255) errors['ten_hoc_ky'] = ['Tên học kỳ không được vượt quá 255 ký tự.'];
+    const nam = /^\d{4}-\d{4}$/.test(namHoc);
+    if (!nam) errors['nam_hoc'] = ['Năm học cần theo dạng YYYY-YYYY.'];
+    else {
+      const [batDau, ketThuc] = namHoc.split('-').map(Number);
+      if (ketThuc !== batDau + 1) errors['nam_hoc'] = ['Năm học kết thúc phải bằng năm bắt đầu cộng 1.'];
+    }
+    if (!Number.isInteger(kyThu) || kyThu < 1 || kyThu > 3) {
+      errors['ky_thu'] = ['Kỳ thứ phải là 1, 2 hoặc 3.'];
+    }
+    if (!this.laNgayIso(ngayBatDau)) errors['ngay_bat_dau'] = ['Ngày bắt đầu không hợp lệ.'];
+    if (!this.laNgayIso(ngayKetThuc)) errors['ngay_ket_thuc'] = ['Ngày kết thúc không hợp lệ.'];
+    if (ngayBatDau && ngayKetThuc && ngayBatDau >= ngayKetThuc) {
+      errors['ngay_ket_thuc'] = ['Ngày kết thúc phải sau ngày bắt đầu.'];
+    }
+    if (!this.laNgayGioSql(moDangKy)) errors['mo_dang_ky_luc'] = ['Thời gian mở đăng ký không hợp lệ.'];
+    if (!this.laNgayGioSql(dongDangKy)) errors['dong_dang_ky_luc'] = ['Thời gian đóng đăng ký không hợp lệ.'];
+    if (moDangKy && dongDangKy && moDangKy >= dongDangKy) {
+      errors['dong_dang_ky_luc'] = ['Thời gian đóng đăng ký phải sau thời gian mở.'];
+    }
+    if (
+      this.laNgayIso(ngayBatDau) &&
+      this.laNgayIso(ngayKetThuc) &&
+      this.laNgayGioSql(moDangKy) &&
+      this.laNgayGioSql(dongDangKy)
+    ) {
+      if (moDangKy.slice(0, 10) < ngayBatDau || moDangKy.slice(0, 10) > ngayKetThuc) {
+        errors['mo_dang_ky_luc'] = ['Thời gian mở đăng ký phải nằm trong thời gian học kỳ.'];
+      }
+      if (dongDangKy.slice(0, 10) < ngayBatDau || dongDangKy.slice(0, 10) > ngayKetThuc) {
+        errors['dong_dang_ky_luc'] = ['Thời gian đóng đăng ký phải nằm trong thời gian học kỳ.'];
+      }
+    }
+
+    const trungMa = this.hocKy.some(
+      (row) => row.id !== boQuaId && row.ma_hoc_ky.toLowerCase() === maHocKy.toLowerCase(),
+    );
+    if (maHocKy && trungMa) errors['ma_hoc_ky'] = ['Mã học kỳ đã tồn tại.'];
+
+    const trungKy = this.hocKy.some(
+      (row) =>
+        row.id !== boQuaId &&
+        row.nam_hoc === namHoc &&
+        row.ky_thu === kyThu,
+    );
+    if (nam && Number.isInteger(kyThu) && trungKy) {
+      errors['ky_thu'] = ['Học kỳ này đã tồn tại trong năm học đã chọn.'];
+    }
+
+    const biChong = this.hocKy.some(
+      (row) =>
+        row.id !== boQuaId &&
+        !this.hocKyDaXoa.has(row.id) &&
+        this.laNgayIso(ngayBatDau) &&
+        this.laNgayIso(ngayKetThuc) &&
+        ngayBatDau <= row.ngay_ket_thuc &&
+        ngayKetThuc >= row.ngay_bat_dau,
+    );
+    if (biChong) {
+      return {
+        giaTri: {
+          ma_hoc_ky: maHocKy,
+          ten_hoc_ky: tenHocKy,
+          nam_hoc: namHoc,
+          ky_thu: kyThu,
+          ngay_bat_dau: ngayBatDau,
+          ngay_ket_thuc: ngayKetThuc,
+          mo_dang_ky_luc: moDangKy,
+          dong_dang_ky_luc: dongDangKy,
+        },
+        loi: loi(MaLoi.SEMESTER_OVERLAP, 'Thời gian học kỳ bị chồng lấn với học kỳ khác.'),
+      };
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return {
+        giaTri: {
+          ma_hoc_ky: maHocKy,
+          ten_hoc_ky: tenHocKy,
+          nam_hoc: namHoc,
+          ky_thu: kyThu,
+          ngay_bat_dau: ngayBatDau,
+          ngay_ket_thuc: ngayKetThuc,
+          mo_dang_ky_luc: moDangKy,
+          dong_dang_ky_luc: dongDangKy,
+        },
+        loi: loiValidation(errors),
+      };
+    }
+
+    return {
+      giaTri: {
+        ma_hoc_ky: maHocKy,
+        ten_hoc_ky: tenHocKy,
+        nam_hoc: namHoc,
+        ky_thu: kyThu,
+        ngay_bat_dau: ngayBatDau,
+        ngay_ket_thuc: ngayKetThuc,
+        mo_dang_ky_luc: moDangKy,
+        dong_dang_ky_luc: dongDangKy,
+      },
+      loi: null,
+    };
+  }
+
+  private laNgayIso(value: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  }
+
+  private laNgayGioSql(value: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(value)) return false;
+    const [day, time] = value.split(' ');
+    return this.laNgayIso(day) && !Number.isNaN(Date.parse(`${day}T${time}`));
   }
 
   private loiChanXoaGiangVien(

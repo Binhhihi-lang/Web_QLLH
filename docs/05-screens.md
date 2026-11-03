@@ -82,6 +82,7 @@ src/app/
 /lop-hanh-chinh       → SCR-16
 /mon-hoc              → SCR-19
 /hoc-ky               → SCR-21
+/hoc-ky/:id           → SCR-21 (chi tiết; bấm dòng trong danh sách)
 /phong-hoc            → SCR-23
 /lop-hoc-phan         → SCR-25
 /dang-ky              → SCR-30 (ADMIN)
