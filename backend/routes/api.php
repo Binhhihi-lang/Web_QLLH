@@ -3,15 +3,19 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\ThungRacController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HoSoController;
+use App\Http\Controllers\Api\KhoaController;
 use App\Http\Controllers\Api\LopHanhChinhController;
+use App\Http\Controllers\Api\LopHocPhanController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\MonHocController;
+use App\Http\Controllers\Api\NganhController;
+use App\Http\Controllers\Api\NguoiDungController;
 use App\Http\Controllers\Api\OptionController;
 use App\Http\Controllers\Api\PhongHocController;
 use App\Http\Controllers\Api\SinhVienController;
+use App\Http\Controllers\Api\ThungRacController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -41,7 +45,8 @@ Route::prefix('auth')->group(function () {
 | Toàn bộ endpoint còn lại yêu cầu đăng nhập và đã đổi mật khẩu lần đầu.
 */
 Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
-    // FR-01.10 / FR-01.11 — ảnh đại diện, dùng chung cho cả 3 vai trò
+    // FR-01.06 — sửa hồ sơ cá nhân; FR-01.10 / FR-01.11 — ảnh đại diện, dùng chung cho cả 3 vai trò
+    Route::put('/me', [HoSoController::class, 'capNhatHoSo'])->name('api/me/cap-nhat');
     Route::post('/me/avatar', [HoSoController::class, 'taiAnhDaiDien'])->name('api/me/avatar');
     Route::delete('/me/avatar', [HoSoController::class, 'xoaAnhDaiDien'])->name('api/me/avatar/xoa');
 
@@ -52,6 +57,8 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('rooms', [OptionController::class, 'rooms']);
         Route::get('admin-classes', [OptionController::class, 'adminClasses']);
         Route::get('sections', [OptionController::class, 'sections']);
+        Route::get('khoa', [OptionController::class, 'khoa']);
+        Route::get('nganh', [OptionController::class, 'nganh']);
     });
 
     Route::get('/menus', [MenuController::class, 'index'])->name('api/menus');
@@ -120,6 +127,60 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('{lopHanhChinh}/students', [LopHanhChinhController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::post('{lopHanhChinh}/students', [LopHanhChinhController::class, 'ganSinhVien'])->middleware('vai.tro:ADMIN');
         Route::delete('{lopHanhChinh}/students/{sinhVien}', [LopHanhChinhController::class, 'goSinhVien'])->middleware('vai.tro:ADMIN');
+    });
+
+    /*
+    | Danh mục Khoa / Ngành — ADR-020. Đọc mở cho cả ba vai trò (dữ liệu tham chiếu),
+    | ghi chỉ ADMIN. Dropdown ở FE dùng `/options/khoa` và `/options/nganh` cho nhẹ.
+    */
+    Route::prefix('khoa')->group(function () {
+        Route::get('/', [KhoaController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [KhoaController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::get('{khoa}', [KhoaController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::put('{khoa}', [KhoaController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{khoa}', [KhoaController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    });
+
+    Route::prefix('nganh')->group(function () {
+        Route::get('/', [NganhController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [NganhController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::get('{nganh}', [NganhController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::put('{nganh}', [NganhController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{nganh}', [NganhController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    });
+
+    /*
+    | Lớp học phần — SCR-25 → SCR-29, SCR-40/SCR-41 (docs/04 §10).
+    | `finalize` chỉ mở cho GIANG_VIEN: ADMIN chốt hộ bị 403 theo ma trận phân quyền.
+    */
+    Route::prefix('sections')->group(function () {
+        Route::get('/', [LopHocPhanController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [LopHocPhanController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::post('{lopHocPhan}/finalize', [LopHocPhanController::class, 'chotDiem'])->middleware('vai.tro:GIANG_VIEN');
+        Route::post('{lopHocPhan}/unlock', [LopHocPhanController::class, 'moKhoaDiem'])->middleware('vai.tro:ADMIN');
+        Route::get('{lopHocPhan}/students', [LopHocPhanController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::get('{lopHocPhan}/grades', [LopHocPhanController::class, 'bangDiem'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::put('{lopHocPhan}/grades', [LopHocPhanController::class, 'capNhatDiemHangLoat'])->middleware('vai.tro:GIANG_VIEN');
+        Route::get('{lopHocPhan}/attendance-summary', [LopHocPhanController::class, 'thongKeChuyenCan'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::patch('{lopHocPhan}/status', [LopHocPhanController::class, 'capNhatTrangThai'])->middleware('vai.tro:ADMIN');
+        Route::get('{lopHocPhan}', [LopHocPhanController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::put('{lopHocPhan}', [LopHocPhanController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{lopHocPhan}', [LopHocPhanController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    });
+
+    /*
+    | Người dùng — SCR-50/SCR-51 (docs/04 §3). Toàn bộ chỉ ADMIN.
+    | `bulk-status` khai trước `{nguoiDung}` cho dễ đọc dù không xung đột đường dẫn.
+    */
+    Route::prefix('users')->middleware('vai.tro:ADMIN')->group(function () {
+        Route::get('/', [NguoiDungController::class, 'index']);
+        Route::post('/', [NguoiDungController::class, 'store']);
+        Route::patch('bulk-status', [NguoiDungController::class, 'capNhatTrangThaiHangLoat']);
+        Route::get('{nguoiDung}', [NguoiDungController::class, 'show']);
+        Route::put('{nguoiDung}', [NguoiDungController::class, 'update']);
+        Route::delete('{nguoiDung}', [NguoiDungController::class, 'destroy']);
+        Route::patch('{nguoiDung}/status', [NguoiDungController::class, 'capNhatTrangThai']);
+        Route::post('{nguoiDung}/reset-password', [NguoiDungController::class, 'datLaiMatKhau']);
     });
 
     Route::get('/user', function (Request $request) {

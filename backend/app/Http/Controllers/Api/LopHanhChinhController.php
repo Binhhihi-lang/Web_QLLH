@@ -26,14 +26,15 @@ class LopHanhChinhController extends Controller
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'in:10,25,50,100'],
             'q' => ['sometimes', 'string', 'max:255'],
-            'sort_by' => ['sometimes', 'in:id,ma_lop,ten_lop,khoa_hoc,nganh,nam_nhap_hoc,trang_thai'],
+            'sort_by' => ['sometimes', 'in:id,ma_lop,ten_lop,khoa_hoc,nganh_id,nam_nhap_hoc,trang_thai'],
             'sort_dir' => ['sometimes', 'in:asc,desc'],
             'khoa_hoc' => ['sometimes', 'string', 'max:20'],
-            'nganh' => ['sometimes', 'string', 'max:20'],
+            'nganh_id' => ['sometimes', 'integer'],
+            'khoa_id' => ['sometimes', 'integer'],
             'trang_thai' => ['sometimes', 'in:true,false,1,0'],
         ]);
 
-        $query = LopHanhChinh::query()->withCount('sinhVien');
+        $query = LopHanhChinh::query()->with(['nganh.khoa'])->withCount('sinhVien');
 
         if ($request->user()->laSinhVien()) {
             $query->whereKey($request->user()->sinhVien?->lop_hanh_chinh_id ?? 0);
@@ -45,7 +46,11 @@ class LopHanhChinhController extends Controller
                 $tim->where('ma_lop', 'like', $tuKhoa)->orWhere('ten_lop', 'like', $tuKhoa);
             }))
             ->when($request->filled('khoa_hoc'), fn ($q) => $q->where('khoa_hoc', $request->string('khoa_hoc')))
-            ->when($request->filled('nganh'), fn ($q) => $q->where('nganh', $request->string('nganh')))
+            ->when($request->filled('nganh_id'), fn ($q) => $q->where('nganh_id', $request->integer('nganh_id')))
+            ->when($request->filled('khoa_id'), fn ($q) => $q->whereHas(
+                'nganh',
+                fn ($nganh) => $nganh->where('khoa_id', $request->integer('khoa_id')),
+            ))
             ->when($request->has('trang_thai'), fn ($q) => $q->where('trang_thai', $request->boolean('trang_thai')))
             ->orderBy($request->input('sort_by', 'id'), $request->input('sort_dir', 'asc'));
 
@@ -56,14 +61,18 @@ class LopHanhChinhController extends Controller
 
     public function store(LopHanhChinhRequest $request): JsonResponse
     {
-        $lop = LopHanhChinh::query()->create($request->validated())->loadCount('sinhVien');
+        $lop = LopHanhChinh::query()->create($request->validated())
+            ->load(['nganh.khoa'])
+            ->loadCount('sinhVien');
 
         return $this->success(new LopHanhChinhResource($lop), 'Tạo lớp hành chính thành công.', 201);
     }
 
     public function show(LopHanhChinh $lopHanhChinh): JsonResponse
     {
-        return $this->success(new LopHanhChinhResource($lopHanhChinh->loadCount('sinhVien')));
+        return $this->success(new LopHanhChinhResource(
+            $lopHanhChinh->load(['nganh.khoa'])->loadCount('sinhVien'),
+        ));
     }
 
     public function update(LopHanhChinhRequest $request, LopHanhChinh $lopHanhChinh): JsonResponse
@@ -71,7 +80,7 @@ class LopHanhChinhController extends Controller
         $lopHanhChinh->update($request->validated());
 
         return $this->success(
-            new LopHanhChinhResource($lopHanhChinh->fresh()->loadCount('sinhVien')),
+            new LopHanhChinhResource($lopHanhChinh->fresh(['nganh.khoa'])->loadCount('sinhVien')),
             'Cập nhật lớp hành chính thành công.',
         );
     }

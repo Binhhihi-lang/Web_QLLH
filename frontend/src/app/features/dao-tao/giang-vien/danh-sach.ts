@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { GiangVien, ThamSoDanhSach } from '@core/models/dao-tao.model';
+import { GiangVien, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { GiangVienService } from '@core/services/giang-vien.service';
 import { KetQuaHangLoat, PageMeta } from '@core/mock/mock-response';
 import { AppAlert } from '@shared/ui/app-alert';
@@ -43,14 +43,13 @@ import { StatusBadge } from '@shared/ui/status-badge';
       />
 
       <label class="loc">
-        <span>Chuyên môn</span>
-        <input
-          type="search"
-          name="chuyen_mon"
-          placeholder="Nhập chuyên môn"
-          [value]="locChuyenMon()"
-          (input)="doiChuyenMon($event)"
-        />
+        <span>Ngành</span>
+        <select [value]="locNganhId()" (change)="doiLocNganh($event)">
+          <option value="">Tất cả ngành</option>
+          @for (n of dsNganh(); track n.id) {
+            <option [value]="n.id">{{ n.label }}</option>
+          }
+        </select>
       </label>
 
       <label class="loc">
@@ -138,6 +137,9 @@ import { StatusBadge } from '@shared/ui/status-badge';
       (dongDuocBam)="moChiTiet($event)"
       (thuLai)="tai()"
     >
+      <ng-template appOTuyChinh="nganh" let-row>
+        {{ row.nganh?.ten_nganh ?? '—' }}
+      </ng-template>
       <ng-template appOTuyChinh="trang_thai" let-row>
         <app-status-badge
           [value]="row.trang_thai ? 'ACTIVE' : 'INACTIVE'"
@@ -378,7 +380,8 @@ export class GiangVienDanhSach {
   readonly rows = signal<GiangVien[]>([]);
   readonly meta = signal<PageMeta | null>(null);
   readonly tuKhoa = signal('');
-  readonly locChuyenMon = signal('');
+  readonly locNganhId = signal('');
+  readonly dsNganh = signal<TuyChonNganh[]>([]);
   readonly locTrangThai = signal('');
   readonly daChon = signal<Array<string | number>>([]);
   readonly dangHangLoat = signal(false);
@@ -389,7 +392,7 @@ export class GiangVienDanhSach {
   readonly lyDoChanXoa = signal('');
   readonly sapXepHienTai = signal<SapXep>({ sort_by: 'ma_gv', sort_dir: 'asc' });
 
-  private readonly boLoc = signal({ tuKhoa: '', chuyenMon: '', trangThai: '' });
+  private readonly boLoc = signal({ tuKhoa: '', nganhId: '', trangThai: '' });
   private trang = 1;
   private coTrang = 10;
 
@@ -398,14 +401,14 @@ export class GiangVienDanhSach {
     { khoa: 'ho_ten', nhan: 'Họ tên', sap_xep: true },
     { khoa: 'email', nhan: 'Email' },
     { khoa: 'so_dien_thoai', nhan: 'Số điện thoại', rong: '150px' },
-    { khoa: 'chuyen_mon', nhan: 'Chuyên môn' },
+    { khoa: 'nganh', nhan: 'Ngành' },
     { khoa: 'trang_thai', nhan: 'Trạng thái', rong: '150px' },
     { khoa: 'thao_tac', nhan: 'Thao tác', rong: '220px' },
   ]);
 
   readonly coLoc = computed(() => {
     const f = this.boLoc();
-    return !!(f.tuKhoa || f.chuyenMon || f.trangThai);
+    return !!(f.tuKhoa || f.nganhId || f.trangThai);
   });
   readonly soDongDaChon = computed(() => this.daChon().length);
   readonly dongLoi = computed(() =>
@@ -413,6 +416,10 @@ export class GiangVienDanhSach {
   );
 
   constructor() {
+    this.service.layTuyChonNganh().subscribe({
+      next: (ds) => this.dsNganh.set(ds),
+      error: () => this.dsNganh.set([]),
+    });
     this.tai();
   }
 
@@ -421,13 +428,13 @@ export class GiangVienDanhSach {
     this.loi.set(null);
     const sx = this.sapXepHienTai();
     const f = this.boLoc();
-    const thamSo: ThamSoDanhSach & { chuyen_mon?: string; trang_thai?: boolean } = {
+    const thamSo: ThamSoDanhSach & { nganh_id?: number; trang_thai?: boolean } = {
       page: this.trang,
       per_page: this.coTrang as 10 | 25 | 50 | 100,
       q: f.tuKhoa || undefined,
       sort_by: sx.sort_by,
       sort_dir: sx.sort_dir,
-      chuyen_mon: f.chuyenMon || undefined,
+      nganh_id: f.nganhId === '' ? undefined : Number(f.nganhId),
       trang_thai: f.trangThai === '' ? undefined : f.trangThai === 'true',
     };
 
@@ -451,8 +458,8 @@ export class GiangVienDanhSach {
     this.tai();
   }
 
-  doiChuyenMon(event: Event): void {
-    this.locChuyenMon.set((event.target as HTMLInputElement).value);
+  doiLocNganh(event: Event): void {
+    this.locNganhId.set((event.target as HTMLSelectElement).value);
   }
 
   doiTrangThai(event: Event): void {
@@ -462,7 +469,7 @@ export class GiangVienDanhSach {
   apDungLoc(): void {
     this.boLoc.update((f) => ({
       ...f,
-      chuyenMon: this.locChuyenMon(),
+      nganhId: this.locNganhId(),
       trangThai: this.locTrangThai(),
     }));
     this.trang = 1;
@@ -471,9 +478,9 @@ export class GiangVienDanhSach {
 
   xoaLoc(): void {
     this.tuKhoa.set('');
-    this.locChuyenMon.set('');
+    this.locNganhId.set('');
     this.locTrangThai.set('');
-    this.boLoc.set({ tuKhoa: '', chuyenMon: '', trangThai: '' });
+    this.boLoc.set({ tuKhoa: '', nganhId: '', trangThai: '' });
     this.trang = 1;
     this.tai();
   }

@@ -43,7 +43,7 @@ const NGUOI_DUNG_MOCK: NguoiDung[] = [
       id: GIANG_VIEN_MOCK[0].id,
       ho_ten: GIANG_VIEN_MOCK[0].ho_ten,
       ma_gv: GIANG_VIEN_MOCK[0].ma_gv,
-      chuyen_mon: GIANG_VIEN_MOCK[0].chuyen_mon,
+      nganh_id: GIANG_VIEN_MOCK[0].nganh_id,
     },
   },
   {

@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { GiangVien } from '@core/models/dao-tao.model';
+import { GiangVien, TuyChonNganh } from '@core/models/dao-tao.model';
 import { GiangVienInput, GiangVienService } from '@core/services/giang-vien.service';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
@@ -111,15 +111,18 @@ import { PageHeader } from '@shared/ui/page-header';
                 [daCham]="daCham()"
                 (giaTriChange)="soDienThoai.set($event)"
               />
-              <app-form-field
-                id="chuyen-mon-gv"
-                nhan="Chuyên môn"
-                goiY="Ví dụ: Công nghệ phần mềm"
-                [giaTri]="chuyenMon()"
-                [loi]="loiTruong('chuyen_mon')"
-                [daCham]="daCham()"
-                (giaTriChange)="chuyenMon.set($event)"
-              />
+              <label class="truong">
+                <span>Ngành</span>
+                <select id="nganh-gv" [value]="nganhId() ?? ''" (change)="doiNganh($event)">
+                  <option value="">Chưa phân ngành</option>
+                  @for (n of dsNganh(); track n.id) {
+                    <option [value]="n.id">{{ n.label }}</option>
+                  }
+                </select>
+                @if (loiTruong('nganh_id')) {
+                  <small class="loi-truong">{{ loiTruong('nganh_id') }}</small>
+                }
+              </label>
               <label class="truong">
                 <span>Trạng thái tài khoản</span>
                 <select [value]="trangThai() ? 'true' : 'false'" (change)="doiTrangThai($event)">
@@ -356,7 +359,9 @@ export class GiangVienForm {
   readonly hoTen = signal('');
   readonly email = signal('');
   readonly soDienThoai = signal('');
-  readonly chuyenMon = signal('');
+  /** ADR-020: giảng viên gắn ngành, không còn nhập chuỗi "chuyên môn" tự do. */
+  readonly nganhId = signal<number | null>(null);
+  readonly dsNganh = signal<TuyChonNganh[]>([]);
   readonly trangThai = signal(true);
 
   readonly loiMaGv = computed(
@@ -390,6 +395,11 @@ export class GiangVienForm {
       if (this.matKhauBanDau()) this.tieuDeMatKhau()?.nativeElement.focus();
     });
 
+    this.service.layTuyChonNganh().subscribe({
+      next: (ds) => this.dsNganh.set(ds),
+      error: () => this.dsNganh.set([]),
+    });
+
     if (this.laChinhSua && this.id === null) {
       this.dangTai.set(false);
       this.loiTai.set('Mã giảng viên không hợp lệ.');
@@ -404,6 +414,11 @@ export class GiangVienForm {
 
   doiTrangThai(event: Event): void {
     this.trangThai.set((event.target as HTMLSelectElement).value === 'true');
+  }
+
+  doiNganh(event: Event): void {
+    const giaTri = (event.target as HTMLSelectElement).value;
+    this.nganhId.set(giaTri === '' ? null : Number(giaTri));
   }
 
   gui(event: Event): void {
@@ -422,7 +437,7 @@ export class GiangVienForm {
       ho_ten: this.hoTen().trim(),
       email: this.email().trim(),
       so_dien_thoai: this.soDienThoai().trim() || null,
-      chuyen_mon: this.chuyenMon().trim() || null,
+      nganh_id: this.nganhId(),
       trang_thai: this.trangThai(),
     };
 
@@ -498,7 +513,7 @@ export class GiangVienForm {
         this.hoTen.set(gv.ho_ten);
         this.email.set(gv.email);
         this.soDienThoai.set(gv.so_dien_thoai ?? '');
-        this.chuyenMon.set(gv.chuyen_mon ?? '');
+        this.nganhId.set(gv.nganh_id);
         this.trangThai.set(gv.trang_thai);
         this.dangTai.set(false);
       },

@@ -12,6 +12,9 @@ class DatabaseSeeder extends Seeder
             CauHinhSeeder::class,
             UserSeeder::class,
             MenuSeeder::class,
+            // Phải chạy trước DanhMucSeeder/GiangVienSeeder: hai seeder đó gắn
+            // khoa_id/nganh_id nên cần danh mục có sẵn.
+            KhoaNganhSeeder::class,
             DanhMucSeeder::class,
             GiangVienSeeder::class,
             SinhVienSeeder::class,

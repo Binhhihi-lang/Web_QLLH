@@ -2,15 +2,17 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { LopHocPhanService, SinhVienLop } from '@core/services/lop-hoc-phan.service';
+import { chuanHoaTimKiem } from '@core/utils/chuan-hoa-tim-kiem';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 import { CotBang, DataTable, OTuyChinh } from '@shared/ui/data-table';
 import { PageHeader } from '@shared/ui/page-header';
+import { SearchInput } from '@shared/ui/search-input';
 
 @Component({
   selector: 'app-lop-hoc-phan-sinh-vien',
   standalone: true,
-  imports: [AppAlert, AppButton, DataTable, OTuyChinh, PageHeader, RouterLink],
+  imports: [AppAlert, AppButton, DataTable, OTuyChinh, PageHeader, RouterLink, SearchInput],
   template: `
     <app-page-header
       title="Sinh viên lớp học phần"
@@ -21,14 +23,26 @@ import { PageHeader } from '@shared/ui/page-header';
     @if (loi()) {
       <app-alert muc="danger">{{ loi() }}</app-alert>
     }
+    @if (rows().length) {
+      <section class="loc">
+        <app-search-input
+          class="tim"
+          placeholder="Tìm theo mã SV hoặc họ tên…"
+          (valueChange)="tuKhoa.set($event)"
+        />
+        @if (dangLoc()) {
+          <span class="dem">Khớp {{ rowsHienThi().length }}/{{ rows().length }} sinh viên</span>
+        }
+      </section>
+    }
     <app-data-table
       [cot]="cot()"
-      [rows]="rows()"
+      [rows]="rowsHienThi()"
       [dangTai]="dangTai()"
       [loi]="null"
       (thuLai)="tai()"
-      tieuDeRong="Chưa có sinh viên"
-      moTaRong="Lớp học phần này chưa có đăng ký hiệu lực."
+      [tieuDeRong]="tieuDeRong()"
+      [moTaRong]="moTaRong()"
     >
       <ng-template appOTuyChinh="thao_tac" let-row>
         @if (laAdmin()) {
@@ -53,6 +67,21 @@ import { PageHeader } from '@shared/ui/page-header';
     .back:hover {
       text-decoration: underline;
     }
+    .loc {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .loc .tim {
+      flex: 1 1 260px;
+      max-width: 340px;
+    }
+    .dem {
+      color: var(--color-ink-muted);
+      font-size: var(--text-caption);
+    }
   `,
 })
 export class LopHocPhanSinhVien {
@@ -60,10 +89,32 @@ export class LopHocPhanSinhVien {
   private readonly auth = inject(AuthService);
   readonly id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   readonly rows = signal<SinhVienLop[]>([]);
+  readonly tuKhoa = signal('');
   readonly dangTai = signal(true);
   readonly loi = signal<string | null>(null);
   readonly dangHuy = signal<Set<number>>(new Set());
   readonly laAdmin = computed(() => this.auth.nguoiDung()?.vai_tro === 'ADMIN');
+  /** Chỉ ảnh hưởng phần hiển thị; `rows()` vẫn là dữ liệu đầy đủ để hủy đăng ký. */
+  readonly rowsHienThi = computed(() => {
+    const tuKhoa = chuanHoaTimKiem(this.tuKhoa());
+
+    if (tuKhoa === '') {
+      return this.rows();
+    }
+
+    return this.rows().filter((row) =>
+      chuanHoaTimKiem(`${row.ma_sv} ${row.ho_ten} ${row.email} ${row.lop ?? ''}`).includes(tuKhoa),
+    );
+  });
+  readonly dangLoc = computed(() => chuanHoaTimKiem(this.tuKhoa()) !== '');
+  readonly tieuDeRong = computed(() =>
+    this.dangLoc() ? 'Không tìm thấy sinh viên' : 'Chưa có sinh viên',
+  );
+  readonly moTaRong = computed(() =>
+    this.dangLoc()
+      ? `Không có sinh viên nào khớp "${this.tuKhoa().trim()}".`
+      : 'Lớp học phần này chưa có đăng ký hiệu lực.',
+  );
   readonly cot = computed<CotBang<SinhVienLop>[]>(() => [
     { khoa: 'ma_sv', nhan: 'Mã sinh viên', rong: '150px' },
     { khoa: 'ho_ten', nhan: 'Họ và tên' },

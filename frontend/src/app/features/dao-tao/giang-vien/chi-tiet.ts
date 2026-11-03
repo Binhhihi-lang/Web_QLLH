@@ -67,8 +67,8 @@ import { StatusBadge } from '@shared/ui/status-badge';
           <section aria-labelledby="thong-tin-cong-tac">
             <h3 id="thong-tin-cong-tac">Thông tin công tác</h3>
             <dl>
-              <dt>Chuyên môn</dt>
-              <dd>{{ gv.chuyen_mon || 'Chưa cập nhật' }}</dd>
+              <dt>Ngành</dt>
+              <dd>{{ gv.nganh?.ten_nganh || 'Chưa phân ngành' }}</dd>
               <dt>Trạng thái tài khoản</dt>
               <dd>{{ gv.trang_thai ? 'Đang hoạt động' : 'Đã khóa' }}</dd>
             </dl>

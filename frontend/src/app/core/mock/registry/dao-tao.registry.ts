@@ -6,6 +6,10 @@ import {
   SINH_VIEN_MOCK,
   GIANG_VIEN_MOCK,
   HOC_KY_MOCK,
+  KHOA_MOCK,
+  NGANH_MOCK,
+  khoaCuaNganh,
+  nganhRutGon,
 } from '@core/mock/data/dao-tao.mock';
 import {
   KetQuaDong,
@@ -494,7 +498,10 @@ export class DaoTaoRegistry {
     const maLop = typeof data['ma_lop'] === 'string' ? data['ma_lop'].trim() : '';
     const tenLop = typeof data['ten_lop'] === 'string' ? data['ten_lop'].trim() : '';
     const khoaHoc = typeof data['khoa_hoc'] === 'string' ? data['khoa_hoc'].trim() : '';
-    const nganh = typeof data['nganh'] === 'string' ? data['nganh'].trim() : '';
+    const nganhId =
+      typeof data['nganh_id'] === 'number' && Number.isInteger(data['nganh_id'])
+        ? data['nganh_id']
+        : null;
     const moTa = typeof data['mo_ta'] === 'string' ? data['mo_ta'].trim() : '';
     const namNhapHoc =
       data['nam_nhap_hoc'] === null ||
@@ -513,7 +520,9 @@ export class DaoTaoRegistry {
     if (!tenLop) themLoi('ten_lop', 'Tên lớp là bắt buộc.');
     else if (tenLop.length > 255) themLoi('ten_lop', 'Tên lớp không được vượt quá 255 ký tự.');
     if (khoaHoc.length > 20) themLoi('khoa_hoc', 'Khóa học không được vượt quá 20 ký tự.');
-    if (nganh.length > 20) themLoi('nganh', 'Ngành không được vượt quá 20 ký tự.');
+    if (nganhId !== null && !NGANH_MOCK.some((n) => n.id === nganhId)) {
+      themLoi('nganh_id', 'Ngành không tồn tại.');
+    }
     if (
       namNhapHoc !== null &&
       (!Number.isInteger(namNhapHoc) || namNhapHoc < 1900 || namNhapHoc > 2100)
@@ -539,7 +548,9 @@ export class DaoTaoRegistry {
         ma_lop: maLop,
         ten_lop: tenLop,
         khoa_hoc: khoaHoc || null,
-        nganh: nganh || null,
+        nganh_id: nganhId,
+        nganh: nganhRutGon(nganhId),
+        khoa: khoaCuaNganh(nganhId),
         nam_nhap_hoc: namNhapHoc,
         trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
       },
@@ -679,7 +690,10 @@ export class DaoTaoRegistry {
     const email = typeof data['email'] === 'string' ? data['email'].trim() : '';
     const soDienThoai =
       typeof data['so_dien_thoai'] === 'string' ? data['so_dien_thoai'].trim() : '';
-    const chuyenMon = typeof data['chuyen_mon'] === 'string' ? data['chuyen_mon'].trim() : '';
+    const nganhId =
+      typeof data['nganh_id'] === 'number' && Number.isInteger(data['nganh_id'])
+        ? data['nganh_id']
+        : null;
     const errors: Record<string, string[]> = {};
     let maLoi: typeof MaLoi.DUPLICATE_CODE | typeof MaLoi.DUPLICATE_EMAIL | null = null;
     const themLoi = (field: string, message: string) => {
@@ -713,6 +727,9 @@ export class DaoTaoRegistry {
     if (soDienThoai.length > 20) {
       themLoi('so_dien_thoai', 'Số điện thoại không được vượt quá 20 ký tự.');
     }
+    if (nganhId !== null && !NGANH_MOCK.some((n) => n.id === nganhId)) {
+      themLoi('nganh_id', 'Ngành không tồn tại.');
+    }
     if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
       themLoi('trang_thai', 'Trạng thái không hợp lệ.');
     }
@@ -723,7 +740,8 @@ export class DaoTaoRegistry {
         ho_ten: hoTen,
         email,
         so_dien_thoai: soDienThoai || null,
-        chuyen_mon: chuyenMon || null,
+        nganh_id: nganhId,
+        nganh: nganhRutGon(nganhId),
         trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
       },
       errors,
@@ -752,6 +770,10 @@ export class DaoTaoRegistry {
     const data = this.bodyRecord(body);
     const maMon = typeof data['ma_mon'] === 'string' ? data['ma_mon'].trim() : '';
     const tenMon = typeof data['ten_mon'] === 'string' ? data['ten_mon'].trim() : '';
+    const khoaId =
+      typeof data['khoa_id'] === 'number' && Number.isInteger(data['khoa_id'])
+        ? data['khoa_id']
+        : null;
     const soTinChi =
       typeof data['so_tin_chi'] === 'number' || typeof data['so_tin_chi'] === 'string'
         ? Number(data['so_tin_chi'])
@@ -787,12 +809,17 @@ export class DaoTaoRegistry {
     if (data['mo_ta'] !== null && data['mo_ta'] !== undefined && typeof data['mo_ta'] !== 'string') {
       themLoi('mo_ta', 'Mô tả không hợp lệ.');
     }
+    if (khoaId !== null && !KHOA_MOCK.some((k) => k.id === khoaId)) {
+      themLoi('khoa_id', 'Khoa không tồn tại.');
+    }
     if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
       themLoi('trang_thai', 'Trạng thái không hợp lệ.');
     }
     return {
       duLieu: {
         ma_mon: maMon,
+        khoa_id: khoaId,
+        khoa: KHOA_MOCK.find((k) => k.id === khoaId) ?? null,
         ten_mon: tenMon,
         so_tin_chi: soTinChi,
         mo_ta: moTa,

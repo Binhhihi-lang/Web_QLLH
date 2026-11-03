@@ -29,9 +29,11 @@ class MonHocController extends Controller
             'sort_dir' => ['sometimes', 'in:asc,desc'],
             'trang_thai' => ['sometimes', 'in:true,false,1,0'],
             'so_tin_chi' => ['sometimes', 'integer', 'between:1,10'],
+            'khoa_id' => ['sometimes', 'integer'],
         ]);
 
         $query = MonHoc::query()
+            ->with('khoa')
             ->when($request->filled('q'), fn ($query) => $query->where(function ($search) use ($request) {
                 $term = '%'.$request->string('q')->toString().'%';
                 $search->where('ma_mon', 'like', $term)
@@ -45,6 +47,10 @@ class MonHocController extends Controller
                 'so_tin_chi',
                 $request->integer('so_tin_chi'),
             ))
+            ->when($request->filled('khoa_id'), fn ($query) => $query->where(
+                'khoa_id',
+                $request->integer('khoa_id'),
+            ))
             ->orderBy($request->input('sort_by', 'id'), $request->input('sort_dir', 'asc'));
 
         return $this->successPhanTrang(
@@ -55,7 +61,9 @@ class MonHocController extends Controller
     public function store(MonHocRequest $request): JsonResponse
     {
         return $this->success(
-            new MonHocResource(MonHoc::query()->create($request->validated())),
+            new MonHocResource(
+                MonHoc::query()->create($request->validated())->load('khoa'),
+            ),
             'Tạo môn học thành công.',
             201,
         );
@@ -63,14 +71,14 @@ class MonHocController extends Controller
 
     public function show(MonHoc $monHoc): JsonResponse
     {
-        return $this->success(new MonHocResource($monHoc));
+        return $this->success(new MonHocResource($monHoc->load('khoa')));
     }
 
     public function update(MonHocRequest $request, MonHoc $monHoc): JsonResponse
     {
         $monHoc->update($request->validated());
 
-        return $this->success(new MonHocResource($monHoc->fresh()), 'Cập nhật môn học thành công.');
+        return $this->success(new MonHocResource($monHoc->fresh('khoa')), 'Cập nhật môn học thành công.');
     }
 
     public function destroy(Request $request, MonHoc $monHoc): JsonResponse

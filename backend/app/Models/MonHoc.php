@@ -17,6 +17,7 @@ class MonHoc extends Model
 
     protected $fillable = [
         'ma_mon',
+        'khoa_id',
         'ten_mon',
         'so_tin_chi',
         'mo_ta',
@@ -34,6 +35,11 @@ class MonHoc extends Model
     public function lopHocPhan(): HasMany
     {
         return $this->hasMany(LopHocPhan::class);
+    }
+
+    public function khoa(): BelongsTo
+    {
+        return $this->belongsTo(Khoa::class);
     }
 
     public function xoaBoi(): BelongsTo

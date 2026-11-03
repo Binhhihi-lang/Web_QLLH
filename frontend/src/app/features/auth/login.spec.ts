@@ -3,7 +3,21 @@ import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@core/auth/auth.service';
 import { NguoiDung } from '@core/models/dao-tao.model';
+import { environment } from '@env/environment';
 import { LoginPage } from './login';
+
+/**
+ * Khối "tài khoản mẫu" trên trang đăng nhập chỉ hiện khi `environment.useMock`.
+ * Cờ này bật/tắt được theo giai đoạn nên test phải tự quyết định chế độ thay vì
+ * phụ thuộc giá trị đang có trong `environment.ts` (đang là `false` để chạy backend thật).
+ */
+vi.mock('@env/environment', () => ({
+  environment: {
+    production: false,
+    apiBaseUrl: 'http://localhost:8000/api',
+    useMock: true,
+  },
+}));
 
 describe('LoginPage', () => {
   const user: NguoiDung = {
@@ -55,6 +69,7 @@ describe('LoginPage', () => {
   });
 
   it('shows mock credentials on the matching demo login portal', () => {
+    environment.useMock = true;
     const { fixture } = taoTrang('SINH_VIEN');
     const root = fixture.nativeElement as HTMLElement;
 
@@ -65,6 +80,21 @@ describe('LoginPage', () => {
     fixture.detectChanges();
     expect(fixture.componentInstance.taiKhoan()).toBe('2000000');
     expect(fixture.componentInstance.matKhau()).toBe('QllhMock2026!');
+  });
+
+  it('hides the mock credentials block when running against the real backend', () => {
+    environment.useMock = false;
+
+    try {
+      const { fixture } = taoTrang('SINH_VIEN');
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(fixture.componentInstance.dangDungMock).toBe(false);
+      expect(root.querySelector('.tai-khoan-mau')).toBeNull();
+      expect(root.textContent).not.toContain('QllhMock2026!');
+    } finally {
+      environment.useMock = true;
+    }
   });
 
   it('toggles password visibility with an accessible eye icon button', () => {

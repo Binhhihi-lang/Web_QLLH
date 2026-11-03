@@ -51,7 +51,7 @@ class NguoiDungResource extends JsonResource
                 'id' => $this->giangVien->id,
                 'ma_gv' => $this->giangVien->ma_gv,
                 'ho_ten' => $this->giangVien->ho_ten,
-                'chuyen_mon' => $this->giangVien->chuyen_mon,
+                'nganh_id' => $this->giangVien->nganh_id,
             ];
         }
 

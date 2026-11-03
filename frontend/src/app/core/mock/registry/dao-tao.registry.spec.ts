@@ -13,7 +13,8 @@ describe('DaoTaoRegistry admin classes', () => {
     ma_lop: 'TEST-K68-01',
     ten_lop: 'Lớp kiểm thử K68',
     khoa_hoc: 'K68',
-    nganh: 'CNTT',
+    // ADR-020: lớp gắn `nganh_id`; id 1 là ngành KTPM trong mock.
+    nganh_id: 1,
     nam_nhap_hoc: 2026,
     mo_ta: 'Lớp dùng để kiểm thử',
     trang_thai: true,
@@ -32,7 +33,8 @@ describe('DaoTaoRegistry admin classes', () => {
 
     const duplicate = goi('POST', '/admin-classes', {
       ...lopInput,
-      ma_lop: 'CNTT-K65-01',
+      // Mã lớp đã có sẵn trong mock (lớp đầu tiên của khoa CNTT).
+      ma_lop: 'KTPM-K65-01',
     }) as { ma_loi: string };
     expect(duplicate.ma_loi).toBe('DUPLICATE_CODE');
 

@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { LopHanhChinh, SinhVien, ThamSoDanhSach } from '@core/models/dao-tao.model';
+import { LopHanhChinh, SinhVien, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { PaginatedResponse } from '@core/mock/mock-response';
 import { environment } from '@env/environment';
 
@@ -9,7 +9,8 @@ export interface LopHanhChinhInput {
   ma_lop: string;
   ten_lop: string;
   khoa_hoc: string | null;
-  nganh: string | null;
+  /** ADR-020: thay cột chuỗi `nganh` cũ; khoa suy ra từ ngành. */
+  nganh_id: number | null;
   nam_nhap_hoc: number | null;
   mo_ta: string | null;
   trang_thai: boolean;
@@ -21,7 +22,8 @@ export interface LopHanhChinhChiTiet extends LopHanhChinh {
 
 export interface ThamSoDanhSachLopHanhChinh extends ThamSoDanhSach {
   khoa_hoc?: string;
-  nganh?: string;
+  nganh_id?: number;
+  khoa_id?: number;
   trang_thai?: boolean;
 }
 
@@ -44,6 +46,13 @@ export class LopHanhChinhService {
   layMot(id: number): Observable<LopHanhChinhChiTiet> {
     return this.http
       .get<{ data: LopHanhChinhChiTiet }>(`${this.goc}/${id}`)
+      .pipe(map((response) => response.data));
+  }
+
+  /** Ngành cho ô chọn ở form (ADR-020). */
+  layTuyChonNganh(): Observable<TuyChonNganh[]> {
+    return this.http
+      .get<{ data: TuyChonNganh[] }>(`${environment.apiBaseUrl}/options/nganh`)
       .pipe(map((response) => response.data));
   }
 

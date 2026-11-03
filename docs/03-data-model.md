@@ -10,6 +10,10 @@ Tài liệu này là nguồn chân lý cho schema. Mọi thay đổi bảng/cộ
 
 ```mermaid
 erDiagram
+    khoa ||--o{ nganh : "có"
+    khoa ||--o{ mon_hoc : "quản lý"
+    nganh ||--o{ giang_vien : "thuộc"
+    nganh ||--o{ lop_hanh_chinh : "thuộc"
     users ||--o| sinh_vien : "1-1"
     users ||--o| giang_vien : "1-1"
     lop_hanh_chinh ||--o{ sinh_vien : "chứa"
@@ -25,6 +29,21 @@ erDiagram
     buoi_hoc ||--o{ diem_danh : "chứa"
     diem ||--o{ lich_su_diem : "ghi lịch sử"
 
+    khoa {
+        bigint id PK
+        string ma_khoa UK
+        string ten_khoa
+        text mo_ta
+        boolean trang_thai
+    }
+    nganh {
+        bigint id PK
+        bigint khoa_id FK
+        string ma_nganh UK
+        string ten_nganh
+        text mo_ta
+        boolean trang_thai
+    }
     users {
         bigint id PK
         string name
@@ -58,7 +77,7 @@ erDiagram
         string ho_ten
         string email UK
         string so_dien_thoai
-        string chuyen_mon
+        bigint nganh_id FK
         bigint user_id FK,UK
         boolean trang_thai
     }
@@ -67,7 +86,7 @@ erDiagram
         string ma_lop UK
         string ten_lop
         string khoa_hoc
-        string nganh
+        bigint nganh_id FK
         smallint nam_nhap_hoc
         text mo_ta
         boolean trang_thai
@@ -75,6 +94,7 @@ erDiagram
     mon_hoc {
         bigint id PK
         string ma_mon UK
+        bigint khoa_id FK
         string ten_mon
         tinyint so_tin_chi
         text mo_ta
@@ -233,13 +253,15 @@ erDiagram
 | ho_ten | varchar(255) | no | |
 | email | varchar(255) | no | **unique**, đồng bộ `users.email` |
 | so_dien_thoai | varchar(20) | yes | |
-| chuyen_mon | varchar(255) | yes | |
+| nganh_id | bigint unsigned | yes | FK `nganh.id`, `nullOnDelete` (ADR-020) |
 | user_id | bigint unsigned | no | **unique**, FK `users.id`, cascade |
 | trang_thai | boolean | no | |
 | deleted_at, deleted_by, restored_by | | yes | |
 | created_at, updated_at | timestamp | yes | |
 
-**Index:** `unique(ma_gv)`, `unique(email)`, `unique(user_id)`, `index(trang_thai)`, `index(deleted_at)`.
+**Index:** `unique(ma_gv)`, `unique(email)`, `unique(user_id)`, `index(nganh_id)`, `index(trang_thai)`, `index(deleted_at)`.
+
+> ADR-020: cột `chuyen_mon` (chuỗi tự do, thực tế chứa **tên ngành**) đã **xóa** và thay bằng `nganh_id`.
 
 ### 3.4. `lop_hanh_chinh`
 
@@ -249,17 +271,18 @@ erDiagram
 | ma_lop | varchar(20) | no | **unique** |
 | ten_lop | varchar(255) | no | |
 | khoa_hoc | varchar(20) | yes | **Khóa** (cohort, năm nhập học), ví dụ `K65`. Không phải khoa/faculty |
-| nganh | varchar(20) | yes | Ngành, ví dụ `CNTT`, `KTPM`. Chỉ để lọc/thống kê |
+| nganh_id | bigint unsigned | yes | FK `nganh.id`, `nullOnDelete` (ADR-020). Khoa suy ra qua ngành |
 | nam_nhap_hoc | smallint unsigned | yes | Năm nhập học, ví dụ `2023`. Dùng tính `nam_thu` |
 | mo_ta | text | yes | |
 | trang_thai | boolean | no | |
 | deleted_at, deleted_by, restored_by | | yes | |
 | created_at, updated_at | timestamp | yes | |
 
-**Index:** `unique(ma_lop)`, `index(khoa_hoc)`, `index(nganh)`, `index(trang_thai)`, `index(deleted_at)`.
+**Index:** `unique(ma_lop)`, `index(khoa_hoc)`, `index(nganh_id)`, `index(trang_thai)`, `index(deleted_at)`.
 
 > Tên cột là `khoa_hoc` (khóa) để không nhập nhằng với **khoa** (faculty) — xem ADR-016.
-> Hệ thống **không** có bảng khoa (faculty) hay chương trình đào tạo. `nganh` chỉ là nhãn tự do để lọc.
+> Từ 2026-10-30 (ADR-020), `nganh` không còn là nhãn tự do mà là khóa ngoại sang bảng `nganh`;
+> khoa **không** lưu trên lớp mà suy ra qua `nganh.khoa_id` để hai cấp không lệch nhau.
 
 ### 3.5. `mon_hoc`
 
@@ -267,6 +290,7 @@ erDiagram
 |---|---|---|---|
 | id | bigint unsigned | PK | |
 | ma_mon | varchar(20) | no | **unique** |
+| khoa_id | bigint unsigned | yes | FK `khoa.id`, `nullOnDelete` (ADR-020). Khoa quản lý môn |
 | ten_mon | varchar(255) | no | |
 | so_tin_chi | tinyint unsigned | no | 1–10 (validate app) |
 | mo_ta | text | yes | |
@@ -489,7 +513,40 @@ erDiagram
 > không có ngoại lệ ADMIN. Giá trị phải khớp `data.roles` của route tương ứng.
 
 
-### 3.17. Bảng hệ thống giữ nguyên
+### 3.17. `khoa`
+
+| Cột | Kiểu | Null | Ghi chú |
+|---|---|---|---|
+| id | bigint unsigned | PK | |
+| ma_khoa | varchar(20) | no | **unique**, kể cả bản ghi xóa mềm (BR-01) |
+| ten_khoa | varchar(255) | no | |
+| mo_ta | text | yes | |
+| trang_thai | boolean | no | |
+| deleted_at, deleted_by, restored_by | | yes | |
+| created_at, updated_at | timestamp | yes | |
+
+**Index:** `unique(ma_khoa)`, `index(trang_thai)`, `index(deleted_at)`.
+
+### 3.18. `nganh`
+
+| Cột | Kiểu | Null | Ghi chú |
+|---|---|---|---|
+| id | bigint unsigned | PK | |
+| khoa_id | bigint unsigned | no | FK `khoa.id`, **restrictOnDelete** — ngành không thể ngoài khoa |
+| ma_nganh | varchar(20) | no | **unique** |
+| ten_nganh | varchar(255) | no | |
+| mo_ta | text | yes | |
+| trang_thai | boolean | no | |
+| deleted_at, deleted_by, restored_by | | yes | |
+| created_at, updated_at | timestamp | yes | |
+
+**Index:** `unique(ma_nganh)`, `unique(khoa_id, ten_nganh)`, `index(khoa_id)`, `index(trang_thai)`, `index(deleted_at)`.
+
+> Hai bảng này là danh mục hai cấp theo ADR-020. `giang_vien.nganh_id`,
+> `lop_hanh_chinh.nganh_id` trỏ về `nganh`; `mon_hoc.khoa_id` trỏ về `khoa`.
+> **`lop_hoc_phan` cố ý không có cột khoa/ngành** — suy ra qua `mon_hoc`.
+
+### 3.19. Bảng hệ thống giữ nguyên
 
 `personal_access_tokens` (Sanctum), `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens`.
 
@@ -624,6 +681,10 @@ Dùng để đối chiếu với `lop_hoc_phan.nam_thu` khi sinh viên tự đă
 2026_10_24_000100_doi_khoa_thanh_khoa_hoc_tren_lop_hanh_chinh   (ADR-016)
 2026_10_24_000200_them_nam_hoc_ky_thu_vao_hoc_ky               (ADR-016, ADR-017)
 2026_10_24_000300_them_nam_thu_vao_lop_hoc_phan                 (ADR-016)
+2026_10_27_000100_doi_menu_vai_tro_thanh_mang                   (ADR — menu.vai_tro thành mảng)
+2026_10_28_000100_noi_dai_cot_url_menu                          (varchar 255 → 2048)
+2026_10_30_000100_tao_bang_khoa_va_nganh                        (ADR-020)
+2026_10_30_000200_them_khoa_nganh_vao_mon_hoc_giang_vien_lop_hanh_chinh  (ADR-020, có chuyển dữ liệu)
 ```
 
 Migration cũ của `lop_hocs`, `sinh_viens`, `menus` đã **xóa** (dữ liệu chỉ là seed), thay bằng bộ mới. Xem [07-decisions.md](07-decisions.md) ADR-003.
@@ -638,6 +699,8 @@ Số liệu **thực tế sau khi chạy `php artisan migrate:fresh --seed`** ng
 
 | Bảng | Thiết kế | Thực tế | Ghi chú |
 |---|---|---|---|
+| khoa | 1 | 1 | `CNTT` — `KhoaNganhSeeder` |
+| nganh | 5 | 5 | KTPM, HTTT, KHMT, MTTT, ATTT — đều thuộc khoa CNTT |
 | users | 553 | 555 | 3 admin (1 demo + 2 phụ) + 51 giảng viên + 501 sinh viên |
 | lop_hanh_chinh | 20 | 20 | |
 | mon_hoc | 30 | 30 | |

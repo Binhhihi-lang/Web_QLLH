@@ -2,7 +2,7 @@
     "info": {
         "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
         "name": "QLLH API — Hệ thống quản lý lớp học",
-        "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
+        "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên; folder **09 → 11** cho menu/cấu hình, dashboard, thùng rác; folder **12 → 15** cho người dùng, lớp học phần, hồ sơ cá nhân, khoa/ngành. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
@@ -66,7 +66,8 @@
                                     "",
                                     "// Lưu token cho các request sau.",
                                     "pm.collectionVariables.set('token', body.data.token);",
-                                    "console.log('Đã lưu token:', body.data.token.substring(0, 20) + '...');"
+                                    "console.log('Đã lưu token:', body.data.token.substring(0, 20) + '...');",
+                                    "pm.collectionVariables.set('admin_id', body.data.nguoi_dung.id);"
                                 ]
                             }
                         }
@@ -812,6 +813,72 @@
                         "description": "Lớp học phần đang OPEN. `con_cho = 0` nghĩa là đã đầy (dùng để test SECTION_FULL)."
                     },
                     "response": []
+                },
+                {
+                    "name": "Khoa",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/options/khoa",
+                        "description": "Lưu `khoa_id` cho các folder sau."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data;",
+                                    "pm.test('Có ít nhất một khoa', () => pm.expect(d.length).to.be.at.least(1));",
+                                    "pm.collectionVariables.set('khoa_id', d[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Ngành",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/options/nganh",
+                        "description": "Lưu `nganh_id` cho các folder sau. Thêm `?khoa_id={{khoa_id}}` để lọc theo khoa."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data;",
+                                    "pm.test('Có ít nhất một ngành', () => pm.expect(d.length).to.be.at.least(1));",
+                                    "pm.collectionVariables.set('nganh_id', d[0].id);"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },
@@ -861,7 +928,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"ma_lop\": \"T3-{{$timestamp}}\",\n    \"ten_lop\": \"Lớp kiểm thử Tuần 3\",\n    \"khoa_hoc\": \"K65\",\n    \"nganh\": \"CNTT\",\n    \"nam_nhap_hoc\": 2023,\n    \"mo_ta\": \"Tạo từ Postman collection\",\n    \"trang_thai\": true\n}"
+                            "raw": "{\n    \"ma_lop\": \"T3-{{$timestamp}}\",\n    \"ten_lop\": \"Lớp kiểm thử Tuần 3\",\n    \"khoa_hoc\": \"K65\",\n    \"nganh_id\": {{nganh_id}},\n    \"nam_nhap_hoc\": 2023,\n    \"mo_ta\": \"Tạo từ Postman collection\",\n    \"trang_thai\": true\n}"
                         },
                         "url": "{{base_url}}/api/admin-classes",
                         "description": "Tạo lớp dùng cho các request sinh viên phía sau và tự lưu `lop_hanh_chinh_id`."
@@ -955,7 +1022,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"ma_lop\": \"{{lop_hanh_chinh_ma}}\",\n    \"ten_lop\": \"Lớp kiểm thử Tuần 3 - đã cập nhật\",\n    \"khoa_hoc\": \"K65\",\n    \"nganh\": \"KTPM\",\n    \"nam_nhap_hoc\": 2023,\n    \"mo_ta\": \"Đã cập nhật bằng Postman\",\n    \"trang_thai\": true\n}"
+                            "raw": "{\n    \"ma_lop\": \"{{lop_hanh_chinh_ma}}\",\n    \"ten_lop\": \"Lớp kiểm thử Tuần 3 - đã cập nhật\",\n    \"khoa_hoc\": \"K65\",\n    \"nganh_id\": {{nganh_id}},\n    \"nam_nhap_hoc\": 2023,\n    \"mo_ta\": \"Đã cập nhật bằng Postman\",\n    \"trang_thai\": true\n}"
                         },
                         "url": "{{base_url}}/api/admin-classes/{{lop_hanh_chinh_id}}"
                     },
@@ -1073,7 +1140,96 @@
                             "raw": "{\n    \"ma_sv\": \"SV{{$timestamp}}\",\n    \"ho_ten\": \"Nguyễn Văn Postman\",\n    \"ngay_sinh\": \"2004-10-20\",\n    \"gioi_tinh\": true,\n    \"email\": \"sv{{$timestamp}}@example.com\",\n    \"so_dien_thoai\": \"0901234567\",\n    \"dia_chi\": \"Hà Nội\",\n    \"lop_hanh_chinh_id\": {{lop_hanh_chinh_id}},\n    \"trang_thai\": true\n}"
                         },
                         "url": "{{base_url}}/api/students",
-                        "description": "Tạo hồ sơ + tài khoản STUDENT. Tự lưu ID, email và mật khẩu ban đầu."
+                        "description": "Tạo hồ sơ + tài khoản STUDENT. Tự lưu ID, email và mật khẩu ban đầu; chạy tiếp 01b đăng nhập và 01c đổi mật khẩu để hoàn tất kích hoạt tài khoản."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "01b. Đăng nhập sinh viên mới bằng mật khẩu ban đầu",
+                    "auth": {
+                        "type": "noauth"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đăng nhập thành công (200)', () => pm.response.to.have.status(200));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('Đăng nhập đúng tài khoản SINH_VIEN đang buộc đổi mật khẩu', () => {",
+                                    "    pm.expect(data.nguoi_dung.vai_tro).to.eql('SINH_VIEN');",
+                                    "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
+                                    "});",
+                                    "pm.collectionVariables.set('sinh_vien_test_token', data.token);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{sinh_vien_email}}\",\n    \"password\": \"{{sinh_vien_mat_khau}}\"\n}"
+                        },
+                        "url": "{{base_url}}/api/auth/login",
+                        "description": "Đăng nhập tài khoản vừa tạo. Token được lưu riêng để gọi endpoint đổi mật khẩu."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "01c. Đổi mật khẩu sinh viên mới",
+                    "auth": {
+                        "type": "bearer",
+                        "bearer": [
+                            {
+                                "key": "token",
+                                "value": "{{sinh_vien_test_token}}",
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đổi mật khẩu thành công (200)', () => pm.response.to.have.status(200));",
+                                    "pm.test('Response báo thành công', () => pm.expect(pm.response.json().success).to.eql(true));",
+                                    "pm.collectionVariables.set('sinh_vien_mat_khau', 'PostmanSv2026!');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"mat_khau_cu\": \"{{sinh_vien_mat_khau}}\",\n    \"password\": \"PostmanSv2026!\",\n    \"password_confirmation\": \"PostmanSv2026!\"\n}"
+                        },
+                        "url": "{{base_url}}/api/auth/change-password",
+                        "description": "Hoàn thành lần đăng nhập đầu tiên cho tài khoản sinh viên mới; sau khi chạy, biến mật khẩu được cập nhật sang `PostmanSv2026!`."
                     },
                     "response": []
                 },
@@ -1493,9 +1649,99 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"ma_gv\": \"GV{{$timestamp}}\",\n    \"ho_ten\": \"Giảng viên Postman\",\n    \"email\": \"gv{{$timestamp}}@example.com\",\n    \"so_dien_thoai\": \"0912345678\",\n    \"chuyen_mon\": \"Công nghệ phần mềm\",\n    \"trang_thai\": true\n}"
+                            "raw": "{\n    \"ma_gv\": \"GV{{$timestamp}}\",\n    \"ho_ten\": \"Giảng viên Postman\",\n    \"email\": \"gv{{$timestamp}}@example.com\",\n    \"so_dien_thoai\": \"0912345678\",\n    \"nganh_id\": {{nganh_id}},\n    \"trang_thai\": true\n}"
                         },
-                        "url": "{{base_url}}/api/teachers"
+                        "url": "{{base_url}}/api/teachers",
+                        "description": "Tạo hồ sơ + tài khoản GIANG_VIEN. Tự lưu ID, email và mật khẩu ban đầu; chạy tiếp 01b đăng nhập và 01c đổi mật khẩu để hoàn tất kích hoạt tài khoản."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "01b. Đăng nhập giảng viên mới bằng mật khẩu ban đầu",
+                    "auth": {
+                        "type": "noauth"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đăng nhập thành công (200)', () => pm.response.to.have.status(200));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('Đăng nhập đúng tài khoản GIANG_VIEN đang buộc đổi mật khẩu', () => {",
+                                    "    pm.expect(data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN');",
+                                    "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
+                                    "});",
+                                    "pm.collectionVariables.set('giang_vien_test_token', data.token);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{giang_vien_test_email}}\",\n    \"password\": \"{{giang_vien_mat_khau}}\"\n}"
+                        },
+                        "url": "{{base_url}}/api/auth/login",
+                        "description": "Đăng nhập tài khoản vừa tạo. Token được lưu riêng để gọi endpoint đổi mật khẩu."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "01c. Đổi mật khẩu giảng viên mới",
+                    "auth": {
+                        "type": "bearer",
+                        "bearer": [
+                            {
+                                "key": "token",
+                                "value": "{{giang_vien_test_token}}",
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đổi mật khẩu thành công (200)', () => pm.response.to.have.status(200));",
+                                    "pm.test('Response báo thành công', () => pm.expect(pm.response.json().success).to.eql(true));",
+                                    "pm.collectionVariables.set('giang_vien_mat_khau', 'PostmanGv2026!');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"mat_khau_cu\": \"{{giang_vien_mat_khau}}\",\n    \"password\": \"PostmanGv2026!\",\n    \"password_confirmation\": \"PostmanGv2026!\"\n}"
+                        },
+                        "url": "{{base_url}}/api/auth/change-password",
+                        "description": "Hoàn thành lần đăng nhập đầu tiên cho tài khoản giảng viên mới; sau khi chạy, biến mật khẩu được cập nhật sang `PostmanGv2026!`."
                     },
                     "response": []
                 },
@@ -1521,7 +1767,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": "{{base_url}}/api/teachers?q=Postman&chuyen_mon=Công%20nghệ%20phần%20mềm&trang_thai=true&per_page=10"
+                        "url": "{{base_url}}/api/teachers?q=Postman&nganh_id={{nganh_id}}&trang_thai=true&per_page=10"
                     },
                     "response": []
                 },
@@ -1581,7 +1827,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"ma_gv\": \"GV{{$timestamp}}\",\n    \"ho_ten\": \"Giảng viên Postman - cập nhật\",\n    \"email\": \"{{giang_vien_test_email}}\",\n    \"so_dien_thoai\": \"0999999999\",\n    \"chuyen_mon\": \"Hệ thống thông tin\",\n    \"trang_thai\": true\n}"
+                            "raw": "{\n    \"ma_gv\": \"GV{{$timestamp}}\",\n    \"ho_ten\": \"Giảng viên Postman - cập nhật\",\n    \"email\": \"{{giang_vien_test_email}}\",\n    \"so_dien_thoai\": \"0999999999\",\n    \"nganh_id\": {{nganh_id}},\n    \"trang_thai\": true\n}"
                         },
                         "url": "{{base_url}}/api/teachers/{{giang_vien_test_id}}"
                     },
@@ -3237,6 +3483,2450 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "12 — Người dùng (SCR-50/51, ADMIN)",
+            "item": [
+                {
+                    "name": "01. Danh sách + lọc người dùng",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users?vai_tro=SINH_VIEN&trang_thai=true&sort_by=id&sort_dir=asc&per_page=10",
+                        "description": "Lọc `q`, `vai_tro`, `trang_thai`; sắp xếp theo cột trong whitelist."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Chỉ trả vai trò SINH_VIEN', () => {",
+                                    "    pm.expect(body.data).to.be.an('array');",
+                                    "    body.data.forEach(u => pm.expect(u.vai_tro).to.eql('SINH_VIEN'));",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "02. Tạo tài khoản ADMIN tạm",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Quản trị tạm (Postman)\",\n    \"email\": \"admin{{$timestamp}}@example.com\",\n    \"vai_tro\": \"ADMIN\"\n}"
+                        },
+                        "description": "Tự lưu `nguoi_dung_id`, `nguoi_dung_email`, `nguoi_dung_mat_khau` cho các bước sau."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('Có mật khẩu ban đầu 12 ký tự', () => {",
+                                    "    pm.expect(data.mat_khau_ban_dau).to.be.a('string').and.have.lengthOf(12);",
+                                    "});",
+                                    "pm.test('Buộc đổi mật khẩu ở lần đăng nhập tới', () => {",
+                                    "    pm.expect(data.must_change_password).to.be.true;",
+                                    "});",
+                                    "pm.collectionVariables.set('nguoi_dung_id', data.id);",
+                                    "pm.collectionVariables.set('nguoi_dung_email', data.email);",
+                                    "pm.collectionVariables.set('nguoi_dung_mat_khau', data.mat_khau_ban_dau);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "03. Tạo tài khoản SINH_VIÊN tạm (để thử ca 409)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Sinh viên tạm (Postman)\",\n    \"email\": \"svtam{{$timestamp}}@example.com\",\n    \"vai_tro\": \"SINH_VIEN\"\n}"
+                        },
+                        "description": "Tài khoản vai trò SINH_VIEN dùng cho ca xóa bị chặn (409)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('nguoi_dung_tam_id', pm.response.json().data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "04. Chi tiết người dùng",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{nguoi_dung_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Đúng bản ghi vừa tạo', () => {",
+                                    "    pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('nguoi_dung_id')));",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05. Cập nhật người dùng",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{nguoi_dung_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Quản trị tạm đã đổi tên\"\n}"
+                        },
+                        "description": "Cập nhật `name`, `email`, `vai_tro`, `trang_thai`."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tên đã đổi', () => {",
+                                    "    pm.expect(pm.response.json().data.name).to.eql('Quản trị tạm đã đổi tên');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "06. Khóa tài khoản + thu hồi token (BR-30)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{nguoi_dung_id}}/status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": false\n}"
+                        },
+                        "description": "BR-30 — khóa phải thu hồi toàn bộ token Sanctum. Kiểm chứng thêm ở `11 — Kiểm tra lỗi` nếu cần."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tài khoản đã bị khóa', () => {",
+                                    "    pm.expect(pm.response.json().data.trang_thai).to.be.false;",
+                                    "});",
+                                    "// BR-30: nếu không thu hồi token, token còn hạn 7 ngày vẫn dùng được và việc khóa là vô nghĩa."
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "07. Mở khóa hàng loạt",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/bulk-status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ids\": [\n        \"{{nguoi_dung_id}}\"\n    ],\n    \"trang_thai\": true\n}"
+                        },
+                        "description": "BR-31 — luôn 200 kèm kết quả từng dòng, không all-or-nothing."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Xử lý thành công 1 dòng', () => {",
+                                    "    pm.expect(pm.response.json().data.thanh_cong).to.eql(1);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "08. Đặt lại mật khẩu → mật khẩu mới trả một lần",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{nguoi_dung_id}}/reset-password"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('Có mật khẩu mới 12 ký tự', () => {",
+                                    "    pm.expect(data.mat_khau_moi).to.be.a('string').and.have.lengthOf(12);",
+                                    "});",
+                                    "pm.test('Buộc đổi mật khẩu lại', () => {",
+                                    "    pm.expect(data.must_change_password).to.be.true;",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "09. Email trùng → 422 VALIDATION_ERROR",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Trùng email\",\n    \"email\": \"admin@example.com\",\n    \"vai_tro\": \"ADMIN\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "10. Vai trò không hợp lệ → 422 VALIDATION_ERROR",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Vai trò lạ\",\n    \"email\": \"lala{{$timestamp}}@example.com\",\n    \"vai_tro\": \"KE_TOAN\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "11. Tự khóa tài khoản của chính mình → 403 FORBIDDEN",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{admin_id}}/status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": false\n}"
+                        },
+                        "description": "Chạy `01 — Xác thực / Đăng nhập (ADMIN)` trước để có biến `admin_id`."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 403', () => pm.response.to.have.status(403));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('FORBIDDEN');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "12. Bulk có id không tồn tại → kết quả từng dòng",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/bulk-status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ids\": [\n        \"{{nguoi_dung_tam_id}}\",\n        999999\n    ],\n    \"trang_thai\": false\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Vẫn 200 dù có dòng lỗi', () => pm.response.to.have.status(200));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('1 thành công, 1 thất bại NOT_FOUND', () => {",
+                                    "    pm.expect(data.thanh_cong).to.eql(1);",
+                                    "    pm.expect(data.that_bai).to.eql(1);",
+                                    "    pm.expect(data.chi_tiet[1].ma_loi).to.eql('NOT_FOUND');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "13. Xóa tài khoản sinh viên → 409 DELETE_BLOCKED",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{nguoi_dung_tam_id}}",
+                        "description": "Hợp đồng chỉ cho xóa mềm tài khoản ADMIN; giảng viên/sinh viên xóa ở màn của nhóm tương ứng."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('DELETE_BLOCKED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "14. Sinh viên gọi API người dùng → 403",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users",
+                        "description": "Chạy `01 — Xác thực / Đăng nhập (SINH VIÊN)` trước để có `token_sinh_vien`."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 403', () => pm.response.to.have.status(403));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('FORBIDDEN');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "15. Người dùng không tồn tại → 404 NOT_FOUND",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/999999"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 404', () => pm.response.to.have.status(404));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('NOT_FOUND');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "16. Xóa tài khoản ADMIN tạm (dọn dẹp)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/users/{{nguoi_dung_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "description": "SCR-50/SCR-51 — quản lý tài khoản người dùng. Toàn bộ endpoint chỉ ADMIN."
+        },
+        {
+            "name": "13 — Lớp học phần (SCR-25 → SCR-29)",
+            "item": [
+                {
+                    "name": "01. Danh sách + lọc lớp học phần",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections?con_cho=1&sort_by=ma_lop_hp&sort_dir=asc&per_page=10",
+                        "description": "Lọc `q`, `hoc_ky_id`, `mon_hoc_id`, `giang_vien_id`, `nam_thu`, `trang_thai`, `con_cho`."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Mỗi dòng có sĩ số và số chỗ còn', () => {",
+                                    "    body.data.forEach(lop => {",
+                                    "        pm.expect(lop.si_so_hien_tai).to.be.a('number');",
+                                    "        pm.expect(lop.con_cho).to.be.at.least(0);",
+                                    "    });",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "02. Tạo môn học tạm để thử ca \"môn ngừng hoạt động\"",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/subjects",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_mon\": \"TAM{{$timestamp}}\",\n    \"ten_mon\": \"Môn tạm (Postman)\",\n    \"so_tin_chi\": 2\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('mon_hoc_tam_id', pm.response.json().data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "03. Khóa môn học tạm",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/subjects/{{mon_hoc_tam_id}}/status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": false\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "04. Tạo giảng viên tạm + tài khoản (chủ lớp)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/teachers",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_gv\": \"GVTAM{{$timestamp}}\",\n    \"ho_ten\": \"Giảng viên tạm (Postman)\",\n    \"email\": \"gvtam{{$timestamp}}@example.com\",\n    \"so_dien_thoai\": \"0900000000\",\n    \"nganh_id\": {{nganh_id}},\n    \"trang_thai\": true\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.collectionVariables.set('section_gv_id', data.id);",
+                                    "pm.collectionVariables.set('section_gv_email', data.email);",
+                                    "pm.collectionVariables.set('section_gv_mat_khau', data.mat_khau_ban_dau);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05. Đăng nhập giảng viên tạm (lưu token_giang_vien)",
+                    "auth": {
+                        "type": "noauth"
+                    },
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/auth/login",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{section_gv_email}}\",\n    \"password\": \"{{section_gv_mat_khau}}\"\n}"
+                        },
+                        "description": "Cần cho các ca `finalize` và ca phân quyền. Tài khoản mới bắt buộc đổi mật khẩu trước khi gọi API được bảo vệ."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đăng nhập thành công (200)', () => pm.response.to.have.status(200));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('Tài khoản mới đang buộc đổi mật khẩu', () => {",
+                                    "    pm.expect(data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN');",
+                                    "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
+                                    "});",
+                                    "pm.collectionVariables.set('token_giang_vien', data.token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05b. Đổi mật khẩu giảng viên tạm",
+                    "auth": {
+                        "type": "bearer",
+                        "bearer": [
+                            {
+                                "key": "token",
+                                "value": "{{token_giang_vien}}",
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đổi mật khẩu thành công (200)', () => pm.response.to.have.status(200));",
+                                    "pm.test('Response báo thành công', () => pm.expect(pm.response.json().success).to.eql(true));",
+                                    "pm.collectionVariables.set('section_gv_mat_khau', 'PostmanSectionGv2026!');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"mat_khau_cu\": \"{{section_gv_mat_khau}}\",\n    \"password\": \"PostmanSectionGv2026!\",\n    \"password_confirmation\": \"PostmanSectionGv2026!\"\n}"
+                        },
+                        "url": "{{base_url}}/api/auth/change-password",
+                        "description": "Phải chạy sau bước đăng nhập giảng viên tạm, trước các request API cần quyền giảng viên."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "06. Mở lớp học phần",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_lop_hp\": \"TAM{{$timestamp}}\",\n    \"mon_hoc_id\": \"{{mon_hoc_id}}\",\n    \"hoc_ky_id\": \"{{hoc_ky_id}}\",\n    \"giang_vien_id\": \"{{section_gv_id}}\",\n    \"si_so_toi_da\": 40,\n    \"nam_thu\": 3\n}"
+                        },
+                        "description": "Chạy `02 — Đào tạo / Môn học` và `/ Học kỳ` trước để có `mon_hoc_id`, `hoc_ky_id`."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Mở lớp thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const data = pm.response.json().data;",
+                                    "pm.test('Mặc định OPEN, chưa chốt điểm', () => {",
+                                    "    pm.expect(data.trang_thai).to.eql('OPEN');",
+                                    "    pm.expect(data.da_chot_diem).to.be.false;",
+                                    "});",
+                                    "pm.collectionVariables.set('section_id', data.id);",
+                                    "pm.collectionVariables.set('section_ma', data.ma_lop_hp);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "07. Chi tiết lớp học phần",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Có đủ khối lồng', () => {",
+                                    "    const d = pm.response.json().data;",
+                                    "    pm.expect(d.mon_hoc).to.be.an('object');",
+                                    "    pm.expect(d.hoc_ky).to.be.an('object');",
+                                    "    pm.expect(d.giang_vien).to.be.an('object');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "08. Cập nhật lớp học phần",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_lop_hp\": \"{{section_ma}}\",\n    \"mon_hoc_id\": \"{{mon_hoc_id}}\",\n    \"hoc_ky_id\": \"{{hoc_ky_id}}\",\n    \"giang_vien_id\": \"{{section_gv_id}}\",\n    \"si_so_toi_da\": 60,\n    \"nam_thu\": 4\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Đã đổi sĩ số tối đa', () => {",
+                                    "    pm.expect(pm.response.json().data.si_so_toi_da).to.eql(60);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "09. Sinh viên của lớp",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/students",
+                        "description": "Chỉ có sinh viên đăng ký ACTIVE. Ca có dữ liệu cần module đăng ký — hiện chưa có API."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Là mảng', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "10. Bảng điểm cả lớp",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/grades"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Là mảng', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "11. Thống kê chuyên cần",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/attendance-summary",
+                        "description": "Tỷ lệ = (PRESENT + LATE) / (số buổi đã điểm danh − EXCUSED); mẫu số bằng 0 thì `ty_le` là null."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Có tổng số buổi', () => {",
+                                    "    pm.expect(pm.response.json().data.tong_buoi).to.be.a('number');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "12. Chặn chốt điểm khi lớp chưa có sinh viên",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_giang_vien}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/finalize",
+                        "description": "Lớp chưa có đăng ký ACTIVE nên phải trả 409 NO_ACTIVE_ENROLLMENTS. Ca chốt thành công cần lớp có sinh viên và đủ điểm; được phủ ở PHPUnit (`LopHocPhanTest`)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409 khi lớp không có sinh viên ACTIVE', () => pm.response.to.have.status(409));",
+                                    "pm.test('Báo mã lỗi lớp không có đăng ký ACTIVE', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('NO_ACTIVE_ENROLLMENTS');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "13. Chốt điểm lần hai → 409 GRADE_LOCKED",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_giang_vien}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/finalize"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('GRADE_LOCKED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "14. ADMIN chốt điểm hộ → 403",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/finalize",
+                        "description": "Ma trận phân quyền: `finalize` chỉ TEACHER chủ lớp (docs/06-test-plan.md §5)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 403', () => pm.response.to.have.status(403));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('FORBIDDEN');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "15. Hủy lớp đã chốt điểm → 409 GRADE_LOCKED",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"CANCELLED\"\n}"
+                        },
+                        "description": "BR-29 — phải mở khóa điểm trước khi hủy lớp đã chốt."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('GRADE_LOCKED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "16. Mở khóa điểm thiếu lý do → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/unlock",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "17. Mở khóa điểm",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/unlock",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ly_do\": \"Chấm sót điểm (Postman)\"\n}"
+                        },
+                        "description": "Thao tác nhạy cảm: luôn ghi `nhat_ky` kèm lý do."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Đã mở khóa', () => {",
+                                    "    pm.expect(pm.response.json().data.da_chot_diem).to.be.false;",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "18. Chuyển sang CANCELLED",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/status",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"CANCELLED\"\n}"
+                        },
+                        "description": "Hủy lớp kéo theo đăng ký ACTIVE → CANCELLED và buổi SCHEDULED → CANCELLED."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Trạng thái mới', () => {",
+                                    "    pm.expect(pm.response.json().data.trang_thai).to.eql('CANCELLED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "19. Mã lớp trùng trong học kỳ → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_lop_hp\": \"{{section_ma}}\",\n    \"mon_hoc_id\": \"{{mon_hoc_id}}\",\n    \"hoc_ky_id\": \"{{hoc_ky_id}}\",\n    \"giang_vien_id\": \"{{section_gv_id}}\",\n    \"si_so_toi_da\": 40\n}"
+                        },
+                        "description": "Mã lớp duy nhất trong học kỳ, **kể cả bản ghi đã xóa mềm** (BR-01)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "20. Gán môn ngừng hoạt động → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_lop_hp\": \"TAM2{{$timestamp}}\",\n    \"mon_hoc_id\": \"{{mon_hoc_tam_id}}\",\n    \"hoc_ky_id\": \"{{hoc_ky_id}}\",\n    \"giang_vien_id\": \"{{section_gv_id}}\",\n    \"si_so_toi_da\": 40\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Lỗi nằm ở trường môn học', () => {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.expect(body.ma_loi).to.eql('VALIDATION_ERROR');",
+                                    "    pm.expect(body.errors.mon_hoc_id[0]).to.contain('ngừng hoạt động');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "21. nam_thu ngoài khoảng 1–6 → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_lop_hp\": \"TAM3{{$timestamp}}\",\n    \"mon_hoc_id\": \"{{mon_hoc_id}}\",\n    \"hoc_ky_id\": \"{{hoc_ky_id}}\",\n    \"giang_vien_id\": \"{{section_gv_id}}\",\n    \"si_so_toi_da\": 40,\n    \"nam_thu\": 9\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "22. Sinh viên sửa lớp học phần → 403",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_lop_hp\": \"{{section_ma}}\",\n    \"mon_hoc_id\": \"{{mon_hoc_id}}\",\n    \"hoc_ky_id\": \"{{hoc_ky_id}}\",\n    \"giang_vien_id\": \"{{section_gv_id}}\",\n    \"si_so_toi_da\": 40\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 403', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "23. Sinh viên xem bảng điểm của lớp → 403",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}/grades"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 403', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "24. Lớp học phần không tồn tại → 404",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/999999"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 404', () => pm.response.to.have.status(404));",
+                                    "pm.test('Đúng mã lỗi', () => {",
+                                    "    pm.expect(pm.response.json().ma_loi).to.eql('NOT_FOUND');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "25. Xóa lớp học phần (dọn dẹp)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/sections/{{section_id}}",
+                        "description": "Xóa mềm lớp và các buổi học của lớp. Chặn 409 nếu còn đăng ký ACTIVE."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "26. Xóa môn học tạm (dọn dẹp)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/subjects/{{mon_hoc_tam_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "27. Xóa giảng viên tạm (dọn dẹp)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/teachers/{{section_gv_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "description": "Module lớp học phần (docs/04-api-contract.md §10). Chạy folder 02 — Đào tạo trước để có `mon_hoc_id` và `hoc_ky_id`. Ca lớp không có đăng ký ACTIVE bị chặn chốt với `NO_ACTIVE_ENROLLMENTS`; các ca cần đăng ký (`DELETE_BLOCKED`, `SUBJECT_CHANGE_BLOCKED`/`SEMESTER_CHANGE_BLOCKED`, `GRADE_INCOMPLETE`, giảm sĩ số dưới số đăng ký) đã phủ bằng PHPUnit `LopHocPhanTest`."
+        },
+        {
+            "name": "14 — Hồ sơ cá nhân (PUT /me)",
+            "item": [
+                {
+                    "name": "01. ADMIN sửa tên và email",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Quản trị viên\",\n    \"email\": \"admin@example.com\"\n}"
+                        },
+                        "description": "Đổi email thì lần sau đăng nhập bằng email mới. Request này trả lại email demo để không phá các folder khác."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Trả hồ sơ đã cập nhật', () => {",
+                                    "    pm.expect(pm.response.json().data.email).to.eql('admin@example.com');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "02. ADMIN gửi trường không thuộc vai trò → bị bỏ qua, không lỗi",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Quản trị viên\",\n    \"so_dien_thoai\": \"0900000001\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('ADMIN không có hồ sơ nên `ho_so` là null', () => {",
+                                    "    pm.expect(pm.response.json().data.ho_so).to.be.null;",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "03. SINH VIÊN sửa số điện thoại và địa chỉ",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"so_dien_thoai\": \"0912345678\",\n    \"dia_chi\": \"Hà Nội\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Hồ sơ sinh viên đã đổi', () => {",
+                                    "    const hoSo = pm.response.json().data.ho_so;",
+                                    "    pm.expect(hoSo.loai).to.eql('sinh_vien');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "04. SINH VIÊN gửi tên tài khoản → bị bỏ qua",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Tên không được phép đổi\",\n    \"dia_chi\": \"Đà Nẵng\"\n}"
+                        },
+                        "description": "Sinh viên chỉ sửa `so_dien_thoai`, `dia_chi` (FR-01.06)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tên tài khoản không đổi', () => {",
+                                    "    pm.expect(pm.response.json().data.name).to.not.eql('Tên không được phép đổi');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05. Email trùng với tài khoản khác → 422",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"gvtam@example.com\"\n}"
+                        },
+                        "description": "Ca 422 chỉ xảy ra khi email đã thuộc tài khoản khác; đổi biến cho phù hợp dữ liệu của bạn."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422 hoặc 200 nếu email chưa tồn tại', () => pm.expect([200, 422]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "description": "FR-01.06 — mỗi vai trò chỉ sửa được trường của mình; trường ngoài vai trò bị bỏ qua."
+        },
+        {
+            "name": "15 — Khoa & Ngành (ADR-020)",
+            "item": [
+                {
+                    "name": "01. Danh sách khoa",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa?trang_thai=true&sort_by=ma_khoa&sort_dir=asc&per_page=10"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Mỗi khoa có số ngành', () => {",
+                                    "    pm.expect(d.data[0].so_nganh).to.be.a('number');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "02. Tạo khoa tạm",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_khoa\": \"TAM{{$timestamp}}\",\n    \"ten_khoa\": \"Khoa tạm (Postman)\",\n    \"mo_ta\": null\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const d = pm.response.json().data;",
+                                    "pm.test('Khoa mới chưa có ngành', () => pm.expect(d.so_nganh).to.eql(0));",
+                                    "pm.collectionVariables.set('khoa_tam_id', d.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "03. Chi tiết khoa",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa/{{khoa_tam_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "04. Cập nhật khoa",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa/{{khoa_tam_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ten_khoa\": \"Khoa tạm đã đổi tên\",\n    \"trang_thai\": true\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tên đã đổi', () => pm.expect(pm.response.json().data.ten_khoa).to.eql('Khoa tạm đã đổi tên'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05. Mã khoa trùng → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_khoa\": \"CNTT\",\n    \"ten_khoa\": \"Trùng mã CNTT\"\n}"
+                        },
+                        "description": "Mã khoa duy nhất kể cả bản ghi đã xóa mềm (BR-01)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "06. Danh sách ngành + lọc theo khoa",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh?khoa_id={{khoa_id}}&per_page=10"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Chỉ trả ngành của khoa đã lọc', () => {",
+                                    "    const khoaId = Number(pm.collectionVariables.get('khoa_id'));",
+                                    "    d.data.forEach(n => pm.expect(n.khoa_id).to.eql(khoaId));",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "07. Tạo ngành trong khoa tạm",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"khoa_id\": \"{{khoa_tam_id}}\",\n    \"ma_nganh\": \"NTAM{{$timestamp}}\",\n    \"ten_nganh\": \"Ngành tạm (Postman)\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const d = pm.response.json().data;",
+                                    "pm.test('Có khối lồng khoa', () => pm.expect(d.khoa.id).to.eql(Number(pm.collectionVariables.get('khoa_tam_id'))));",
+                                    "pm.collectionVariables.set('nganh_tam_id', d.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "08. Trùng tên ngành trong cùng khoa → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"khoa_id\": \"{{khoa_tam_id}}\",\n    \"ma_nganh\": \"NTAM2{{$timestamp}}\",\n    \"ten_nganh\": \"Ngành tạm (Postman)\"\n}"
+                        },
+                        "description": "Bảng có `unique(khoa_id, ten_nganh)`."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Đúng mã lỗi', () => pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "09. Ngành thuộc khoa không tồn tại → 422",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"khoa_id\": 999999,\n    \"ma_nganh\": \"XXX{{$timestamp}}\",\n    \"ten_nganh\": \"Ngành mồ côi\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Lỗi nằm ở trường khoa_id', () => pm.expect(pm.response.json().errors).to.have.property('khoa_id'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "10. Cập nhật ngành",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh/{{nganh_tam_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"khoa_id\": \"{{khoa_tam_id}}\",\n    \"ma_nganh\": \"NTAM{{$timestamp}}\",\n    \"ten_nganh\": \"Ngành tạm đã đổi tên\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tên đã đổi', () => pm.expect(pm.response.json().data.ten_nganh).to.eql('Ngành tạm đã đổi tên'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "11. Xóa khoa còn ngành → 409 DELETE_BLOCKED",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa/{{khoa_tam_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Đúng mã lỗi', () => pm.expect(pm.response.json().ma_loi).to.eql('DELETE_BLOCKED'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "12. Xóa ngành đang được dùng → 409 DELETE_BLOCKED",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh/{{nganh_id}}",
+                        "description": "Cần chạy folder 03/05 trước để có lớp hành chính hoặc giảng viên tham chiếu ngành này."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409 (hoặc 200 nếu chưa có ai dùng)', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "13. Xóa ngành tạm",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/nganh/{{nganh_tam_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "14. Xóa khoa tạm (đã hết ngành)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa/{{khoa_tam_id}}"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "15. Ngành đã xóa vẫn nằm trong thùng rác",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/trash/nganh",
+                        "description": "Khoa và ngành xóa mềm vào được thùng rác và khôi phục được."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Có bản ghi trong thùng rác', () => pm.expect(pm.response.json().meta.total).to.be.at.least(1));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "16. Sinh viên tạo khoa → 403",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_khoa\": \"HACK\",\n    \"ten_khoa\": \"Không được phép\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 403', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "17. Khoa không tồn tại → 404",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/khoa/999999"
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 404', () => pm.response.to.have.status(404));",
+                                    "pm.test('Đúng mã lỗi', () => pm.expect(pm.response.json().ma_loi).to.eql('NOT_FOUND'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "description": "Danh mục Khoa/Ngành hai cấp (ADR-020). Ngành bắt buộc thuộc một khoa; xóa khoa còn ngành hoặc còn môn học bị chặn, xóa ngành còn giảng viên hoặc lớp hành chính bị chặn. Cả hai vào được thùng rác. Chạy folder 02 — Đào tạo trước để có `khoa_id` và `nganh_id`."
         }
     ],
     "variable": [
@@ -3322,6 +6012,66 @@
         },
         {
             "key": "ma_mon_trash",
+            "value": ""
+        },
+        {
+            "key": "admin_id",
+            "value": ""
+        },
+        {
+            "key": "token_giang_vien",
+            "value": ""
+        },
+        {
+            "key": "nguoi_dung_id",
+            "value": ""
+        },
+        {
+            "key": "nguoi_dung_email",
+            "value": ""
+        },
+        {
+            "key": "nguoi_dung_mat_khau",
+            "value": ""
+        },
+        {
+            "key": "nguoi_dung_tam_id",
+            "value": ""
+        },
+        {
+            "key": "section_id",
+            "value": ""
+        },
+        {
+            "key": "section_gv_id",
+            "value": ""
+        },
+        {
+            "key": "section_gv_email",
+            "value": ""
+        },
+        {
+            "key": "section_gv_mat_khau",
+            "value": ""
+        },
+        {
+            "key": "mon_hoc_tam_id",
+            "value": ""
+        },
+        {
+            "key": "khoa_id",
+            "value": ""
+        },
+        {
+            "key": "nganh_id",
+            "value": ""
+        },
+        {
+            "key": "khoa_tam_id",
+            "value": ""
+        },
+        {
+            "key": "nganh_tam_id",
             "value": ""
         }
     ]

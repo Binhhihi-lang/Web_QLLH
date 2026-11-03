@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
-import { LopHanhChinh, ThamSoDanhSach } from '@core/models/dao-tao.model';
+import { LopHanhChinh, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { PageMeta } from '@core/mock/mock-response';
 import { AppButton } from '@shared/ui/app-button';
 import { CotBang, DataTable, OTuyChinh, SapXep } from '@shared/ui/data-table';
@@ -76,13 +76,12 @@ import { LopHanhChinhService } from './lop-hanh-chinh.service';
 
         <label class="loc">
           <span>Ngành</span>
-          <input
-            type="search"
-            name="nganh"
-            placeholder="Ví dụ: CNTT"
-            [value]="locNganh()"
-            (input)="doiLocNganh($event)"
-          />
+          <select [value]="locNganhId()" (change)="doiLocNganh($event)">
+            <option value="">Tất cả ngành</option>
+            @for (n of dsNganh(); track n.id) {
+              <option [value]="n.id">{{ n.label }}</option>
+            }
+          </select>
         </label>
 
         <label class="loc loc-trang-thai">
@@ -140,7 +139,7 @@ import { LopHanhChinhService } from './lop-hanh-chinh.service';
       </ng-template>
       <ng-template appOTuyChinh="nganh" let-row>
         @if (row.nganh) {
-          <span class="ma-nganh">{{ row.nganh }}</span>
+          <span class="ma-nganh">{{ row.nganh.ten_nganh }}</span>
         } @else {
           <span class="khong-co-du-lieu">—</span>
         }
@@ -429,11 +428,12 @@ export class LopHanhChinhDanhSach {
   readonly laAdmin = computed(() => this.auth.nguoiDung()?.vai_tro === 'ADMIN');
   readonly tuKhoa = signal('');
   readonly locKhoa = signal('');
-  readonly locNganh = signal('');
+  readonly locNganhId = signal('');
+  readonly dsNganh = signal<TuyChonNganh[]>([]);
   readonly locTrangThai = signal('');
   readonly sapXepHienTai = signal<SapXep>({ sort_by: 'ma_lop', sort_dir: 'asc' });
 
-  private readonly boLoc = signal({ tuKhoa: '', khoa: '', nganh: '', trangThai: '' });
+  private readonly boLoc = signal({ tuKhoa: '', khoa: '', nganhId: '', trangThai: '' });
   private trang = 1;
   private coTrang: 10 | 25 | 50 | 100 = 10;
 
@@ -456,11 +456,15 @@ export class LopHanhChinhDanhSach {
 
   readonly coLoc = computed(() => {
     const filter = this.boLoc();
-    return Boolean(filter.tuKhoa || filter.khoa || filter.nganh || filter.trangThai);
+    return Boolean(filter.tuKhoa || filter.khoa || filter.nganhId || filter.trangThai);
   });
   readonly tongSiSo = computed(() => this.rows().reduce((total, row) => total + row.si_so, 0));
 
   constructor() {
+    this.service.layTuyChonNganh().subscribe({
+      next: (ds) => this.dsNganh.set(ds),
+      error: () => this.dsNganh.set([]),
+    });
     this.tai();
   }
 
@@ -469,14 +473,14 @@ export class LopHanhChinhDanhSach {
     this.loi.set(null);
     const sort = this.sapXepHienTai();
     const filter = this.boLoc();
-    const thamSo: ThamSoDanhSach & { khoa_hoc?: string; nganh?: string; trang_thai?: boolean } = {
+    const thamSo: ThamSoDanhSach & { khoa_hoc?: string; nganh_id?: number; trang_thai?: boolean } = {
       page: this.trang,
       per_page: this.coTrang,
       q: filter.tuKhoa || undefined,
       sort_by: sort.sort_by,
       sort_dir: sort.sort_dir,
       khoa_hoc: filter.khoa || undefined,
-      nganh: filter.nganh || undefined,
+      nganh_id: filter.nganhId === '' ? undefined : Number(filter.nganhId),
       trang_thai:
         filter.trangThai === '' ? undefined : filter.trangThai === 'true',
     };
@@ -509,7 +513,7 @@ export class LopHanhChinhDanhSach {
   }
 
   doiLocNganh(event: Event): void {
-    this.locNganh.set((event.target as HTMLInputElement).value);
+    this.locNganhId.set((event.target as HTMLSelectElement).value);
   }
 
   doiTrangThai(event: Event): void {
@@ -520,7 +524,7 @@ export class LopHanhChinhDanhSach {
     this.boLoc.update((filter) => ({
       ...filter,
       khoa: this.locKhoa().trim(),
-      nganh: this.locNganh().trim(),
+      nganhId: this.locNganhId(),
       trangThai: this.locTrangThai(),
     }));
     this.trang = 1;
@@ -530,9 +534,9 @@ export class LopHanhChinhDanhSach {
   xoaLoc(): void {
     this.tuKhoa.set('');
     this.locKhoa.set('');
-    this.locNganh.set('');
+    this.locNganhId.set('');
     this.locTrangThai.set('');
-    this.boLoc.set({ tuKhoa: '', khoa: '', nganh: '', trangThai: '' });
+    this.boLoc.set({ tuKhoa: '', khoa: '', nganhId: '', trangThai: '' });
     this.trang = 1;
     this.tai();
   }

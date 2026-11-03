@@ -357,3 +357,49 @@ Dự án đặt vé máy bay (đồ án trước của cùng tác giả) đã d�
 - (−) Ảnh đã upload rồi mà DB mất thì ảnh mồ côi trên Cloudinary — chấp nhận, dọn tay nếu cần.
 
 **Phương án bị loại:** thêm `anh_dai_dien` vào cả `sinh_vien` và `giang_vien` (ADMIN không có chỗ lưu, phải đồng bộ hai nơi); lưu file trên đĩa server (phải sao lưu, phải phục vụ tĩnh, mất khi container bị tạo lại); lưu base64/blob trong MySQL (phình DB, chậm mọi truy vấn bảng `users`).
+
+---
+
+## ADR-020 — Danh mục Khoa/Ngành hai cấp; `nganh_id` thay cột chuỗi
+
+**Ngày:** 2026-10-30 · **Trạng thái:** Đã chấp nhận · **Người thực hiện:** PM
+
+**Bối cảnh:** Cần quản lý đơn vị đào tạo cho giảng viên, lớp hành chính và môn học. Dữ liệu hiện có cho thấy vấn đề thật, không phải nhu cầu cho đẹp:
+
+| Nơi lưu | Đang chứa | Giá trị seed |
+|---|---|---|
+| `giang_vien.chuyen_mon` | **tên ngành** (không phải kỹ năng) | Công nghệ phần mềm, Hệ thống thông tin, Khoa học máy tính, Mạng và truyền thông, An toàn thông tin |
+| `lop_hanh_chinh.nganh` | **mã ngành** | CNTT, KTPM, HTTT, ATTT, KHMT |
+
+Hai danh sách **không khớp nhau**: `CNTT` và `KTPM` cùng trỏ về "Công nghệ phần mềm", còn "Mạng và truyền thông" không có mã nào bên lớp hành chính. Tức cùng một khái niệm đang được ghi bằng hai từ vựng ở hai bảng, không có gì bảo đảm chúng còn khớp về sau.
+
+ADR-016 đã kết luận "chương trình đào tạo ngoài phạm vi" và chỉ giữ `khoa_hoc` (khóa/cohort). Yêu cầu mới đưa khoa/ngành **trở lại** phạm vi, nên ADR này ghi lại lý do và cách làm — nó **đảo một phần ADR-016**, không thay thế phần còn lại (ADR-016 vẫn đúng ở chỗ `khoa_hoc` là cohort, không phải khoa).
+
+**Quyết định:**
+
+1. **Hai bảng danh mục hai cấp:** `khoa` và `nganh`, với `nganh.khoa_id` là khóa ngoại **bắt buộc** và `restrictOnDelete` — ngành không thể tồn tại ngoài khoa, xóa khoa còn ngành bị chặn ở tầng DB. Thêm `unique(khoa_id, ten_nganh)` để không có hai ngành cùng tên trong một khoa.
+2. **`giang_vien.nganh_id` thay hẳn `chuyen_mon`** — xóa cột chuỗi. Lý do: dữ liệu trong cột đó chính là ngành, không phải mô tả năng lực; giữ cả hai sẽ lại tạo hai nguồn lệch nhau.
+3. **`lop_hanh_chinh.nganh_id` thay cột chuỗi `nganh`**, và **không** lưu thêm `khoa_id` trên lớp. Khoa suy ra qua `nganh.khoa_id`.
+4. **`mon_hoc.khoa_id`** — môn do khoa quản lý. Không gắn ngành cho môn: môn thường phục vụ nhiều ngành (môn đại cương không thuộc ngành nào).
+5. **`lop_hoc_phan` không thêm cột khoa/ngành.** Lớp học phần đã thuộc một môn, mà môn mới là nơi có đơn vị quản lý. Thêm khoa vào lớp là dữ liệu lặp: đổi khoa của môn thì mọi lớp cũ thành sai. Muốn lọc lớp theo khoa thì lọc **qua quan hệ** `whereHas('monHoc')`.
+6. **Nguyên tắc chung: chỉ lưu cấp cụ thể nhất, cấp cha suy ra.** Đã có `nganh.khoa_id` thì `giang_vien` và `lop_hanh_chinh` chỉ cần `nganh_id`.
+7. **API:** `GET /api/options/khoa`, `GET /api/options/nganh?khoa_id=` cho dropdown; CRUD `/api/khoa`, `/api/nganh` — đọc mở cho cả ba vai trò (dữ liệu tham chiếu), ghi chỉ ADMIN.
+8. **Chặn xóa khi còn ràng buộc:** khoa còn ngành hoặc môn → 409 `DELETE_BLOCKED`; ngành còn giảng viên hoặc lớp hành chính → 409 `DELETE_BLOCKED`. Xóa mềm, và khoa/ngành **vào được thùng rác** (`/api/trash/khoa`, `/api/trash/nganh`).
+9. **Danh mục do seeder khai, không phải migration.** `KhoaNganhSeeder` là nguồn chân lý; migration chuyển dữ liệu **chỉ tạo danh mục khi thật có giá trị cũ cần chuyển**. CSDL mới tinh không có gì để chuyển thì danh mục để trống — migration không tự sinh dữ liệu nghiệp vụ.
+10. **Migration chuyển dữ liệu theo từ vựng của từng cột:** `giang_vien.chuyen_mon` khớp theo **tên** ngành, `lop_hanh_chinh.nganh` khớp theo **mã**. Giá trị `'CNTT'` trên lớp hành chính cố ý **không** map — đó là khoa, không phải ngành; lớp nào chỉ ghi `'CNTT'` thì để trống ngành. Tên ngành do người dùng tự nhập mà chưa có trong bảng chuẩn thì sinh mã từ chữ đầu các từ ("Công nghệ phần mềm" → `CNPM`).
+
+**Hệ quả**
+
+- (+) Hết lệch dữ liệu: giảng viên và lớp hành chính trỏ cùng một danh mục.
+- (+) Lọc/thống kê theo khoa hoặc ngành được ở cả ba màn, và lọc theo khoa đi qua quan hệ nên không bao giờ lệch với ngành.
+- (+) Danh mục vào thùng rác nên xóa nhầm khoa/ngành vẫn khôi phục được.
+- (−) Giảng viên mất khả năng mô tả chuyên môn tự do; muốn ghi "Cơ sở dữ liệu, hệ phân tán" thì phải thêm môn học chứ không nhét vào hồ sơ. Đây là đánh đổi có chủ ý.
+- (−) Đổi schema kéo theo sửa form giảng viên (SCR-14), form + danh sách lớp hành chính (SCR-16/17), form + danh sách môn học (SCR-19/20), model/mock FE, Postman và tài liệu — đúng quy trình "đổi schema phải đi kèm model FE + mock trong cùng một PR".
+- (−) `CNTT` trên lớp hành chính thành `nganh_id = null`; cần chạy seeder hoặc sửa tay nếu muốn mọi lớp đều có ngành.
+
+**Phương án bị loại:**
+
+- *Giữ chuỗi tự do, không làm danh mục:* rẻ nhất nhưng để nguyên lệch dữ liệu đã có, và không lọc được "tất cả lớp của ngành X".
+- *Chỉ thêm `khoa` vào `lop_hoc_phan` như đề xuất ban đầu:* dữ liệu lặp và lệch khi môn đổi khoa; khoa của lớp phải suy từ môn.
+- *Lưu cả `khoa_id` lẫn `nganh_id` trên giảng viên/lớp:* hai cấp lưu song song sẽ lệch ngay khi chuyển một ngành sang khoa khác.
+- *Tách bảng `nganh` độc lập không có `khoa_id`:* mất ràng buộc "ngành nào thuộc khoa nào", phải kiểm tra bằng tay ở mọi chỗ ghi.

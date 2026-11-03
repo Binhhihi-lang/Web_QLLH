@@ -20,7 +20,7 @@ class GiangVien extends Model
         'ho_ten',
         'email',
         'so_dien_thoai',
-        'chuyen_mon',
+        'nganh_id',
         'user_id',
         'trang_thai',
     ];
@@ -35,6 +35,11 @@ class GiangVien extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function nganh(): BelongsTo
+    {
+        return $this->belongsTo(Nganh::class);
     }
 
     public function lopHocPhan(): HasMany

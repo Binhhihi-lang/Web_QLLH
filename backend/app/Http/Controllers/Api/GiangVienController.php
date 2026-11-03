@@ -26,13 +26,14 @@ class GiangVienController extends Controller
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'in:10,25,50,100'],
             'q' => ['sometimes', 'string', 'max:255'],
-            'sort_by' => ['sometimes', 'in:id,ma_gv,ho_ten,email,chuyen_mon,trang_thai'],
+            'sort_by' => ['sometimes', 'in:id,ma_gv,ho_ten,email,nganh_id,trang_thai'],
             'sort_dir' => ['sometimes', 'in:asc,desc'],
-            'chuyen_mon' => ['sometimes', 'string', 'max:255'],
+            'nganh_id' => ['sometimes', 'integer'],
+            'khoa_id' => ['sometimes', 'integer'],
             'trang_thai' => ['sometimes', 'in:true,false,1,0'],
         ]);
 
-        $query = GiangVien::query()->with('user')
+        $query = GiangVien::query()->with(['user', 'nganh.khoa'])
             ->when($request->filled('q'), fn ($q) => $q->where(function ($tim) use ($request) {
                 $tuKhoa = '%'.$request->string('q')->toString().'%';
                 $tim->where('ma_gv', 'like', $tuKhoa)
@@ -40,7 +41,12 @@ class GiangVienController extends Controller
                     ->orWhere('email', 'like', $tuKhoa)
                     ->orWhere('so_dien_thoai', 'like', $tuKhoa);
             }))
-            ->when($request->filled('chuyen_mon'), fn ($q) => $q->where('chuyen_mon', $request->string('chuyen_mon')))
+            // Lọc theo ngành trực tiếp, theo khoa thì đi qua quan hệ ngành.
+            ->when($request->filled('nganh_id'), fn ($q) => $q->where('nganh_id', $request->integer('nganh_id')))
+            ->when($request->filled('khoa_id'), fn ($q) => $q->whereHas(
+                'nganh',
+                fn ($nganh) => $nganh->where('khoa_id', $request->integer('khoa_id')),
+            ))
             ->when($request->has('trang_thai'), fn ($q) => $q->where('trang_thai', $request->boolean('trang_thai')))
             ->orderBy($request->input('sort_by', 'id'), $request->input('sort_dir', 'asc'));
 
@@ -62,7 +68,7 @@ class GiangVienController extends Controller
     {
         $this->kiemTraSoHuu($request, $giangVien);
 
-        return $this->success(new GiangVienResource($giangVien->load('user')));
+        return $this->success(new GiangVienResource($giangVien->load(['user', 'nganh'])));
     }
 
     public function update(GiangVienRequest $request, GiangVien $giangVien): JsonResponse
@@ -71,7 +77,7 @@ class GiangVienController extends Controller
 
         if ($request->user()->laGiangVien()) {
             $giangVien->update($request->validated());
-            $giangVien = $giangVien->fresh('user');
+            $giangVien = $giangVien->fresh(['user', 'nganh']);
         } else {
             $giangVien = $this->service->capNhatGiangVien($giangVien, $request->validated());
         }

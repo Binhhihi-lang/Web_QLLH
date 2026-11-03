@@ -20,6 +20,7 @@ class MonHocRequest extends FormRequest
 
         return [
             'ma_mon' => ['required', 'string', 'max:20', Rule::unique('mon_hoc', 'ma_mon')->ignore($monHoc?->id)],
+            'khoa_id' => ['nullable', 'integer', Rule::exists('khoa', 'id')->whereNull('deleted_at')],
             'ten_mon' => ['required', 'string', 'max:255'],
             'so_tin_chi' => ['required', 'integer', 'between:1,10'],
             'mo_ta' => ['nullable', 'string'],

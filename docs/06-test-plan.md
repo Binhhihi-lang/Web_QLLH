@@ -46,7 +46,7 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | TC-08 | FR-09.02, BR-10 | Trong/ngoài đợt; STUDENT không đăng ký hộ được |
 | TC-09 | FR-09.03, BR-11, BR-20 | Hủy trong đợt; chặn khi có điểm; ADMIN hủy ngoài đợt; đăng ký lại |
 | TC-10 | FR-11.01, BR-21 | Danh sách theo mốc thời gian; hủy trước/sau buổi; upsert không trùng |
-| TC-11 | FR-12.01 → .04, BR-05, BR-13 | Validate 0–10; tính tổng kết; chốt; khóa sau chốt; ADMIN mở khóa |
+| TC-11 | FR-12.01 → .04, BR-05, BR-13 | Validate 0–10; tính tổng kết; chặn chốt nếu không có đăng ký ACTIVE (`NO_ACTIVE_ENROLLMENTS`); chặn chốt nếu thiếu điểm; khóa sau chốt; ADMIN mở khóa |
 | TC-12 | FR-12.05 | GPA đúng công thức; tính cả môn KHÔNG ĐẠT; làm tròn 2 số |
 | TC-13 | FR-14.01 → .05, BR-18 | Xóa mềm ẩn khỏi danh sách; khôi phục; chặn khôi phục khi cha xóa |
 | TC-14 | FR-08.04 | Hủy lớp: đăng ký → CANCELLED, buổi → CANCELLED, giữ điểm |
@@ -149,7 +149,7 @@ Bảng test tự động: với mỗi cặp (vai trò, endpoint), khẳng địn
 | `GET /api/students` | 200 | 200 (lọc) | 403 |
 | `DELETE /api/students/{id}` | 200/409 | 403 | 403 |
 | `PUT /api/sections/{id}` | 200 | 403 | 403 |
-| `POST /api/sections/{id}/finalize` | 403 | 200 | 403 |
+| `POST /api/sections/{id}/finalize` | 403 | 200 nếu có đăng ký ACTIVE đủ điểm; nếu không có thì 409 `NO_ACTIVE_ENROLLMENTS` | 403 |
 | `PUT /api/sessions/{id}/attendance` | 200 | 200 (lớp mình) | 403 |
 | `POST /api/me/enrollments` | 403 | 403 | 201 |
 | `POST /api/enrollments` | 201 | 403 | 403 |
@@ -161,6 +161,10 @@ Bảng test tự động: với mỗi cặp (vai trò, endpoint), khẳng địn
 | `POST /api/students/bulk-delete` | 200 | 403 | 403 |
 | `GET /api/trash/students` | 200 | 403 | 403 |
 | `GET /api/dashboard/admin` | 200 | 403 | 403 |
+| `GET /api/khoa` | 200 | 200 | 200 |
+| `POST /api/khoa` | 201 | 403 | 403 |
+| `POST /api/nganh` | 201 | 403 | 403 |
+| `DELETE /api/khoa/{id}` (còn ngành) | 409 | 403 | 403 |
 
 ---
 
@@ -188,3 +192,29 @@ Mỗi bước khẳng định mã trạng thái và một trường dữ liệu 
 - Không test nào phụ thuộc thời gian thực (`travelTo` cố định).
 - Không test nào phụ thuộc thứ tự chạy.
 - Mỗi bug sửa xong phải thêm test hồi quy.
+
+---
+
+## 6. Test danh mục Khoa / Ngành (ADR-020)
+
+`KhoaNganhTest` — 13 case, chạy cùng suite Feature.
+
+| Case | Khẳng định |
+|---|---|
+| CRUD khoa | Tạo 201 (`so_nganh = 0`), chi tiết, cập nhật, xóa mềm + `nhat_ky` |
+| Mã khoa trùng | 422, **kể cả khi bản ghi đã xóa mềm** (BR-01) |
+| Chặn xóa khoa | Còn ngành → 409; còn môn học → 409; khoa rảnh → 200 |
+| CRUD ngành | Tạo 201 (có khối lồng `khoa`), cập nhật, xóa mềm |
+| Trùng tên ngành | Cùng khoa → 422; khác khoa → 201 (khớp `unique(khoa_id, ten_nganh)`) |
+| `khoa_id` không tồn tại | 422, lỗi nằm ở trường `khoa_id` |
+| Chặn xóa ngành | Còn giảng viên → 409; còn lớp hành chính → 409; rảnh → 200 |
+| Options | `/options/khoa`, `/options/nganh`, lọc `?khoa_id=` |
+| Gắn khoa/ngành | Môn học có `khoa_id` + khối `khoa`; giảng viên có `nganh_id` + khối `nganh` và **không còn** `chuyen_mon`; lớp hành chính có `nganh` + `khoa` suy ra |
+| Lọc | Môn học theo `khoa_id`; giảng viên theo `nganh_id` và theo `khoa_id` (qua quan hệ) |
+| Phân quyền | Sinh viên đọc được `/khoa`, `/nganh`; tạo bị 403 |
+| Thùng rác | `/trash/khoa` liệt kê được và khôi phục được |
+| Seeder | `KhoaNganhSeeder` chạy hai lần vẫn 1 khoa + 5 ngành; `DanhMucSeeder`/`GiangVienSeeder` gắn đúng `khoa_id`/`nganh_id` |
+
+> Ghi chú: `DanhMucSeeder` và `GiangVienSeeder` phụ thuộc `KhoaNganhSeeder` phải chạy trước
+> (đã xếp đúng thứ tự trong `DatabaseSeeder`). `GiangVienSeeder` cần `UserSeeder` chạy trước vì
+> gắn hồ sơ demo vào tài khoản `giangvien@example.com`.

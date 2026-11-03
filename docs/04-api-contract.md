@@ -117,6 +117,7 @@ Lỗi validation (422):
 | `STUDENT_INACTIVE` | 409 | Sinh viên không hoạt động |
 | `HAS_GRADE_OR_ATTENDANCE` | 409 | Đã có điểm/điểm danh, không tự hủy được |
 | `GRADE_LOCKED` | 409 | Lớp đã chốt điểm |
+| `NO_ACTIVE_ENROLLMENTS` | 409 | Lớp chưa có đăng ký đang hoạt động, không thể chốt điểm |
 | `GRADE_INCOMPLETE` | 409 | Chưa đủ điểm thành phần để chốt |
 | `RESTORE_PARENT_DELETED` | 409 | Bản ghi cha đã bị xóa |
 | `ATTENDANCE_EDIT_EXPIRED` | 409 | Quá hạn sửa điểm danh |
@@ -314,6 +315,50 @@ Response tạo mới (201) — **chỉ lần này** có mật khẩu:
 
 ---
 
+## 3b. Khoa & Ngành (ADR-020)
+
+Danh mục hai cấp: mỗi ngành thuộc đúng một khoa. Đọc mở cho cả ba vai trò vì là
+dữ liệu tham chiếu; ghi chỉ ADMIN.
+
+| Method | Endpoint | Quyền |
+|---|---|---|
+| GET | `/api/khoa` | mọi vai trò — lọc `q`, `trang_thai` |
+| POST | `/api/khoa` | ADMIN |
+| GET | `/api/khoa/{id}` | mọi vai trò |
+| PUT | `/api/khoa/{id}` | ADMIN |
+| DELETE | `/api/khoa/{id}` | ADMIN |
+| GET | `/api/nganh` | mọi vai trò — lọc `q`, `khoa_id`, `trang_thai` |
+| POST | `/api/nganh` | ADMIN |
+| GET | `/api/nganh/{id}` | mọi vai trò |
+| PUT | `/api/nganh/{id}` | ADMIN |
+| DELETE | `/api/nganh/{id}` | ADMIN |
+
+Response `khoa`:
+
+```json
+{ "id": 1, "ma_khoa": "CNTT", "ten_khoa": "Công nghệ thông tin", "mo_ta": null,
+  "trang_thai": true, "so_nganh": 5, "da_xoa": false }
+```
+
+Response `nganh`:
+
+```json
+{ "id": 1, "khoa_id": 1,
+  "khoa": { "id": 1, "ma_khoa": "CNTT", "ten_khoa": "Công nghệ thông tin" },
+  "ma_nganh": "KTPM", "ten_nganh": "Công nghệ phần mềm", "mo_ta": null,
+  "trang_thai": true, "da_xoa": false }
+```
+
+| Lỗi | Khi nào |
+|---|---|
+| 422 `VALIDATION_ERROR` | `ma_khoa`/`ma_nganh` trùng (kể cả bản ghi xóa mềm); `khoa_id` không tồn tại; trùng `ten_nganh` trong cùng khoa |
+| 409 `DELETE_BLOCKED` | Xóa khoa còn ngành hoặc còn môn học; xóa ngành còn giảng viên hoặc còn lớp hành chính |
+
+Cả hai loại xóa mềm và **vào được thùng rác**: `GET /api/trash/khoa`, `GET /api/trash/nganh`,
+`POST /api/trash/{type}/{id}/restore`.
+
+---
+
 ## 4. Sinh viên
 
 | Method | Endpoint | Quyền | Ghi chú |
@@ -359,6 +404,11 @@ Response mẫu:
 | PATCH | `/api/teachers/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }`, thu hồi token (BR-30) |
 | POST | `/api/teachers/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-04.05 |
 
+Trường hồ sơ giảng viên: `ma_gv`, `ho_ten`, `email`, `so_dien_thoai`, **`nganh_id`**
+(FK `nganh.id`, nullable), `trang_thai`. **ADR-020: cột `chuyen_mon` đã bị xóa**, thay bằng
+`nganh_id`; resource trả thêm khối lồng `nganh: { id, ma_nganh, ten_nganh, khoa_id }`.
+`GET /api/teachers` lọc được theo `nganh_id` và theo `khoa_id` (lọc khoa đi qua quan hệ ngành).
+
 ---
 
 ## 6. Lớp hành chính
@@ -371,6 +421,10 @@ Response mẫu:
 | PUT | `/api/admin-classes/{id}` | ADMIN |
 | DELETE | `/api/admin-classes/{id}` | ADMIN |
 | GET | `/api/admin-classes/{id}/students` | ADMIN, TEACHER |
+
+`GET /api/admin-classes` lọc được theo `q`, `khoa_hoc`, **`nganh_id`**, **`khoa_id`** và
+`trang_thai`. ADR-020: trường `nganh` (chuỗi) đổi thành **`nganh_id`**; khoa **không** lưu
+trên lớp mà suy ra qua ngành nên resource trả thêm khối lồng `khoa`.
 | POST | `/api/admin-classes/{id}/students` | ADMIN — body `{ "sinh_vien_ids": [1,2] }` |
 | DELETE | `/api/admin-classes/{id}/students/{studentId}` | ADMIN — gỡ khỏi lớp |
 
@@ -381,7 +435,9 @@ Response mẫu:
   "ma_lop": "CNTT-K65-01",
   "ten_lop": "Công nghệ thông tin K65 - Lớp 01",
   "khoa_hoc": "K65",
-  "nganh": "CNTT",
+  "nganh_id": 1,
+  "nganh": { "id": 1, "ma_nganh": "KTPM", "ten_nganh": "Công nghệ phần mềm", "khoa_id": 1 },
+  "khoa": { "id": 1, "ma_khoa": "CNTT", "ten_khoa": "Công nghệ thông tin" },
   "nam_nhap_hoc": 2023,
   "si_so": 42,
   "trang_thai": true,
@@ -407,7 +463,7 @@ Response mẫu:
 | PATCH | `/api/subjects/bulk-status` | ADMIN — `{ "ids": [...], "trang_thai": false }` |
 | POST | `/api/subjects/bulk-delete` | ADMIN — `{ "ids": [...] }`, từng bản ghi áp điều kiện FR-05.03 |
 
-`GET /api/subjects` hỗ trợ tìm theo `q`, lọc `trang_thai` và `so_tin_chi` (số nguyên từ 1 đến 10), sắp xếp bằng `sort_by` (`id`, `ma_mon`, `ten_mon`, `so_tin_chi`, `trang_thai`) và `sort_dir` (`asc`, `desc`), cùng phân trang. Mã môn phải duy nhất; `so_tin_chi` nằm trong khoảng 1–10. Xóa bị từ chối với `409 DELETE_BLOCKED` khi còn lớp học phần chưa xóa thuộc học kỳ chưa `CLOSED`.
+`GET /api/subjects` hỗ trợ tìm theo `q`, lọc `trang_thai`, `so_tin_chi` (số nguyên từ 1 đến 10) và **`khoa_id`**, sắp xếp bằng `sort_by` (`id`, `ma_mon`, `ten_mon`, `so_tin_chi`, `trang_thai`) và `sort_dir` (`asc`, `desc`), cùng phân trang. Môn học có **`khoa_id`** (FK `khoa.id`, nullable, ADR-020) và resource trả khối lồng `khoa: { id, ma_khoa, ten_khoa }`; **không gắn ngành** vì môn thường phục vụ nhiều ngành. Mã môn phải duy nhất; `so_tin_chi` nằm trong khoảng 1–10. Xóa bị từ chối với `409 DELETE_BLOCKED` khi còn lớp học phần chưa xóa thuộc học kỳ chưa `CLOSED`.
 
 ---
 
@@ -472,8 +528,9 @@ Response mẫu:
 | PATCH | `/api/sections/{id}/status` | ADMIN | Chuyển OPEN/CLOSED/CANCELLED |
 | GET | `/api/sections/{id}/students` | ADMIN, TEACHER (lớp mình) | Danh sách sinh viên đang ACTIVE |
 | GET | `/api/sections/{id}/grades` | ADMIN, TEACHER (lớp mình) | Bảng điểm cả lớp |
+| PUT | `/api/sections/{id}/grades` | TEACHER (lớp mình) | Nhập/sửa điểm hàng loạt; không ghi nếu học kỳ đóng hoặc lớp đã chốt |
 | GET | `/api/sections/{id}/attendance-summary` | ADMIN, TEACHER (lớp mình) | Thống kê chuyên cần |
-| POST | `/api/sections/{id}/finalize` | TEACHER (lớp mình) | Chốt điểm; 409 `GRADE_INCOMPLETE` |
+| POST | `/api/sections/{id}/finalize` | TEACHER (lớp mình) | Chặn 409 `NO_ACTIVE_ENROLLMENTS` nếu lớp không có SV ACTIVE; 409 `GRADE_INCOMPLETE` nếu còn thiếu điểm |
 | POST | `/api/sections/{id}/unlock` | ADMIN | Body `{ "ly_do": "..." }` |
 
 Response chi tiết:
@@ -595,38 +652,64 @@ Response đăng ký hàng loạt (`POST /api/enrollments/bulk`) — luôn 200, k
 
 | Method | Endpoint | Quyền | Ghi chú |
 |---|---|---|---|
-| PUT | `/api/enrollments/{id}/grade` | TEACHER (lớp mình) | Nhập/sửa 1 dòng |
+| PUT | `/api/enrollments/{id}/grade` | TEACHER (lớp mình) | Chưa triển khai |
 | PUT | `/api/sections/{id}/grades` | TEACHER (lớp mình) | Nhập hàng loạt |
-| GET | `/api/enrollments/{id}/grade-history` | ADMIN, TEACHER (lớp mình) | Lịch sử sửa |
+| GET | `/api/enrollments/{id}/grade-history` | ADMIN, TEACHER (lớp mình) | Chưa triển khai |
 | GET | `/api/sections/{id}/grades` | ADMIN, TEACHER (lớp mình) | Bảng điểm |
 | GET | `/api/me/grades` | STUDENT | Điểm + GPA theo học kỳ |
 | GET | `/api/me/gpa` | STUDENT | GPA học kỳ + GPA tích lũy (CPA), tín chỉ tích lũy (FR-12.08) |
 
-Request nhập điểm:
+`PUT /api/sections/{id}/grades` nhận danh sách đăng ký ACTIVE thuộc chính lớp đó. Mỗi điểm thành phần có thể là `null` khi chưa chấm; điểm số từ 0–10, tối đa hai chữ số thập phân. `ly_do` không bắt buộc, tối đa 500 ký tự, dùng cho lịch sử sửa điểm.
+
+Request nhập điểm hàng loạt:
 ```json
 {
-  "diem_chuyen_can": 8.5,
-  "diem_giua_ky": 7.0,
-  "diem_cuoi_ky": 8.0,
-  "ly_do": null
+  "ly_do": "Điều chỉnh sau phúc khảo",
+  "diem": [
+    {
+      "dang_ky_hoc_phan_id": 500,
+      "diem_chuyen_can": 8.5,
+      "diem_giua_ky": 7.0,
+      "diem_cuoi_ky": 8.0
+    }
+  ]
 }
 ```
 
-Response:
+Response là mảng các dòng điểm của lớp, cùng cấu trúc với `GET /api/sections/{id}/grades`:
 ```json
 {
-  "id": 77,
-  "dang_ky_hoc_phan_id": 500,
-  "diem_chuyen_can": 8.5,
-  "diem_giua_ky": 7.0,
-  "diem_cuoi_ky": 8.0,
-  "diem_tong_ket": 7.88,
-  "diem_chu": "B",
-  "diem_he_4": 3.0,
-  "ket_qua": "DAT",
-  "da_chot_diem": false
+  "success": true,
+  "data": [
+    {
+      "id": 77,
+      "dang_ky_hoc_phan_id": 500,
+      "sinh_vien": {
+        "id": 12,
+        "ma_sv": "SV0012",
+        "ho_ten": "Nguyễn Văn A",
+        "email": "sv0012@example.edu.vn",
+        "lop": "CNTT K20",
+        "dang_ky_hoc_phan_id": 500
+      },
+      "diem_chuyen_can": 8.5,
+      "diem_giua_ky": 7.0,
+      "diem_cuoi_ky": 8.0,
+      "diem_tong_ket": 7.88,
+      "diem_chu": "B",
+      "diem_he_4": 3.0,
+      "ket_qua": "DAT",
+      "da_chot_diem": false
+    }
+  ]
 }
 ```
+
+Trả `403` nếu không phải giảng viên phụ trách lớp, `409 GRADE_LOCKED` nếu điểm đã chốt,
+`409 SEMESTER_CLOSED` nếu học kỳ đã đóng, và `422 VALIDATION_ERROR` nếu payload sai
+hoặc đăng ký không ACTIVE/không thuộc lớp. Các endpoint nhập điểm đơn
+`PUT /api/enrollments/{id}/grade` và xem lịch sử
+`GET /api/enrollments/{id}/grade-history` vẫn chưa được triển khai.
 
 ### `GET /api/me/grades` — response
 
@@ -761,7 +844,7 @@ Dashboard TEACHER và STUDENT: bổ sung khi làm SCR-04/05 (Tuần 7).
 
 | Method | Endpoint | Quyền | Ghi chú |
 |---|---|---|---|
-| GET | `/api/trash/{type}` | ADMIN | `type`: `users`, `students`, `teachers`, `admin-classes`, `subjects`, `semesters`, `rooms`, `sections`, `sessions`, `menus` |
+| GET | `/api/trash/{type}` | ADMIN | `type`: `users`, `students`, `teachers`, `admin-classes`, `subjects`, `semesters`, `rooms`, `sections`, `sessions`, `menus`, `khoa`, `nganh` |
 | POST | `/api/trash/{type}/{id}/restore` | ADMIN | 409 `RESTORE_PARENT_DELETED` nếu cha đã xóa |
 
 Bộ lọc: `q`, `deleted_by`, `deleted_tu`, `deleted_den`, `page`, `per_page`.
@@ -787,11 +870,13 @@ Bộ lọc: `q`, `deleted_by`, `deleted_tu`, `deleted_den`, `page`, `per_page`.
 | Method | Endpoint | Trả về |
 |---|---|---|
 | GET | `/api/options/semesters` | `[{ id, label, trang_thai, nam_hoc, ky_thu }]` |
-| GET | `/api/options/subjects` | `[{ id, label, so_tin_chi }]` |
+| GET | `/api/options/subjects` | `[{ id, label, so_tin_chi, khoa_id }]` |
 | GET | `/api/options/teachers` | `[{ id, label }]` |
 | GET | `/api/options/rooms` | `[{ id, label, suc_chua }]` |
-| GET | `/api/options/admin-classes` | `[{ id, label, khoa_hoc, nganh }]` |
+| GET | `/api/options/admin-classes` | `[{ id, label, khoa_hoc, nganh_id, nganh }]` (`nganh` là **tên** ngành) |
 | GET | `/api/options/sections` | `[{ id, label, con_cho, nam_thu }]` |
+| GET | `/api/options/khoa` | `[{ id, label, ma_khoa }]` |
+| GET | `/api/options/nganh` | `[{ id, label, khoa_id, ma_nganh }]` — nhận thêm `?khoa_id=` để lọc |
 
 Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi truyền `tat_ca=1`.
 
@@ -803,6 +888,8 @@ Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi tr
 |---|---|
 | Xác thực & hồ sơ | 7 |
 | Người dùng | 8 |
+| Khoa | 5 |
+| Ngành | 5 |
 | Sinh viên | 8 |
 | Giảng viên | 8 |
 | Lớp hành chính | 8 |
@@ -816,8 +903,8 @@ Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi tr
 | Điểm danh cá nhân & dashboard | 6 |
 | Thùng rác | 2 |
 | Menu & cấu hình | 6 |
-| Options | 6 |
-| **Tổng** | **113** |
+| Options | 8 |
+| **Tổng** | **125** |
 
 ---
 

@@ -204,7 +204,7 @@ giữ lại các dòng lỗi trong trạng thái đã chọn để người dùn
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
 | SCR-13 ✅ | Danh sách giảng viên | `/giang-vien` | ADMIN — tìm theo mã/tên/email, lọc chuyên môn/trạng thái, sắp xếp và phân trang; chọn nhiều dòng để kích hoạt/khóa/xóa. Kết nối `/api/teachers` qua `GiangVienService`; mỗi dòng cũng có thao tác sửa/xóa. |
-| SCR-14 ✅ | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN — bắt buộc mã, họ tên, email; tạo tài khoản qua API và hiển thị mật khẩu ban đầu một lần. |
+| SCR-14 ✅ | Thêm/Sửa giảng viên | `/giang-vien/them`, `/giang-vien/:id/sua` | ADMIN — bắt buộc mã, họ tên, email; tạo tài khoản qua API và hiển thị mật khẩu ban đầu một lần. **ADR-020:** ô "Chuyên môn" (nhập tự do) đổi thành ô chọn **Ngành** (`nganh_id`, cho phép để trống). Danh sách giảng viên cũng đổi bộ lọc "Chuyên môn" thành lọc theo Ngành. |
 | SCR-15 ✅ | Chi tiết giảng viên | `/giang-vien/:id` | ADMIN, TEACHER (bản thân) — xem hồ sơ, liên hệ, chuyên môn và trạng thái qua API. TEACHER chỉ được sửa số điện thoại của chính mình. |
 
 Các màn giảng viên dùng `GiangVienService`; mock interceptor có thể bật/tắt
@@ -215,14 +215,14 @@ theo `environment.useMock`, giống luồng sinh viên.
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
 | SCR-16 | Danh sách lớp hành chính | `/lop-hanh-chinh` | ADMIN, TEACHER | Cột: mã, tên, khóa, ngành, sĩ số, trạng thái. Lọc/tìm kiếm/phân trang; ADMIN xóa mềm từng lớp, bị chặn khi còn sinh viên chưa xóa (FR-03.05) |
-| SCR-17 | Thêm/Sửa lớp | `/lop-hanh-chinh/them`, `/:id/sua` | ADMIN | Trường: mã, tên, **khóa** (`khoa_hoc`), ngành, năm nhập học, mô tả |
+| SCR-17 | Thêm/Sửa lớp | `/lop-hanh-chinh/them`, `/:id/sua` | ADMIN | Trường: mã, tên, **khóa** (`khoa_hoc`), **ngành** (ô chọn `nganh_id`, ADR-020 — khoa suy ra từ ngành nên không nhập riêng), năm nhập học, mô tả |
 | SCR-18 | Chi tiết lớp + gán sinh viên | `/lop-hanh-chinh/:id` | ADMIN (dialog chọn nhiều sinh viên) |
 
 ### 3.6. Môn học, Học kỳ, Phòng học
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-19 | Danh sách và chi tiết môn học | `/mon-hoc`, `/mon-hoc/:id` | mọi vai trò (chỉ xem với TEACHER/STUDENT). Tìm theo mã/tên; lọc trạng thái và số tín chỉ; chọn dòng để xem chi tiết. ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-05.04) |
+| SCR-19 | Danh sách và chi tiết môn học | `/mon-hoc`, `/mon-hoc/:id` | mọi vai trò (chỉ xem với TEACHER/STUDENT). Tìm theo mã/tên; lọc trạng thái và số tín chỉ; chọn dòng để xem chi tiết. **ADR-020 còn nợ phần FE:** API và model đã có `khoa_id` + bộ lọc `khoa_id`, nhưng màn này chưa thêm cột Khoa và ô lọc Khoa. ADMIN chọn nhiều dòng để Kích hoạt / Khóa / Xóa (FR-05.04) |
 | SCR-20 | Thêm/Sửa môn học | `/mon-hoc/them`, `/:id/sua` | ADMIN |
 | SCR-21 | Danh sách học kỳ | `/hoc-ky` | mọi vai trò | Cột: mã, tên, năm học, kỳ thứ, khoảng ngày, đợt đăng ký, trạng thái |
 | SCR-22 | Thêm/Sửa học kỳ | `/hoc-ky/them`, `/:id/sua` | ADMIN — có nút chuyển trạng thái. Chỉ hiện nút cho bước kế tiếp hợp lệ: `UPCOMING` → "Bắt đầu kỳ", `ONGOING` → "Đóng kỳ"; `CLOSED` không có nút (BR-24) |
@@ -289,6 +289,8 @@ theo `environment.useMock`, giống luồng sinh viên.
 |---|---|---|---|
 | SCR-52 | Bộ chuyển vai trò | Header, chỉ hiện với ADMIN | Dropdown 3 lựa chọn: ADMIN / Giảng viên / Sinh viên. Lưu `localStorage` khóa `xem_nhu_vai_tro` |
 | SCR-53 | Banner chế độ xem | Đầu trang, dưới header | Hiện khi vai trò xem khác ADMIN: "Đang xem với vai trò **Giảng viên** — dữ liệu và quyền vẫn là ADMIN" + nút "Quay lại ADMIN" |
+| SCR-54 | Danh sách & Thêm/Sửa Khoa | `/khoa`, `/khoa/:id/sua` | ADMIN (ADR-020) | 🔶 **Backend xong, FE chưa làm.** Dự kiến: cột mã khoa, tên khoa, số ngành, trạng thái. Xóa bị chặn khi khoa còn ngành hoặc còn môn học (409 `DELETE_BLOCKED`) |
+| SCR-55 | Danh sách & Thêm/Sửa Ngành | `/nganh`, `/nganh/:id/sua` | ADMIN (ADR-020) | 🔶 **Backend xong, FE chưa làm.** Dự kiến: cột mã ngành, tên ngành, khoa, trạng thái; lọc theo khoa. Xóa bị chặn khi ngành còn giảng viên hoặc lớp hành chính |
 
 **Hành vi chi tiết**
 

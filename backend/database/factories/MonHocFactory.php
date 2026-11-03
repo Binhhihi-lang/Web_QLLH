@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Khoa;
 use App\Models\MonHoc;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -14,6 +15,7 @@ class MonHocFactory extends Factory
     {
         return [
             'ma_mon' => 'MH'.fake()->unique()->numberBetween(1000, 9999),
+            'khoa_id' => fn () => Khoa::query()->value('id') ?? Khoa::factory()->create()->id,
             'ten_mon' => fake()->randomElement([
                 'Lập trình hướng đối tượng',
                 'Cấu trúc dữ liệu và giải thuật',

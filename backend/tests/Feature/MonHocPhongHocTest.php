@@ -96,6 +96,10 @@ class MonHocPhongHocTest extends TestCase
             'ma_mon' => 'CS1001',
             'ten_mon' => 'Cơ sở dữ liệu',
             'trang_thai' => true,
+            // Ghim số tín chỉ: factory sinh ngẫu nhiên 2–4 nên nếu để trống thì
+            // bản ghi này có thể trùng bộ lọc `so_tin_chi=4` phía dưới và test
+            // đỏ khoảng 1/3 số lần chạy.
+            'so_tin_chi' => 3,
         ]);
         MonHoc::factory()->create([
             'ma_mon' => 'CS1002',

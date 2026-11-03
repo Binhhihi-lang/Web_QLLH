@@ -292,6 +292,54 @@ paths:
         "403":
           $ref: "#/components/responses/Loi403"
 
+  /options/khoa:
+    get:
+      tags: [Options]
+      summary: Danh sách khoa cho ô chọn
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/OptionKhoa"
+        "401":
+          $ref: "#/components/responses/Loi401"
+
+  /options/nganh:
+    get:
+      tags: [Options]
+      summary: Danh sách ngành cho ô chọn
+      parameters:
+        - name: khoa_id
+          in: query
+          description: Lọc ngành theo khoa (dựng dropdown phụ thuộc)
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/OptionNganh"
+        "401":
+          $ref: "#/components/responses/Loi401"
+
   /options/admin-classes:
     get:
       tags: [Options]
@@ -337,6 +385,274 @@ paths:
           $ref: "#/components/responses/Loi401"
         "403":
           $ref: "#/components/responses/Loi403"
+
+  /khoa:
+    get:
+      tags: [Khoa]
+      summary: Danh sách khoa — đọc mở cho cả ba vai trò (ADR-020)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Q"
+        - $ref: "#/components/parameters/SortDir"
+        - $ref: "#/components/parameters/TrangThaiLoc"
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [id, ma_khoa, ten_khoa, trang_thai]
+            default: id
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - $ref: "#/components/schemas/PhanTrang"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Khoa"
+        "401":
+          $ref: "#/components/responses/Loi401"
+    post:
+      tags: [Khoa]
+      summary: Tạo khoa (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KhoaInput"
+      responses:
+        "201":
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Khoa"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /khoa/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Khoa]
+      summary: Chi tiết khoa
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Khoa"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "404":
+          $ref: "#/components/responses/Loi404"
+    put:
+      tags: [Khoa]
+      summary: Cập nhật khoa (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KhoaInput"
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Khoa"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "422":
+          $ref: "#/components/responses/Loi422"
+    delete:
+      tags: [Khoa]
+      summary: Xóa mềm khoa (ADMIN)
+      description: Tra 409 DELETE_BLOCKED khi khoa còn ngành hoặc còn môn học.
+      responses:
+        "200":
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThanhCong"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+
+  /nganh:
+    get:
+      tags: [Ngành]
+      summary: Danh sách ngành — đọc mở cho cả ba vai trò (ADR-020)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Q"
+        - $ref: "#/components/parameters/SortDir"
+        - $ref: "#/components/parameters/TrangThaiLoc"
+        - name: khoa_id
+          in: query
+          schema:
+            type: integer
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [id, ma_nganh, ten_nganh, trang_thai]
+            default: id
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - $ref: "#/components/schemas/PhanTrang"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Nganh"
+        "401":
+          $ref: "#/components/responses/Loi401"
+    post:
+      tags: [Ngành]
+      summary: Tạo ngành (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NganhInput"
+      responses:
+        "201":
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Nganh"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /nganh/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Ngành]
+      summary: Chi tiết ngành
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Nganh"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "404":
+          $ref: "#/components/responses/Loi404"
+    put:
+      tags: [Ngành]
+      summary: Cập nhật ngành (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NganhInput"
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Nganh"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "422":
+          $ref: "#/components/responses/Loi422"
+    delete:
+      tags: [Ngành]
+      summary: Xóa mềm ngành (ADMIN)
+      description: Tra 409 DELETE_BLOCKED khi ngành còn giảng viên hoặc còn lớp hành chính.
+      responses:
+        "200":
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThanhCong"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
 
   /students:
     get:
@@ -1897,7 +2213,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [users, students, teachers, admin-classes, subjects, semesters, rooms, sections, sessions, menus]
+            enum: [users, students, teachers, admin-classes, subjects, semesters, rooms, sections, sessions, menus, khoa, nganh]
           description: Loại thực thể trong thùng rác
         - name: q
           in: query
@@ -1945,7 +2261,8 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/ThanhCongPhanTrang"
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - $ref: "#/components/schemas/PhanTrang"
                   - type: object
                     properties:
                       data:
@@ -1969,7 +2286,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [users, students, teachers, admin-classes, subjects, semesters, rooms, sections, sessions, menus]
+            enum: [users, students, teachers, admin-classes, subjects, semesters, rooms, sections, sessions, menus, khoa, nganh]
         - name: id
           in: path
           required: true
@@ -2000,6 +2317,741 @@ paths:
                 message: Không thể khôi phục vì bản ghi cha đã bị xóa.
                 ma_loi: RESTORE_PARENT_DELETED
                 errors: null
+
+  /me:
+    put:
+      tags: [Hồ sơ]
+      summary: Sửa hồ sơ cá nhân (FR-01.06)
+      description: |
+        Trường sửa được phụ thuộc vai trò: ADMIN gửi `name`/`email` (lưu trên `users`);
+        GIANG_VIEN gửi `so_dien_thoai`; SINH_VIEN gửi `so_dien_thoai`/`dia_chi`.
+        Trường không thuộc vai trò bị bỏ qua chứ không báo lỗi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HoSoInput"
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDung"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /users:
+    get:
+      tags: [Người dùng]
+      summary: Danh sách tài khoản (ADMIN)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Q"
+        - $ref: "#/components/parameters/SortDir"
+        - $ref: "#/components/parameters/TrangThaiLoc"
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [id, name, email, vai_tro, trang_thai]
+            default: id
+        - name: vai_tro
+          in: query
+          schema:
+            type: string
+            enum: [ADMIN, GIANG_VIEN, SINH_VIEN]
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - $ref: "#/components/schemas/PhanTrang"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/NguoiDung"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+    post:
+      tags: [Người dùng]
+      summary: Tạo tài khoản (ADMIN)
+      description: Mật khẩu sinh ngẫu nhiên 12 ký tự, chỉ trả về duy nhất lần này. Tài khoản mới buộc đổi mật khẩu ở lần đăng nhập đầu.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NguoiDungInput"
+      responses:
+        "201":
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDungTaoMoi"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /users/bulk-status:
+    patch:
+      tags: [Người dùng]
+      summary: Khóa/mở nhiều tài khoản (ADMIN, BR-31)
+      description: Luôn trả 200 kèm kết quả từng dòng; khóa thì thu hồi toàn bộ token (BR-30). Không khóa được tài khoản của chính mình.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkStatusInput"
+      responses:
+        "200":
+          description: Đã xử lý từng dòng
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/BulkKetQua"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /users/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Người dùng]
+      summary: Chi tiết tài khoản (ADMIN)
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDung"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+    put:
+      tags: [Người dùng]
+      summary: Cập nhật tài khoản (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NguoiDungInput"
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDung"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "422":
+          $ref: "#/components/responses/Loi422"
+    delete:
+      tags: [Người dùng]
+      summary: Xóa mềm tài khoản (ADMIN)
+      description: Chỉ xóa được tài khoản vai trò ADMIN. Tài khoản giảng viên/sinh viên xóa ở endpoint của nhóm tương ứng. Không xóa được chính mình.
+      responses:
+        "200":
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+
+  /users/{id}/status:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    patch:
+      tags: [Người dùng]
+      summary: Khóa/mở một tài khoản (ADMIN, BR-30)
+      description: Khóa thì thu hồi toàn bộ token Sanctum ngay; không khóa được tài khoản của chính mình (403).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trang_thai]
+              properties:
+                trang_thai:
+                  type: boolean
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NguoiDung"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+
+  /users/{id}/reset-password:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    post:
+      tags: [Người dùng]
+      summary: Đặt lại mật khẩu (ADMIN)
+      description: Trả mật khẩu mới một lần, đặt `must_change_password = true` và thu hồi toàn bộ token cũ.
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/NguoiDung"
+                          - type: object
+                            properties:
+                              mat_khau_moi:
+                                type: string
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+
+  /sections:
+    get:
+      tags: [Lớp học phần]
+      summary: Danh sách lớp học phần — phạm vi theo vai trò (FR-08.02)
+      description: |
+        ADMIN xem tất cả; GIANG_VIEN chỉ thấy lớp mình phụ trách; SINH_VIEN thấy lớp
+        `OPEN` và lớp mình đã đăng ký ACTIVE.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Q"
+        - $ref: "#/components/parameters/SortDir"
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [id, ma_lop_hp, si_so_toi_da, nam_thu, trang_thai]
+            default: id
+        - name: hoc_ky_id
+          in: query
+          schema:
+            type: integer
+        - name: mon_hoc_id
+          in: query
+          schema:
+            type: integer
+        - name: giang_vien_id
+          in: query
+          schema:
+            type: integer
+        - name: nam_thu
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 6
+        - name: trang_thai
+          in: query
+          schema:
+            type: string
+            enum: [OPEN, CLOSED, CANCELLED]
+        - name: con_cho
+          in: query
+          description: "`true` = chỉ lớp còn chỗ trống"
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - $ref: "#/components/schemas/PhanTrang"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/LopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+    post:
+      tags: [Lớp học phần]
+      summary: Mở lớp học phần (ADMIN, FR-08.01)
+      description: |
+        422 khi mã lớp đã tồn tại trong học kỳ (kể cả bản ghi xóa mềm), môn/giảng viên
+        đang ngừng hoạt động, hoặc `nam_thu` ngoài 1–6. 409 `SEMESTER_CLOSED` khi học kỳ đã đóng.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LopHocPhanInput"
+      responses:
+        "201":
+          description: Mở lớp thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "409":
+          $ref: "#/components/responses/Loi409"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /sections/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Lớp học phần]
+      summary: Chi tiết lớp học phần
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+    put:
+      tags: [Lớp học phần]
+      summary: Cập nhật lớp học phần (ADMIN, FR-08.03)
+      description: |
+        Đổi giảng viên: kiểm tra trùng lịch trên buổi `SCHEDULED` → 409 `SCHEDULE_CONFLICT`
+        kèm `errors.trung_lich[]`. Đổi môn/học kỳ khi lớp đã có đăng ký khác CANCELLED →
+        409 `SUBJECT_CHANGE_BLOCKED` / `SEMESTER_CHANGE_BLOCKED`. Giảm `si_so_toi_da` xuống
+        dưới số đăng ký ACTIVE → 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LopHocPhanInput"
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+        "422":
+          $ref: "#/components/responses/Loi422"
+    delete:
+      tags: [Lớp học phần]
+      summary: Xóa mềm lớp học phần (ADMIN, FR-08.06)
+      description: Xóa mềm lớp và các buổi học của lớp. 409 `DELETE_BLOCKED` nếu còn đăng ký ACTIVE.
+      responses:
+        "200":
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+
+  /sections/{id}/status:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    patch:
+      tags: [Lớp học phần]
+      summary: Chuyển trạng thái lớp (ADMIN, FR-08.04)
+      description: |
+        Sang `CANCELLED` thì đăng ký ACTIVE chuyển thành CANCELLED (ghi `huy_luc`, `huy_boi`)
+        và buổi `SCHEDULED` chuyển thành CANCELLED. 409 `GRADE_LOCKED` nếu lớp đã chốt điểm (BR-29).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trang_thai]
+              properties:
+                trang_thai:
+                  type: string
+                  enum: [OPEN, CLOSED, CANCELLED]
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /sections/{id}/students:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Lớp học phần]
+      summary: Sinh viên của lớp (ADMIN, TEACHER chủ lớp)
+      description: Chỉ trả đăng ký ACTIVE (BR-21).
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SinhVienTrongLop"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+
+  /sections/{id}/grades:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Lớp học phần]
+      summary: Bảng điểm cả lớp (ADMIN, TEACHER chủ lớp)
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DongDiemLop"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+
+    put:
+      tags: [Lớp học phần]
+      summary: Nhập điểm hàng loạt (TEACHER phụ trách lớp)
+      description: |
+        Chỉ giảng viên phụ trách lớp được ghi điểm. Mỗi dòng phải tham chiếu đăng ký ACTIVE
+        thuộc lớp; điểm thành phần có thể null khi chưa chấm và nằm trong khoảng 0–10,
+        tối đa hai chữ số thập phân. Ghi lịch sử các trường thay đổi, kèm `ly_do` nếu có.
+        Trả 409 `GRADE_LOCKED` nếu lớp đã chốt điểm hoặc `SEMESTER_CLOSED` nếu học kỳ đã đóng.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [diem]
+              properties:
+                ly_do:
+                  type: string
+                  nullable: true
+                  maxLength: 500
+                diem:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - dang_ky_hoc_phan_id
+                      - diem_chuyen_can
+                      - diem_giua_ky
+                      - diem_cuoi_ky
+                    properties:
+                      dang_ky_hoc_phan_id:
+                        type: integer
+                        minimum: 1
+                      diem_chuyen_can:
+                        type: number
+                        nullable: true
+                        minimum: 0
+                        maximum: 10
+                      diem_giua_ky:
+                        type: number
+                        nullable: true
+                        minimum: 0
+                        maximum: 10
+                      diem_cuoi_ky:
+                        type: number
+                        nullable: true
+                        minimum: 0
+                        maximum: 10
+            example:
+              ly_do: Điều chỉnh sau phúc khảo
+              diem:
+                - dang_ky_hoc_phan_id: 500
+                  diem_chuyen_can: 8.5
+                  diem_giua_ky: 7
+                  diem_cuoi_ky: 8
+      responses:
+        "200":
+          description: Đã lưu; trả lại bảng điểm cập nhật
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DongDiemLop"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
+  /sections/{id}/attendance-summary:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Lớp học phần]
+      summary: Thống kê chuyên cần cả lớp (ADMIN, TEACHER chủ lớp)
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ThongKeChuyenCan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+
+  /sections/{id}/finalize:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    post:
+      tags: [Lớp học phần]
+      summary: Chốt điểm cả lớp (TEACHER chủ lớp)
+      description: |
+        Chỉ TEACHER phụ trách lớp (ADMIN nhận 403 theo ma trận phân quyền).
+        Trả 409 `NO_ACTIVE_ENROLLMENTS` nếu lớp không có đăng ký ACTIVE.
+        Trả 409 `GRADE_INCOMPLETE` kèm `errors.thieu_diem[]` nếu còn đăng ký ACTIVE
+        chưa đủ 3 điểm thành phần. Trả 409 `GRADE_LOCKED` nếu lớp đã chốt.
+      responses:
+        "200":
+          description: Chốt thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/LopHocPhan"
+                          - type: object
+                            properties:
+                              so_dong_diem:
+                                type: integer
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "409":
+          $ref: "#/components/responses/Loi409"
+
+  /sections/{id}/unlock:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    post:
+      tags: [Lớp học phần]
+      summary: Mở khóa điểm (ADMIN)
+      description: Bắt buộc có `ly_do`; thao tác luôn ghi `nhat_ky`. Lớp chưa chốt điểm thì không làm gì và trả thông báo tương ứng.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ly_do]
+              properties:
+                ly_do:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LopHocPhan"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "404":
+          $ref: "#/components/responses/Loi404"
+        "422":
+          $ref: "#/components/responses/Loi422"
 
 components:
   securitySchemes:
@@ -2192,6 +3244,29 @@ components:
               type: integer
               minimum: 1
               maximum: 10
+            khoa_id:
+              type: integer
+              nullable: true
+
+    OptionKhoa:
+      allOf:
+        - $ref: "#/components/schemas/Option"
+        - type: object
+          properties:
+            ma_khoa:
+              type: string
+              example: CNTT
+
+    OptionNganh:
+      allOf:
+        - $ref: "#/components/schemas/Option"
+        - type: object
+          properties:
+            khoa_id:
+              type: integer
+            ma_nganh:
+              type: string
+              example: KTPM
 
     OptionHocKy:
       allOf:
@@ -2244,9 +3319,13 @@ components:
               type: string
               nullable: true
               description: Khóa (cohort), ví dụ K65 — không phải khoa/faculty
+            nganh_id:
+              type: integer
+              nullable: true
             nganh:
               type: string
               nullable: true
+              description: Tên ngành để hiển thị thẳng trong dropdown
 
     NguoiDung:
       type: object
@@ -2315,10 +3394,14 @@ components:
           type: string
           nullable: true
           description: Khóa (cohort, năm nhập học), ví dụ K65 — không phải khoa/faculty (ADR-016)
-        nganh:
-          type: string
+        nganh_id:
+          type: integer
           nullable: true
-          example: CNTT
+          description: FK `nganh.id` (ADR-020)
+        nganh:
+          $ref: "#/components/schemas/NganhRutGon"
+        khoa:
+          $ref: "#/components/schemas/KhoaRutGon"
         nam_nhap_hoc:
           type: integer
           nullable: true
@@ -2346,15 +3429,124 @@ components:
           type: string
           maxLength: 20
           nullable: true
-        nganh:
-          type: string
-          maxLength: 20
+        nganh_id:
+          type: integer
           nullable: true
+          description: FK `nganh.id` (ADR-020) — khoa suy ra qua ngành
         nam_nhap_hoc:
           type: integer
           minimum: 1900
           maximum: 2100
           nullable: true
+        mo_ta:
+          type: string
+          nullable: true
+        trang_thai:
+          type: boolean
+
+    # ---------- Khoa & Ngành (ADR-020) ----------
+    KhoaRutGon:
+      type: object
+      required: [id, ma_khoa, ten_khoa]
+      properties:
+        id:
+          type: integer
+        ma_khoa:
+          type: string
+          example: CNTT
+        ten_khoa:
+          type: string
+          example: Công nghệ thông tin
+
+    Khoa:
+      type: object
+      required: [id, ma_khoa, ten_khoa, trang_thai, so_nganh, da_xoa]
+      properties:
+        id:
+          type: integer
+        ma_khoa:
+          type: string
+          example: CNTT
+        ten_khoa:
+          type: string
+        mo_ta:
+          type: string
+          nullable: true
+        trang_thai:
+          type: boolean
+        so_nganh:
+          type: integer
+          description: Số ngành trực thuộc khoa
+        da_xoa:
+          type: boolean
+
+    KhoaInput:
+      type: object
+      required: [ma_khoa, ten_khoa]
+      properties:
+        ma_khoa:
+          type: string
+          maxLength: 20
+        ten_khoa:
+          type: string
+          maxLength: 255
+        mo_ta:
+          type: string
+          nullable: true
+        trang_thai:
+          type: boolean
+
+    NganhRutGon:
+      type: object
+      required: [id, ma_nganh, ten_nganh, khoa_id]
+      properties:
+        id:
+          type: integer
+        ma_nganh:
+          type: string
+          example: KTPM
+        ten_nganh:
+          type: string
+          example: Công nghệ phần mềm
+        khoa_id:
+          type: integer
+
+    Nganh:
+      type: object
+      required: [id, khoa_id, ma_nganh, ten_nganh, trang_thai, da_xoa]
+      properties:
+        id:
+          type: integer
+        khoa_id:
+          type: integer
+        khoa:
+          $ref: "#/components/schemas/KhoaRutGon"
+        ma_nganh:
+          type: string
+          example: KTPM
+        ten_nganh:
+          type: string
+        mo_ta:
+          type: string
+          nullable: true
+        trang_thai:
+          type: boolean
+        da_xoa:
+          type: boolean
+
+    NganhInput:
+      type: object
+      required: [khoa_id, ma_nganh, ten_nganh]
+      properties:
+        khoa_id:
+          type: integer
+          description: Ngành bắt buộc thuộc một khoa
+        ma_nganh:
+          type: string
+          maxLength: 20
+        ten_nganh:
+          type: string
+          maxLength: 255
         mo_ta:
           type: string
           nullable: true
@@ -2462,9 +3654,12 @@ components:
         so_dien_thoai:
           type: string
           nullable: true
-        chuyen_mon:
-          type: string
+        nganh_id:
+          type: integer
           nullable: true
+          description: ADR-020 — thay cho cột `chuyen_mon` cũ
+        nganh:
+          $ref: "#/components/schemas/NganhRutGon"
         trang_thai:
           type: boolean
         avatar_url:
@@ -2490,9 +3685,10 @@ components:
           type: string
           maxLength: 20
           nullable: true
-        chuyen_mon:
-          type: string
+        nganh_id:
+          type: integer
           nullable: true
+          description: FK `nganh.id` (ADR-020)
         trang_thai:
           type: boolean
 
@@ -2515,6 +3711,12 @@ components:
         ma_mon:
           type: string
           example: INT2215
+        khoa_id:
+          type: integer
+          nullable: true
+          description: FK `khoa.id` (ADR-020) — khoa quản lý môn
+        khoa:
+          $ref: "#/components/schemas/KhoaRutGon"
         ten_mon:
           type: string
         so_tin_chi:
@@ -2536,6 +3738,10 @@ components:
         ma_mon:
           type: string
           maxLength: 20
+        khoa_id:
+          type: integer
+          nullable: true
+          description: FK `khoa.id` (ADR-020)
         ten_mon:
           type: string
           maxLength: 255
@@ -2910,6 +4116,254 @@ components:
         trang_thai:
           type: string
           enum: [THANH_CONG, DA_HUY]
+
+    LopHocPhan:
+      type: object
+      properties:
+        id:
+          type: integer
+        ma_lop_hp:
+          type: string
+          description: Duy nhất trong phạm vi học kỳ, kể cả bản ghi đã xóa mềm
+        mon_hoc:
+          type: object
+          properties:
+            id:
+              type: integer
+            ma_mon:
+              type: string
+            ten_mon:
+              type: string
+            so_tin_chi:
+              type: integer
+        hoc_ky:
+          type: object
+          properties:
+            id:
+              type: integer
+            ma_hoc_ky:
+              type: string
+            ten_hoc_ky:
+              type: string
+            nam_hoc:
+              type: string
+            ky_thu:
+              type: integer
+            trang_thai:
+              type: string
+              enum: [UPCOMING, ONGOING, CLOSED]
+        giang_vien:
+          type: object
+          properties:
+            id:
+              type: integer
+            ma_gv:
+              type: string
+            ho_ten:
+              type: string
+        si_so_toi_da:
+          type: integer
+        si_so_hien_tai:
+          type: integer
+          description: Số đăng ký ACTIVE; không lưu thành cột để không lệch dữ liệu
+        con_cho:
+          type: integer
+        nam_thu:
+          type: integer
+          nullable: true
+          description: null = lớp phục vụ mọi năm thứ (BR-23)
+        trang_thai:
+          type: string
+          enum: [OPEN, CLOSED, CANCELLED]
+        da_chot_diem:
+          type: boolean
+        chot_diem_luc:
+          type: string
+          nullable: true
+          example: "2026-10-29 09:00:00"
+        da_xoa:
+          type: boolean
+
+    LopHocPhanInput:
+      type: object
+      required: [ma_lop_hp, mon_hoc_id, hoc_ky_id, giang_vien_id, si_so_toi_da]
+      properties:
+        ma_lop_hp:
+          type: string
+          maxLength: 30
+        mon_hoc_id:
+          type: integer
+        hoc_ky_id:
+          type: integer
+        giang_vien_id:
+          type: integer
+        si_so_toi_da:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        nam_thu:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 6
+        trang_thai:
+          type: string
+          enum: [OPEN, CLOSED, CANCELLED]
+
+    SinhVienTrongLop:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id sinh viên
+        ma_sv:
+          type: string
+        ho_ten:
+          type: string
+        email:
+          type: string
+          format: email
+        lop:
+          type: string
+          nullable: true
+          description: Tên lớp hành chính
+        dang_ky_hoc_phan_id:
+          type: integer
+
+    DongDiemLop:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+          description: id dòng điểm; null khi chưa nhập điểm
+        dang_ky_hoc_phan_id:
+          type: integer
+        sinh_vien:
+          $ref: "#/components/schemas/SinhVienTrongLop"
+        diem_chuyen_can:
+          type: number
+          nullable: true
+        diem_giua_ky:
+          type: number
+          nullable: true
+        diem_cuoi_ky:
+          type: number
+          nullable: true
+        diem_tong_ket:
+          type: number
+          nullable: true
+        diem_chu:
+          type: string
+          nullable: true
+          enum: [A, B, C, D, F, null]
+        diem_he_4:
+          type: number
+          nullable: true
+        ket_qua:
+          type: string
+          nullable: true
+          enum: [DAT, KHONG_DAT, null]
+        da_chot_diem:
+          type: boolean
+
+    ThongKeChuyenCan:
+      type: object
+      properties:
+        lop_hoc_phan_id:
+          type: integer
+        ma_lop_hp:
+          type: string
+        tong_buoi:
+          type: integer
+        sinh_vien:
+          type: array
+          items:
+            type: object
+            properties:
+              dang_ky_hoc_phan_id:
+                type: integer
+              sinh_vien:
+                $ref: "#/components/schemas/SinhVienTrongLop"
+              co_mat:
+                type: integer
+              di_muon:
+                type: integer
+              vang:
+                type: integer
+              co_phep:
+                type: integer
+              ty_le:
+                type: number
+                nullable: true
+                description: (PRESENT + LATE) / (tổng buổi đã điểm danh − EXCUSED); null khi mẫu số bằng 0
+
+    NguoiDungInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        vai_tro:
+          type: string
+          enum: [ADMIN, GIANG_VIEN, SINH_VIEN]
+        trang_thai:
+          type: boolean
+
+    NguoiDungTaoMoi:
+      allOf:
+        - $ref: "#/components/schemas/NguoiDung"
+        - type: object
+          properties:
+            mat_khau_ban_dau:
+              type: string
+              description: Chỉ trả về duy nhất ở lần tạo tài khoản
+
+    HoSoInput:
+      type: object
+      description: Trường nào gửi lên phải thuộc vai trò người gọi; trường khác bị bỏ qua.
+      properties:
+        name:
+          type: string
+          description: ADMIN
+        email:
+          type: string
+          format: email
+          description: ADMIN
+        so_dien_thoai:
+          type: string
+          nullable: true
+          maxLength: 20
+          description: GIANG_VIEN, SINH_VIEN
+        dia_chi:
+          type: string
+          nullable: true
+          description: SINH_VIEN
+
+    TrungLich:
+      type: object
+      properties:
+        ngay_hoc:
+          type: string
+          example: "2026-11-10"
+        gio_bat_dau:
+          type: string
+          example: "07:30:00"
+        gio_ket_thuc:
+          type: string
+          example: "09:30:00"
+        loai:
+          type: string
+          enum: [giang_vien, phong_hoc, sinh_vien]
+        doi_tuong:
+          type: string
+          description: Mã giảng viên / phòng học bị trùng
+        ma_lop_hp:
+          type: string
 
   responses:
     Loi401:

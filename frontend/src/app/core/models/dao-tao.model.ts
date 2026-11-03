@@ -36,7 +36,7 @@ export interface HoSoNguoiDung {
   ma_sv?: string;
   ma_gv?: string;
   lop_hanh_chinh_id?: number | null;
-  chuyen_mon?: string | null;
+  nganh_id?: number | null;
 }
 
 export interface SinhVien {
@@ -61,13 +61,55 @@ export interface LopHanhChinhRutGon {
   ten_lop: string;
 }
 
+/** Khoa — đơn vị quản lý cấp trên của ngành và của môn học (ADR-020). */
+export interface Khoa {
+  id: number;
+  ma_khoa: string;
+  ten_khoa: string;
+  mo_ta: string | null;
+  trang_thai: boolean;
+  so_nganh: number;
+  da_xoa: boolean;
+}
+
+export interface KhoaRutGon {
+  id: number;
+  ma_khoa: string;
+  ten_khoa: string;
+}
+
+/**
+ * Ngành — trực thuộc một khoa. `giang_vien.nganh_id` và `lop_hanh_chinh.nganh_id`
+ * cùng trỏ về đây, thay cho hai cột chuỗi dùng hai từ vựng khác nhau trước kia.
+ */
+export interface Nganh {
+  id: number;
+  khoa_id: number;
+  khoa: KhoaRutGon | null;
+  ma_nganh: string;
+  ten_nganh: string;
+  mo_ta: string | null;
+  trang_thai: boolean;
+  da_xoa: boolean;
+}
+
+export interface NganhRutGon {
+  id: number;
+  ma_nganh: string;
+  ten_nganh: string;
+  khoa_id: number;
+}
+
 export interface LopHanhChinh {
   id: number;
   ma_lop: string;
   ten_lop: string;
   /** Khóa (cohort), ví dụ K65 — KHÔNG phải khoa/faculty. Xem ADR-016. */
   khoa_hoc: string | null;
-  nganh: string | null;
+  nganh_id: number | null;
+  nganh: NganhRutGon | null;
+  /** Suy ra từ ngành, không lưu riêng trên lớp. */
+  khoa: KhoaRutGon | null;
   /** Năm nhập học, dùng tính năm thứ (03-data-model.md §5.6). */
   nam_nhap_hoc: number | null;
   si_so: number;
@@ -140,7 +182,9 @@ export interface GiangVien {
   ho_ten: string;
   email: string;
   so_dien_thoai: string | null;
-  chuyen_mon: string | null;
+  /** ADR-020: thay cho cột chuỗi `chuyen_mon` cũ. */
+  nganh_id: number | null;
+  nganh: NganhRutGon | null;
   trang_thai: boolean;
   avatar_url: string | null;
   da_xoa: boolean;
@@ -149,6 +193,8 @@ export interface GiangVien {
 export interface MonHoc {
   id: number;
   ma_mon: string;
+  khoa_id: number | null;
+  khoa: KhoaRutGon | null;
   ten_mon: string;
   so_tin_chi: number;
   mo_ta: string | null;
@@ -167,6 +213,16 @@ export interface TuyChon<T = number> {
 
 export interface TuyChonMonHoc extends TuyChon {
   so_tin_chi: number;
+  khoa_id: number | null;
+}
+
+export interface TuyChonKhoa extends TuyChon {
+  ma_khoa: string;
+}
+
+export interface TuyChonNganh extends TuyChon {
+  khoa_id: number;
+  ma_nganh: string;
 }
 
 export interface TuyChonHocKy extends TuyChon {
@@ -181,6 +237,8 @@ export interface TuyChonPhongHoc extends TuyChon {
 
 export interface TuyChonLopHanhChinh extends TuyChon {
   khoa_hoc: string | null;
+  nganh_id: number | null;
+  /** Tên ngành để hiển thị thẳng trong dropdown. */
   nganh: string | null;
 }
 

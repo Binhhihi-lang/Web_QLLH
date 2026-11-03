@@ -51,10 +51,46 @@ class LopHocPhanPolicy
 
     /**
      * Chỉ TEACHER phụ trách lớp hoặc ADMIN được đổi trạng thái.
+     *
+     * Lưu ý: route `PATCH /api/sections/{id}/status` hiện chỉ mở cho ADMIN theo
+     * hợp đồng (docs/04 §10), nên nhánh TEACHER dưới đây chưa có đường vào.
+     * Giữ lại để khi hợp đồng mở cho TEACHER thì không phải viết lại quyền.
      */
     public function doiTrangThai(User $nguoiDung, LopHocPhan $lop): bool
     {
         return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
+    }
+
+    /**
+     * ADMIN hoặc TEACHER phụ trách lớp được xem sinh viên / bảng điểm / chuyên cần.
+     */
+    public function xemSinhVien(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
+    }
+
+    public function xemDiem(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
+    }
+
+    public function nhapDiem(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $this->laGiangVienCuaLop($nguoiDung, $lop);
+    }
+
+    /**
+     * BR-03: chỉ TEACHER phụ trách lớp được chốt điểm — ADMIN không chốt hộ
+     * (docs/06-test-plan.md §5: `POST /api/sections/{id}/finalize` → ADMIN 403).
+     */
+    public function chotDiem(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $this->laGiangVienCuaLop($nguoiDung, $lop);
+    }
+
+    public function moKhoaDiem(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $nguoiDung->laAdmin();
     }
 
     private function laGiangVienCuaLop(User $nguoiDung, LopHocPhan $lop): bool

@@ -60,7 +60,7 @@ describe('GiangVienService', () => {
         ho_ten: 'Giảng viên mới',
         email: 'gv-moi@example.edu.vn',
         so_dien_thoai: null,
-        chuyen_mon: null,
+        nganh_id: null,
         trang_thai: true,
       }),
     );
@@ -77,7 +77,7 @@ describe('GiangVienService', () => {
         ho_ten: 'Nguyễn Minh An đã sửa',
         email: 'an@example.edu.vn',
         so_dien_thoai: '0900000000',
-        chuyen_mon: 'Hệ thống thông tin',
+        nganh_id: 2,
         trang_thai: true,
       }),
     );

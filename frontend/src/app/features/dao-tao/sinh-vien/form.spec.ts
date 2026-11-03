@@ -86,7 +86,7 @@ describe('SinhVienForm', () => {
     const form = fixture.componentInstance;
     form.lopId.set(1);
     fixture.detectChanges();
-    form.dsLop.set([{ id: 1, label: 'CNTT-K65-01', khoa_hoc: 'K65', nganh: 'CNTT' }]);
+    form.dsLop.set([{ id: 1, label: 'KTPM-K65-01', khoa_hoc: 'K65', nganh_id: 1, nganh: 'Công nghệ phần mềm' }]);
     fixture.detectChanges();
 
     const select = fixture.nativeElement.querySelector('#lop-hanh-chinh') as HTMLSelectElement;

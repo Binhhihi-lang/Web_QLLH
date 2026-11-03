@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\LopHanhChinh;
+use App\Models\Nganh;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +21,8 @@ class LopHanhChinhFactory extends Factory
             'ma_lop' => sprintf('%s-%s%03d', $nganh, $khoaHoc, $so),
             'ten_lop' => sprintf('Lớp %s-%s%03d', $nganh, $khoaHoc, $so),
             'khoa_hoc' => $khoaHoc,
-            'nganh' => $nganh,
+            // Mã trong `ma_lop` chỉ để dễ đọc; ngành thật nằm ở khóa ngoại.
+            'nganh_id' => fn () => Nganh::query()->value('id') ?? Nganh::factory()->create()->id,
             // K65 nhập học 2023, K66 → 2024, ... Cùng công thức với seeder.
             'nam_nhap_hoc' => 2000 + (int) substr($khoaHoc, 1) - 42,
             'mo_ta' => null,

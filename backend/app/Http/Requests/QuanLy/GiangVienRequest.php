@@ -24,7 +24,7 @@ class GiangVienRequest extends FormRequest
                 'ma_gv' => ['prohibited'],
                 'ho_ten' => ['prohibited'],
                 'email' => ['prohibited'],
-                'chuyen_mon' => ['prohibited'],
+                'nganh_id' => ['prohibited'],
                 'trang_thai' => ['prohibited'],
             ];
         }
@@ -40,7 +40,7 @@ class GiangVienRequest extends FormRequest
                 Rule::unique('giang_vien', 'email')->ignore($giangVien?->id),
             ],
             'so_dien_thoai' => ['nullable', 'string', 'max:20'],
-            'chuyen_mon' => ['nullable', 'string', 'max:255'],
+            'nganh_id' => ['nullable', 'integer', Rule::exists('nganh', 'id')->whereNull('deleted_at')],
             'trang_thai' => ['sometimes', 'boolean'],
         ];
     }

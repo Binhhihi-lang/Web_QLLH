@@ -19,7 +19,7 @@ class LopHanhChinh extends Model
         'ma_lop',
         'ten_lop',
         'khoa_hoc',
-        'nganh',
+        'nganh_id',
         'nam_nhap_hoc',
         'mo_ta',
         'trang_thai',
@@ -28,6 +28,7 @@ class LopHanhChinh extends Model
     protected function casts(): array
     {
         return [
+            'nganh_id' => 'integer',
             'nam_nhap_hoc' => 'integer',
             'trang_thai' => 'boolean',
         ];
@@ -36,6 +37,11 @@ class LopHanhChinh extends Model
     public function sinhVien(): HasMany
     {
         return $this->hasMany(SinhVien::class);
+    }
+
+    public function nganh(): BelongsTo
+    {
+        return $this->belongsTo(Nganh::class);
     }
 
     public function xoaBoi(): BelongsTo

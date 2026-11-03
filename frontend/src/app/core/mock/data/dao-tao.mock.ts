@@ -1,4 +1,14 @@
-import { GiangVien, HocKy, LopHanhChinh, MonHoc, SinhVien } from '@core/models/dao-tao.model';
+import {
+  GiangVien,
+  HocKy,
+  Khoa,
+  KhoaRutGon,
+  LopHanhChinh,
+  MonHoc,
+  Nganh,
+  NganhRutGon,
+  SinhVien,
+} from '@core/models/dao-tao.model';
 
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Vũ', 'Võ', 'Đặng', 'Bùi'];
 const DEM_NAM = ['Văn', 'Minh', 'Quốc', 'Hữu', 'Đức', 'Thành', 'Công', 'Tuấn'];
@@ -24,23 +34,53 @@ const rand = seeded(20261024);
 const pick = <T>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
 const int = (min: number, max: number) => min + Math.floor(rand() * (max - min + 1));
 
+const KHOA_CNTT: KhoaRutGon = { id: 1, ma_khoa: 'CNTT', ten_khoa: 'Công nghệ thông tin' };
+const KHOA_DTVT: KhoaRutGon = { id: 2, ma_khoa: 'DTVT', ten_khoa: 'Điện tử viễn thông' };
+
+export const KHOA_MOCK: Khoa[] = [
+  { id: 1, ma_khoa: 'CNTT', ten_khoa: 'Công nghệ thông tin', mo_ta: 'Khoa công nghệ thông tin.', trang_thai: true, so_nganh: 4, da_xoa: false },
+  { id: 2, ma_khoa: 'DTVT', ten_khoa: 'Điện tử viễn thông', mo_ta: 'Khoa điện tử viễn thông.', trang_thai: true, so_nganh: 2, da_xoa: false },
+  { id: 3, ma_khoa: 'KT', ten_khoa: 'Kinh tế', mo_ta: null, trang_thai: false, so_nganh: 0, da_xoa: false },
+];
+
+/** Mã ngành dùng lại ở `nganhRutGon` — giữ một nguồn để mock không tự lệch. */
+export const NGANH_MOCK: Nganh[] = [
+  { id: 1, khoa_id: 1, khoa: KHOA_CNTT, ma_nganh: 'KTPM', ten_nganh: 'Công nghệ phần mềm', mo_ta: 'Thiết kế và kiểm thử phần mềm.', trang_thai: true, da_xoa: false },
+  { id: 2, khoa_id: 1, khoa: KHOA_CNTT, ma_nganh: 'HTTT', ten_nganh: 'Hệ thống thông tin', mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 3, khoa_id: 1, khoa: KHOA_CNTT, ma_nganh: 'KHMT', ten_nganh: 'Khoa học máy tính', mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 4, khoa_id: 1, khoa: KHOA_CNTT, ma_nganh: 'ATTT', ten_nganh: 'An toàn thông tin', mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 5, khoa_id: 2, khoa: KHOA_DTVT, ma_nganh: 'DTVT', ten_nganh: 'Điện tử viễn thông', mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 6, khoa_id: 2, khoa: KHOA_DTVT, ma_nganh: 'MTTT', ten_nganh: 'Mạng và truyền thông', mo_ta: null, trang_thai: true, da_xoa: false },
+];
+
+export const nganhRutGon = (id: number | null): NganhRutGon | null => {
+  const n = id === null ? undefined : NGANH_MOCK.find((x) => x.id === id);
+  if (n === undefined) return null;
+  return { id: n.id, ma_nganh: n.ma_nganh, ten_nganh: n.ten_nganh, khoa_id: n.khoa_id };
+};
+
+export const khoaCuaNganh = (nganhId: number | null): KhoaRutGon | null =>
+  (nganhId === null ? undefined : NGANH_MOCK.find((x) => x.id === nganhId))?.khoa ?? null;
+
 export const LOP_HANH_CHINH_MOCK: LopHanhChinh[] = [
-  { id: 1, ma_lop: 'CNTT-K65-01', ten_lop: 'Công nghệ thông tin K65 - Lớp 01', khoa_hoc: 'K65', nganh: 'CNTT', nam_nhap_hoc: 2023, si_so: 42, trang_thai: true, da_xoa: false },
-  { id: 2, ma_lop: 'CNTT-K66-02', ten_lop: 'Công nghệ thông tin K66 - Lớp 02', khoa_hoc: 'K66', nganh: 'CNTT', nam_nhap_hoc: 2024, si_so: 38, trang_thai: true, da_xoa: false },
-  { id: 3, ma_lop: 'KTPM-K66-03', ten_lop: 'Kỹ thuật phần mềm K66 - Lớp 03', khoa_hoc: 'K66', nganh: 'KTPM', nam_nhap_hoc: 2024, si_so: 45, trang_thai: true, da_xoa: false },
-  { id: 4, ma_lop: 'HTTT-K67-04', ten_lop: 'Hệ thống thông tin K67 - Lớp 04', khoa_hoc: 'K67', nganh: 'HTTT', nam_nhap_hoc: 2025, si_so: 36, trang_thai: true, da_xoa: false },
-  { id: 5, ma_lop: 'ATTT-K67-05', ten_lop: 'An toàn thông tin K67 - Lớp 05', khoa_hoc: 'K67', nganh: 'ATTT', nam_nhap_hoc: 2025, si_so: 40, trang_thai: true, da_xoa: false },
+  { id: 1, ma_lop: 'KTPM-K65-01', ten_lop: 'Công nghệ phần mềm K65 - Lớp 01', khoa_hoc: 'K65', nganh_id: 1, nganh: nganhRutGon(1), khoa: khoaCuaNganh(1), nam_nhap_hoc: 2023, si_so: 42, trang_thai: true, da_xoa: false },
+  { id: 2, ma_lop: 'KTPM-K66-02', ten_lop: 'Công nghệ phần mềm K66 - Lớp 02', khoa_hoc: 'K66', nganh_id: 1, nganh: nganhRutGon(1), khoa: khoaCuaNganh(1), nam_nhap_hoc: 2024, si_so: 38, trang_thai: true, da_xoa: false },
+  { id: 3, ma_lop: 'HTTT-K66-03', ten_lop: 'Hệ thống thông tin K66 - Lớp 03', khoa_hoc: 'K66', nganh_id: 2, nganh: nganhRutGon(2), khoa: khoaCuaNganh(2), nam_nhap_hoc: 2024, si_so: 45, trang_thai: true, da_xoa: false },
+  { id: 4, ma_lop: 'KHMT-K67-04', ten_lop: 'Khoa học máy tính K67 - Lớp 04', khoa_hoc: 'K67', nganh_id: 3, nganh: nganhRutGon(3), khoa: khoaCuaNganh(3), nam_nhap_hoc: 2025, si_so: 36, trang_thai: true, da_xoa: false },
+  { id: 5, ma_lop: 'ATTT-K67-05', ten_lop: 'An toàn thông tin K67 - Lớp 05', khoa_hoc: 'K67', nganh_id: 4, nganh: nganhRutGon(4), khoa: khoaCuaNganh(4), nam_nhap_hoc: 2025, si_so: 40, trang_thai: true, da_xoa: false },
+  { id: 6, ma_lop: 'DTVT-K67-06', ten_lop: 'Điện tử viễn thông K67 - Lớp 06', khoa_hoc: 'K67', nganh_id: 5, nganh: nganhRutGon(5), khoa: khoaCuaNganh(5), nam_nhap_hoc: 2025, si_so: 33, trang_thai: true, da_xoa: false },
 ];
 
 export const MON_HOC_MOCK: MonHoc[] = [
-  { id: 1, ma_mon: 'INT2203', ten_mon: 'Lập trình hướng đối tượng', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
-  { id: 2, ma_mon: 'INT2204', ten_mon: 'Cơ sở dữ liệu', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
-  { id: 3, ma_mon: 'INT2207', ten_mon: 'Phân tích thiết kế hệ thống', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
-  { id: 4, ma_mon: 'INT2215', ten_mon: 'Lập trình web', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
-  { id: 5, ma_mon: 'MAT1093', ten_mon: 'Đại số tuyến tính', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
-  { id: 6, ma_mon: 'INT2211', ten_mon: 'Mạng máy tính', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
-  { id: 7, ma_mon: 'INT3306', ten_mon: 'Phát triển ứng dụng di động', so_tin_chi: 3, mo_ta: null, trang_thai: false, da_xoa: false },
-  { id: 8, ma_mon: 'INT3401', ten_mon: 'Trí tuệ nhân tạo', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 1, ma_mon: 'INT2203', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Lập trình hướng đối tượng', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 2, ma_mon: 'INT2204', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Cơ sở dữ liệu', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 3, ma_mon: 'INT2207', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Phân tích thiết kế hệ thống', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 4, ma_mon: 'INT2215', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Lập trình web', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 5, ma_mon: 'MAT1093', khoa_id: null, khoa: null, ten_mon: 'Đại số tuyến tính', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 6, ma_mon: 'INT2211', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Mạng máy tính', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 7, ma_mon: 'INT3306', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Phát triển ứng dụng di động', so_tin_chi: 3, mo_ta: null, trang_thai: false, da_xoa: false },
+  { id: 8, ma_mon: 'INT3401', khoa_id: 1, khoa: KHOA_CNTT, ten_mon: 'Trí tuệ nhân tạo', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
+  { id: 9, ma_mon: 'DTV1101', khoa_id: 2, khoa: KHOA_DTVT, ten_mon: 'Kỹ thuật số', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
 ];
 
 export const HOC_KY_MOCK: HocKy[] = [
@@ -50,20 +90,22 @@ export const HOC_KY_MOCK: HocKy[] = [
   { id: 4, ma_hoc_ky: '2026-2', ten_hoc_ky: 'Học kỳ 2 năm học 2026-2027', nam_hoc: '2026-2027', ky_thu: 2, ngay_bat_dau: '2027-01-25', ngay_ket_thuc: '2027-05-28', mo_dang_ky_luc: '2027-01-04 08:00:00', dong_dang_ky_luc: '2027-01-22 17:00:00', trang_thai: 'UPCOMING', dang_mo_dang_ky: false },
 ];
 
-const BO_MON = ['Khoa học máy tính', 'Công nghệ phần mềm', 'Hệ thống thông tin', 'An toàn thông tin'];
-
 export const GIANG_VIEN_MOCK: GiangVien[] = Array.from({ length: 12 }, (_, i) => {
   const nu = rand() > 0.5;
   const ho = pick(HO);
   const dem = nu ? pick(DEM_NU) : pick(DEM_NAM);
   const ten = nu ? pick(TEN_NU) : pick(TEN_NAM);
+  // Đúng một lần `pick` như trước (thay cho cột chuyên môn cũ) để chuỗi số giả
+  // ngẫu nhiên không đổi — dữ liệu mock phải giữ tính xác định.
+  const nganhId = pick(NGANH_MOCK).id;
   return {
     id: i + 1,
     ma_gv: `GV${String(i + 1).padStart(4, '0')}`,
     ho_ten: `${ho} ${dem} ${ten}`,
     email: `gv${String(i + 1).padStart(4, '0')}@university.edu.vn`,
     so_dien_thoai: `09${int(10000000, 99999999)}`,
-    chuyen_mon: pick(BO_MON),
+    nganh_id: nganhId,
+    nganh: nganhRutGon(nganhId),
     trang_thai: true,
     avatar_url: null,
     da_xoa: false,

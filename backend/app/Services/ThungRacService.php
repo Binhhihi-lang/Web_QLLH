@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\BuoiHoc;
 use App\Models\GiangVien;
 use App\Models\HocKy;
+use App\Models\Khoa;
 use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\Menu;
 use App\Models\MonHoc;
+use App\Models\Nganh;
 use App\Models\NhatKy;
 use App\Models\PhongHoc;
 use App\Models\SinhVien;
@@ -36,6 +38,8 @@ class ThungRacService
         'sections' => LopHocPhan::class,
         'sessions' => BuoiHoc::class,
         'menus' => Menu::class,
+        'khoa' => Khoa::class,
+        'nganh' => Nganh::class,
     ];
 
     /**
@@ -158,6 +162,12 @@ class ThungRacService
                     break;
                 case 'menus':
                     $sub->where('ten_menu', 'like', $term)->orWhere('url', 'like', $term);
+                    break;
+                case 'khoa':
+                    $sub->where('ma_khoa', 'like', $term)->orWhere('ten_khoa', 'like', $term);
+                    break;
+                case 'nganh':
+                    $sub->where('ma_nganh', 'like', $term)->orWhere('ten_nganh', 'like', $term);
                     break;
                 default:
                     $sub->where('id', 'like', $term);

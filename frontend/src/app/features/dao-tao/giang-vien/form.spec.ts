@@ -12,6 +12,7 @@ describe('GiangVienForm', () => {
     layMot: ReturnType<typeof vi.fn>;
     taoMoi: ReturnType<typeof vi.fn>;
     capNhat: ReturnType<typeof vi.fn>;
+    layTuyChonNganh: ReturnType<typeof vi.fn>;
   };
   let router: { navigate: ReturnType<typeof vi.fn> };
 
@@ -34,6 +35,7 @@ describe('GiangVienForm', () => {
       layMot: vi.fn(),
       taoMoi: vi.fn(() => of({ ...existingTeacher, mat_khau_ban_dau: 'MockGV2026!!' })),
       capNhat: vi.fn(() => of(existingTeacher)),
+      layTuyChonNganh: vi.fn(() => of([])),
     };
     TestBed.configureTestingModule({
       imports: [GiangVienForm],

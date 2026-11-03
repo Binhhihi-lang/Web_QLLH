@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\GiangVien;
+use App\Models\Nganh;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +23,9 @@ class GiangVienSeeder extends Seeder
         $dem = ['Văn', 'Thị', 'Minh', 'Quang', 'Hữu', 'Thanh', 'Ngọc', 'Đức', 'Thu', 'Anh'];
         $ten = ['An', 'Bình', 'Cường', 'Dũng', 'Hà', 'Hải', 'Hùng', 'Lan', 'Linh', 'Mai', 'Nam', 'Phúc', 'Quân', 'Sơn', 'Trang', 'Tú', 'Vinh', 'Yến'];
         $chuyenMon = ['Công nghệ phần mềm', 'Hệ thống thông tin', 'Khoa học máy tính', 'Mạng và truyền thông', 'An toàn thông tin'];
+
+        // ADR-020: giảng viên gắn ngành bằng khóa ngoại, không còn cột chuỗi chuyên môn.
+        $idNganhTheoTen = Nganh::query()->pluck('id', 'ten_nganh');
 
         $matKhauChung = Hash::make('password');
         $bayGio = now();
@@ -52,7 +56,7 @@ class GiangVienSeeder extends Seeder
                 'ho_ten' => $hoTen,
                 'email' => $email,
                 'so_dien_thoai' => '09'.str_pad((string) (10000000 + $i), 8, '0', STR_PAD_LEFT),
-                'chuyen_mon' => $chuyenMon[$i % count($chuyenMon)],
+                'nganh_id' => $idNganhTheoTen[$chuyenMon[$i % count($chuyenMon)]] ?? null,
                 'trang_thai' => true,
                 'created_at' => $bayGio,
                 'updated_at' => $bayGio,
@@ -79,7 +83,7 @@ class GiangVienSeeder extends Seeder
             'ho_ten' => 'Nguyễn Văn Giảng',
             'email' => 'giangvien@example.com',
             'so_dien_thoai' => '0900000000',
-            'chuyen_mon' => 'Công nghệ phần mềm',
+            'nganh_id' => $idNganhTheoTen['Công nghệ phần mềm'] ?? null,
             'user_id' => $demoUser->id,
             'trang_thai' => true,
             'created_at' => $bayGio,

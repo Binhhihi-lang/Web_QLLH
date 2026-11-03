@@ -1,0 +1,4 @@
+# bỏ đóng gói file .env  để nó không nhận db Aiven vào 
+.env
+.env.*
+!.env.example

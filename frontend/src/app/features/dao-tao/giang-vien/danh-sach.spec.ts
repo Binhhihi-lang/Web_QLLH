@@ -11,6 +11,7 @@ describe('GiangVienDanhSach', () => {
     doiTrangThaiHangLoat: ReturnType<typeof vi.fn>;
     xoaHangLoat: ReturnType<typeof vi.fn>;
     xoa: ReturnType<typeof vi.fn>;
+    layTuyChonNganh: ReturnType<typeof vi.fn>;
   };
 
   const giangVien = {
@@ -19,7 +20,8 @@ describe('GiangVienDanhSach', () => {
     ho_ten: 'Nguyễn Minh An',
     email: 'an@example.edu.vn',
     so_dien_thoai: '0912345678',
-    chuyen_mon: 'Công nghệ phần mềm',
+    nganh_id: 1,
+    nganh: { id: 1, ma_nganh: 'KTPM', ten_nganh: 'Công nghệ phần mềm', khoa_id: 1 },
     trang_thai: true,
     avatar_url: null,
     da_xoa: false,
@@ -42,6 +44,7 @@ describe('GiangVienDanhSach', () => {
         of({ thanh_cong: 1, that_bai: 0, chi_tiet: [{ id: 1, ket_qua: 'THANH_CONG' }] }),
       ),
       xoa: vi.fn(() => of(undefined)),
+      layTuyChonNganh: vi.fn(() => of([])),
     };
 
     TestBed.configureTestingModule({

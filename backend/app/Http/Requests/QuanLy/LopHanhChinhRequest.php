@@ -22,7 +22,7 @@ class LopHanhChinhRequest extends FormRequest
             'ma_lop' => ['required', 'string', 'max:20', Rule::unique('lop_hanh_chinh', 'ma_lop')->ignore($lopHanhChinh?->id)],
             'ten_lop' => ['required', 'string', 'max:255'],
             'khoa_hoc' => ['nullable', 'string', 'max:20'],
-            'nganh' => ['nullable', 'string', 'max:20'],
+            'nganh_id' => ['nullable', 'integer', Rule::exists('nganh', 'id')->whereNull('deleted_at')],
             'nam_nhap_hoc' => ['nullable', 'integer', 'between:1900,2100'],
             'mo_ta' => ['nullable', 'string'],
             'trang_thai' => ['sometimes', 'boolean'],

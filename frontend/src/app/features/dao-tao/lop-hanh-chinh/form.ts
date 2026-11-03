@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TuyChonNganh } from '@core/models/dao-tao.model';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 import { FormField } from '@shared/ui/form-field';
@@ -81,16 +82,18 @@ import { LopHanhChinhInput, LopHanhChinhService } from './lop-hanh-chinh.service
               (giaTriChange)="khoaHoc.set($event)"
               (cham)="daCham.set(true)"
             />
-            <app-form-field
-              id="nganh"
-              nhan="Ngành"
-              goiY="Ví dụ: CNTT"
-              [giaTri]="nganh()"
-              [loi]="loiNganh()"
-              [daCham]="daCham()"
-              (giaTriChange)="nganh.set($event)"
-              (cham)="daCham.set(true)"
-            />
+            <label class="truong">
+              <span>Ngành</span>
+              <select id="nganh" [value]="nganhId() ?? ''" (change)="doiNganh($event)">
+                <option value="">Chưa phân ngành</option>
+                @for (n of dsNganh(); track n.id) {
+                  <option [value]="n.id">{{ n.label }}</option>
+                }
+              </select>
+              @if (loiNganh()) {
+                <small>{{ loiNganh() }}</small>
+              }
+            </label>
             <app-form-field
               id="nam-nhap-hoc"
               loai="number"
@@ -315,7 +318,9 @@ export class LopHanhChinhForm {
   readonly maLop = signal('');
   readonly tenLop = signal('');
   readonly khoaHoc = signal('');
-  readonly nganh = signal('');
+  /** ADR-020: lớp gắn ngành; khoa suy ra từ ngành nên form không nhập khoa riêng. */
+  readonly nganhId = signal<number | null>(null);
+  readonly dsNganh = signal<TuyChonNganh[]>([]);
   readonly namNhapHoc = signal('');
   readonly moTa = signal('');
   readonly trangThai = signal(true);
@@ -344,7 +349,17 @@ export class LopHanhChinhForm {
   });
 
   constructor() {
+    this.service.layTuyChonNganh().subscribe({
+      next: (ds) => this.dsNganh.set(ds),
+      error: () => this.dsNganh.set([]),
+    });
+
     if (this.laChinhSua) this.tai();
+  }
+
+  doiNganh(event: Event): void {
+    const giaTri = (event.target as HTMLSelectElement).value;
+    this.nganhId.set(giaTri === '' ? null : Number(giaTri));
   }
 
   gui(event: Event): void {
@@ -369,7 +384,7 @@ export class LopHanhChinhForm {
       ma_lop: this.maLop().trim(),
       ten_lop: this.tenLop().trim(),
       khoa_hoc: this.khoaHoc().trim() || null,
-      nganh: this.nganh().trim() || null,
+      nganh_id: this.nganhId(),
       nam_nhap_hoc: this.namNhapHoc().trim() ? Number(this.namNhapHoc()) : null,
       mo_ta: this.moTa().trim() || null,
       trang_thai: this.trangThai(),
@@ -410,8 +425,7 @@ export class LopHanhChinhForm {
   }
 
   loiNganh(): string {
-    return this.loiTruong('nganh') ||
-      (this.nganh().trim().length > 20 ? 'Ngành không được vượt quá 20 ký tự.' : '');
+    return this.loiTruong('nganh_id');
   }
 
   loiTruong(field: string): string {
@@ -430,7 +444,7 @@ export class LopHanhChinhForm {
         this.maLop.set(lop.ma_lop);
         this.tenLop.set(lop.ten_lop);
         this.khoaHoc.set(lop.khoa_hoc ?? '');
-        this.nganh.set(lop.nganh ?? '');
+        this.nganhId.set(lop.nganh_id);
         this.namNhapHoc.set(lop.nam_nhap_hoc?.toString() ?? '');
         this.moTa.set(lop.mo_ta ?? '');
         this.trangThai.set(lop.trang_thai);

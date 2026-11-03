@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { GiangVien, ThamSoDanhSach } from '@core/models/dao-tao.model';
+import { GiangVien, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { KetQuaHangLoat, PaginatedResponse } from '@core/mock/mock-response';
 import { environment } from '@env/environment';
 
@@ -23,6 +23,13 @@ export class GiangVienService {
 
   layMot(id: number): Observable<GiangVien> {
     return this.http.get<{ data: GiangVien }>(`${this.goc}/teachers/${id}`).pipe(map((r) => r.data));
+  }
+
+  /** Ngành cho ô chọn ở form (ADR-020). */
+  layTuyChonNganh(): Observable<TuyChonNganh[]> {
+    return this.http
+      .get<{ data: TuyChonNganh[] }>(`${this.goc}/options/nganh`)
+      .pipe(map((r) => r.data));
   }
 
   taoMoi(duLieu: GiangVienInput): Observable<GiangVienTaoMoi> {
@@ -62,7 +69,8 @@ export interface GiangVienInput {
   ho_ten: string;
   email: string;
   so_dien_thoai: string | null;
-  chuyen_mon: string | null;
+  /** ADR-020: gắn ngành thay cho cột chuỗi `chuyen_mon` cũ. */
+  nganh_id: number | null;
   trang_thai: boolean;
 }
 

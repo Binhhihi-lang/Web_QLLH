@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\GiangVien;
+use App\Models\Nganh;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,12 +21,8 @@ class GiangVienFactory extends Factory
             'ho_ten' => $hoTen,
             'email' => fake()->unique()->safeEmail(),
             'so_dien_thoai' => fake()->numerify('09########'),
-            'chuyen_mon' => fake()->randomElement([
-                'Công nghệ phần mềm',
-                'Hệ thống thông tin',
-                'Khoa học máy tính',
-                'Mạng và truyền thông',
-            ]),
+            // Dùng lại ngành có sẵn nếu có để test không sinh thêm khoa/ngành mỗi dòng.
+            'nganh_id' => fn () => Nganh::query()->value('id') ?? Nganh::factory()->create()->id,
             'user_id' => User::factory()->giangVien(),
             'trang_thai' => true,
         ];

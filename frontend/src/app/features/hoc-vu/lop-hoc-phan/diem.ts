@@ -3,14 +3,16 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { DongDiem, LopHocPhanService } from '@core/services/lop-hoc-phan.service';
+import { chuanHoaTimKiem } from '@core/utils/chuan-hoa-tim-kiem';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 import { PageHeader } from '@shared/ui/page-header';
+import { SearchInput } from '@shared/ui/search-input';
 
 @Component({
   selector: 'app-lop-hoc-phan-diem',
   standalone: true,
-  imports: [FormsModule, RouterLink, AppAlert, AppButton, PageHeader],
+  imports: [FormsModule, RouterLink, AppAlert, AppButton, PageHeader, SearchInput],
   template: `
     <app-page-header
       title="Bảng điểm lớp"
@@ -24,6 +26,16 @@ import { PageHeader } from '@shared/ui/page-header';
     @if (dangTai()) {
       <p class="loading" role="status">Đang tải bảng điểm…</p>
     } @else if (diem().length) {
+      <section class="loc">
+        <app-search-input
+          class="tim"
+          placeholder="Tìm theo mã SV hoặc họ tên…"
+          (valueChange)="tuKhoa.set($event)"
+        />
+        @if (tuKhoa()) {
+          <span class="dem">Khớp {{ diemHienThi().length }}/{{ diem().length }} sinh viên</span>
+        }
+      </section>
       <section class="toolbar">
         <span>{{ daChot() ? 'Điểm đã chốt' : 'Có thể chỉnh sửa điểm' }}</span>
         <div>
@@ -48,68 +60,72 @@ import { PageHeader } from '@shared/ui/page-header';
           }
         </div>
       </section>
-      <div class="bang">
-        <table>
-          <thead>
-            <tr>
-              <th>Mã SV</th>
-              <th>Họ và tên</th>
-              <th>Chuyên cần</th>
-              <th>Giữa kỳ</th>
-              <th>Cuối kỳ</th>
-              <th>Tổng kết</th>
-              <th>Điểm chữ</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of diem(); track row.dang_ky_hoc_phan_id) {
+      @if (diemHienThi().length) {
+        <div class="bang">
+          <table>
+            <thead>
               <tr>
-                <td>{{ row.sinh_vien.ma_sv }}</td>
-                <td>{{ row.sinh_vien.ho_ten }}</td>
-                <td>
-                  <input
-                    aria-label="Điểm chuyên cần"
-                    type="number"
-                    min="0"
-                    max="10"
-                    step=".01"
-                    [disabled]="daChot()"
-                    [(ngModel)]="row.diem_chuyen_can"
-                  />
-                </td>
-                <td>
-                  <input
-                    aria-label="Điểm giữa kỳ"
-                    type="number"
-                    min="0"
-                    max="10"
-                    step=".01"
-                    [disabled]="daChot()"
-                    [(ngModel)]="row.diem_giua_ky"
-                  />
-                </td>
-                <td>
-                  <input
-                    aria-label="Điểm cuối kỳ"
-                    type="number"
-                    min="0"
-                    max="10"
-                    step=".01"
-                    [disabled]="daChot()"
-                    [(ngModel)]="row.diem_cuoi_ky"
-                  />
-                </td>
-                <td>
-                  <strong>{{ tong(row) }}</strong>
-                </td>
-                <td>
-                  <span class="badge">{{ chu(row) }}</span>
-                </td>
+                <th>Mã SV</th>
+                <th>Họ và tên</th>
+                <th>Chuyên cần</th>
+                <th>Giữa kỳ</th>
+                <th>Cuối kỳ</th>
+                <th>Tổng kết</th>
+                <th>Điểm chữ</th>
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              @for (row of diemHienThi(); track row.dang_ky_hoc_phan_id) {
+                <tr>
+                  <td>{{ row.sinh_vien.ma_sv }}</td>
+                  <td>{{ row.sinh_vien.ho_ten }}</td>
+                  <td>
+                    <input
+                      aria-label="Điểm chuyên cần"
+                      type="number"
+                      min="0"
+                      max="10"
+                      step=".01"
+                      [disabled]="daChot()"
+                      [(ngModel)]="row.diem_chuyen_can"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      aria-label="Điểm giữa kỳ"
+                      type="number"
+                      min="0"
+                      max="10"
+                      step=".01"
+                      [disabled]="daChot()"
+                      [(ngModel)]="row.diem_giua_ky"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      aria-label="Điểm cuối kỳ"
+                      type="number"
+                      min="0"
+                      max="10"
+                      step=".01"
+                      [disabled]="daChot()"
+                      [(ngModel)]="row.diem_cuoi_ky"
+                    />
+                  </td>
+                  <td>
+                    <strong>{{ tong(row) }}</strong>
+                  </td>
+                  <td>
+                    <span class="badge">{{ chu(row) }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="empty">Không có sinh viên nào khớp "{{ tuKhoa() }}".</p>
+      }
     } @else {
       <p class="empty">Lớp học phần chưa có sinh viên đăng ký.</p>
     }
@@ -119,6 +135,22 @@ import { PageHeader } from '@shared/ui/page-header';
       color: var(--color-primary);
       font-weight: 600;
       text-decoration: none;
+    }
+    .loc {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    /* Ô tìm kiếm không giãn hết hàng: bảng điểm là màn nhập liệu, chỗ đó để cho bảng. */
+    .loc .tim {
+      flex: 1 1 260px;
+      max-width: 340px;
+    }
+    .dem {
+      color: var(--color-ink-muted);
+      font-size: var(--text-caption);
     }
     .toolbar {
       display: flex;
@@ -189,6 +221,7 @@ export class LopHocPhanDiem {
   private readonly service = inject(LopHocPhanService);
   readonly id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   readonly diem = signal<DongDiem[]>([]);
+  readonly tuKhoa = signal('');
   readonly loi = signal('');
   readonly dangTai = signal(true);
   readonly dangLuu = signal(false);
@@ -197,6 +230,22 @@ export class LopHocPhanDiem {
   readonly duDiem = computed(
     () => this.hopLe() && this.diem().length > 0 && this.diem().every((row) => this.diemDayDu(row)),
   );
+
+  /**
+   * Chỉ ảnh hưởng phần HIỂN THỊ. `hopLe`, `duDiem`, `luu`, `chot` vẫn đọc `diem()`
+   * đầy đủ — chốt điểm phải kiểm tra cả lớp, không phải mỗi trang đang nhìn thấy.
+   */
+  readonly diemHienThi = computed(() => {
+    const tuKhoa = chuanHoaTimKiem(this.tuKhoa());
+
+    if (tuKhoa === '') {
+      return this.diem();
+    }
+
+    return this.diem().filter((row) =>
+      chuanHoaTimKiem(`${row.sinh_vien.ma_sv} ${row.sinh_vien.ho_ten}`).includes(tuKhoa),
+    );
+  });
 
   constructor() {
     this.tai();

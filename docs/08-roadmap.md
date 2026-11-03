@@ -59,6 +59,78 @@ Thứ tự đã sửa theo ADR-010: **Lớp học phần → Buổi học → Đ
 
 ---
 
+## Trạng thái thực tế tại 2026-10-29
+
+Nhánh `develop` ở commit `6192548` (đã merge, đã push, working tree sạch). Toàn bộ
+nhánh feature còn lại đều đã nằm trong `develop`; không còn nhánh nào chưa merge.
+
+**Commit `6192548` mang vào `develop`:**
+
+| Hạng mục | Chi tiết |
+|---|---|
+| Dashboard ADMIN | `DashboardController` + `DashboardService` (163 dòng) + `DashboardTest` 103 dòng; FE `features/dashboard/dashboard-admin.ts` (14,1 kB chunk) |
+| Thùng rác SCR-45 | `ThungRacController` + `ThungRacService` (211 dòng) + `ThungRacTest`; FE `features/thung-rac/thung-rac.ts` + `trash.registry.ts` + `thung-rac.service.ts` |
+| Hạ tầng staging | `backend/Dockerfile`, `docker-compose.staging.yml`, `nginx.staging.conf` |
+| Postman | Sinh lại collection: **87 request** (trước 74) |
+| **`useMock` đổi thành `false`** | FE gọi backend thật ở mọi màn — xem cảnh báo bên dưới |
+
+**Đợt bổ sung chiều 2026-10-29 (nhánh `pm-dong-bo-tien-do-29-10`):**
+
+| Việc | Chi tiết |
+|---|---|
+| **Module lớp học phần — 11 endpoint** (nhận từ Tiến) | `LopHocPhanController` + `QuanLyLopHocPhanService` + `LopHocPhanRequest`/`TrangThaiLopRequest`/`MoKhoaDiemRequest` + `LopHocPhanResource` + mở rộng `LopHocPhanPolicy`; `LopHocPhanTest` **14 case** |
+| **`/api/users` — 8 endpoint** | `NguoiDungController` + `QuanLyNguoiDungService` + `NguoiDungRequest`; BR-30 thu hồi token khi khóa, reset mật khẩu, `NguoiDungTest` **11 case** |
+| **`PUT /api/me`** | `HoSoController::capNhatHoSo` + `CapNhatHoSoRequest` — mỗi vai trò sửa trường của mình |
+| Sửa test đỏ buổi sáng | `login.spec.ts` điều kiện hoá theo `environment.useMock`, thêm case "ẩn khối tài khoản mẫu khi chạy backend thật" |
+| Sửa test **flaky có sẵn** | `MonHocPhongHocTest::test_danh_sach_mon_hoc_...` đỏ ~1/3 số lần chạy vì `MonHocFactory` sinh `so_tin_chi` ngẫu nhiên 2–4 trùng bộ lọc; đã ghim giá trị |
+| `openapi.yaml` | Thêm **14 path** (hồ sơ, người dùng, lớp học phần) và 9 schema; **sửa 1 `$ref` gãy có sẵn** (`ThanhCongPhanTrang` ở `/trash/{type}` — trỏ tới schema không tồn tại) |
+| Postman | Thêm folder **12 — Người dùng**, **13 — Lớp học phần**, **14 — Hồ sơ cá nhân** với đầy đủ ca lỗi |
+
+**Số liệu đo sau đợt chiều 2026-10-29:**
+
+| Hạng mục | Số lượng | Ghi chú |
+|---|---|---|
+| Endpoint Laravel khớp hợp đồng | **82 / 113** | Còn **31** endpoint chưa có route |
+| `openapi.yaml` | **58 path / 88 operation** | 0 `$ref` gãy; còn 25 operation chưa đặc tả |
+| Postman | **135 request / 15 folder** | Trước là 87 request |
+| Test backend | **124 test (112 pass, 12 skip)** | 12 skip do Docker/MySQL chưa chạy |
+| Test frontend | **202 test — pass hết** | Sáng nay còn 1 test đỏ |
+| `ng build` | sạch | |
+| Pint | sạch trên toàn bộ file mới/sửa | |
+
+**Cảnh báo còn lại — `useMock: false` làm màn chưa có backend lỗi.** Sau đợt này
+`/sections`, `/users` và `PUT /me` đã có thật, nhưng các màn sau vẫn gọi endpoint
+**chưa tồn tại**: `/semesters` (SCR-21/22), `/enrollments` (SCR-30–33),
+`/sessions` + `/schedules` (SCR-35–40), `/me/grades` + `/me/gpa` (SCR-42),
+`/sessions/{id}/attendance` + `/me/attendance*` (SCR-38–40).
+Tạm thời bật `environment.useMock = true` khi cần demo nhóm màn này.
+
+**Endpoint còn thiếu theo nhóm hợp đồng:**
+
+| Nhóm | Thiếu | Ai làm theo phân công |
+|---|---|---|
+| Học kỳ | 6 | Tiến (vòng đời trạng thái BR-24/25) |
+| Buổi học & lịch | 8 | PM (Tuần 6) |
+| Đăng ký | 7 | PM + Tiến (Tuần 7) |
+| Điểm | 6 | Tiến (Tuần 9) |
+| Điểm danh & dashboard | 5 | PM (Tuần 8) + Tiến |
+
+> Đã xong trong đợt này: hồ sơ (1), người dùng (8), lớp học phần (11). Tổng 3 nhóm
+> cộng lại 20 endpoint, khớp mức tăng 62 → 82.
+>
+> Lệch 1 đơn vị giữa "còn 31" và tổng bảng trên (32) là do nhóm menu & cấu hình
+> thực tế có 7 endpoint (`menus` 5 + `settings` 2) trong khi hợp đồng §18 ghi 6.
+
+**Màn hình đã có code trên `develop` (21 màn + style-guide):** SCR-01, 02, 03,
+10–20, 25–28, 45, 47, 48. Còn lại ~26 màn: SCR-02B, 04, 05, 21–24, 29–43, 49–53.
+
+> **Bàn giao thực tế:** luồng đào tạo (sinh viên, giảng viên, lớp hành chính, môn
+> học, phòng học) và **lớp học phần** đã chạy thật; người dùng và hồ sơ cá nhân có
+> backend nhưng màn SCR-50/51/02B chưa làm. Đăng ký, lịch, điểm danh, điểm vẫn chỉ
+> có giao diện.
+
+---
+
 ## Trạng thái thực tế tại 2026-10-26
 
 Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng để biết tuần nào thực sự đã xong.

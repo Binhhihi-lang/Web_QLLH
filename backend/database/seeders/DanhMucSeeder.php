@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\HocKy;
+use App\Models\Khoa;
 use App\Models\LopHanhChinh;
 use App\Models\MonHoc;
+use App\Models\Nganh;
 use App\Models\PhongHoc;
 use Illuminate\Database\Seeder;
 
@@ -24,7 +26,10 @@ class DanhMucSeeder extends Seeder
             return;
         }
 
-        $nganh = ['CNTT', 'KTPM', 'HTTT', 'ATTT', 'KHMT'];
+        // Dùng mã ngành thật để mã lớp và ngành khớp nhau; trước đây danh sách này
+        // có cả 'CNTT' — vốn là khoa chứ không phải ngành (ADR-020).
+        $nganh = ['KTPM', 'HTTT', 'KHMT', 'MTTT', 'ATTT'];
+        $idTheoMa = Nganh::query()->pluck('id', 'ma_nganh');
         $rows = [];
 
         for ($i = 1; $i <= 20; $i++) {
@@ -35,7 +40,7 @@ class DanhMucSeeder extends Seeder
                 'ma_lop' => $ma,
                 'ten_lop' => 'Lớp '.$ma,
                 'khoa_hoc' => $khoaHoc,
-                'nganh' => $nganhCuaLop,
+                'nganh_id' => $idTheoMa[$nganhCuaLop] ?? null,
                 // K63 nhập học 2021, K64 → 2022, ...
                 'nam_nhap_hoc' => 2000 + (int) substr($khoaHoc, 1) - 42,
                 'mo_ta' => null,
@@ -66,10 +71,13 @@ class DanhMucSeeder extends Seeder
             'Tiếng Anh chuyên ngành', 'Kinh tế học đại cương', 'Pháp luật đại cương',
         ];
 
+        $khoaId = Khoa::query()->where('ma_khoa', 'CNTT')->value('id');
         $rows = [];
         foreach ($tenMon as $i => $ten) {
             $rows[] = [
                 'ma_mon' => sprintf('MH%03d', $i + 1),
+                // Toàn bộ môn trong dữ liệu mẫu thuộc khoa CNTT — đây là khoa duy nhất được seed.
+                'khoa_id' => $khoaId,
                 'ten_mon' => $ten,
                 'so_tin_chi' => $i % 5 === 0 ? 4 : ($i % 3 === 0 ? 2 : 3),
                 'mo_ta' => null,

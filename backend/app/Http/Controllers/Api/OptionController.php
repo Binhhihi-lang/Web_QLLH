@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\GiangVien;
 use App\Models\HocKy;
+use App\Models\Khoa;
 use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\MonHoc;
+use App\Models\Nganh;
 use App\Models\PhongHoc;
 use App\Traits\ApiResponseTrait;
+use Illuminate\Http\Request;
 
 /**
  * Dữ liệu gọn cho ô chọn (dropdown) ở FE — docs/04-api-contract.md mục options.
@@ -21,13 +24,15 @@ class OptionController extends Controller
     public function subjects()
     {
         $data = MonHoc::query()
+            ->with('khoa:id,ma_khoa,ten_khoa')
             ->where('trang_thai', true)
             ->orderBy('ten_mon')
-            ->get(['id', 'ten_mon', 'so_tin_chi'])
+            ->get(['id', 'khoa_id', 'ten_mon', 'so_tin_chi'])
             ->map(fn (MonHoc $m) => [
                 'id' => $m->id,
                 'label' => $m->ten_mon,
                 'so_tin_chi' => $m->so_tin_chi,
+                'khoa_id' => $m->khoa_id,
             ]);
 
         return $this->success($data);
@@ -79,14 +84,55 @@ class OptionController extends Controller
     public function adminClasses()
     {
         $data = LopHanhChinh::query()
+            ->with('nganh:id,ma_nganh,ten_nganh')
             ->where('trang_thai', true)
             ->orderBy('ma_lop')
-            ->get(['id', 'ten_lop', 'khoa_hoc', 'nganh'])
+            ->get(['id', 'ten_lop', 'khoa_hoc', 'nganh_id'])
             ->map(fn (LopHanhChinh $l) => [
                 'id' => $l->id,
                 'label' => $l->ten_lop,
                 'khoa_hoc' => $l->khoa_hoc,
-                'nganh' => $l->nganh,
+                'nganh_id' => $l->nganh_id,
+                'nganh' => $l->nganh?->ten_nganh,
+            ]);
+
+        return $this->success($data);
+    }
+
+    public function khoa()
+    {
+        $data = Khoa::query()
+            ->where('trang_thai', true)
+            ->orderBy('ten_khoa')
+            ->get(['id', 'ma_khoa', 'ten_khoa'])
+            ->map(fn (Khoa $k) => [
+                'id' => $k->id,
+                'label' => $k->ten_khoa,
+                'ma_khoa' => $k->ma_khoa,
+            ]);
+
+        return $this->success($data);
+    }
+
+    /**
+     * `khoa_id` là tham số tùy chọn để dựng dropdown phụ thuộc (chọn khoa rồi mới ra ngành).
+     */
+    public function nganh(Request $request)
+    {
+        $request->validate([
+            'khoa_id' => ['sometimes', 'integer'],
+        ]);
+
+        $data = Nganh::query()
+            ->where('trang_thai', true)
+            ->when($request->filled('khoa_id'), fn ($truyVan) => $truyVan->where('khoa_id', $request->integer('khoa_id')))
+            ->orderBy('ten_nganh')
+            ->get(['id', 'khoa_id', 'ma_nganh', 'ten_nganh'])
+            ->map(fn (Nganh $n) => [
+                'id' => $n->id,
+                'label' => $n->ten_nganh,
+                'khoa_id' => $n->khoa_id,
+                'ma_nganh' => $n->ma_nganh,
             ]);
 
         return $this->success($data);

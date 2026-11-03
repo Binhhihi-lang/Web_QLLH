@@ -7,14 +7,20 @@ import { LopHanhChinhDanhSach } from './danh-sach';
 
 describe('LopHanhChinhDanhSach', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<LopHanhChinhDanhSach>>;
-  let service: { layDanhSach: ReturnType<typeof vi.fn>; xoa: ReturnType<typeof vi.fn> };
+  let service: {
+    layDanhSach: ReturnType<typeof vi.fn>;
+    xoa: ReturnType<typeof vi.fn>;
+    layTuyChonNganh: ReturnType<typeof vi.fn>;
+  };
 
   const lop = {
     id: 1,
     ma_lop: 'CNTT-K65-01',
     ten_lop: 'Công nghệ thông tin K65 - Lớp 01',
     khoa_hoc: 'K65',
-    nganh: 'CNTT',
+    nganh_id: 1,
+    nganh: { id: 1, ma_nganh: 'KTPM', ten_nganh: 'Công nghệ phần mềm', khoa_id: 1 },
+    khoa: { id: 1, ma_khoa: 'CNTT', ten_khoa: 'Công nghệ thông tin' },
     nam_nhap_hoc: 2023,
     si_so: 42,
     trang_thai: true,
@@ -29,7 +35,11 @@ describe('LopHanhChinhDanhSach', () => {
   };
 
   beforeEach(() => {
-    service = { layDanhSach: vi.fn(() => of(trang)), xoa: vi.fn(() => of(undefined)) };
+    service = {
+      layDanhSach: vi.fn(() => of(trang)),
+      xoa: vi.fn(() => of(undefined)),
+      layTuyChonNganh: vi.fn(() => of([])),
+    };
     TestBed.configureTestingModule({
       imports: [LopHanhChinhDanhSach],
       providers: [
@@ -54,12 +64,12 @@ describe('LopHanhChinhDanhSach', () => {
 
   it('applies cohort, major, and status filters', () => {
     fixture.componentInstance.doiLocKhoa({ target: { value: 'K65' } } as unknown as Event);
-    fixture.componentInstance.doiLocNganh({ target: { value: 'CNTT' } } as unknown as Event);
+    fixture.componentInstance.doiLocNganh({ target: { value: '1' } } as unknown as Event);
     fixture.componentInstance.doiTrangThai({ target: { value: 'false' } } as unknown as Event);
     fixture.componentInstance.apDungLoc();
 
     expect(service.layDanhSach).toHaveBeenLastCalledWith(
-      expect.objectContaining({ khoa_hoc: 'K65', nganh: 'CNTT', trang_thai: false, page: 1 }),
+      expect.objectContaining({ khoa_hoc: 'K65', nganh_id: 1, trang_thai: false, page: 1 }),
     );
   });
 
