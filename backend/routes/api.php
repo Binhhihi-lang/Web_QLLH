@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GiangVienController;
+use App\Http\Controllers\Api\HocKyController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\KhoaController;
 use App\Http\Controllers\Api\LopHanhChinhController;
@@ -72,6 +73,17 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('api/dashboard/admin');
         Route::get('/trash/{type}', [ThungRacController::class, 'index'])->name('api/trash/danh-sach');
         Route::post('/trash/{type}/{id}/restore', [ThungRacController::class, 'restore'])->name('api/trash/khoi-phuc');
+    });
+
+    Route::prefix('semesters')->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->group(function () {
+        Route::get('/', [HocKyController::class, 'index']);
+        Route::get('{hocKy}', [HocKyController::class, 'show']);
+        Route::middleware('vai.tro:ADMIN')->group(function () {
+            Route::post('/', [HocKyController::class, 'store']);
+            Route::put('{hocKy}', [HocKyController::class, 'update']);
+            Route::delete('{hocKy}', [HocKyController::class, 'destroy']);
+            Route::patch('{hocKy}/status', [HocKyController::class, 'capNhatTrangThai']);
+        });
     });
 
     Route::prefix('subjects')->group(function () {

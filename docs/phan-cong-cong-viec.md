@@ -21,6 +21,15 @@ tạo và sửa tài khoản. SCR-47/48 (Menu) đã có giao diện từ phần 
 hình gọi dữ liệu giả. Các route quản trị được gom vào `routes/he-thong.routes.ts`
 để không tiếp tục thêm route Hệ thống vào file route do Đạt phụ trách.
 
+### Cập nhật 03/11/2026 — Tiến: quản lý học kỳ (nhánh `feature/be-semesters`)
+
+- Đã triển khai 6 endpoint `/api/semesters`: danh sách, tạo, chi tiết, sửa,
+  xóa mềm và chuyển trạng thái; kiểm tra BR-24/25, phân quyền và ghi nhật ký.
+- `/api/options/semesters` bổ sung `nam_hoc`, `ky_thu` đúng hợp đồng.
+- Bổ sung `HocKyTest` và folder Postman **16 — Học kỳ (CRUD + vòng đời BR-24/25)**.
+- Trạng thái: triển khai trên nhánh feature, chờ Tiến kiểm thử Postman và PM
+  review/merge; chưa coi là đã tích hợp vào `develop`.
+
 ---
 
 > ## ⚠ Thay đổi phân công ngày 29/10/2026 — module lớp học phần chuyển cho PM

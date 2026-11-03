@@ -3783,10 +3783,10 @@ components:
           example: "2027-01-15"
         mo_dang_ky_luc:
           type: string
-          example: "2026-08-01 08:00:00"
+          example: "2026-09-07 08:00:00"
         dong_dang_ky_luc:
           type: string
-          example: "2026-08-20 17:00:00"
+          example: "2026-09-20 17:00:00"
         trang_thai:
           type: string
           enum: [UPCOMING, ONGOING, CLOSED]
@@ -3796,6 +3796,11 @@ components:
 
     HocKyInput:
       type: object
+      description: |
+        Không nhận trang_thai; tạo ở UPCOMING và chuyển qua /status.
+        Năm học gồm hai năm liên tiếp. Đợt đăng ký nằm trong kỳ (BR-25).
+        Không cập nhật kỳ CLOSED. Sửa ngày làm buổi học hiện có nằm ngoài kỳ
+        trả 409 SESSION_OUTSIDE_SEMESTER.
       required: [ma_hoc_ky, ten_hoc_ky, nam_hoc, ky_thu, ngay_bat_dau, ngay_ket_thuc, mo_dang_ky_luc, dong_dang_ky_luc]
       properties:
         ma_hoc_ky:

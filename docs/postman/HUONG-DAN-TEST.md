@@ -269,6 +269,26 @@ Bảng đầy đủ: [04-api-contract.md](../04-api-contract.md) mục 1.5.
 
 ## 11. Tài liệu liên quan
 
+### Kiểm thử học kỳ (Tuần 4)
+
+1. Khởi động backend bằng `php artisan serve` trong `backend/`.
+2. Import lại `QLLH.postman_collection.json`; chạy **01 — Xác thực → Đăng nhập (ADMIN)**.
+3. Chọn **16 — Học kỳ (CRUD + vòng đời BR-24/25)**, Run riêng folder này theo
+   thứ tự **00 → 23**. Dữ liệu body đã chọn **raw → JSON**.
+4. Bước 00–01 tự chọn năm/mã sau các kỳ có sẵn và dữ liệu test đã xóa;
+   bước tạo tự lưu ID. Không cần tự điền `hoc_ky_id` hay sửa ID dữ liệu thật.
+5. Bước 02–13 kiểm tra CRUD, tìm/lọc/phân trang, options, lỗi chồng lấn 409,
+   đăng ký ngoài kỳ 422, cấm PUT trạng thái, xóa mềm và giữ mã sau xóa.
+6. Bước 14–22 kiểm tra vòng đời trên một học kỳ riêng. Nếu database đã có
+   kỳ `ONGOING`, bước 15 phải trả 409, bước 16–21 tự bỏ qua và bước 22 dọn
+   kỳ test còn `UPCOMING`. Không tự đóng học kỳ thật chỉ để chạy test.
+7. Nếu chưa có kỳ `ONGOING`, luồng chuyển tiến chạy đầy đủ. Kỳ test đã
+   `CLOSED` được giữ lại đúng quy tắc không xóa học kỳ đã đóng.
+
+Scripts chỉ lưu ID khi tạo thành công. Nếu nhận 422, mở response **Body**
+để đọc `errors` theo trường. Chỉ Run folder 16 sau khi login ADMIN; chạy cả
+collection có thể làm đổi token/mật khẩu ở các folder xác thực trước đó.
+
 - Hợp đồng API đầy đủ: [04-api-contract.md](../04-api-contract.md)
 - OpenAPI (sinh model TS): [openapi.yaml](../openapi.yaml)
 - Ma trận test case: [06-test-plan.md](../06-test-plan.md)
