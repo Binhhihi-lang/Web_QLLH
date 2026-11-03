@@ -25,10 +25,11 @@ src/app/
   features/
     auth/            login, change-password
     dashboard/       admin, teacher, student
+    he-thong/        nguoi-dung, cau-hinh
     dao-tao/         sinh-vien, giang-vien, lop-hanh-chinh, mon-hoc, hoc-ky, phong-hoc
     hoc-vu/          lop-hoc-phan, dang-ky, lich-hoc, diem-danh, diem
     style-guide/     trang xem token + component
-  routes/            dao-tao.routes.ts, hoc-vu.routes.ts + file menu cùng tên
+  routes/            dao-tao.routes.ts, hoc-vu.routes.ts, he-thong.routes.ts
 ```
 
 > **Vì sao `shared/ui/` chứ không phải `shared/components/`:** thư mục `ui` gom
@@ -62,9 +63,10 @@ src/app/
 > trong bảng `menus`.
 >
 > **Phân công UI:** Đức Anh phụ trách đào tạo SCR-10–24; Đạt phụ trách học vụ
-> SCR-25–43, dashboard SCR-03–05 và quản trị SCR-47–51. PM phụ trách xác thực,
-> các màn toàn cục SCR-02B/SCR-52/SCR-53 và thùng rác SCR-45. Chi tiết ownership
-> file và tiến độ nằm trong [phan-cong-cong-viec.md](phan-cong-cong-viec.md).
+> SCR-25–43, dashboard SCR-03–05 và các màn menu SCR-47/48 đã hoàn tất. PM phụ
+> trách SCR-45 và SCR-49–51 trên nhánh `giao-dien-he-thong`; Nhật ký đang chờ API
+> đọc danh sách từ backend. Chi tiết ownership file và tiến độ nằm trong
+> [phan-cong-cong-viec.md](phan-cong-cong-viec.md).
 
 ```
 /                     → redirect theo vai trò
@@ -93,7 +95,13 @@ src/app/
 /menu/:id             → SCR-48 chi tiết menu (ADMIN)
 /menu/:id/sua         → SCR-48 sửa menu (ADMIN); thêm menu bằng form tại chỗ ở `/menu`
 /cau-hinh             → SCR-49 (ADMIN)
+/nguoi-dung           → SCR-50 (ADMIN)
+/nguoi-dung/them      → SCR-51 tạo tài khoản (ADMIN)
+/nguoi-dung/:id/sua   → SCR-51 sửa tài khoản (ADMIN)
 ```
+
+`/nhat-ky` chưa có màn đọc nhật ký vì backend hiện chưa khai báo API danh sách;
+không gọi endpoint giả hoặc hiển thị dữ liệu mẫu như thể là nhật ký thật.
 
 **Đường dẫn không khớp route nào** — hai kết cục khác nhau, không được gộp:
 
@@ -276,12 +284,13 @@ theo `environment.useMock`, giống luồng sinh viên.
 
 | Mã | Màn hình | Route | Vai trò |
 |---|---|---|---|
-| SCR-45 | Thùng rác | `/thung-rac` | ADMIN — chọn loại thực thể, lọc, khôi phục |
+| SCR-45 | Thùng rác | `/thung-rac` | ADMIN — 12 loại thực thể theo API; tìm kiếm, lọc người xóa/khoảng ngày, phân trang và khôi phục (có cảnh báo nếu bản ghi cha chưa khôi phục) |
 | SCR-47 | Quản lý menu | `/menu` | ADMIN — danh sách (kể cả mục đang ẩn), thêm tại chỗ, ẩn/hiện, xoá có xác nhận |
 | SCR-48 | Chi tiết / Sửa menu | `/menu/:id`, `/menu/:id/sua` | ADMIN — thêm menu dùng form tại chỗ ở `/menu`, không có route `/menu/them` |
-| SCR-49 | Cấu hình | `/cau-hinh` | ADMIN — trọng số điểm, **bảng quy đổi điểm chữ A/B/C/D/F ↔ hệ 4**, số ngày sửa điểm danh |
-| SCR-50 | Quản lý người dùng | `/nguoi-dung` | ADMIN |
-| SCR-51 | Thêm/Sửa người dùng | `/nguoi-dung/them`, `/:id/sua` | ADMIN |
+| SCR-49 | Cấu hình | `/cau-hinh` | ADMIN — trọng số điểm (tổng bằng 1), bảng khoảng quy đổi điểm chữ A/B/C/D/F ↔ hệ 4 phủ liên tục 0–10, số ngày sửa điểm danh; kiểm tra trước khi PUT |
+| SCR-50 | Quản lý người dùng | `/nguoi-dung` | ADMIN — tìm kiếm, lọc vai trò/trạng thái, phân trang, kích hoạt/khóa hàng loạt, đặt lại mật khẩu, xóa tài khoản ADMIN |
+| SCR-51 | Thêm/Sửa người dùng | `/nguoi-dung/them`, `/:id/sua` | ADMIN — tạo/sửa tài khoản; mật khẩu tạm chỉ hiện một lần khi tạo; hồ sơ giảng viên/sinh viên được quản lý ở màn tương ứng |
+| — | Nhật ký | `/nhat-ky` | ADMIN — chưa triển khai: backend chưa có endpoint đọc danh sách nhật ký |
 
 ### 3.13. Chế độ xem theo vai trò (ADMIN)
 

@@ -30,6 +30,7 @@ export interface PhanTrangThungRac {
 
 export interface ThungRacFilter {
   q?: string;
+  deleted_by?: number;
   deleted_tu?: string;
   deleted_den?: string;
   page?: number;
@@ -44,8 +45,11 @@ export const CAC_LOAI_THUC_THE = [
   { ma: 'semesters', ten: 'Học kỳ' },
   { ma: 'rooms', ten: 'Phòng học' },
   { ma: 'sections', ten: 'Lớp học phần' },
+  { ma: 'sessions', ten: 'Buổi học' },
   { ma: 'menus', ten: 'Menu' },
   { ma: 'users', ten: 'Người dùng' },
+  { ma: 'khoa', ten: 'Khoa' },
+  { ma: 'nganh', ten: 'Ngành' },
 ] as const;
 
 export type LoaiThucThe = typeof CAC_LOAI_THUC_THE[number]['ma'];
@@ -55,9 +59,10 @@ export class ThungRacService {
   private readonly http = inject(HttpClient);
   private readonly goc = environment.apiBaseUrl;
 
-  layDanhSach(loai: string, boLoc?: ThungRacFilter): Observable<PhanTrangThungRac> {
+  layDanhSach(loai: LoaiThucThe, boLoc?: ThungRacFilter): Observable<PhanTrangThungRac> {
     let params = new HttpParams();
     if (boLoc?.q) params = params.set('q', boLoc.q);
+    if (boLoc?.deleted_by) params = params.set('deleted_by', boLoc.deleted_by.toString());
     if (boLoc?.deleted_tu) params = params.set('deleted_tu', boLoc.deleted_tu);
     if (boLoc?.deleted_den) params = params.set('deleted_den', boLoc.deleted_den);
     if (boLoc?.page) params = params.set('page', boLoc.page.toString());
@@ -66,11 +71,10 @@ export class ThungRacService {
     return this.http.get<PhanTrangThungRac>(`${this.goc}/trash/${loai}`, { params });
   }
 
-  khoiPhuc(loai: string, id: number): Observable<{ success: boolean; message: string }> {
+  khoiPhuc(loai: LoaiThucThe, id: number): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
       `${this.goc}/trash/${loai}/${id}/restore`,
       {},
     );
   }
 }
-

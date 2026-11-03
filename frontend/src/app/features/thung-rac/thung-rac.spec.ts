@@ -59,6 +59,9 @@ describe('ThungRacPage (SCR-45)', () => {
     component.doiLoai('students');
     expect(component.loaiHienTai()).toBe('students');
     expect(component.tenLoaiHienTai()).toBe('Sinh viên');
+    expect(component.danhSachLoai.map((item) => item.ma)).toEqual(
+      expect.arrayContaining(['sessions', 'khoa', 'nganh']),
+    );
   });
 
   it('mở dialog khôi phục và xác nhận khôi phục thành công', () => {

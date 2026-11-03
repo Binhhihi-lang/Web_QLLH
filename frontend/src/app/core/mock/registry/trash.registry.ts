@@ -1,40 +1,51 @@
 import { HttpParams } from '@angular/common/http';
-import { MON_HOC_MOCK, SINH_VIEN_MOCK, GIANG_VIEN_MOCK } from '@core/mock/data/dao-tao.mock';
 import { ok, loi, paginate, searchBy, MaLoi } from '@core/mock/mock-response';
+import { CAC_LOAI_THUC_THE } from '@core/services/thung-rac.service';
 
 /**
  * Mock cho thùng rác (SCR-45).
  */
 export class TrashRegistry {
-  private readonly monHocDaXoa = [
-    {
-      id: 991,
-      ma_mon: 'INT9901',
-      ten_mon: 'Môn học thử nghiệm cũ',
-      so_tin_chi: 3,
-      deleted_at: '2026-10-20 14:30:00',
-      xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
-    },
-    {
-      id: 992,
-      ma_mon: 'INT9902',
-      ten_mon: 'Kỹ nghệ phần mềm nâng cao (cũ)',
-      so_tin_chi: 4,
-      deleted_at: '2026-10-22 09:15:00',
-      xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
-    },
-  ];
-
-  private readonly sinhVienDaXoa = [
-    {
-      id: 981,
-      ma_sv: 'SV990001',
-      ho_ten: 'Nguyễn Văn Đã Xóa',
-      email: 'sv990001@university.edu.vn',
-      deleted_at: '2026-10-21 11:00:00',
-      xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
-    },
-  ];
+  private readonly cacLoai = new Set<string>(CAC_LOAI_THUC_THE.map((item) => item.ma));
+  private readonly rowsByType: Record<string, Array<Record<string, unknown>>> = {
+    subjects: [
+      {
+        id: 991,
+        ma_mon: 'INT9901',
+        ten_mon: 'Môn học thử nghiệm cũ',
+        so_tin_chi: 3,
+        deleted_at: '2026-10-20 14:30:00',
+        xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
+      },
+      {
+        id: 992,
+        ma_mon: 'INT9902',
+        ten_mon: 'Kỹ nghệ phần mềm nâng cao (cũ)',
+        so_tin_chi: 4,
+        deleted_at: '2026-10-22 09:15:00',
+        xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
+      },
+    ],
+    students: [
+      {
+        id: 981,
+        ma_sv: 'SV990001',
+        ho_ten: 'Nguyễn Văn Đã Xóa',
+        email: 'sv990001@university.edu.vn',
+        deleted_at: '2026-10-21 11:00:00',
+        xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
+      },
+    ],
+    khoa: [
+      {
+        id: 971,
+        ma_khoa: 'KHOA-DA-XOA',
+        ten_khoa: 'Khoa mẫu đã xóa',
+        deleted_at: '2026-10-23 09:00:00',
+        xoa_boi: { id: 1, name: 'Quản trị viên', email: 'admin@qllh.test' },
+      },
+    ],
+  };
 
   resolve(
     method: string,
@@ -54,22 +65,24 @@ export class TrashRegistry {
     const listMatch = path.match(/^\/trash\/([a-z-]+)$/);
     if (listMatch && method === 'GET') {
       const type = listMatch[1];
-      let rows: Array<Record<string, unknown>> = [];
-
-      if (type === 'subjects') {
-        rows = [...this.monHocDaXoa];
-      } else if (type === 'students') {
-        rows = [...this.sinhVienDaXoa];
-      } else {
-        rows = [];
+      if (!this.cacLoai.has(type)) {
+        return loi(MaLoi.NOT_FOUND, `Loại thực thể '${type}' không được hỗ trợ.`);
       }
-
-      if (params.get('q')) {
-        const q = params.get('q')!.toLowerCase();
-        rows = rows.filter((r) =>
-          Object.values(r).some((v) => typeof v === 'string' && v.toLowerCase().includes(q)),
+      let rows = [...(this.rowsByType[type] ?? [])];
+      rows = searchBy(rows, params.get('q'), Object.keys(rows[0] ?? {}));
+      const deletedBy = params.get('deleted_by');
+      if (deletedBy) {
+        rows = rows.filter(
+          (row) =>
+            row['xoa_boi'] !== null &&
+            typeof row['xoa_boi'] === 'object' &&
+            String((row['xoa_boi'] as Record<string, unknown>)['id']) === deletedBy,
         );
       }
+      const from = params.get('deleted_tu');
+      const to = params.get('deleted_den');
+      if (from) rows = rows.filter((row) => String(row['deleted_at'] ?? '') >= from);
+      if (to) rows = rows.filter((row) => String(row['deleted_at'] ?? '').slice(0, 10) <= to);
 
       return paginate(rows, params, `/api/trash/${type}`);
     }
@@ -79,19 +92,14 @@ export class TrashRegistry {
     if (restoreMatch && method === 'POST') {
       const type = restoreMatch[1];
       const id = Number(restoreMatch[2]);
-
-      if (type === 'subjects') {
-        const idx = this.monHocDaXoa.findIndex((r) => r.id === id);
-        if (idx >= 0) {
-          const restored = this.monHocDaXoa.splice(idx, 1)[0];
-          return ok(restored, 'Khôi phục môn học thành công.');
-        }
-      } else if (type === 'students') {
-        const idx = this.sinhVienDaXoa.findIndex((r) => r.id === id);
-        if (idx >= 0) {
-          const restored = this.sinhVienDaXoa.splice(idx, 1)[0];
-          return ok(restored, 'Khôi phục sinh viên thành công.');
-        }
+      if (!this.cacLoai.has(type)) {
+        return loi(MaLoi.NOT_FOUND, `Loại thực thể '${type}' không được hỗ trợ.`);
+      }
+      const rows = this.rowsByType[type] ?? [];
+      const index = rows.findIndex((row) => row['id'] === id);
+      if (index >= 0) {
+        const [restored] = rows.splice(index, 1);
+        return ok(restored, `Khôi phục ${type} thành công.`);
       }
 
       return loi(MaLoi.NOT_FOUND, 'Không tìm thấy bản ghi trong thùng rác.');
@@ -100,4 +108,3 @@ export class TrashRegistry {
     return undefined;
   }
 }
-

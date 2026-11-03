@@ -4,7 +4,7 @@ import { roleGuard } from '@core/auth/auth.guard';
 /**
  * Route nhóm HỌC VỤ — thuộc Đạt.
  *
- * Lớp học phần, đăng ký, lịch, điểm danh, điểm, dashboard, thùng rác, menu.
+ * Lớp học phần, đăng ký, lịch, điểm danh, điểm và dashboard.
  * `app.routes.ts` chỉ gộp lại; hai bạn FE không sửa cùng một file route.
  *
  * Màn chưa làm dùng `DangXayDung` thay vì bỏ trống — sidebar đã khai đủ mục, bỏ
@@ -95,57 +95,4 @@ export const hocVuRoutes: Routes = [
     loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
   },
 
-  // SCR-45 — Thùng rác
-  {
-    path: 'thung-rac',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], ma: 'SCR-45', title: 'Thùng rác' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-  },
-
-  // SCR-47/48/49 — Menu & cấu hình
-  {
-    path: 'menu/:id/sua',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], editMode: true, title: 'Sửa menu' },
-    loadComponent: () => import('@features/hoc-vu/menu/chi-tiet').then((m) => m.MenuChiTiet),
-  },
-  {
-    path: 'menu/:id',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], title: 'Chi tiết menu' },
-    loadComponent: () => import('@features/hoc-vu/menu/chi-tiet').then((m) => m.MenuChiTiet),
-  },
-  {
-    path: 'menu',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], ma: 'SCR-47', title: 'Quản lý menu' },
-    loadComponent: () => import('@features/hoc-vu/menu/quan-ly').then((m) => m.MenuQuanLy),
-  },
-  {
-    path: 'cau-hinh',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], ma: 'SCR-49', title: 'Cấu hình' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-  },
-
-  // SCR-50/51 — Người dùng
-  {
-    path: 'nguoi-dung',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], ma: 'SCR-50', title: 'Người dùng' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-  },
-  {
-    path: 'nguoi-dung/them',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], ma: 'SCR-51', title: 'Thêm người dùng' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-  },
-  {
-    path: 'nguoi-dung/:id/sua',
-    canActivate: [roleGuard],
-    data: { roles: ['ADMIN'], ma: 'SCR-51', title: 'Sửa người dùng' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
-  },
 ];

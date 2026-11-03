@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   BanGhiThungRac,
   CAC_LOAI_THUC_THE,
+  LoaiThucThe,
   ThungRacFilter,
   ThungRacService,
 } from '@core/services/thung-rac.service';
@@ -72,6 +73,21 @@ import { SearchInput } from '@shared/ui/search-input';
             (valueChange)="timKiem($event)">
           </app-search-input>
         </div>
+        <label class="flex flex-col gap-1 text-xs text-on-surface-variant">
+          <span>Từ ngày xóa</span>
+          <input type="date" [value]="boLoc().deleted_tu ?? ''" (change)="doiNgay('deleted_tu', $event)"
+            class="px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm" />
+        </label>
+        <label class="flex flex-col gap-1 text-xs text-on-surface-variant">
+          <span>Đến ngày xóa</span>
+          <input type="date" [value]="boLoc().deleted_den ?? ''" (change)="doiNgay('deleted_den', $event)"
+            class="px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm" />
+        </label>
+        <label class="flex flex-col gap-1 text-xs text-on-surface-variant">
+          <span>ID người xóa</span>
+          <input type="number" min="1" [value]="boLoc().deleted_by ?? ''" (change)="doiNguoiXoa($event)"
+            class="w-28 px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface text-sm" />
+        </label>
       </div>
 
       <div class="flex items-center gap-2 text-xs text-on-surface-variant">
@@ -84,6 +100,9 @@ import { SearchInput } from '@shared/ui/search-input';
           <span class="material-icons text-base">refresh</span>
         </button>
       </div>
+      @if (loiBoLoc()) {
+        <div class="mb-4"><app-alert muc="warning">{{ loiBoLoc() }}</app-alert></div>
+      }
     </div>
 
     <!-- Bảng dữ liệu -->
@@ -163,12 +182,13 @@ export class ThungRacPage {
   private readonly service = inject(ThungRacService);
 
   readonly danhSachLoai = CAC_LOAI_THUC_THE;
-  readonly loaiHienTai = signal<string>('subjects');
+  readonly loaiHienTai = signal<LoaiThucThe>('subjects');
   readonly boLoc = signal<ThungRacFilter>({ page: 1, per_page: 10 });
 
   readonly dangTai = signal<boolean>(false);
   readonly dangKhoiPhuc = signal<boolean>(false);
   readonly loi = signal<string | null>(null);
+  readonly loiBoLoc = signal<string | null>(null);
   readonly danhSach = signal<BanGhiThungRac[]>([]);
   readonly tongSo = signal<number>(0);
   readonly trangHienTai = signal<number>(1);
@@ -193,14 +213,40 @@ export class ThungRacPage {
     this.taiDuLieu();
   }
 
-  doiLoai(maLoai: string): void {
+  doiLoai(maLoai: LoaiThucThe): void {
     this.loaiHienTai.set(maLoai);
-    this.boLoc.set({ ...this.boLoc(), page: 1, q: '' });
+    this.boLoc.set({ page: 1, per_page: 10 });
+    this.loiBoLoc.set(null);
     this.taiDuLieu();
   }
 
   timKiem(tuKhoa: string): void {
-    this.boLoc.set({ ...this.boLoc(), q: tuKhoa, page: 1 });
+    this.capNhatBoLoc({ q: tuKhoa || undefined });
+  }
+
+  doiNgay(khoa: 'deleted_tu' | 'deleted_den', event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.capNhatBoLoc({ [khoa]: value || undefined });
+  }
+
+  doiNguoiXoa(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    const id = Number(value);
+    if (value && (!Number.isInteger(id) || id < 1)) {
+      this.loiBoLoc.set('ID người xóa phải là số nguyên dương.');
+      return;
+    }
+    this.capNhatBoLoc({ deleted_by: value ? id : undefined });
+  }
+
+  private capNhatBoLoc(thayDoi: Partial<ThungRacFilter>): void {
+    const next = { ...this.boLoc(), ...thayDoi, page: 1 };
+    if (next.deleted_tu && next.deleted_den && next.deleted_tu > next.deleted_den) {
+      this.loiBoLoc.set('Ngày bắt đầu không được sau ngày kết thúc.');
+      return;
+    }
+    this.loiBoLoc.set(null);
+    this.boLoc.set(next);
     this.taiDuLieu();
   }
 
@@ -244,6 +290,8 @@ export class ThungRacPage {
       (row['ten_lop'] as string) ||
       (row['ten_phong'] as string) ||
       (row['ten_hoc_ky'] as string) ||
+      (row['ten_khoa'] as string) ||
+      (row['ten_nganh'] as string) ||
       (row['ten_menu'] as string) ||
       (row['ma_lop_hp'] as string) ||
       (row['name'] as string) ||
@@ -258,6 +306,8 @@ export class ThungRacPage {
       (row['ma_gv'] as string) ||
       (row['ma_lop'] as string) ||
       (row['ma_phong'] as string) ||
+      (row['ma_khoa'] as string) ||
+      (row['ma_nganh'] as string) ||
       (row['ma_hoc_ky'] as string) ||
       (row['url'] as string) ||
       (row['email'] as string) ||

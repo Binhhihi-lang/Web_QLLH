@@ -5,6 +5,7 @@ import { HocVuRegistry } from '@core/mock/registry/hoc-vu.registry';
 import { AuthRegistry } from '@core/mock/registry/auth.registry';
 import { MenuRegistry } from '@core/mock/registry/menu.registry';
 import { TrashRegistry } from '@core/mock/registry/trash.registry';
+import { SystemRegistry } from '@core/mock/registry/system.registry';
 import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
 
 /**
@@ -29,9 +30,10 @@ export class MockRegistry {
   private readonly daoTao = new DaoTaoRegistry();
   private readonly hocVu = new HocVuRegistry();
   private readonly menu = new MenuRegistry();
+  private readonly system = new SystemRegistry();
   private readonly trash = new TrashRegistry();
 
-  private readonly nguon = [this.daoTao, this.hocVu, this.menu, this.trash];
+  private readonly nguon = [this.daoTao, this.hocVu, this.menu, this.system, this.trash];
 
   resolve(
     method: string,

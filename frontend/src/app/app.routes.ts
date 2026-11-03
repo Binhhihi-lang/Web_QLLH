@@ -3,14 +3,15 @@ import { MainLayout } from '@core/layout/main-layout';
 import { authChildGuard, authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
 import { laTrangChuaLamGuard } from '@core/auth/trang-chua-lam.guard';
 import { daoTaoRoutes } from './routes/dao-tao.routes';
+import { heThongRoutes } from './routes/he-thong.routes';
 import { hocVuRoutes } from './routes/hoc-vu.routes';
 
 /**
- * Route gốc — chỉ gộp route của hai nhóm, không khai màn hình cụ thể.
+ * Route gốc — gộp route theo nhóm, không khai màn hình cụ thể.
  *
- * Vì sao: hai bạn FE làm song song. Nếu mỗi màn khai ở đây thì mỗi lần thêm
- * màn là một lần conflict. Màn đào tạo khai ở `routes/dao-tao.routes.ts`
- * (Đức Anh), màn học vụ ở `routes/hoc-vu.routes.ts` (Đạt).
+ * Vì sao: các nhóm FE làm song song. Màn đào tạo khai ở
+ * `routes/dao-tao.routes.ts` (Đức Anh), màn học vụ ở `routes/hoc-vu.routes.ts`
+ * (Đạt), quản trị Hệ thống ở `routes/he-thong.routes.ts` (PM).
  */
 export const routes: Routes = [
   {
@@ -74,9 +75,10 @@ export const routes: Routes = [
         loadComponent: () => import('@features/thung-rac/thung-rac').then((m) => m.ThungRacPage),
       },
 
-      // Nhóm đào tạo (Đức Anh) và nhóm học vụ (Đạt) — mỗi nhóm một file.
+      // Route từng nhóm giữ ở file riêng để giảm xung đột khi làm song song.
       ...daoTaoRoutes,
       ...hocVuRoutes,
+      ...heThongRoutes,
 
       // URL có trong bảng menu nhưng chưa có màn hình: hiện "Màn hình X chưa
       // làm" NGAY TRONG layout, để admin khai menu trước cho tuần sau mà vẫn
