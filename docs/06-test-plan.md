@@ -83,7 +83,7 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | BR-03 | `PolicyTest` | TEACHER khác lớp → 403 khi điểm danh/nhập điểm |
 | BR-04 | `ScopeTest` | STUDENT truy cập dữ liệu người khác → 403/404 |
 | BR-05 | `NhapDiemTest` | Điểm -1, 10.01, 3 chữ số thập phân → 422 |
-| BR-06 | `TrungLichTest` | Trùng phòng, trùng GV, liền kề, sửa chính nó |
+| BR-06 | `LichHocTest` (service đã triển khai) | Trùng phòng, trùng GV, liền kề, sửa chính nó; lô nhiều buổi |
 | BR-07 | `XoaMemTest` | Mọi DELETE đều còn bản ghi trong DB với `deleted_at` |
 | BR-08 | `DangKyTest` | Cùng môn 2 lớp; trùng lịch |
 | BR-09 | `TranhChapChoTest` | 2 request đồng thời, `si_so_toi_da = 1` |
@@ -99,7 +99,7 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | BR-19 | `NguoiDungTest` | Tự xóa mình; xóa ADMIN cuối |
 | BR-20 | `DangKyLaiTest` | Không tạo dòng mới |
 | BR-21 | `DiemDanhTest` | Hủy trước buổi không xuất hiện |
-| BR-22 | `SuaLichTest` | Sửa giờ tạo trùng lịch SV → 409 |
+| BR-22 | `LichHocTest` (service đã triển khai) | Sửa giờ tạo trùng lịch SV ACTIVE → lỗi 409; endpoint ghi lịch chờ PM tích hợp |
 | BR-23 | `NamThuTest` | Lớp `nam_thu` khác năm thứ → 409; ADMIN override; `null` không chặn |
 | BR-24 | `VongDoiHocKyTest` | Chỉ tiến; `CLOSED` không quay lại; một kỳ ONGOING |
 | BR-25 | `ThoiGianHocKyTest` | Chồng lấn kỳ; đợt ngoài kỳ; buổi ngoài kỳ |

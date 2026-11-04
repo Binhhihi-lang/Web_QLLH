@@ -21,6 +21,15 @@ tạo và sửa tài khoản. SCR-47/48 (Menu) đã có giao diện từ phần 
 hình gọi dữ liệu giả. Các route quản trị được gom vào `routes/he-thong.routes.ts`
 để không tiếp tục thêm route Hệ thống vào file route do Đạt phụ trách.
 
+### Cập nhật 03/11/2026 — Tiến: lịch tổng hợp và lõi kiểm tra trùng
+
+- Nhánh `feature/be-schedules`: thêm `GET /api/schedules`, phân quyền theo
+  vai trò, lọc/phân trang và `ScheduleService` kiểm tra trùng phòng/GV/SV.
+- Kiểm tra riêng một buổi, cả lô và adapter cho đăng ký; test `LichHocTest`.
+- Postman thêm folder **17 — Lịch học (luồng thành công)**, chỉ request hợp lệ.
+- CRUD/sinh buổi vẫn thuộc PM; interface tích hợp tại `docs/lich-hoc-backend.md`.
+  Trạng thái: code trên nhánh feature, chờ Tiến test Postman và PM review/merge.
+
 ---
 
 > ## ⚠ Thay đổi phân công ngày 29/10/2026 — module lớp học phần chuyển cho PM
