@@ -6,5 +6,5 @@ export const environment = {
    * Bật mock layer khi Backend chưa có endpoint thật.
    * Tắt đi thì request đi thẳng ra apiBaseUrl, không phải sửa code.
    */
-  useMock: true,
+  useMock: false,
 };

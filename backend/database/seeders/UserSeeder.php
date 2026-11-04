@@ -14,8 +14,8 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+        $this->updateOrRestore(
+            'admin@example.com',
             [
                 'name' => 'Quản trị viên',
                 'password' => Hash::make('password'),
@@ -26,8 +26,8 @@ class UserSeeder extends Seeder
             ],
         );
 
-        User::updateOrCreate(
-            ['email' => 'giangvien@example.com'],
+        $this->updateOrRestore(
+            'giangvien@example.com',
             [
                 'name' => 'Nguyễn Văn Giảng',
                 'password' => Hash::make('password'),
@@ -38,8 +38,8 @@ class UserSeeder extends Seeder
             ],
         );
 
-        User::updateOrCreate(
-            ['email' => 'sinhvien@example.com'],
+        $this->updateOrRestore(
+            'sinhvien@example.com',
             [
                 'name' => 'Trần Thị Sinh',
                 'password' => Hash::make('password'),
@@ -52,8 +52,8 @@ class UserSeeder extends Seeder
 
         // Hai quản trị viên phụ để thử phân quyền và nhật ký.
         for ($i = 2; $i <= 3; $i++) {
-            User::updateOrCreate(
-                ['email' => "admin{$i}@example.com"],
+            $this->updateOrRestore(
+                "admin{$i}@example.com",
                 [
                     'name' => "Quản trị viên {$i}",
                     'password' => Hash::make('password'),
@@ -64,5 +64,16 @@ class UserSeeder extends Seeder
                 ],
             );
         }
+    }
+
+    private function updateOrRestore(string $email, array $attributes): User
+    {
+        $user = User::withTrashed()->updateOrCreate(['email' => $email], $attributes);
+
+        if ($user->trashed()) {
+            $user->restore();
+        }
+
+        return $user;
     }
 }

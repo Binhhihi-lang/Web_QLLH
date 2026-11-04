@@ -281,4 +281,25 @@ class NenTangTest extends TestCase
         $this->assertFalse($admin->must_change_password);
         $this->assertTrue(Hash::check('password', $admin->password));
     }
+
+    public function test_seeder_user_khoi_phuc_tai_khoan_demo_da_xoa_mem(): void
+    {
+        User::create([
+            'name' => 'Quản trị viên 3 cũ',
+            'email' => 'admin3@example.com',
+            'password' => Hash::make('old-password'),
+            'vai_tro' => User::ADMIN,
+            'trang_thai' => true,
+            'must_change_password' => false,
+        ])->delete();
+
+        $this->seed(UserSeeder::class);
+        $this->seed(UserSeeder::class);
+
+        $admin = User::withTrashed()->where('email', 'admin3@example.com')->firstOrFail();
+
+        $this->assertFalse($admin->trashed());
+        $this->assertSame(1, User::withTrashed()->where('email', 'admin3@example.com')->count());
+        $this->assertTrue(Hash::check('password', $admin->password));
+    }
 }

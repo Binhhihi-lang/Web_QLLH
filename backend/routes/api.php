@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GiangVienController;
+use App\Http\Controllers\Api\HocKyController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\KhoaController;
 use App\Http\Controllers\Api\LopHanhChinhController;
@@ -60,6 +61,11 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('khoa', [OptionController::class, 'khoa']);
         Route::get('nganh', [OptionController::class, 'nganh']);
     });
+
+    Route::get('/semesters', [HocKyController::class, 'index'])
+        ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+    Route::get('/semesters/{hocKy}', [HocKyController::class, 'show'])
+        ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
 
     Route::get('/menus', [MenuController::class, 'index'])->name('api/menus');
     Route::middleware('vai.tro:ADMIN')->group(function () {
