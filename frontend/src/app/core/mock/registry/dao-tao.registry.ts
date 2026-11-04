@@ -6,6 +6,7 @@ import {
   LopHanhChinh,
   MonHoc,
   Nganh,
+  PhongHoc,
   NganhRutGon,
   SinhVien,
   HocKy,
@@ -17,6 +18,7 @@ import {
   SINH_VIEN_MOCK,
   GIANG_VIEN_MOCK,
   HOC_KY_MOCK,
+  PHONG_HOC_MOCK,
   KHOA_MOCK,
   NGANH_MOCK,
 } from '@core/mock/data/dao-tao.mock';
@@ -43,11 +45,13 @@ import { LOP_HOC_PHAN_MOCK } from '@core/mock/data/hoc-vu.mock';
  * Đường dẫn dùng tiếng Anh đúng docs/04-api-contract.md; trường JSON tiếng Việt.
  */
 export class DaoTaoRegistry {
+  private readonly phongCoBuoiHocSapToi = new Set([2, 8]);
   private sinhVien = SINH_VIEN_MOCK.map((r) => ({ ...r }));
   private lopHanhChinh = LOP_HANH_CHINH_MOCK.map((r) => ({ ...r }));
   private moTaLop = new Map<number, string | null>();
   private giangVien = GIANG_VIEN_MOCK.map((r) => ({ ...r }));
   private monHoc = MON_HOC_MOCK.map((r) => ({ ...r }));
+  private phongHoc = PHONG_HOC_MOCK.map((r) => ({ ...r }));
   private hocKy = HOC_KY_MOCK.map((r) => ({ ...r }));
   private hocKyDaXoa = new Set<number>();
   private khoa = KHOA_MOCK.map((r) => ({ ...r }));
@@ -453,6 +457,83 @@ export class DaoTaoRegistry {
       }
       this.monHoc[index] = { ...this.monHoc[index], trang_thai: data['trang_thai'] };
       return ok(this.monHoc[index], 'Cập nhật trạng thái thành công.');
+    }
+
+    // ---------- Phòng học ----------
+    if (path === '/rooms' && method === 'GET') {
+      let rows = this.phongHoc.filter((row) => !row.da_xoa);
+      rows = searchBy(rows, params.get('q'), ['ma_phong', 'ten_phong']);
+      rows = filterBy(rows, params, ['trang_thai']);
+      rows = sortBy(rows, params, 'ma_phong');
+      return paginate(rows, params, '/api/rooms');
+    }
+
+    if (path === '/rooms' && method === 'POST') {
+      const duLieu = this.chuanHoaPhongHoc(body);
+      const loiDuLieu = this.loiDuLieuPhongHoc(duLieu);
+      if (loiDuLieu) return loiDuLieu;
+
+      const phongHoc: PhongHoc = {
+        id: Math.max(0, ...this.phongHoc.map((row) => row.id)) + 1,
+        ...duLieu.duLieu,
+        da_xoa: false,
+      };
+      this.phongHoc.push(phongHoc);
+      return ok(phongHoc, 'Tạo phòng học thành công.');
+    }
+
+    if (path === '/rooms/bulk-status' && method === 'PATCH') {
+      return this.hangLoat(this.phongHoc, body, (row, trangThai) => ({
+        ...row,
+        trang_thai: trangThai,
+      }));
+    }
+    if (path === '/rooms/bulk-delete' && method === 'POST') {
+      return this.hangLoat(
+        this.phongHoc,
+        body,
+        (row) => ({ ...row, da_xoa: true }),
+        (row) => this.loiChanXoaPhongHoc(row.id),
+      );
+    }
+
+    const chiTietPhong = path.match(/^\/rooms\/(\d+)$/);
+    if (chiTietPhong && method === 'GET') {
+      const phong = this.phongHoc.find((row) => row.id === Number(chiTietPhong[1]) && !row.da_xoa);
+      return phong ? ok(phong) : loi(MaLoi.NOT_FOUND, 'Không tìm thấy phòng học.');
+    }
+    if (chiTietPhong && method === 'PUT') {
+      const id = Number(chiTietPhong[1]);
+      const index = this.phongHoc.findIndex((row) => row.id === id && !row.da_xoa);
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy phòng học.');
+
+      const duLieu = this.chuanHoaPhongHoc(body, id);
+      const loiDuLieu = this.loiDuLieuPhongHoc(duLieu);
+      if (loiDuLieu) return loiDuLieu;
+      this.phongHoc[index] = { ...this.phongHoc[index], ...duLieu.duLieu };
+      return ok(this.phongHoc[index], 'Cập nhật phòng học thành công.');
+    }
+    if (chiTietPhong && method === 'DELETE') {
+      const id = Number(chiTietPhong[1]);
+      const index = this.phongHoc.findIndex((row) => row.id === id && !row.da_xoa);
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy phòng học.');
+      const loiNghiepVu = this.loiChanXoaPhongHoc(id);
+      if (loiNghiepVu) return loi(loiNghiepVu.ma_loi, loiNghiepVu.message);
+      this.phongHoc[index] = { ...this.phongHoc[index], da_xoa: true };
+      return ok(null, 'Xóa phòng học thành công.');
+    }
+
+    const trangThaiPhong = path.match(/^\/rooms\/(\d+)\/status$/);
+    if (trangThaiPhong && method === 'PATCH') {
+      const id = Number(trangThaiPhong[1]);
+      const index = this.phongHoc.findIndex((row) => row.id === id && !row.da_xoa);
+      if (index < 0) return loi(MaLoi.NOT_FOUND, 'Không tìm thấy phòng học.');
+      const data = this.bodyRecord(body);
+      if (typeof data['trang_thai'] !== 'boolean') {
+        return loiValidation({ trang_thai: ['Trạng thái không hợp lệ.'] });
+      }
+      this.phongHoc[index] = { ...this.phongHoc[index], trang_thai: data['trang_thai'] };
+      return ok(this.phongHoc[index], 'Cập nhật trạng thái thành công.');
     }
 
     // ---------- Học kỳ ----------
@@ -1214,6 +1295,78 @@ export class DaoTaoRegistry {
       return loi(MaLoi.DUPLICATE_CODE, 'Mã môn này đã tồn tại.', ketQua.errors);
     }
     return Object.keys(ketQua.errors).length > 0 ? loiValidation(ketQua.errors) : null;
+  }
+
+  private chuanHoaPhongHoc(body: unknown, boQuaId?: number): {
+    duLieu: Omit<PhongHoc, 'id' | 'da_xoa'>;
+    errors: Record<string, string[]>;
+    maLoi: typeof MaLoi.DUPLICATE_CODE | null;
+  } {
+    const data = this.bodyRecord(body);
+    const maPhong = typeof data['ma_phong'] === 'string' ? data['ma_phong'].trim() : '';
+    const tenPhong = typeof data['ten_phong'] === 'string' ? data['ten_phong'].trim() : '';
+    const sucChua =
+      typeof data['suc_chua'] === 'number' || typeof data['suc_chua'] === 'string'
+        ? Number(data['suc_chua'])
+        : Number.NaN;
+    const errors: Record<string, string[]> = {};
+    let maLoi: typeof MaLoi.DUPLICATE_CODE | null = null;
+    const themLoi = (field: string, message: string) => {
+      errors[field] = [...(errors[field] ?? []), message];
+    };
+
+    if (!maPhong) themLoi('ma_phong', 'Mã phòng là bắt buộc.');
+    else if (maPhong.length > 20) themLoi('ma_phong', 'Mã phòng không được vượt quá 20 ký tự.');
+    if (
+      maPhong &&
+      this.phongHoc.some(
+        (row) => row.id !== boQuaId && row.ma_phong.toLocaleLowerCase() === maPhong.toLocaleLowerCase(),
+      )
+    ) {
+      themLoi('ma_phong', 'Mã phòng này đã tồn tại.');
+      maLoi = MaLoi.DUPLICATE_CODE;
+    }
+    if (!tenPhong) themLoi('ten_phong', 'Tên phòng là bắt buộc.');
+    else if (tenPhong.length > 255) themLoi('ten_phong', 'Tên phòng không được vượt quá 255 ký tự.');
+    if (!Number.isInteger(sucChua) || sucChua < 1 || sucChua > 65535) {
+      themLoi('suc_chua', 'Sức chứa phải là số nguyên từ 1 đến 65535.');
+    }
+    if (data['trang_thai'] !== undefined && typeof data['trang_thai'] !== 'boolean') {
+      themLoi('trang_thai', 'Trạng thái không hợp lệ.');
+    }
+
+    return {
+      duLieu: {
+        ma_phong: maPhong,
+        ten_phong: tenPhong,
+        suc_chua: sucChua,
+        trang_thai: typeof data['trang_thai'] === 'boolean' ? data['trang_thai'] : true,
+      },
+      errors,
+      maLoi,
+    };
+  }
+
+  private loiDuLieuPhongHoc(
+    ketQua: ReturnType<DaoTaoRegistry['chuanHoaPhongHoc']>,
+  ): object | null {
+    if (ketQua.maLoi) {
+      return loi(MaLoi.DUPLICATE_CODE, 'Mã phòng này đã tồn tại.', ketQua.errors);
+    }
+    return Object.keys(ketQua.errors).length > 0 ? loiValidation(ketQua.errors) : null;
+  }
+
+  private loiChanXoaPhongHoc(
+    id: number,
+  ): { ma_loi: typeof MaLoi.DELETE_BLOCKED; message: string } | null {
+    if (this.phongCoBuoiHocSapToi.has(id)) {
+      return {
+        ma_loi: MaLoi.DELETE_BLOCKED,
+        message: 'Phòng học còn buổi học đã xếp lịch chưa kết thúc.',
+      };
+    }
+
+    return null;
   }
 
   private loiChanXoaMonHoc(

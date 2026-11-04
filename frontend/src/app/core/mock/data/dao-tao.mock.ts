@@ -5,6 +5,7 @@ import {
   KhoaRutGon,
   LopHanhChinh,
   MonHoc,
+  PhongHoc,
   Nganh,
   NganhRutGon,
   SinhVien,
@@ -83,12 +84,27 @@ export const MON_HOC_MOCK: MonHoc[] = [
   { id: 9, ma_mon: 'DTV1101', khoa_id: 2, khoa: KHOA_DTVT, ten_mon: 'Kỹ thuật số', so_tin_chi: 3, mo_ta: null, trang_thai: true, da_xoa: false },
 ];
 
+export const PHONG_HOC_MOCK: PhongHoc[] = [
+  { id: 1, ma_phong: 'A101', ten_phong: 'Phòng học A101', suc_chua: 40, trang_thai: true, da_xoa: false },
+  { id: 2, ma_phong: 'A102', ten_phong: 'Phòng học A102', suc_chua: 45, trang_thai: true, da_xoa: false },
+  { id: 3, ma_phong: 'A201', ten_phong: 'Phòng học A201', suc_chua: 60, trang_thai: true, da_xoa: false },
+  { id: 4, ma_phong: 'B105', ten_phong: 'Phòng thực hành B105', suc_chua: 35, trang_thai: true, da_xoa: false },
+  { id: 5, ma_phong: 'B203', ten_phong: 'Phòng máy B203', suc_chua: 30, trang_thai: false, da_xoa: false },
+  { id: 6, ma_phong: 'C301', ten_phong: 'Phòng học C301', suc_chua: 50, trang_thai: true, da_xoa: false },
+  { id: 7, ma_phong: 'C302', ten_phong: 'Phòng học C302', suc_chua: 55, trang_thai: true, da_xoa: false },
+  { id: 8, ma_phong: 'LAB01', ten_phong: 'Phòng thí nghiệm 01', suc_chua: 24, trang_thai: true, da_xoa: false },
+  { id: 9, ma_phong: 'H201', ten_phong: 'Hội trường H201', suc_chua: 120, trang_thai: true, da_xoa: false },
+  { id: 10, ma_phong: 'H202', ten_phong: 'Hội trường H202', suc_chua: 180, trang_thai: false, da_xoa: false },
+];
+
 export const HOC_KY_MOCK: HocKy[] = [
   { id: 1, ma_hoc_ky: '2025-1', ten_hoc_ky: 'Học kỳ 1 năm học 2025-2026', nam_hoc: '2025-2026', ky_thu: 1, ngay_bat_dau: '2025-09-08', ngay_ket_thuc: '2026-01-16', mo_dang_ky_luc: '2025-08-11 08:00:00', dong_dang_ky_luc: '2025-09-05 17:00:00', trang_thai: 'CLOSED', dang_mo_dang_ky: false },
   { id: 2, ma_hoc_ky: '2025-2', ten_hoc_ky: 'Học kỳ 2 năm học 2025-2026', nam_hoc: '2025-2026', ky_thu: 2, ngay_bat_dau: '2026-01-26', ngay_ket_thuc: '2026-05-29', mo_dang_ky_luc: '2025-12-15 08:00:00', dong_dang_ky_luc: '2026-01-23 17:00:00', trang_thai: 'CLOSED', dang_mo_dang_ky: false },
   { id: 3, ma_hoc_ky: '2026-1', ten_hoc_ky: 'Học kỳ 1 năm học 2026-2027', nam_hoc: '2026-2027', ky_thu: 1, ngay_bat_dau: '2026-09-07', ngay_ket_thuc: '2027-01-16', mo_dang_ky_luc: '2026-08-10 08:00:00', dong_dang_ky_luc: '2026-09-05 17:00:00', trang_thai: 'ONGOING', dang_mo_dang_ky: false },
   { id: 4, ma_hoc_ky: '2026-2', ten_hoc_ky: 'Học kỳ 2 năm học 2026-2027', nam_hoc: '2026-2027', ky_thu: 2, ngay_bat_dau: '2027-01-25', ngay_ket_thuc: '2027-05-28', mo_dang_ky_luc: '2027-01-04 08:00:00', dong_dang_ky_luc: '2027-01-22 17:00:00', trang_thai: 'UPCOMING', dang_mo_dang_ky: false },
 ];
+
+const BO_MON = ['Khoa học máy tính', 'Công nghệ phần mềm', 'Hệ thống thông tin', 'An toàn thông tin'];
 
 export const GIANG_VIEN_MOCK: GiangVien[] = Array.from({ length: 12 }, (_, i) => {
   const nu = rand() > 0.5;
