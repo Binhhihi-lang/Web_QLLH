@@ -1,7 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map, switchMap } from 'rxjs';
+import {
+  CauHinhDiem,
+  KhoangQuyDoiDiem,
+  kiemTraCauHinhDiem,
+  laKhoangQuyDoiDiem,
+  laTrongSoDiem,
+} from '@core/models/he-thong.model';
+import { CauHinhService } from '@core/services/cau-hinh.service';
 import { DongDiem, LopHocPhanService } from '@core/services/lop-hoc-phan.service';
 import { chuanHoaTimKiem } from '@core/utils/chuan-hoa-tim-kiem';
 import { AppAlert } from '@shared/ui/app-alert';
@@ -16,7 +24,7 @@ import { SearchInput } from '@shared/ui/search-input';
   template: `
     <app-page-header
       title="Bảng điểm lớp"
-      description="Trọng số: chuyên cần 25%, giữa kỳ 25%, cuối kỳ 50%."
+      [description]="moTaTrongSo()"
     >
       <a class="back" [routerLink]="['/lop-hoc-phan', id]">Quay lại lớp học phần</a>
     </app-page-header>
@@ -72,6 +80,7 @@ import { SearchInput } from '@shared/ui/search-input';
                 <th>Cuối kỳ</th>
                 <th>Tổng kết</th>
                 <th>Điểm chữ</th>
+                <th>Xếp loại</th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +97,7 @@ import { SearchInput } from '@shared/ui/search-input';
                       step=".01"
                       [disabled]="daChot()"
                       [(ngModel)]="row.diem_chuyen_can"
+                      (ngModelChange)="danhDauSua(row)"
                     />
                   </td>
                   <td>
@@ -99,6 +109,7 @@ import { SearchInput } from '@shared/ui/search-input';
                       step=".01"
                       [disabled]="daChot()"
                       [(ngModel)]="row.diem_giua_ky"
+                      (ngModelChange)="danhDauSua(row)"
                     />
                   </td>
                   <td>
@@ -110,6 +121,7 @@ import { SearchInput } from '@shared/ui/search-input';
                       step=".01"
                       [disabled]="daChot()"
                       [(ngModel)]="row.diem_cuoi_ky"
+                      (ngModelChange)="danhDauSua(row)"
                     />
                   </td>
                   <td>
@@ -118,6 +130,7 @@ import { SearchInput } from '@shared/ui/search-input';
                   <td>
                     <span class="badge">{{ chu(row) }}</span>
                   </td>
+                  <td>{{ xepLoai(row) }}</td>
                 </tr>
               }
             </tbody>
@@ -219,8 +232,12 @@ import { SearchInput } from '@shared/ui/search-input';
 })
 export class LopHocPhanDiem {
   private readonly service = inject(LopHocPhanService);
+  private readonly cauHinhService = inject(CauHinhService);
+  private readonly diemBanDau = new Map<number, [number | null, number | null, number | null]>();
   readonly id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   readonly diem = signal<DongDiem[]>([]);
+  readonly dongDaSua = signal<ReadonlySet<number>>(new Set());
+  readonly cauHinh = signal<CauHinhDiem | null>(null);
   readonly tuKhoa = signal('');
   readonly loi = signal('');
   readonly dangTai = signal(true);
@@ -230,6 +247,13 @@ export class LopHocPhanDiem {
   readonly duDiem = computed(
     () => this.hopLe() && this.diem().length > 0 && this.diem().every((row) => this.diemDayDu(row)),
   );
+  readonly moTaTrongSo = computed(() => {
+    const weights = this.cauHinh()?.['diem.trong_so'];
+    if (!weights) return 'Đang tải trọng số điểm…';
+    const phanTram = (value: number) =>
+      `${(value * 100).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
+    return `Trọng số: chuyên cần ${phanTram(weights.chuyen_can)}, giữa kỳ ${phanTram(weights.giua_ky)}, cuối kỳ ${phanTram(weights.cuoi_ky)}.`;
+  });
 
   /**
    * Chỉ ảnh hưởng phần HIỂN THỊ. `hopLe`, `duDiem`, `luu`, `chot` vẫn đọc `diem()`
@@ -257,33 +281,88 @@ export class LopHocPhanDiem {
     forkJoin({
       lop: this.service.layMot(this.id),
       diem: this.service.layDiem(this.id),
-    }).subscribe({
-      next: ({ lop, diem }) => {
-        this.daChot.set(lop.da_chot_diem);
-        this.diem.set(diem);
-        this.dangTai.set(false);
-      },
-      error: () => {
-        this.loi.set('Không tải được bảng điểm hoặc thông tin lớp học phần.');
-        this.dangTai.set(false);
-      },
-    });
+    })
+      .pipe(
+        switchMap(({ lop, diem }) =>
+          this.cauHinhService
+            .lay(lop.hoc_ky.id)
+            .pipe(map((cauHinh) => ({ lop, diem, cauHinh }))),
+        ),
+      )
+      .subscribe({
+        next: ({ lop, diem, cauHinh }) => {
+          const weights = cauHinh['diem.trong_so'];
+          const ranges = cauHinh['diem.bang_quy_doi'];
+          const days = cauHinh['diem.diem_danh.sua_trong_so_ngay'];
+          if (
+            !laTrongSoDiem(weights) ||
+            !Array.isArray(ranges) ||
+            !ranges.every(laKhoangQuyDoiDiem) ||
+            typeof days !== 'number'
+          ) {
+            this.loi.set('Cấu hình điểm từ máy chủ thiếu khóa bắt buộc hoặc không đúng định dạng.');
+            this.dangTai.set(false);
+            return;
+          }
+          const validatedConfig: CauHinhDiem = {
+            'diem.trong_so': weights,
+            'diem.bang_quy_doi': ranges,
+            'diem.diem_danh.sua_trong_so_ngay': days,
+          };
+          if (Object.keys(kiemTraCauHinhDiem(validatedConfig)).length > 0) {
+            this.loi.set('Cấu hình điểm từ máy chủ không hợp lệ.');
+            this.dangTai.set(false);
+            return;
+          }
+          this.daChot.set(lop.da_chot_diem);
+          this.diem.set(diem);
+          this.luuAnhDiemGoc(diem);
+          this.dongDaSua.set(new Set());
+          this.cauHinh.set(validatedConfig);
+          this.dangTai.set(false);
+        },
+        error: () => {
+          this.loi.set('Không tải được bảng điểm hoặc thông tin lớp học phần.');
+          this.dangTai.set(false);
+        },
+      });
   }
 
   tong(row: DongDiem): string {
+    if (!this.dongDaSua().has(row.dang_ky_hoc_phan_id)) {
+      return row.diem_tong_ket === null ? '—' : row.diem_tong_ket.toFixed(2);
+    }
     const total = this.tinhTong(row);
     return total === null ? '—' : total.toFixed(2);
   }
 
   chu(row: DongDiem): string {
-    const total = this.tinhTong(row);
-    if (total === null) return '—';
-    return total >= 8.5 ? 'A' : total >= 7 ? 'B' : total >= 5.5 ? 'C' : total >= 4 ? 'D' : 'F';
+    if (!this.dongDaSua().has(row.dang_ky_hoc_phan_id)) return row.diem_chu ?? '—';
+    return this.khoangQuyDoi(row)?.chu ?? '—';
+  }
+
+  xepLoai(row: DongDiem): string {
+    if (!this.dongDaSua().has(row.dang_ky_hoc_phan_id)) return row.xep_loai ?? '—';
+    return this.khoangQuyDoi(row)?.xep_loai ?? '—';
   }
 
   luu(): void {
     if (!this.hopLe() || this.daChot() || this.dangLuu()) return;
     this.guiDiem();
+  }
+
+  danhDauSua(row: DongDiem): void {
+    const original = this.diemBanDau.get(row.dang_ky_hoc_phan_id);
+    const current = [row.diem_chuyen_can, row.diem_giua_ky, row.diem_cuoi_ky] as const;
+    this.dongDaSua.update((changed) => {
+      const next = new Set(changed);
+      if (original && current.every((score, index) => score === original[index])) {
+        next.delete(row.dang_ky_hoc_phan_id);
+      } else {
+        next.add(row.dang_ky_hoc_phan_id);
+      }
+      return next;
+    });
   }
 
   chot(): void {
@@ -292,19 +371,17 @@ export class LopHocPhanDiem {
 
     this.dangLuu.set(true);
     this.loi.set('');
-    this.service.capNhatDiem(this.id, this.diem()).subscribe({
+    const changedRows = this.cacDongDaSua();
+    if (changedRows.length === 0) {
+      this.chotDiemDaLuu();
+      return;
+    }
+    this.service.capNhatDiem(this.id, changedRows).subscribe({
       next: (rows) => {
         this.diem.set(rows);
-        this.service.chotDiem(this.id).subscribe({
-          next: (lop) => {
-            this.daChot.set(lop.da_chot_diem);
-            this.dangLuu.set(false);
-          },
-          error: (error: { error?: { message?: string } }) => {
-            this.loi.set(error.error?.message ?? 'Không chốt được điểm.');
-            this.dangLuu.set(false);
-          },
-        });
+        this.luuAnhDiemGoc(rows);
+        this.dongDaSua.set(new Set());
+        this.chotDiemDaLuu();
       },
       error: (error: { error?: { message?: string } }) => {
         this.loi.set(error.error?.message ?? 'Không lưu được điểm trước khi chốt.');
@@ -314,11 +391,15 @@ export class LopHocPhanDiem {
   }
 
   private guiDiem(): void {
+    const changedRows = this.cacDongDaSua();
+    if (changedRows.length === 0) return;
     this.dangLuu.set(true);
     this.loi.set('');
-    this.service.capNhatDiem(this.id, this.diem()).subscribe({
+    this.service.capNhatDiem(this.id, changedRows).subscribe({
       next: (rows) => {
         this.diem.set(rows);
+        this.luuAnhDiemGoc(rows);
+        this.dongDaSua.set(new Set());
         this.dangLuu.set(false);
       },
       error: (error: { error?: { message?: string } }) => {
@@ -351,8 +432,49 @@ export class LopHocPhanDiem {
 
   private tinhTong(row: DongDiem): number | null {
     if (!this.diemDayDu(row)) return null;
-    return Number(
-      (row.diem_chuyen_can * 0.25 + row.diem_giua_ky * 0.25 + row.diem_cuoi_ky * 0.5).toFixed(2),
+    const weights = this.cauHinh()?.['diem.trong_so'];
+    if (!weights) return null;
+    const total =
+      row.diem_chuyen_can * weights.chuyen_can +
+      row.diem_giua_ky * weights.giua_ky +
+      row.diem_cuoi_ky * weights.cuoi_ky;
+    return Math.round((total + Number.EPSILON) * 100) / 100;
+  }
+
+  private cacDongDaSua(): DongDiem[] {
+    const changed = this.dongDaSua();
+    return this.diem().filter((row) => changed.has(row.dang_ky_hoc_phan_id));
+  }
+
+  private luuAnhDiemGoc(rows: DongDiem[]): void {
+    this.diemBanDau.clear();
+    rows.forEach((row) =>
+      this.diemBanDau.set(row.dang_ky_hoc_phan_id, [
+        row.diem_chuyen_can,
+        row.diem_giua_ky,
+        row.diem_cuoi_ky,
+      ]),
+    );
+  }
+
+  private chotDiemDaLuu(): void {
+    this.service.chotDiem(this.id).subscribe({
+      next: (lop) => {
+        this.daChot.set(lop.da_chot_diem);
+        this.dangLuu.set(false);
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.loi.set(error.error?.message ?? 'Không chốt được điểm.');
+        this.dangLuu.set(false);
+      },
+    });
+  }
+
+  private khoangQuyDoi(row: DongDiem): KhoangQuyDoiDiem | undefined {
+    const total = this.tinhTong(row);
+    if (total === null) return undefined;
+    return this.cauHinh()?.['diem.bang_quy_doi'].find(
+      (range) => total >= range.tu && total <= range.den,
     );
   }
 }

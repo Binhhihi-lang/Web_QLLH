@@ -62,7 +62,7 @@ Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-26
 
 | Thay đổi | Nơi áp dụng |
 |---|---|
-| 🆕 Điểm chữ A/B/C/D/F + điểm hệ 4, bảng quy đổi cấu hình được | FR-12.03, FR-12.05, FR-12.07; `diem.diem_chu`, `diem.diem_he_4`; ADR-013 |
+| 🆕 Điểm chữ A/B+/B/C+/C/D+/D/F, điểm hệ 4 và xếp loại cấu hình được | FR-12.03, FR-12.05, FR-12.07; `diem.diem_chu`, `diem.diem_he_4`, `diem.xep_loai`; ADR-013 |
 | 🆕 ADMIN xem giao diện theo vai trò không cần đăng xuất | FR-01.09, mục 4.1; SCR-52/53; ADR-014 |
 | 🆕 Luồng chuẩn bị học kỳ trước đợt đăng ký | UC-04B, TC-04B |
 

@@ -80,7 +80,7 @@ class QuanLyNguoiDungService
 
     /**
      * Xóa mềm tài khoản. Hợp đồng giới hạn ở tài khoản ADMIN: hồ sơ giảng viên
-     * và sinh viên xóa ở màn của nhóm tương ứng để không mồ côi dữ liệu.
+     * và sinh viên xóa ở màn của nhóm tương ứng .
      */
     public function xoa(User $nguoiDung, int $nguoiThucHienId): void
     {

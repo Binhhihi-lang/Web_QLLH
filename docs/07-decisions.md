@@ -198,15 +198,16 @@ Mỗi quyết định dưới đây đã được chốt. Khi muốn thay đổi
 
 **Ngày:** 2026-10-21 · **Trạng thái:** Đã chấp nhận
 
-**Bối cảnh:** Cần hiển thị điểm chữ A/B/C/D/F và điểm hệ 4 bên cạnh thang 10. Không có chuẩn quốc gia thống nhất — mỗi trường ban hành bảng quy đổi riêng trong _Quy chế đào tạo_. Bảng được dùng: A = 8.5–10.0 (4.0), B = 7.0–8.49 (3.0), C = 5.5–6.99 (2.0), D = 4.0–5.49 (1.0), F < 4.0 (0.0).
+**Bối cảnh:** Cần hiển thị điểm chữ, điểm hệ 4 và xếp loại bên cạnh thang 10. Không có chuẩn quốc gia thống nhất — mỗi trường ban hành bảng quy đổi riêng trong _Quy chế đào tạo_. Mọi ngưỡng, điểm hệ 4 và xếp loại được lưu trong cấu hình, không hard-code.
 
-**Quyết định:** Lưu bảng quy đổi trong `cau_hinh` dưới khóa `diem.bang_quy_doi` (mảng khoảng), không hard-code. Khi tính điểm, tra bảng để lấy `diem_chu`, `diem_he_4`, `ket_qua`. Lưu cả ba vào bảng `diem` để truy vấn và thống kê nhanh. Validate khoảng không chồng lấn và phủ kín 0–10.
+**Quyết định:** Lưu bảng quy đổi trong `cau_hinh` dưới khóa `diem.bang_quy_doi` (mảng khoảng), không hard-code. Khi tính điểm, tra bảng để lấy `diem_chu`, `diem_he_4`, `xep_loai`, `ket_qua`. Lưu các kết quả vào bảng `diem` để truy vấn và thống kê nhanh. Validate khoảng không chồng lấn và phủ kín 0–10.
 
 **Hệ quả**
 
 - (+) Đổi quy chế chỉ cần sửa cấu hình, không sửa code.
 - (+) Hỗ trợ cả GPA hệ 10 và hệ 4.
-- (+) Bảng cũ có thể thêm lại mức `+` (B+ = 3.5, C+ = 2.5, D+ = 1.5) mà không cần migration.
+- (+) Trường có thể thay đổi các mức điểm và xếp loại qua màn hình cấu hình.
+- (+) Các điểm chữ `+` (B+ = 3.5, C+ = 2.5, D+ = 1.5) được hỗ trợ.
 - (−) Bảng mặc định chỉ đúng với trường đang dùng; trường khác phải sửa cấu hình.
 - (−) Nếu đổi bảng quy đổi giữa kỳ, điểm cũ giữ nguyên giá trị đã lưu; cần tính lại thủ công (không tự động hồi tố).
 
@@ -403,3 +404,53 @@ ADR-016 đã kết luận "chương trình đào tạo ngoài phạm vi" và ch�
 - *Chỉ thêm `khoa` vào `lop_hoc_phan` như đề xuất ban đầu:* dữ liệu lặp và lệch khi môn đổi khoa; khoa của lớp phải suy từ môn.
 - *Lưu cả `khoa_id` lẫn `nganh_id` trên giảng viên/lớp:* hai cấp lưu song song sẽ lệch ngay khi chuyển một ngành sang khoa khác.
 - *Tách bảng `nganh` độc lập không có `khoa_id`:* mất ràng buộc "ngành nào thuộc khoa nào", phải kiểm tra bằng tay ở mọi chỗ ghi.
+
+---
+
+## ADR-021 — Phiên bản hóa quy đổi điểm theo năm học và học kỳ (đã thay thế)
+
+**Ngày:** 2026-11-04 · **Trạng thái:** Đã thay thế bởi ADR-022
+
+**Bối cảnh:** Cấu hình động cho phép thay đổi thang quy đổi, nhưng sửa cấu hình dùng chung có thể làm kết quả điểm cũ không còn giải thích được. Mỗi trường còn có thể đổi quy định theo năm học hoặc từ một học kỳ cụ thể.
+
+**Quyết định:**
+
+1. Lưu snapshot trọng số, bảng quy đổi và quy tắc làm tròn trong `quy_doi_diem`, đánh số phiên bản riêng theo năm học và chọn học kỳ bắt đầu áp dụng.
+2. Phiên bản đã tạo không được sửa; thay đổi quy định luôn tạo phiên bản mới có hiệu lực từ một học kỳ sau phiên bản cuối.
+3. Gắn phiên bản được dùng vào `diem.quy_doi_diem_id`. Dữ liệu cũ không rõ nguồn giữ `null`, không suy đoán/backfill.
+4. Chỉ tính lại kết quả khi các điểm thành phần thay đổi. Gửi lại điểm không đổi không thay đổi kết quả hoặc nguồn phiên bản lịch sử.
+5. Làm tròn điểm tổng kết theo `HALF_UP_2` đến hai chữ số thập phân trước khi tra khoảng.
+6. Các khoảng phải phủ kín 0–10, chính xác đến hai chữ số thập phân, không chồng lấn và không có khoảng trống.
+
+**Hệ quả**
+
+- (+) Có thể tra cứu chính xác quy định đã tạo ra từng kết quả điểm.
+- (+) Thay đổi quy chế không hồi tố kết quả lịch sử.
+- (+) Quy định có thể khác theo năm học và bắt đầu áp dụng giữa năm học.
+- (−) Cần chọn năm học/học kỳ khi cấu hình; cần có học kỳ trước khi tạo phiên bản.
+- (−) `cau_hinh` chỉ còn là bộ mặc định để khởi tạo; snapshot `quy_doi_diem` là nguồn tính kết quả.
+
+**Phương án bị loại:** cập nhật trực tiếp một cấu hình dùng chung (không giữ được lịch sử); tự động tính lại tất cả kết quả cũ (hồi tố ngoài ý muốn); gán phiên bản giả cho dữ liệu legacy (tạo nguồn gốc không chính xác).
+
+## ADR-022 — Cấu hình điểm gắn với từng học kỳ
+
+**Ngày:** 2026-11-05 · **Trạng thái:** Đã chấp nhận
+
+**Bối cảnh:** Quản trị viên cần xem và sửa cấu hình đã lưu của một học kỳ sắp tới mà không phải tạo học kỳ mới. Màn hình cần thể hiện rõ cấu hình và trạng thái khóa của từng kỳ.
+
+**Quyết định:**
+
+1. Mỗi học kỳ có tối đa một hàng `quy_doi_diem`; lưu lại khi kỳ `UPCOMING` sẽ cập nhật hàng đó.
+2. Không sửa cấu hình khi kỳ đã `ONGOING` hoặc `CLOSED`. Chỉ chuyển sang `ONGOING` khi cấu hình đã được lưu.
+3. Mỗi điểm đã tính giữ `quy_doi_diem_id` và kết quả hiện có; cấu hình của kỳ khác không hồi tố điểm lịch sử.
+4. Màn hình cấu hình hiển thị danh sách có tìm kiếm/lọc; chi tiết cho phép sửa kỳ `UPCOMING` và chỉ xem các kỳ còn lại.
+5. Đợt đăng ký có thể mở trước học kỳ nhưng phải đóng không muộn hơn ngày bắt đầu.
+
+**Hệ quả:**
+
+- (+) Có thể chỉnh cấu hình đã lưu khi học kỳ chưa bắt đầu.
+- (+) Cấu hình của kỳ đang học và kết quả điểm đã lưu được bảo toàn.
+- (+) Có thể chuẩn bị đăng ký học phần trước ngày khai giảng.
+- (−) Cần lưu cấu hình cho mỗi học kỳ trước khi bắt đầu kỳ.
+
+**Phương án bị loại:** tạo phiên bản kế tiếp hoặc bắt buộc tạo học kỳ mới chỉ để đổi cấu hình.

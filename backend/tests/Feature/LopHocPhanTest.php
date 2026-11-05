@@ -15,6 +15,7 @@ use App\Models\NhatKy;
 use App\Models\PhongHoc;
 use App\Models\SinhVien;
 use App\Models\User;
+use Database\Seeders\CauHinhSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -426,11 +427,14 @@ class LopHocPhanTest extends TestCase
             'cuoi_ky' => 0.50,
         ]);
         CauHinh::dat('diem.bang_quy_doi', [
-            ['tu' => 8.5, 'den' => 10.0, 'chu' => 'A', 'he_4' => 4.0, 'dat' => true],
-            ['tu' => 7.0, 'den' => 8.49, 'chu' => 'B', 'he_4' => 3.0, 'dat' => true],
-            ['tu' => 5.5, 'den' => 6.99, 'chu' => 'C', 'he_4' => 2.0, 'dat' => true],
-            ['tu' => 4.0, 'den' => 5.49, 'chu' => 'D', 'he_4' => 1.0, 'dat' => true],
-            ['tu' => 0.0, 'den' => 3.99, 'chu' => 'F', 'he_4' => 0.0, 'dat' => false],
+            ['tu' => 8.5, 'den' => 10.0, 'chu' => 'A', 'he_4' => 4.0, 'xep_loai' => 'Giỏi', 'dat' => true],
+            ['tu' => 8.0, 'den' => 8.49, 'chu' => 'B+', 'he_4' => 3.5, 'xep_loai' => 'Khá giỏi', 'dat' => true],
+            ['tu' => 7.0, 'den' => 7.99, 'chu' => 'B', 'he_4' => 3.0, 'xep_loai' => 'Khá', 'dat' => true],
+            ['tu' => 6.5, 'den' => 6.99, 'chu' => 'C+', 'he_4' => 2.5, 'xep_loai' => 'Trung bình khá', 'dat' => true],
+            ['tu' => 5.5, 'den' => 6.49, 'chu' => 'C', 'he_4' => 2.0, 'xep_loai' => 'Trung bình', 'dat' => true],
+            ['tu' => 5.0, 'den' => 5.49, 'chu' => 'D+', 'he_4' => 1.5, 'xep_loai' => 'Trung bình yếu', 'dat' => true],
+            ['tu' => 4.0, 'den' => 4.99, 'chu' => 'D', 'he_4' => 1.0, 'xep_loai' => 'Yếu', 'dat' => true],
+            ['tu' => 0.0, 'den' => 3.99, 'chu' => 'F', 'he_4' => 0.0, 'xep_loai' => 'Kém (không đạt)', 'dat' => false],
         ]);
 
         [$taiKhoan, $giangVien] = $this->giangVienCoTaiKhoan();
@@ -453,8 +457,9 @@ class LopHocPhanTest extends TestCase
             ->assertJsonPath('data.0.dang_ky_hoc_phan_id', $dangKy->id)
             ->assertJsonPath('data.0.diem_chuyen_can', 8)
             ->assertJsonPath('data.0.diem_tong_ket', 8.38)
-            ->assertJsonPath('data.0.diem_chu', 'B')
-            ->assertJsonPath('data.0.diem_he_4', 3)
+            ->assertJsonPath('data.0.diem_chu', 'B+')
+            ->assertJsonPath('data.0.diem_he_4', 3.5)
+            ->assertJsonPath('data.0.xep_loai', 'Khá giỏi')
             ->assertJsonPath('data.0.ket_qua', Diem::DAT);
 
         $this->assertDatabaseHas('diem', [
@@ -463,8 +468,9 @@ class LopHocPhanTest extends TestCase
             'diem_giua_ky' => 7.50,
             'diem_cuoi_ky' => 9.00,
             'diem_tong_ket' => 8.38,
-            'diem_chu' => 'B',
-            'diem_he_4' => 3.00,
+            'diem_chu' => 'B+',
+            'diem_he_4' => 3.50,
+            'xep_loai' => 'Khá giỏi',
             'ket_qua' => Diem::DAT,
         ]);
 
@@ -484,6 +490,50 @@ class LopHocPhanTest extends TestCase
             'gia_tri_moi' => '9.00',
             'nguoi_sua_id' => $taiKhoan->id,
             'ly_do' => 'Điều chỉnh sau phúc khảo',
+        ]);
+    }
+
+    public function test_gui_lai_diem_khong_thay_doi_khong_tinh_lai_ket_qua_legacy(): void
+    {
+        $this->seed(CauHinhSeeder::class);
+        [$taiKhoan, $giangVien] = $this->giangVienCoTaiKhoan();
+        $lop = LopHocPhan::factory()->create([
+            'hoc_ky_id' => $this->hocKy->id,
+            'giang_vien_id' => $giangVien->id,
+        ]);
+        $dangKy = DangKyHocPhan::factory()->create(['lop_hoc_phan_id' => $lop->id]);
+        Diem::factory()->create([
+            'dang_ky_hoc_phan_id' => $dangKy->id,
+            'diem_chuyen_can' => 8,
+            'diem_giua_ky' => 7.5,
+            'diem_cuoi_ky' => 9,
+            'diem_tong_ket' => 9.25,
+            'diem_chu' => 'A',
+            'xep_loai' => 'Kết quả lịch sử',
+            'diem_he_4' => 3.75,
+            'ket_qua' => Diem::DAT,
+        ]);
+
+        $this->actingAs($taiKhoan, 'sanctum')
+            ->putJson("/api/sections/{$lop->id}/grades", [
+                'diem' => [[
+                    'dang_ky_hoc_phan_id' => $dangKy->id,
+                    'diem_chuyen_can' => 8,
+                    'diem_giua_ky' => 7.5,
+                    'diem_cuoi_ky' => 9,
+                ]],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.0.diem_tong_ket', 9.25)
+            ->assertJsonPath('data.0.diem_chu', 'A')
+            ->assertJsonPath('data.0.xep_loai', 'Kết quả lịch sử');
+
+        $this->assertDatabaseHas('diem', [
+            'dang_ky_hoc_phan_id' => $dangKy->id,
+            'diem_tong_ket' => 9.25,
+            'diem_chu' => 'A',
+            'xep_loai' => 'Kết quả lịch sử',
+            'quy_doi_diem_id' => null,
         ]);
     }
 
@@ -521,7 +571,7 @@ class LopHocPhanTest extends TestCase
             'cuoi_ky' => 0.50,
         ]);
         CauHinh::dat('diem.bang_quy_doi', [
-            ['tu' => 0, 'den' => 10, 'chu' => 'A', 'he_4' => 4, 'dat' => true],
+            ['tu' => 0, 'den' => 10, 'chu' => 'A', 'he_4' => 4, 'xep_loai' => 'Giỏi', 'dat' => true],
         ]);
         [$taiKhoan, $giangVien] = $this->giangVienCoTaiKhoan();
         $lop = LopHocPhan::factory()->create([
@@ -770,6 +820,7 @@ class LopHocPhanTest extends TestCase
             'diem_cuoi_ky' => 8.0,
             'diem_tong_ket' => 7.88,
             'diem_chu' => 'B',
+            'xep_loai' => 'Khá',
             'diem_he_4' => 3.0,
             'ket_qua' => Diem::DAT,
         ]);

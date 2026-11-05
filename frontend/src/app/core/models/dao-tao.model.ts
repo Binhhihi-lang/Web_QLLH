@@ -237,6 +237,7 @@ export interface TuyChonNganh extends TuyChon {
 export interface TuyChonHocKy extends TuyChon {
   trang_thai: TrangThaiHocKy;
   nam_hoc: string;
+  ngay_bat_dau: string;
   ky_thu: number;
 }
 

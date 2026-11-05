@@ -14,16 +14,20 @@ import {
   searchBy,
   sortBy,
 } from '@core/mock/mock-response';
+import { HOC_KY_MOCK } from '@core/mock/data/dao-tao.mock';
 import { NguoiDungQuanTri, NguoiDungTaoMoi } from '@core/services/nguoi-dung.service';
 
 const CAU_HINH_MAC_DINH: CauHinhDiem = {
   'diem.trong_so': { chuyen_can: 0.25, giua_ky: 0.25, cuoi_ky: 0.5 },
   'diem.bang_quy_doi': [
-    { tu: 8.5, den: 10, chu: 'A', he_4: 4, dat: true },
-    { tu: 7, den: 8.49, chu: 'B', he_4: 3, dat: true },
-    { tu: 5.5, den: 6.99, chu: 'C', he_4: 2, dat: true },
-    { tu: 4, den: 5.49, chu: 'D', he_4: 1, dat: true },
-    { tu: 0, den: 3.99, chu: 'F', he_4: 0, dat: false },
+    { tu: 8.5, den: 10, chu: 'A', he_4: 4, xep_loai: 'Giỏi', dat: true },
+    { tu: 8, den: 8.49, chu: 'B+', he_4: 3.5, xep_loai: 'Khá giỏi', dat: true },
+    { tu: 7, den: 7.99, chu: 'B', he_4: 3, xep_loai: 'Khá', dat: true },
+    { tu: 6.5, den: 6.99, chu: 'C+', he_4: 2.5, xep_loai: 'Trung bình khá', dat: true },
+    { tu: 5.5, den: 6.49, chu: 'C', he_4: 2, xep_loai: 'Trung bình', dat: true },
+    { tu: 5, den: 5.49, chu: 'D+', he_4: 1.5, xep_loai: 'Trung bình yếu', dat: true },
+    { tu: 4, den: 4.99, chu: 'D', he_4: 1, xep_loai: 'Yếu', dat: true },
+    { tu: 0, den: 3.99, chu: 'F', he_4: 0, xep_loai: 'Kém (không đạt)', dat: false },
   ],
   'diem.diem_danh.sua_trong_so_ngay': 7,
 };
@@ -64,6 +68,14 @@ const NGUOI_DUNG_MAC_DINH: NguoiDungQuanTri[] = [
 export class SystemRegistry {
   private readonly nguoiDung = NGUOI_DUNG_MAC_DINH.map((user) => structuredClone(user));
   private readonly cauHinh: CauHinhDiem = structuredClone(CAU_HINH_MAC_DINH);
+  private readonly cauHinhTheoHocKy = new Map<number, CauHinhDiem>();
+
+  constructor() {
+    // Kỳ đang diễn ra phải có cấu hình đã được chốt trước khi chuyển trạng thái.
+    for (const hocKy of HOC_KY_MOCK.filter((row) => row.trang_thai === 'ONGOING')) {
+      this.cauHinhTheoHocKy.set(hocKy.id, structuredClone(this.cauHinh));
+    }
+  }
 
   resolve(
     method: string,
@@ -72,11 +84,12 @@ export class SystemRegistry {
     body: unknown = null,
     vaiTro: string | null = null,
   ): object | undefined {
-    if (path === '/settings' || path.startsWith('/users')) {
+    if (path.startsWith('/settings') || path.startsWith('/users')) {
       if (vaiTro !== 'ADMIN') return loi('FORBIDDEN', 'Bạn không có quyền quản trị hệ thống.');
     }
 
-    if (path === '/settings' && method === 'GET') return ok(structuredClone(this.cauHinh));
+    if (path === '/settings/semesters' && method === 'GET') return this.danhSachHocKy();
+    if (path === '/settings' && method === 'GET') return this.layCauHinh(params);
     if (path === '/settings' && method === 'PUT') return this.capNhatCauHinh(body);
     if (path === '/users' && method === 'GET') return this.layDanhSachNguoiDung(params);
     if (path === '/users' && method === 'POST') return this.taoNguoiDung(body);
@@ -102,6 +115,81 @@ export class SystemRegistry {
       );
     }
     return undefined;
+  }
+
+  layCauHinhDiem(hocKyId?: number): CauHinhDiem {
+    const config = hocKyId === undefined ? this.cauHinh : this.layCauHinhTheoHocKy(hocKyId);
+    return structuredClone(config);
+  }
+
+  daLuuCauHinhHocKy(hocKyId: number): boolean {
+    return this.cauHinhTheoHocKy.has(hocKyId);
+  }
+
+  private layCauHinh(params: HttpParams): object {
+    const hocKyId = Number(params.get('hoc_ky_id'));
+    if (!Number.isInteger(hocKyId) || hocKyId <= 0) {
+      return ok(structuredClone(this.cauHinh));
+    }
+
+    const hocKy = HOC_KY_MOCK.find((row) => row.id === hocKyId);
+    if (!hocKy) return loi('NOT_FOUND', 'Không tìm thấy học kỳ.');
+    const config = this.cauHinhTheoHocKy.get(hocKyId);
+    const selected = {
+      ...(config ?? this.cauHinh),
+      'diem.cau_hinh_hoc_ky': config
+        ? {
+            id: hocKyId,
+            hoc_ky_id: hocKyId,
+            quy_tac_lam_tron: 'HALF_UP_2',
+          }
+        : null,
+    };
+    return ok(structuredClone(selected));
+  }
+
+  private danhSachHocKy(): object {
+    return ok(
+      HOC_KY_MOCK.map((row) => ({
+        id: row.id,
+        ma_hoc_ky: row.ma_hoc_ky,
+        label: row.ten_hoc_ky,
+        nam_hoc: row.nam_hoc,
+        ky_thu: row.ky_thu,
+        ngay_bat_dau: row.ngay_bat_dau,
+        ngay_ket_thuc: row.ngay_ket_thuc,
+        mo_dang_ky_luc: row.mo_dang_ky_luc,
+        dong_dang_ky_luc: row.dong_dang_ky_luc,
+        trang_thai: row.trang_thai,
+        cau_hinh_da_luu: this.cauHinhTheoHocKy.has(row.id),
+      })),
+    );
+  }
+
+  private layCauHinhTheoHocKy(hocKyId: number): CauHinhDiem {
+    const hocKy = HOC_KY_MOCK.find((row) => row.id === hocKyId);
+    if (!hocKy) throw new Error('Không tìm thấy học kỳ cấu hình điểm mock.');
+    const result = this.layCauHinh(new HttpParams().set('hoc_ky_id', hocKyId));
+    if (!('data' in result) || typeof result.data !== 'object' || result.data === null) {
+      throw new Error('Không đọc được cấu hình điểm mock theo học kỳ.');
+    }
+    const data = result.data as Record<string, unknown>;
+    if (
+      !laTrongSoDiem(data['diem.trong_so']) ||
+      !Array.isArray(data['diem.bang_quy_doi']) ||
+      !data['diem.bang_quy_doi'].every(laKhoangQuyDoiDiem)
+    ) {
+      throw new Error('Cấu hình điểm mock theo học kỳ không hợp lệ.');
+    }
+    return {
+      ...this.cauHinh,
+      'diem.trong_so': data['diem.trong_so'],
+      'diem.bang_quy_doi': data['diem.bang_quy_doi'],
+      'diem.diem_danh.sua_trong_so_ngay':
+        typeof data['diem.diem_danh.sua_trong_so_ngay'] === 'number'
+          ? data['diem.diem_danh.sua_trong_so_ngay']
+          : this.cauHinh['diem.diem_danh.sua_trong_so_ngay'],
+    };
   }
 
   private layDanhSachNguoiDung(params: HttpParams): object {
@@ -214,10 +302,15 @@ export class SystemRegistry {
 
   private capNhatCauHinh(body: unknown): object {
     const input = this.docLieu(body);
-    if (Object.keys(input).length === 0) {
-      return loiValidation({ settings: ['Cần gửi object cấu hình có ít nhất một khóa.'] });
+    const hocKyId = Number(input['hoc_ky_id']);
+    const hocKy = HOC_KY_MOCK.find((row) => row.id === hocKyId);
+    if (!hocKy) return loiValidation({ hoc_ky_id: ['Cần chọn học kỳ hợp lệ.'] });
+    if (hocKy.trang_thai !== 'UPCOMING') {
+      return loi('SEMESTER_CONFIG_LOCKED', 'Chỉ được sửa cấu hình của học kỳ sắp diễn ra.');
     }
-    const candidate: CauHinhDiem = structuredClone(this.cauHinh);
+    const candidate: CauHinhDiem = structuredClone(
+      this.cauHinhTheoHocKy.get(hocKyId) ?? this.cauHinh,
+    );
     if (Object.prototype.hasOwnProperty.call(input, 'diem.trong_so')) {
       if (!laTrongSoDiem(input['diem.trong_so'])) {
         return loiValidation({ 'diem.trong_so': ['Trọng số không đúng định dạng.'] });
@@ -251,8 +344,10 @@ export class SystemRegistry {
         Object.fromEntries(Object.entries(errors).map(([key, message]) => [key, [message]])),
       );
     }
-    Object.assign(this.cauHinh, structuredClone(input));
-    return ok(structuredClone(this.cauHinh), 'Cập nhật cấu hình thành công.');
+
+    this.cauHinhTheoHocKy.set(hocKyId, structuredClone(candidate));
+    const result = this.layCauHinh(new HttpParams().set('hoc_ky_id', hocKyId));
+    return 'data' in result ? ok(result.data, 'Lưu cấu hình học kỳ thành công.') : result;
   }
 
   private kiemTraNguoiDung(

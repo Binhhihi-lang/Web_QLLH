@@ -20,6 +20,7 @@ class DiemFactory extends Factory
             'diem_cuoi_ky' => null,
             'diem_tong_ket' => null,
             'diem_chu' => null,
+            'xep_loai' => null,
             'diem_he_4' => null,
             'ket_qua' => null,
         ];

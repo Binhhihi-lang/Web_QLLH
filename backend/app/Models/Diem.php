@@ -25,6 +25,8 @@ class Diem extends Model
         'diem_cuoi_ky',
         'diem_tong_ket',
         'diem_chu',
+        'xep_loai',
+        'quy_doi_diem_id',
         'diem_he_4',
         'ket_qua',
     ];
@@ -43,6 +45,11 @@ class Diem extends Model
     public function dangKyHocPhan(): BelongsTo
     {
         return $this->belongsTo(DangKyHocPhan::class);
+    }
+
+    public function quyDoiDiem(): BelongsTo
+    {
+        return $this->belongsTo(QuyDoiDiem::class);
     }
 
     public function lichSuDiem(): HasMany

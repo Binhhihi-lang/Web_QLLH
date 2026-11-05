@@ -25,6 +25,18 @@ export const heThongRoutes: Routes = [
     loadComponent: () => import('@features/hoc-vu/menu/quan-ly').then((m) => m.MenuQuanLy),
   },
   {
+    path: 'cau-hinh/:hocKyId/sua',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-49', title: 'Sửa cấu hình điểm', editMode: true },
+    loadComponent: () => import('@features/he-thong/cau-hinh/cau-hinh').then((m) => m.CauHinhPage),
+  },
+  {
+    path: 'cau-hinh/:hocKyId',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], ma: 'SCR-49', title: 'Chi tiết cấu hình điểm' },
+    loadComponent: () => import('@features/he-thong/cau-hinh/cau-hinh').then((m) => m.CauHinhPage),
+  },
+  {
     path: 'cau-hinh',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'], ma: 'SCR-49', title: 'Cấu hình' },

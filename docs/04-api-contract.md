@@ -125,6 +125,8 @@ Lỗi validation (422):
 | `SUBJECT_CHANGE_BLOCKED` | 409 | Không đổi môn của lớp đã có đăng ký ACTIVE (FR-08.03) |
 | `SEMESTER_CHANGE_BLOCKED` | 409 | Không đổi học kỳ của lớp đã có đăng ký ACTIVE (FR-08.03) |
 | `SEMESTER_TRANSITION_INVALID` | 409 | Chuyển trạng thái học kỳ không hợp lệ (chỉ tiến, một kỳ ONGOING) |
+| `SEMESTER_CONFIG_REQUIRED` | 409 | Phải lưu cấu hình điểm trước khi chuyển học kỳ sang ONGOING |
+| `SEMESTER_CONFIG_LOCKED` | 409 | Chỉ được sửa cấu hình của học kỳ UPCOMING |
 | `SEMESTER_OVERLAP` | 409 | Khoảng ngày chồng lấn với học kỳ khác |
 | `SESSION_OUTSIDE_SEMESTER` | 409 | Ngày buổi học nằm ngoài khoảng ngày của học kỳ |
 | `UPLOAD_NOT_CONFIGURED` | 503 | Chưa cấu hình Cloudinary trên máy chủ |
@@ -495,7 +497,7 @@ Response mẫu:
 }
 ```
 
-`PATCH /api/semesters/{id}/status` — body `{ "trang_thai": "CLOSED" }`. Trả 409 `SEMESTER_TRANSITION_INVALID` khi chuyển lùi, bỏ qua `ONGOING`, hoặc khi đã có kỳ khác `ONGOING`.
+`PATCH /api/semesters/{id}/status` — body `{ "trang_thai": "CLOSED" }`. Trả 409 `SEMESTER_TRANSITION_INVALID` khi chuyển lùi, bỏ qua `ONGOING`, hoặc khi đã có kỳ khác `ONGOING`. Khi bắt đầu kỳ, API yêu cầu cấu hình điểm đã lưu (`SEMESTER_CONFIG_REQUIRED`).
 
 ---
 
@@ -762,22 +764,54 @@ hoặc đăng ký không ACTIVE/không thuộc lớp. Các endpoint nhập đi�
 
 `tich_luy` chỉ tính các học kỳ `CLOSED`; mỗi môn tính một lần với điểm cao nhất. `tin_chi_dat` là tổng tín chỉ của các môn có `ket_qua = DAT`.
 
-### `GET /api/settings` — phần bảng quy đổi
+### Cấu hình điểm theo học kỳ
+
+`GET /api/settings/semesters` trả danh sách học kỳ gồm mã, năm học, thời gian,
+trạng thái và `cau_hinh_da_luu` để dựng bảng tra cứu/lọc.
+`GET /api/settings?hoc_ky_id={id}` trả cấu hình riêng của học kỳ; nếu chưa lưu,
+các giá trị trọng số, bảng quy đổi và số ngày sửa điểm danh lấy từ cấu hình mặc định.
+`diem.cau_hinh_hoc_ky` là `null` khi chưa lưu, hoặc:
+
+```json
+{
+  "diem.cau_hinh_hoc_ky": {
+    "id": 12,
+    "hoc_ky_id": 45,
+    "quy_tac_lam_tron": "HALF_UP_2"
+  }
+}
+```
+
+`HALF_UP_2` làm tròn điểm tổng kết đến hai chữ số thập phân theo half-up trước
+khi tra khoảng quy đổi. Mỗi học kỳ có tối đa một cấu hình. Khi kỳ chuyển sang
+`ONGOING`, cấu hình bị khóa; các học kỳ khác có thể dùng quy tắc riêng. Điểm đã
+lưu giữ nguyên kết quả và `quy_doi_diem_id`; cập nhật cấu hình của kỳ tương lai
+không hồi tố điểm lịch sử.
 
 ```json
 {
   "diem.trong_so": { "chuyen_can": 0.25, "giua_ky": 0.25, "cuoi_ky": 0.50 },
   "diem.bang_quy_doi": [
-    { "tu": 8.5, "den": 10.0, "chu": "A", "he_4": 4.0, "dat": true },
-    { "tu": 7.0, "den": 8.49, "chu": "B", "he_4": 3.0, "dat": true },
-    { "tu": 5.5, "den": 6.99, "chu": "C", "he_4": 2.0, "dat": true },
-    { "tu": 4.0, "den": 5.49, "chu": "D", "he_4": 1.0, "dat": true },
-    { "tu": 0.0, "den": 3.99, "chu": "F", "he_4": 0.0, "dat": false }
+    { "tu": 8.5, "den": 10.0, "chu": "A", "he_4": 4.0, "xep_loai": "Giỏi", "dat": true },
+    { "tu": 8.0, "den": 8.49, "chu": "B+", "he_4": 3.5, "xep_loai": "Khá giỏi", "dat": true },
+    { "tu": 7.0, "den": 7.99, "chu": "B", "he_4": 3.0, "xep_loai": "Khá", "dat": true },
+    { "tu": 6.5, "den": 6.99, "chu": "C+", "he_4": 2.5, "xep_loai": "Trung bình khá", "dat": true },
+    { "tu": 5.5, "den": 6.49, "chu": "C", "he_4": 2.0, "xep_loai": "Trung bình", "dat": true },
+    { "tu": 5.0, "den": 5.49, "chu": "D+", "he_4": 1.5, "xep_loai": "Trung bình yếu", "dat": true },
+    { "tu": 4.0, "den": 4.99, "chu": "D", "he_4": 1.0, "xep_loai": "Yếu", "dat": true },
+    { "tu": 0.0, "den": 3.99, "chu": "F", "he_4": 0.0, "xep_loai": "Kém (không đạt)", "dat": false }
   ]
 }
 ```
 
-`PUT /api/settings` với `diem.bang_quy_doi` trả 422 nếu khoảng chồng lấn, không phủ kín 0–10, hoặc `chu` không thuộc `A/B/C/D/F`.
+`PUT /api/settings` phải có `hoc_ky_id`. Lưu lần đầu tạo cấu hình cho kỳ; lưu lại
+khi kỳ vẫn `UPCOMING` sẽ cập nhật chính cấu hình đó. API từ chối cập nhật kỳ đang
+diễn ra/đã đóng bằng `409 SEMESTER_CONFIG_LOCKED`. Chuyển học kỳ sang `ONGOING`
+cần có cấu hình điểm đã lưu; nếu chưa có, API trả `409 SEMESTER_CONFIG_REQUIRED`.
+
+Với `diem.bang_quy_doi`, API trả 422 nếu khoảng chồng lấn, có khoảng trống,
+không phủ kín 0–10, hoặc `chu` không thuộc `A/B+/B/C+/C/D+/D/F`. Mỗi khoảng
+gồm `tu`, `den`, `chu`, `he_4`, `xep_loai` và `dat`.
 Với `diem.trong_so`, ba trường `chuyen_can`, `giua_ky`, `cuoi_ky` phải nằm trong
 khoảng 0–1 và có tổng bằng 1. Bảng quy đổi phải phủ kín 0–10, không chồng lấn
 hoặc có khoảng trống; các mốc dùng tối đa hai chữ số thập phân. `PUT` chỉ ghi
@@ -869,7 +903,7 @@ Bộ lọc: `q`, `deleted_by`, `deleted_tu`, `deleted_den`, `page`, `per_page`.
 
 | Method | Endpoint | Trả về |
 |---|---|---|
-| GET | `/api/options/semesters` | `[{ id, label, trang_thai, nam_hoc, ky_thu }]` |
+| GET | `/api/options/semesters` | `[{ id, label, trang_thai, nam_hoc, ngay_bat_dau }]` |
 | GET | `/api/options/subjects` | `[{ id, label, so_tin_chi, khoa_id }]` |
 | GET | `/api/options/teachers` | `[{ id, label }]` |
 | GET | `/api/options/rooms` | `[{ id, label, suc_chua }]` |

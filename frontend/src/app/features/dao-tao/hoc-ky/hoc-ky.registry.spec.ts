@@ -1,8 +1,10 @@
 import { HttpParams } from '@angular/common/http';
 import { DaoTaoRegistry } from '@core/mock/registry/dao-tao.registry';
+import { SystemRegistry } from '@core/mock/registry/system.registry';
 
 describe('DaoTaoRegistry học kỳ', () => {
   let registry: DaoTaoRegistry;
+  let settings: SystemRegistry;
 
   const goi = (method: string, path: string, body: unknown = null, params = new HttpParams()) =>
     registry.resolve(method, path, params, body) as {
@@ -24,7 +26,8 @@ describe('DaoTaoRegistry học kỳ', () => {
   };
 
   beforeEach(() => {
-    registry = new DaoTaoRegistry();
+    settings = new SystemRegistry();
+    registry = new DaoTaoRegistry(settings);
   });
 
   it('filters, creates, reads, updates and soft-deletes an upcoming semester', () => {
@@ -83,23 +86,36 @@ describe('DaoTaoRegistry học kỳ', () => {
   });
 
   it('enforces forward-only status transitions and at most one ongoing semester', () => {
-    expect(
-      goi('PATCH', '/semesters/4/status', { trang_thai: 'CLOSED' }).ma_loi,
-    ).toBe('SEMESTER_TRANSITION_INVALID');
-    expect(
-      goi('PATCH', '/semesters/4/status', { trang_thai: 'ONGOING' }).ma_loi,
-    ).toBe('SEMESTER_TRANSITION_INVALID');
+    expect(goi('PATCH', '/semesters/4/status', { trang_thai: 'CLOSED' }).ma_loi).toBe(
+      'SEMESTER_TRANSITION_INVALID',
+    );
+    expect(goi('PATCH', '/semesters/4/status', { trang_thai: 'ONGOING' }).ma_loi).toBe(
+      'SEMESTER_TRANSITION_INVALID',
+    );
 
     expect(goi('PATCH', '/semesters/3/status', { trang_thai: 'CLOSED' }).success).toBe(true);
+    expect(goi('PATCH', '/semesters/4/status', { trang_thai: 'ONGOING' }).ma_loi).toBe(
+      'SEMESTER_CONFIG_REQUIRED',
+    );
+    settings.resolve(
+      'PUT',
+      '/settings',
+      new HttpParams(),
+      {
+        hoc_ky_id: 4,
+        'diem.trong_so': { chuyen_can: 0.25, giua_ky: 0.25, cuoi_ky: 0.5 },
+      },
+      'ADMIN',
+    );
     expect(goi('PATCH', '/semesters/4/status', { trang_thai: 'ONGOING' }).data.trang_thai).toBe(
       'ONGOING',
     );
     expect(goi('PATCH', '/semesters/4/status', { trang_thai: 'CLOSED' }).data.trang_thai).toBe(
       'CLOSED',
     );
-    expect(
-      goi('PATCH', '/semesters/4/status', { trang_thai: 'ONGOING' }).ma_loi,
-    ).toBe('SEMESTER_TRANSITION_INVALID');
+    expect(goi('PATCH', '/semesters/4/status', { trang_thai: 'ONGOING' }).ma_loi).toBe(
+      'SEMESTER_TRANSITION_INVALID',
+    );
   });
 
   it('blocks deletion unless the semester is upcoming and has no sections', () => {

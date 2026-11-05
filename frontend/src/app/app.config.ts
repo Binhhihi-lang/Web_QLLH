@@ -1,6 +1,7 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MockRegistry } from '@core/mock/mock-registry';
 import { mockInterceptor } from '@core/mock/mock.interceptor';
 import { authInterceptor } from '@core/auth/auth.interceptor';
@@ -10,6 +11,7 @@ import { routes } from './app.routes';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    importProvidersFrom(MatSnackBarModule),
     provideRouter(routes, withComponentInputBinding()),
     // MockRegistry là stateful (nhớ các thao tác ghi) nên phải là singleton.
     MockRegistry,

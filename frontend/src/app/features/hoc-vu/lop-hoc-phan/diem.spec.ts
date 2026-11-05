@@ -1,6 +1,7 @@
 import { ActivatedRoute } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { CauHinhService } from '@core/services/cau-hinh.service';
 import { DongDiem, LopHocPhanService, SinhVienLop } from '@core/services/lop-hoc-phan.service';
 import { LopHocPhanDiem } from './diem';
 
@@ -13,6 +14,7 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
     capNhatDiem: (id: number, diem: DongDiem[]) => any;
     chotDiem: () => any;
   };
+  let mockCauHinhService: { lay: (hocKyId: number) => any };
 
   function sinhVien(id: number, maSv: string, hoTen: string): SinhVienLop {
     return {
@@ -39,23 +41,77 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
       diem_cuoi_ky: null,
       diem_tong_ket: null,
       diem_chu: null,
+      xep_loai: null,
       diem_he_4: null,
       ...diem,
     };
   }
 
-  async function taoTrang(danhSach: DongDiem[]) {
+  async function taoTrang(danhSach: DongDiem[], cauHinh?: object) {
     mockService = {
-      layMot: () => of({ id: 7, da_chot_diem: false }),
+      layMot: () =>
+        of({
+          id: 7,
+          da_chot_diem: false,
+          hoc_ky: { id: 21, nam_hoc: '2026-2027' },
+        }),
       layDiem: () => of(danhSach),
-      capNhatDiem: (_id: number, diem: DongDiem[]) => of(diem),
+      capNhatDiem: vi.fn((_id: number, diem: DongDiem[]) => of(diem)),
       chotDiem: () => of({ id: 7, da_chot_diem: true }),
+    };
+    mockCauHinhService = {
+      lay: (_hocKyId: number) =>
+        of(
+          cauHinh ?? {
+            'diem.trong_so': { chuyen_can: 0.25, giua_ky: 0.25, cuoi_ky: 0.5 },
+            'diem.bang_quy_doi': [
+              { tu: 8.5, den: 10, chu: 'A', he_4: 4, xep_loai: 'Giỏi', dat: true },
+              { tu: 8, den: 8.49, chu: 'B+', he_4: 3.5, xep_loai: 'Khá giỏi', dat: true },
+              { tu: 7, den: 7.99, chu: 'B', he_4: 3, xep_loai: 'Khá', dat: true },
+              {
+                tu: 6.5,
+                den: 6.99,
+                chu: 'C+',
+                he_4: 2.5,
+                xep_loai: 'Trung bình khá',
+                dat: true,
+              },
+              {
+                tu: 5.5,
+                den: 6.49,
+                chu: 'C',
+                he_4: 2,
+                xep_loai: 'Trung bình',
+                dat: true,
+              },
+              {
+                tu: 5,
+                den: 5.49,
+                chu: 'D+',
+                he_4: 1.5,
+                xep_loai: 'Trung bình yếu',
+                dat: true,
+              },
+              { tu: 4, den: 4.99, chu: 'D', he_4: 1, xep_loai: 'Yếu', dat: true },
+              {
+                tu: 0,
+                den: 3.99,
+                chu: 'F',
+                he_4: 0,
+                xep_loai: 'Kém (không đạt)',
+                dat: false,
+              },
+            ],
+            'diem.diem_danh.sua_trong_so_ngay': 7,
+          },
+        ),
     };
 
     await TestBed.configureTestingModule({
       imports: [LopHocPhanDiem],
       providers: [
         { provide: LopHocPhanService, useValue: mockService },
+        { provide: CauHinhService, useValue: mockCauHinhService },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => '7' } } },
@@ -77,6 +133,98 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
     expect(component.diem().length).toBe(2);
     expect(component.diemHienThi().length).toBe(2);
     expect(component.dangTai()).toBe(false);
+  });
+
+  it('tính tổng kết và điểm chữ theo trọng số, khoảng quy đổi từ cấu hình', async () => {
+    await taoTrang(
+      [
+        dongDiem(1, 'SV000001', 'Nguyễn Văn An', {
+          diem_chuyen_can: 10,
+          diem_giua_ky: 0,
+          diem_cuoi_ky: 0,
+        }),
+      ],
+      {
+        'diem.trong_so': { chuyen_can: 0.5, giua_ky: 0.25, cuoi_ky: 0.25 },
+        'diem.bang_quy_doi': [
+          { tu: 5.5, den: 10, chu: 'A', he_4: 4, xep_loai: 'Giỏi', dat: true },
+          { tu: 5, den: 5.49, chu: 'D+', he_4: 1.5, xep_loai: 'Trung bình yếu', dat: true },
+          { tu: 0, den: 4.99, chu: 'F', he_4: 0, xep_loai: 'Kém', dat: false },
+        ],
+        'diem.diem_danh.sua_trong_so_ngay': 7,
+      },
+    );
+
+    const row = component.diem()[0];
+    row.diem_chuyen_can = 0;
+    component.danhDauSua(row);
+    expect(component.tong(row)).toBe('0.00');
+    expect(component.chu(row)).toBe('F');
+    expect(component.xepLoai(row)).toBe('Kém');
+  });
+
+  it('giữ nguyên kết quả lịch sử đến khi dòng điểm được chỉnh sửa', async () => {
+    await taoTrang([
+      dongDiem(1, 'SV000001', 'Nguyễn Văn An', {
+        diem_chuyen_can: 10,
+        diem_giua_ky: 10,
+        diem_cuoi_ky: 10,
+        diem_tong_ket: 6.25,
+        diem_chu: 'C',
+        xep_loai: 'Trung bình',
+        diem_he_4: 2,
+      }),
+    ]);
+
+    const row = component.diem()[0];
+    expect(component.tong(row)).toBe('6.25');
+    expect(component.chu(row)).toBe('C');
+    expect(component.xepLoai(row)).toBe('Trung bình');
+    row.diem_chuyen_can = 0;
+    component.danhDauSua(row);
+
+    expect(component.tong(row)).toBe('7.50');
+    expect(component.chu(row)).toBe('B');
+  });
+
+  it('làm tròn tổng kết theo half-up đến hai chữ số trước khi quy đổi', async () => {
+    await taoTrang(
+      [
+        dongDiem(1, 'SV000001', 'Nguyễn Văn An', {
+          diem_chuyen_can: 1.02,
+          diem_giua_ky: 1,
+          diem_cuoi_ky: 0,
+        }),
+      ],
+      {
+        'diem.trong_so': { chuyen_can: 0.5, giua_ky: 0.5, cuoi_ky: 0 },
+        'diem.bang_quy_doi': [
+          { tu: 0, den: 10, chu: 'A', he_4: 4, xep_loai: 'Giỏi', dat: true },
+        ],
+        'diem.diem_danh.sua_trong_so_ngay': 7,
+      },
+    );
+
+    const row = component.diem()[0];
+    row.diem_chuyen_can = 1.01;
+    component.danhDauSua(row);
+
+    expect(component.tong(row)).toBe('1.01');
+  });
+
+  it('chỉ gửi các dòng đã sửa để không thay đổi phiên bản của điểm lịch sử khác', async () => {
+    const rows = [
+      dongDiem(1, 'SV000001', 'Nguyễn Văn An'),
+      dongDiem(2, 'SV000002', 'Trần Thị B'),
+    ];
+    await taoTrang(rows);
+    const changedRow = component.diem()[1];
+    changedRow.diem_chuyen_can = 5;
+    component.danhDauSua(changedRow);
+
+    component.luu();
+
+    expect(mockService.capNhatDiem).toHaveBeenCalledWith(7, [changedRow]);
   });
 
   it('lọc theo họ tên gõ không dấu vẫn khớp', async () => {
@@ -132,7 +280,7 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
     expect(component.duDiem()).toBe(false);
   });
 
-  it('lưu điểm gửi lên toàn bộ lớp chứ không chỉ dòng đang hiển thị', async () => {
+  it('lưu điểm chỉ gửi các dòng đã sửa, kể cả khi đang lọc', async () => {
     await taoTrang([
       dongDiem(1, 'SV000001', 'Nguyễn Văn An'),
       dongDiem(2, 'SV000002', 'Trần Thị B'),
@@ -144,11 +292,14 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
       return of(diem);
     };
 
+    const changedRow = component.diem()[1];
+    changedRow.diem_chuyen_can = 5;
+    component.danhDauSua(changedRow);
     component.tuKhoa.set('Nguyễn');
     component.luu();
 
     expect(daGui.length).toBe(1);
-    expect(daGui[0].length).toBe(2);
+    expect(daGui[0]).toEqual([changedRow]);
   });
 
   it('lớp chưa có sinh viên thì báo rỗng, không hiện ô tìm kiếm', async () => {

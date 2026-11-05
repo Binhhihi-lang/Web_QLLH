@@ -42,10 +42,12 @@ class OptionController extends Controller
     {
         $data = HocKy::query()
             ->orderByDesc('ngay_bat_dau')
-            ->get(['id', 'ten_hoc_ky', 'trang_thai'])
+            ->get(['id', 'ten_hoc_ky', 'nam_hoc', 'ngay_bat_dau', 'trang_thai'])
             ->map(fn (HocKy $h) => [
                 'id' => $h->id,
                 'label' => $h->ten_hoc_ky,
+                'nam_hoc' => $h->nam_hoc,
+                'ngay_bat_dau' => $h->ngay_bat_dau->toDateString(),
                 'trang_thai' => $h->trang_thai,
             ]);
 

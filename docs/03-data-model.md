@@ -28,6 +28,7 @@ erDiagram
     dang_ky_hoc_phan ||--o{ diem_danh : "được điểm danh"
     buoi_hoc ||--o{ diem_danh : "chứa"
     diem ||--o{ lich_su_diem : "ghi lịch sử"
+    quy_doi_diem ||--o{ diem : "được áp dụng"
 
     khoa {
         bigint id PK
@@ -169,8 +170,18 @@ erDiagram
         decimal diem_cuoi_ky
         decimal diem_tong_ket
         string diem_chu
+        string xep_loai
+        bigint quy_doi_diem_id FK
         decimal diem_he_4
         string ket_qua
+    }
+    quy_doi_diem {
+        bigint id PK
+        bigint hoc_ky_id FK,UK
+        json trong_so
+        json bang_quy_doi
+        int so_ngay_sua_diem_danh
+        string quy_tac_lam_tron
     }
     lich_su_diem {
         bigint id PK
@@ -318,7 +329,7 @@ erDiagram
 **Index:** `unique(ma_hoc_ky)`, `unique(nam_hoc, ky_thu)`, `index(trang_thai)`, `index(ngay_bat_dau)`.
 
 > **Vòng đời chỉ tiến** (BR-24): `UPCOMING → ONGOING → CLOSED`; `CLOSED` không quay lại. Chỉ một kỳ `ONGOING` tại một thời điểm.
-> Hai học kỳ không chồng lấn `[ngay_bat_dau, ngay_ket_thuc]`; đợt đăng ký phải nằm trong khoảng ngày của kỳ (BR-25).
+> Hai học kỳ không chồng lấn `[ngay_bat_dau, ngay_ket_thuc]`; đợt đăng ký có thể mở sớm và phải đóng không muộn hơn ngày bắt đầu kỳ (BR-25).
 > Học kỳ `CLOSED` không được xóa (FR-06.04).
 
 ### 3.7. `phong_hoc`
@@ -422,15 +433,17 @@ erDiagram
 | diem_giua_ky | decimal(4,2) | yes | |
 | diem_cuoi_ky | decimal(4,2) | yes | |
 | diem_tong_ket | decimal(4,2) | yes | Tính tự động |
-| diem_chu | varchar(2) | yes | `A`, `B`, `C`, `D`, `F` |
+| diem_chu | varchar(2) | yes | `A`, `B+`, `B`, `C+`, `C`, `D+`, `D`, `F` |
+| xep_loai | varchar(100) | yes | Phân loại theo quy định |
+| quy_doi_diem_id | bigint unsigned | yes | FK `quy_doi_diem.id`; null giữ nguyên nguồn gốc legacy chưa xác định |
 | diem_he_4 | decimal(3,2) | yes | 0.00–4.00, suy ra từ `diem_chu` |
 | ket_qua | varchar(20) | yes | `DAT`, `KHONG_DAT` |
 | created_at, updated_at | timestamp | yes | |
 
 **Index:** `unique(dang_ky_hoc_phan_id)`, `index(ket_qua)`, `index(diem_chu)`.
 
-> `diem_tong_ket`, `diem_chu`, `diem_he_4`, `ket_qua` chỉ có giá trị khi đủ 3 điểm thành phần; ngược lại null.
-> Công thức và bảng quy đổi đọc từ `cau_hinh`, không hard-code.
+> `diem_tong_ket`, `diem_chu`, `xep_loai`, `diem_he_4`, `ket_qua` chỉ có giá trị khi đủ 3 điểm thành phần; ngược lại null.
+> Công thức và bảng quy đổi đọc từ cấu hình `quy_doi_diem` gắn với học kỳ. Gửi lại các thành phần không đổi không tính lại kết quả legacy.
 
 ### 3.13. `lich_su_diem`
 
@@ -438,7 +451,7 @@ erDiagram
 |---|---|---|---|
 | id | bigint unsigned | PK | |
 | diem_id | bigint unsigned | no | FK `diem.id`, cascade |
-| truong | varchar(30) | no | `diem_chuyen_can`, `diem_giua_ky`, `diem_cuoi_ky`, `diem_tong_ket`, `diem_chu`, `diem_he_4`, `ket_qua` |
+| truong | varchar(30) | no | `diem_chuyen_can`, `diem_giua_ky`, `diem_cuoi_ky`, `diem_tong_ket`, `diem_chu`, `xep_loai`, `diem_he_4`, `ket_qua` |
 | gia_tri_cu | varchar(50) | yes | |
 | gia_tri_moi | varchar(50) | yes | |
 | nguoi_sua_id | bigint unsigned | no | FK `users.id` |
@@ -447,7 +460,26 @@ erDiagram
 
 **Index:** `index(diem_id, thoi_diem)`.
 
-### 3.14. `cau_hinh`
+### 3.14. `quy_doi_diem`
+
+| Cột | Kiểu | Null | Ghi chú |
+|---|---|---|---|
+| id | bigint unsigned | PK | |
+| hoc_ky_id | bigint unsigned | no | **unique**, FK `hoc_ky.id`, restrict delete; mỗi học kỳ có tối đa một cấu hình |
+| trong_so | json | no | Trọng số ba điểm thành phần |
+| bang_quy_doi | json | no | Các khoảng liên tục từ 0 đến 10 |
+| so_ngay_sua_diem_danh | int unsigned | no | Số ngày cho phép sửa điểm danh, mặc định 7 |
+| quy_tac_lam_tron | varchar(30) | no | `HALF_UP_2`: half-up đến 2 chữ số trước tra bảng |
+| created_at, updated_at | timestamp | yes | |
+
+**Index:** `unique(hoc_ky_id)`.
+
+Chỉ cấu hình của học kỳ `UPCOMING` được sửa. Khi học kỳ bắt đầu, cấu hình bị khóa;
+thay đổi cho các học kỳ tương lai không làm thay đổi điểm đã lưu của học kỳ cũ.
+`diem.quy_doi_diem_id` ghi lại cấu hình đã dùng để tính điểm và để null với dữ liệu
+legacy chưa biết nguồn gốc; không backfill suy đoán.
+
+### 3.15. `cau_hinh`
 
 | Cột | Kiểu | Null | Ghi chú |
 |---|---|---|---|
@@ -457,21 +489,28 @@ erDiagram
 | mo_ta | varchar(255) | yes | |
 | created_at, updated_at | timestamp | yes | |
 
-**Giá trị mặc định:**
+**Giá trị mặc định** (dùng để khởi tạo quy định năm học):
 
 ```json
 {
   "diem.trong_so": { "chuyen_can": 0.25, "giua_ky": 0.25, "cuoi_ky": 0.50 },
   "diem.bang_quy_doi": [
-    { "tu": 8.5,  "den": 10.0, "chu": "A",  "he_4": 4.0, "dat": true },
-    { "tu": 7.0,  "den": 8.49, "chu": "B",  "he_4": 3.0, "dat": true },
-    { "tu": 5.5,  "den": 6.99, "chu": "C",  "he_4": 2.0, "dat": true },
-    { "tu": 4.0,  "den": 5.49, "chu": "D",  "he_4": 1.0, "dat": true },
-    { "tu": 0.0,  "den": 3.99, "chu": "F",  "he_4": 0.0, "dat": false }
+    { "tu": 8.5, "den": 10.0, "chu": "A", "he_4": 4.0, "xep_loai": "Giỏi", "dat": true },
+    { "tu": 8.0, "den": 8.49, "chu": "B+", "he_4": 3.5, "xep_loai": "Khá giỏi", "dat": true },
+    { "tu": 7.0, "den": 7.99, "chu": "B", "he_4": 3.0, "xep_loai": "Khá", "dat": true },
+    { "tu": 6.5, "den": 6.99, "chu": "C+", "he_4": 2.5, "xep_loai": "Trung bình khá", "dat": true },
+    { "tu": 5.5, "den": 6.49, "chu": "C", "he_4": 2.0, "xep_loai": "Trung bình", "dat": true },
+    { "tu": 5.0, "den": 5.49, "chu": "D+", "he_4": 1.5, "xep_loai": "Trung bình yếu", "dat": true },
+    { "tu": 4.0, "den": 4.99, "chu": "D", "he_4": 1.0, "xep_loai": "Yếu", "dat": true },
+    { "tu": 0.0, "den": 3.99, "chu": "F", "he_4": 0.0, "xep_loai": "Kém (không đạt)", "dat": false }
   ],
   "diem.diem_danh.sua_trong_so_ngay": 7
 }
 ```
+
+`cau_hinh` lưu bộ giá trị mặc định để khởi tạo cấu hình học kỳ. Khi một học kỳ
+được chọn, `quy_doi_diem.hoc_ky_id` là nguồn cấu hình riêng; điểm đã tính giữ
+nguyên kết quả và khóa tham chiếu của nó.
 
 ### 3.15. `nhat_ky`
 
@@ -575,7 +614,7 @@ diem_tong_ket = round(
     diem_cuoi_ky    * 0.50, 2)
 ```
 
-Sau đó tra `cau_hinh["diem.bang_quy_doi"]` để lấy `diem_chu`, `diem_he_4`, `ket_qua`.
+Sau đó tra `cau_hinh["diem.bang_quy_doi"]` để lấy `diem_chu`, `diem_he_4`, `xep_loai`, `ket_qua`.
 
 Bảng quy đổi mặc định (theo quy chế trường):
 

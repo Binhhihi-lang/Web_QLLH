@@ -4,11 +4,15 @@ export interface TrongSoDiem {
   cuoi_ky: number;
 }
 
+export const CAC_DIEM_CHU = ['A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'] as const;
+export type DiemChu = (typeof CAC_DIEM_CHU)[number];
+
 export interface KhoangQuyDoiDiem {
   tu: number;
   den: number;
-  chu: 'A' | 'B' | 'C' | 'D' | 'F';
+  chu: DiemChu;
   he_4: number;
+  xep_loai: string;
   dat: boolean;
 }
 
@@ -17,6 +21,16 @@ export interface CauHinhDiem {
   'diem.bang_quy_doi': KhoangQuyDoiDiem[];
   'diem.diem_danh.sua_trong_so_ngay': number;
 }
+
+export interface CauHinhHocKyInfo {
+  id: number;
+  hoc_ky_id: number;
+  quy_tac_lam_tron: 'HALF_UP_2';
+}
+
+export type CauHinhDiemApi = Partial<CauHinhDiem> & {
+  'diem.cau_hinh_hoc_ky'?: CauHinhHocKyInfo | null;
+};
 
 export function laTrongSoDiem(value: unknown): value is TrongSoDiem {
   if (value === null || typeof value !== 'object') return false;
@@ -30,8 +44,12 @@ export function laKhoangQuyDoiDiem(value: unknown): value is KhoangQuyDoiDiem {
   return (
     typeof range['tu'] === 'number' &&
     typeof range['den'] === 'number' &&
-    ['A', 'B', 'C', 'D', 'F'].includes(String(range['chu'])) &&
+    typeof range['chu'] === 'string' &&
+    (CAC_DIEM_CHU as readonly string[]).includes(range['chu']) &&
     typeof range['he_4'] === 'number' &&
+    typeof range['xep_loai'] === 'string' &&
+    range['xep_loai'].trim().length > 0 &&
+    range['xep_loai'].length <= 100 &&
     typeof range['dat'] === 'boolean'
   );
 }
@@ -66,7 +84,9 @@ export function kiemTraCauHinhDiem(cauHinh: CauHinhDiem): Record<string, string>
       Number.isInteger(range.den * 100) &&
       range.he_4 >= 0 &&
       range.he_4 <= 4 &&
-      ['A', 'B', 'C', 'D', 'F'].includes(range.chu) &&
+      (CAC_DIEM_CHU as readonly string[]).includes(range.chu) &&
+      range.xep_loai.trim().length > 0 &&
+      range.xep_loai.length <= 100 &&
       typeof range.dat === 'boolean',
   );
   const lienTuc =

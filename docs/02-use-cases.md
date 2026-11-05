@@ -124,13 +124,13 @@ Các bước (1)–(4) là **dữ liệu đào tạo dùng chung**, làm một l
 
 | Bước | Việc cần làm | Điều kiện / lưu ý | Nếu thiếu |
 |---|---|---|---|
-| 1 | Tạo **học kỳ**: mã, tên, năm học, kỳ thứ, ngày bắt đầu/kết thúc, thời gian mở/đóng đăng ký, trạng thái `UPCOMING` | `ngay_bat_dau < ngay_ket_thuc`; `mo_dang_ky < dong_dang_ky`; đợt đăng ký nằm trong khoảng ngày của kỳ; không chồng lấn kỳ khác | Không mở được lớp học phần |
+| 1 | Tạo **học kỳ**: mã, tên, năm học, kỳ thứ, ngày bắt đầu/kết thúc, thời gian mở/đóng đăng ký, trạng thái `UPCOMING` | `ngay_bat_dau < ngay_ket_thuc`; `mo_dang_ky < dong_dang_ky`; đợt đăng ký có thể mở trước kỳ và phải đóng không muộn hơn ngày bắt đầu; không chồng lấn kỳ khác | Không mở được lớp học phần |
 | 2 | Đảm bảo **môn học** cần dạy đã tồn tại và `ACTIVE` | Môn INACTIVE không mở lớp được | Không chọn được môn |
 | 3 | Đảm bảo **phòng học** tồn tại và `ACTIVE` | Phòng INACTIVE không xếp lịch được | Không xếp được lịch |
 | 4 | Đảm bảo **giảng viên** tồn tại và `ACTIVE` | Giảng viên INACTIVE không gán được | Không mở được lớp |
 | 5 | Mở **lớp học phần**: mã lớp, môn, học kỳ, giảng viên, sĩ số tối đa, năm thứ (tùy chọn), trạng thái `OPEN` | Mã lớp duy nhất **trong học kỳ**; không giảm sĩ số dưới số đã đăng ký; `nam_thu = null` nếu lớp phục vụ mọi năm | Sinh viên không thấy lớp để đăng ký |
 | 6 | Tạo **buổi học** (nhập tay hoặc sinh lịch hàng tuần) | Kiểm tra trùng phòng, trùng giảng viên, trùng sinh viên đã đăng ký; ngày buổi phải nằm trong khoảng ngày của kỳ | Sinh viên đăng ký được nhưng **không kiểm tra được trùng lịch** |
-| 7 | Kiểm tra **thời gian đăng ký** của học kỳ đã đúng chưa; chuyển học kỳ sang `ONGOING` khi vào kỳ | STUDENT chỉ đăng ký được trong khoảng `mo_dang_ky_luc` – `dong_dang_ky_luc` **của học kỳ chứa lớp đó** (BR-26) | STUDENT nhận lỗi `OUTSIDE_REGISTRATION` |
+| 7 | Lưu cấu hình điểm riêng cho học kỳ khi còn `UPCOMING`; sau đó chuyển kỳ sang `ONGOING` khi vào kỳ | Bắt buộc có cấu hình trước khi bắt đầu; `ONGOING` và `CLOSED` chỉ xem. Kiểm tra thời gian đăng ký theo khoảng cấu hình **của học kỳ chứa lớp đó** (BR-26) | Không thể bắt đầu kỳ nếu thiếu cấu hình; STUDENT nhận lỗi `OUTSIDE_REGISTRATION` |
 | 8 | (Sinh viên đăng ký) | Xem UC-08 | – |
 
 ### Ba điều dễ hiểu sai

@@ -121,12 +121,17 @@ class NenTangTest extends TestCase
         $this->assertSame(0.50, $trongSo['cuoi_ky']);
 
         $bangQuyDoi = CauHinh::lay('diem.bang_quy_doi');
-        $this->assertCount(5, $bangQuyDoi);
+        $this->assertCount(8, $bangQuyDoi);
         $this->assertSame('A', $bangQuyDoi[0]['chu']);
         // JSON round-trip biến 4.0 thành 4 (int) nên so sánh lỏng.
         $this->assertEquals(4.0, $bangQuyDoi[0]['he_4']);
-        $this->assertSame('F', $bangQuyDoi[4]['chu']);
-        $this->assertFalse($bangQuyDoi[4]['dat']);
+        $this->assertSame('Giỏi', $bangQuyDoi[0]['xep_loai']);
+        $this->assertSame('B+', $bangQuyDoi[1]['chu']);
+        $this->assertEquals(3.5, $bangQuyDoi[1]['he_4']);
+        $this->assertSame('Khá giỏi', $bangQuyDoi[1]['xep_loai']);
+        $this->assertSame('F', $bangQuyDoi[7]['chu']);
+        $this->assertSame('Kém (không đạt)', $bangQuyDoi[7]['xep_loai']);
+        $this->assertFalse($bangQuyDoi[7]['dat']);
     }
 
     public function test_seeder_danh_muc_tao_du_so_luong(): void

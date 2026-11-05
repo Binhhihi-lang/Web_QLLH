@@ -39,5 +39,8 @@ storage/*.key
 # Codebase memory artifacts (generated, machine-specific)
 .codebase-memory/
 
+# RTK local command history
+rtk/
+
 # Scratch Angular project created by mistake
 /test/

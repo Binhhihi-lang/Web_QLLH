@@ -14,9 +14,15 @@ class CauHinhController extends Controller
 
     public function __construct(private readonly QuanLyCauHinhService $service) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return $this->success($this->service->danhSach());
+        $hocKyId = $request->integer('hoc_ky_id') ?: null;
+        return $this->success($this->service->danhSach($hocKyId));
+    }
+
+    public function semesters(): JsonResponse
+    {
+        return $this->success($this->service->danhSachHocKy());
     }
 
     public function update(Request $request): JsonResponse

@@ -246,7 +246,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 | SCR-26 | Thêm/Sửa lớp học phần | `/lop-hoc-phan/them`, `/:id/sua` | ADMIN | Trường: mã, môn, học kỳ, giảng viên, sĩ số tối đa, **năm thứ** (để trống = mọi năm) | |
 | SCR-27 | Chi tiết lớp học phần | `/lop-hoc-phan/:id` | theo vai trò | Tab: thông tin, sinh viên, lịch học, điểm danh, điểm |
 | SCR-28 | Danh sách sinh viên của lớp | `/lop-hoc-phan/:id/sinh-vien` | ADMIN, TEACHER | Nút hủy đăng ký (ADMIN) |
-| SCR-29 | Bảng điểm lớp | `/lop-hoc-phan/:id/diem` | ADMIN, TEACHER | Nhập inline, nút chốt điểm, badge đã chốt |
+| SCR-29 | Bảng điểm lớp | `/lop-hoc-phan/:id/diem` | ADMIN, TEACHER | Nhập inline, tổng kết và quy đổi điểm chữ/xếp loại theo cấu hình, nút chốt điểm, badge đã chốt |
 
 ### 3.8. Đăng ký học phần
 
@@ -288,7 +288,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 | SCR-45 | Thùng rác | `/thung-rac` | ADMIN — 12 loại thực thể theo API; tìm kiếm, lọc người xóa/khoảng ngày, phân trang và khôi phục (có cảnh báo nếu bản ghi cha chưa khôi phục) |
 | SCR-47 | Quản lý menu | `/menu` | ADMIN — danh sách (kể cả mục đang ẩn), thêm tại chỗ, ẩn/hiện, xoá có xác nhận |
 | SCR-48 | Chi tiết / Sửa menu | `/menu/:id`, `/menu/:id/sua` | ADMIN — thêm menu dùng form tại chỗ ở `/menu`, không có route `/menu/them` |
-| SCR-49 | Cấu hình | `/cau-hinh` | ADMIN — trọng số điểm (tổng bằng 1), bảng khoảng quy đổi điểm chữ A/B/C/D/F ↔ hệ 4 phủ liên tục 0–10, số ngày sửa điểm danh; kiểm tra trước khi PUT |
+| SCR-49 | Cấu hình | `/cau-hinh` | ADMIN — bảng học kỳ có tìm kiếm/lọc theo năm học, trạng thái và tình trạng cấu hình; chọn dòng để xem cấu hình riêng. Chỉ `UPCOMING` được lưu/cập nhật; `ONGOING` và `CLOSED` chỉ xem. Mỗi học kỳ có một cấu hình; trọng số tổng bằng 1, bảng quy đổi phủ liên tục 0–10, làm tròn `HALF_UP_2`, số ngày sửa điểm danh |
 | SCR-50 | Quản lý người dùng | `/nguoi-dung` | ADMIN — tìm kiếm, lọc vai trò/trạng thái, phân trang, kích hoạt/khóa hàng loạt, đặt lại mật khẩu, xóa tài khoản ADMIN |
 | SCR-51 | Thêm/Sửa người dùng | `/nguoi-dung/them`, `/:id/sua` | ADMIN — tạo/sửa tài khoản; mật khẩu tạm chỉ hiện một lần khi tạo; hồ sơ giảng viên/sinh viên được quản lý ở màn tương ứng |
 | — | Nhật ký | `/nhat-ky` | ADMIN — chưa triển khai: backend chưa có endpoint đọc danh sách nhật ký |

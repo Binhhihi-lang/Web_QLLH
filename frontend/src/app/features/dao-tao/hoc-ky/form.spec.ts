@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { HocKy } from '@core/models/dao-tao.model';
 import { HocKyService } from './hoc-ky.service';
+import { AppToastService } from '@shared/ui/app-toast.service';
 import { HocKyForm } from './form';
 
 describe('HocKyForm', () => {
@@ -28,6 +29,7 @@ describe('HocKyForm', () => {
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } } } },
         { provide: HocKyService, useValue: service },
+        { provide: AppToastService, useValue: { hien: vi.fn() } },
       ],
     });
     const fixture = TestBed.createComponent(HocKyForm);
@@ -40,21 +42,21 @@ describe('HocKyForm', () => {
     component.namHoc.set('2028-2029');
     component.ngayBatDau.set('2028-09-05');
     component.ngayKetThuc.set('2029-01-15');
-    component.moDangKyLuc.set('2028-09-06T08:00');
-    component.dongDangKyLuc.set('2028-09-08T17:00');
+    component.moDangKyLuc.set('2028-08-20T08:00');
+    component.dongDangKyLuc.set('2028-09-04T17:00');
     component.gui({ preventDefault: vi.fn() } as unknown as Event);
 
     expect(service.taoMoi).toHaveBeenCalledWith(
       expect.objectContaining({
         ma_hoc_ky: '2028-1',
-        mo_dang_ky_luc: '2028-09-06 08:00:00',
-        dong_dang_ky_luc: '2028-09-08 17:00:00',
+        mo_dang_ky_luc: '2028-08-20 08:00:00',
+        dong_dang_ky_luc: '2028-09-04 17:00:00',
       }),
     );
     expect(navigate).toHaveBeenCalledWith(['/hoc-ky']);
   });
 
-  it('does not submit invalid date ranges', () => {
+  it('rejects a registration period that closes after the semester starts', () => {
     const service = { taoMoi: vi.fn(), layMot: vi.fn() };
     TestBed.configureTestingModule({
       imports: [HocKyForm],
@@ -62,6 +64,7 @@ describe('HocKyForm', () => {
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } } } },
         { provide: HocKyService, useValue: service },
+        { provide: AppToastService, useValue: { hien: vi.fn() } },
       ],
     });
     const component = TestBed.createComponent(HocKyForm).componentInstance;
@@ -70,13 +73,13 @@ describe('HocKyForm', () => {
     component.tenHocKy.set(hocKy.ten_hoc_ky);
     component.namHoc.set('2028-2029');
     component.ngayBatDau.set('2028-09-05');
-    component.ngayKetThuc.set('2028-09-05');
-    component.moDangKyLuc.set('2028-09-06T08:00');
-    component.dongDangKyLuc.set('2028-09-08T17:00');
+    component.ngayKetThuc.set('2029-01-15');
+    component.moDangKyLuc.set('2028-08-20T08:00');
+    component.dongDangKyLuc.set('2028-09-06T17:00');
     component.gui({ preventDefault: vi.fn() } as unknown as Event);
 
     expect(service.taoMoi).not.toHaveBeenCalled();
-    expect(component.loiTruong('ngay_ket_thuc')).toContain('sau ngày bắt đầu');
+    expect(component.loiTruong('dong_dang_ky_luc')).toContain('đóng trước hoặc đúng ngày');
   });
 
   it('makes closed semesters read-only', () => {
@@ -88,6 +91,7 @@ describe('HocKyForm', () => {
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => '1' } } },
         },
         { provide: HocKyService, useValue: service },
+        { provide: AppToastService, useValue: { hien: vi.fn() } },
       ],
     });
     const fixture = TestBed.createComponent(HocKyForm);

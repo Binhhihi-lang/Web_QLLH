@@ -102,6 +102,7 @@ export const HOC_KY_MOCK: HocKy[] = [
   { id: 2, ma_hoc_ky: '2025-2', ten_hoc_ky: 'Học kỳ 2 năm học 2025-2026', nam_hoc: '2025-2026', ky_thu: 2, ngay_bat_dau: '2026-01-26', ngay_ket_thuc: '2026-05-29', mo_dang_ky_luc: '2025-12-15 08:00:00', dong_dang_ky_luc: '2026-01-23 17:00:00', trang_thai: 'CLOSED', dang_mo_dang_ky: false },
   { id: 3, ma_hoc_ky: '2026-1', ten_hoc_ky: 'Học kỳ 1 năm học 2026-2027', nam_hoc: '2026-2027', ky_thu: 1, ngay_bat_dau: '2026-09-07', ngay_ket_thuc: '2027-01-16', mo_dang_ky_luc: '2026-08-10 08:00:00', dong_dang_ky_luc: '2026-09-05 17:00:00', trang_thai: 'ONGOING', dang_mo_dang_ky: false },
   { id: 4, ma_hoc_ky: '2026-2', ten_hoc_ky: 'Học kỳ 2 năm học 2026-2027', nam_hoc: '2026-2027', ky_thu: 2, ngay_bat_dau: '2027-01-25', ngay_ket_thuc: '2027-05-28', mo_dang_ky_luc: '2027-01-04 08:00:00', dong_dang_ky_luc: '2027-01-22 17:00:00', trang_thai: 'UPCOMING', dang_mo_dang_ky: false },
+  { id: 5, ma_hoc_ky: '2027-1', ten_hoc_ky: 'Học kỳ 1 năm học 2027-2028', nam_hoc: '2027-2028', ky_thu: 1, ngay_bat_dau: '2027-09-06', ngay_ket_thuc: '2028-01-14', mo_dang_ky_luc: '2027-08-09 08:00:00', dong_dang_ky_luc: '2027-09-03 17:00:00', trang_thai: 'UPCOMING', dang_mo_dang_ky: false },
 ];
 
 const BO_MON = ['Khoa học máy tính', 'Công nghệ phần mềm', 'Hệ thống thông tin', 'An toàn thông tin'];

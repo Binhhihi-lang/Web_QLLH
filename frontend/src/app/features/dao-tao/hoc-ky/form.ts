@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HocKy } from '@core/models/dao-tao.model';
 import { AppAlert } from '@shared/ui/app-alert';
+import { AppToastService } from '@shared/ui/app-toast.service';
 import { AppButton } from '@shared/ui/app-button';
 import { DateInput } from '@shared/ui/date-input';
 import { FormField } from '@shared/ui/form-field';
@@ -42,10 +43,6 @@ import { HocKyInput, HocKyService } from './hoc-ky.service';
       </app-alert>
     } @else {
       <form class="form" (submit)="gui($event)" novalidate>
-        @if (loiChung()) {
-          <app-alert muc="danger" title="Chưa thể lưu học kỳ">{{ loiChung() }}</app-alert>
-        }
-
         <section class="nhom-truong" aria-labelledby="thong-tin-hoc-ky">
           <div class="dau-nhom">
             <h2 id="thong-tin-hoc-ky">Thông tin học kỳ</h2>
@@ -139,7 +136,7 @@ import { HocKyInput, HocKyService } from './hoc-ky.service';
         <section class="nhom-truong" aria-labelledby="thoi-gian-dang-ky">
           <div class="dau-nhom">
             <h2 id="thoi-gian-dang-ky">Đợt đăng ký học phần</h2>
-            <p>Thời gian mở và đóng đăng ký phải nằm trong khoảng ngày của học kỳ.</p>
+            <p>Có thể mở đăng ký trước ngày bắt đầu học kỳ; đợt đăng ký phải đóng trước hoặc đúng ngày học kỳ bắt đầu.</p>
           </div>
           <div class="luoi">
             <label class="truong">
@@ -358,6 +355,7 @@ import { HocKyInput, HocKyService } from './hoc-ky.service';
 })
 export class HocKyForm {
   private readonly service = inject(HocKyService);
+  private readonly toast = inject(AppToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly thamSoId = this.route.snapshot.paramMap.get('id');
@@ -455,6 +453,7 @@ export class HocKyForm {
     request.subscribe({
       next: () => {
         this.dangGui.set(false);
+        this.toast.hien(this.laChinhSua ? 'Cập nhật học kỳ thành công.' : 'Tạo học kỳ thành công.', 'success');
         void this.router.navigate(['/hoc-ky']);
       },
       error: (error: unknown) => this.xuLyLoi(error),
@@ -495,23 +494,15 @@ export class HocKyForm {
 
     if (
       this.laNgayIso(this.ngayBatDau()) &&
-      this.laNgayIso(this.ngayKetThuc()) &&
       this.laDateTime(this.moDangKyLuc()) &&
       this.laDateTime(this.dongDangKyLuc())
     ) {
-      if (!this.trongKhoang(this.moDangKyLuc().slice(0, 10))) {
-        errors['mo_dang_ky_luc'] = ['Thời gian mở đăng ký phải nằm trong thời gian học kỳ.'];
-      }
-      if (!this.trongKhoang(this.dongDangKyLuc().slice(0, 10))) {
-        errors['dong_dang_ky_luc'] = ['Thời gian đóng đăng ký phải nằm trong thời gian học kỳ.'];
+      if (this.dongDangKyLuc().slice(0, 10) > this.ngayBatDau()) {
+        errors['dong_dang_ky_luc'] = ['Đợt đăng ký phải đóng trước hoặc đúng ngày bắt đầu học kỳ.'];
       }
     }
     this.loiApi.set(errors);
     return Object.keys(errors).length === 0;
-  }
-
-  private trongKhoang(date: string): boolean {
-    return date >= this.ngayBatDau() && date <= this.ngayKetThuc();
   }
 
   private laNgayIso(value: string): boolean {
@@ -577,7 +568,9 @@ export class HocKyForm {
         );
       }
     }
-    this.loiChung.set(this.thongBaoLoi(error));
+    const hasFieldErrors = Object.keys(this.loiApi()).length > 0;
+    if (!hasFieldErrors) this.toast.hien(this.thongBaoLoi(error), 'danger');
+    this.loiChung.set('');
   }
 
   private thongBaoLoi(error: unknown): string {

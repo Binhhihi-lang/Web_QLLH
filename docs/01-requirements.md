@@ -142,7 +142,7 @@ Chi tiết cột, kiểu dữ liệu, index và ràng buộc: [03-data-model.md]
 | DangKyHocPhan | `dang_ky_hoc_phan` | sinh_vien_id, lop_hoc_phan_id, trang_thai, dang_ky_boi, dang_ky_luc, huy_boi, huy_luc | 1–1 với điểm |
 | BuoiHoc | `buoi_hoc` | lop_hoc_phan_id, ngay_hoc, gio_bat_dau, gio_ket_thuc, phong_hoc_id, trang_thai, ly_do_huy | Nhiều điểm danh |
 | DiemDanh | `diem_danh` | buoi_hoc_id, dang_ky_hoc_phan_id, trang_thai, ghi_chu, diem_danh_boi, diem_danh_luc | — |
-| Diem | `diem` | dang_ky_hoc_phan_id, diem_chuyen_can, diem_giua_ky, diem_cuoi_ky, diem_tong_ket, diem_chu, diem_he_4, ket_qua | 1–1 với đăng ký |
+| Diem | `diem` | dang_ky_hoc_phan_id, diem_chuyen_can, diem_giua_ky, diem_cuoi_ky, diem_tong_ket, diem_chu, xep_loai, diem_he_4, ket_qua | 1–1 với đăng ký |
 | LichSuDiem | `lich_su_diem` | diem_id, truong, gia_tri_cu, gia_tri_moi, nguoi_sua_id, ly_do, thoi_diem | Audit điểm |
 | CauHinh | `cau_hinh` | khoa, gia_tri, mo_ta | Trọng số, ngưỡng đạt |
 | NhatKy | `nhat_ky` | doi_tuong_loai, doi_tuong_id, hanh_dong, gia_tri_cu, gia_tri_moi, nguoi_thuc_hien_id, thoi_diem | Audit chung |
@@ -282,11 +282,11 @@ Chi tiết cột, kiểu dữ liệu, index và ràng buộc: [03-data-model.md]
 |---|---|---|---|
 | FR-12.01 | Nhập điểm | TEACHER nhập điểm chuyên cần, giữa kỳ, cuối kỳ cho sinh viên đã đăng ký ACTIVE trong lớp mình phụ trách. Hỗ trợ nhập từng dòng và hàng loạt. Điểm 0–10, tối đa 2 chữ số thập phân. | Must |
 | FR-12.02 | Cập nhật điểm | Khi lớp chưa chốt điểm. Mọi thay đổi ghi `lich_su_diem` (ai, khi nào, giá trị cũ/mới, lý do nếu có). | Must |
-| FR-12.03 | Tính điểm tổng kết | Công thức cố định: **chuyên cần 25% + giữa kỳ 25% + cuối kỳ 50%**, thang 10, làm tròn 2 chữ số. Sau đó tra bảng quy đổi để lấy **điểm chữ** và **điểm hệ 4**: A = 8.5–10.0 (4.0), B = 7.0–8.49 (3.0), C = 5.5–6.99 (2.0), D = 4.0–5.49 (1.0), F = dưới 4.0 (0.0). `ket_qua = DAT` với A/B/C/D, `KHONG_DAT` với F. Trọng số và bảng quy đổi đọc từ `cau_hinh`, không hard-code. | Must |
+| FR-12.03 | Tính điểm tổng kết | Trọng số và bảng quy đổi lấy từ cấu hình gắn trực tiếp với học kỳ. Trước khi tra bảng, làm tròn tổng kết đến hai chữ số theo `HALF_UP_2`. Tra bảng lấy **điểm chữ**, **điểm hệ 4**, **xếp loại** và kết quả đạt/không đạt. Mặc định: A = 8.5–10.0 (4.0, Giỏi), B+ = 8.0–8.49 (3.5, Khá giỏi), B = 7.0–7.99 (3.0, Khá), C+ = 6.5–6.99 (2.5, Trung bình khá), C = 5.5–6.49 (2.0, Trung bình), D+ = 5.0–5.49 (1.5, Trung bình yếu), D = 4.0–4.99 (1.0, Yếu), F < 4.0 (0.0, Kém/không đạt). | Must |
 | FR-12.04 | Chốt điểm | TEACHER chốt điểm **của lớp học phần**. Lưu `chot_diem_luc`, `chot_diem_boi`. Sau khi chốt, mọi sửa điểm trả 409. ADMIN mở khóa kèm lý do, lưu vào `nhat_ky`; mở khóa không xóa lịch sử. | Should |
 | FR-12.05 | Xem điểm | STUDENT xem điểm thành phần, tổng kết, **điểm chữ**, **điểm hệ 4**, kết quả, GPA học kỳ (cả hệ 10 và hệ 4, trọng số tín chỉ, tính cả môn KHÔNG ĐẠT, làm tròn 2 chữ số, **học lại lấy điểm cao nhất** theo BR-28). TEACHER xem lớp mình; ADMIN xem toàn bộ. | Must |
 | FR-12.06 | Công thức theo môn | Cho phép cấu hình trọng số riêng từng môn. | Could |
-| FR-12.07 | Bảng quy đổi điểm chữ | 🆕 ADMIN xem và sửa bảng quy đổi điểm chữ ↔ hệ 4 trong màn cấu hình. Hệ thống kiểm tra khoảng không chồng lấn và phủ kín 0–10. Mặc định: A ≥ 8.5, B ≥ 7.0, C ≥ 5.5, D ≥ 4.0, F < 4.0. Không hỗ trợ mức `+`/`−` ở bản 1. | Should |
+| FR-12.07 | Bảng quy đổi điểm chữ | 🆕 ADMIN cấu hình riêng theo từng học kỳ. Có thể tạo hoặc sửa khi kỳ còn `UPCOMING`; khi chuyển `ONGOING` hoặc `CLOSED` chỉ xem được. Thay đổi cấu hình kỳ khác không ghi đè hoặc tính lại điểm lịch sử. Hệ thống từ chối khoảng chồng lấn hoặc có khoảng trống, yêu cầu phủ kín 0–10; hỗ trợ điểm chữ có dấu `+`. Quy tắc làm tròn trước tra bảng là `HALF_UP_2`. | Should |
 | FR-12.08 | 🆕 GPA tích lũy (CPA) | STUDENT xem GPA học kỳ và **GPA tích lũy** (toàn bộ học kỳ đã CLOSED), cả hệ 10 và hệ 4, cùng tổng tín chỉ tích lũy và số tín chỉ đạt. Học lại lấy điểm cao nhất (BR-28). Endpoint `GET /api/me/gpa`. | Should |
 
 ### FR-13. Dashboard & Thống kê
@@ -363,7 +363,8 @@ Chữ **D** trong CRUD luôn là xóa mềm.
 | BR-22 | 🆕 Chỉnh lịch sau khi đã có đăng ký phải kiểm tra lại trùng lịch sinh viên; nếu phát sinh xung đột, trả 409 kèm danh sách để ADMIN quyết định. |
 | BR-23 | 🆕 **Năm thứ.** `nam_thu` của sinh viên tính theo `03-data-model.md` §5.6. Lớp có `lop_hoc_phan.nam_thu` khác null: STUDENT tự đăng ký chỉ được khi `nam_thu` khớp, sai → 409 `WRONG_STUDY_YEAR`. ADMIN đăng ký hộ được bỏ qua kiểm tra này, ghi `nhat_ky`. Nếu không tính được `nam_thu` (thiếu lớp hành chính hoặc `nam_nhap_hoc`) thì **không chặn**. |
 | BR-24 | 🆕 **Vòng đời học kỳ.** Chỉ chuyển tiến `UPCOMING → ONGOING → CLOSED`; `CLOSED` là trạng thái cuối. Chỉ một học kỳ `ONGOING` tại một thời điểm. Mọi lần chuyển ghi `nhat_ky`. |
-| BR-25 | 🆕 **Thời gian học kỳ.** Hai học kỳ không chồng lấn `[ngay_bat_dau, ngay_ket_thuc]`; đợt đăng ký nằm trong khoảng ngày của kỳ; `ngay_hoc` của mọi buổi nằm trong khoảng ngày của kỳ. |
+| BR-25 | 🆕 **Thời gian học kỳ.** Hai học kỳ không chồng lấn `[ngay_bat_dau, ngay_ket_thuc]`; đợt đăng ký có thể mở trước ngày bắt đầu và phải đóng trước hoặc trong ngày bắt đầu; `ngay_hoc` của mọi buổi nằm trong khoảng ngày của kỳ. |
+| BR-32 | 🆕 **Cấu hình điểm theo học kỳ.** Mỗi học kỳ có tối đa một cấu hình; chỉ `UPCOMING` được tạo/sửa. Trước khi chuyển sang `ONGOING`, cấu hình phải được lưu; khi đã bắt đầu, cấu hình bị khóa. Điểm lịch sử tiếp tục tham chiếu cấu hình đã dùng. |
 | BR-26 | 🆕 **Đợt đăng ký theo học kỳ của lớp.** "Trong đợt đăng ký" nghĩa là thời điểm hiện tại nằm trong `[mo_dang_ky_luc, dong_dang_ky_luc]` của **học kỳ chứa lớp muốn đăng ký**, không phải học kỳ hiện tại. |
 | BR-27 | 🆕 **Đăng ký lại và dữ liệu cũ.** Đăng ký lại bị chặn khi bản ghi đã có `diem` (409 `HAS_GRADE_OR_ATTENDANCE`). `diem_danh` cũ giữ nguyên; chuyên cần chỉ tính buổi có `ngay_hoc >= dang_ky_luc` hiện tại. |
 | BR-28 | 🆕 **Học lại.** GPA học kỳ và GPA tích lũy tính **một lần cho mỗi môn**, lấy `diem_tong_ket` cao nhất trong các lần học. Điểm lần không được chọn vẫn lưu và vẫn hiển thị trong lịch sử. |
@@ -541,7 +542,7 @@ Các mục dưới đây **cố ý** không làm ở bản 1. Đây là quyết 
 | **Trạng thái học tập** (bảo lưu, thôi học, tốt nghiệp, đình chỉ) | Chỉ có boolean `trang_thai` | Không phân biệt được sinh viên bảo lưu với sinh viên đã tốt nghiệp |
 | **CPA và tín chỉ tích lũy ngoài phạm vi học kỳ** | Đã có FR-12.08 ở mức Should | Nếu cắt FR-12.08 thì BR-28 chỉ còn tác dụng trong một kỳ (nơi BR-08 đã cấm học lại) |
 | **Job tự chuyển buổi học quá hạn sang `DONE`** | Cần scheduler; không đáng cho đồ án | Buổi không ai điểm danh nằm `SCHEDULED` mãi; dùng bộ lọc "chờ điểm danh" ở dashboard thay thế |
-| **Quy đổi điểm chữ có mức `+`/`−`** | Bảng chính thức của trường không có | Cấu hình được qua `cau_hinh` khi cần, không cần sửa code |
+| **Quy đổi điểm chữ có mức `+`/`−`** | Tuỳ quy chế từng trường | Cấu hình được qua `cau_hinh`, không cần sửa code |
 
 ---
 

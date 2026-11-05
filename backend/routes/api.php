@@ -64,8 +64,13 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
 
     Route::get('/semesters', [HocKyController::class, 'index'])
         ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+    Route::post('/semesters', [HocKyController::class, 'store'])->middleware('vai.tro:ADMIN');
     Route::get('/semesters/{hocKy}', [HocKyController::class, 'show'])
         ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+    Route::put('/semesters/{hocKy}', [HocKyController::class, 'update'])->middleware('vai.tro:ADMIN');
+    Route::delete('/semesters/{hocKy}', [HocKyController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    Route::patch('/semesters/{hocKy}/status', [HocKyController::class, 'capNhatTrangThai'])
+        ->middleware('vai.tro:ADMIN');
 
     Route::get('/menus', [MenuController::class, 'index'])->name('api/menus');
     Route::middleware('vai.tro:ADMIN')->group(function () {
@@ -75,6 +80,8 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::delete('/menus/{menu}', [MenuController::class, 'destroy'])->name('api/menus/xoa');
         Route::get('/settings', [CauHinhController::class, 'index'])->name('api/settings');
         Route::put('/settings', [CauHinhController::class, 'update'])->name('api/settings/cap-nhat');
+        Route::get('/settings/semesters', [CauHinhController::class, 'semesters'])
+            ->name('api/settings/semesters');
         Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('api/dashboard/admin');
         Route::get('/trash/{type}', [ThungRacController::class, 'index'])->name('api/trash/danh-sach');
         Route::post('/trash/{type}/{id}/restore', [ThungRacController::class, 'restore'])->name('api/trash/khoi-phuc');

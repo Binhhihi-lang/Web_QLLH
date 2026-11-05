@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
-use App\Models\CauHinh;
 use App\Models\DangKyHocPhan;
 use App\Models\Diem;
 use App\Models\DiemDanh;
@@ -24,6 +23,8 @@ use LogicException;
  */
 class QuanLyLopHocPhanService
 {
+    public function __construct(private readonly QuanLyCauHinhService $cauHinhService) {}
+
     /**
      * @param  array<string, mixed>  $duLieu
      */
@@ -175,8 +176,9 @@ class QuanLyLopHocPhanService
                 throw new LoiNghiepVu('GRADE_LOCKED', 'Lớp đã chốt điểm.');
             }
 
-            $trongSo = CauHinh::lay('diem.trong_so');
-            $bangQuyDoi = CauHinh::lay('diem.bang_quy_doi');
+            $phienBanQuyDoi = $this->cauHinhService->layApDungChoHocKy($lop->hocKy);
+            $trongSo = $phienBanQuyDoi->trong_so;
+            $bangQuyDoi = $phienBanQuyDoi->bang_quy_doi;
 
             if (! is_array($trongSo) || ! is_array($bangQuyDoi) || $bangQuyDoi === []) {
                 throw new LogicException('Thiếu cấu hình trọng số hoặc bảng quy đổi điểm.');
@@ -192,17 +194,43 @@ class QuanLyLopHocPhanService
                 $diem = Diem::query()->firstOrNew([
                     'dang_ky_hoc_phan_id' => $dangKy->id,
                 ]);
+                $diemDaTonTai = $diem->exists;
                 $cacGiaTriCu = [];
 
-                foreach (['diem_chuyen_can', 'diem_giua_ky', 'diem_cuoi_ky', 'diem_tong_ket', 'diem_chu', 'diem_he_4', 'ket_qua'] as $truong) {
+                foreach (['diem_chuyen_can', 'diem_giua_ky', 'diem_cuoi_ky', 'diem_tong_ket', 'diem_chu', 'xep_loai', 'quy_doi_diem_id', 'diem_he_4', 'ket_qua'] as $truong) {
                     $cacGiaTriCu[$truong] = $diem->getAttribute($truong);
                 }
+
+                $thanhPhanThayDoi = ! $diemDaTonTai;
+                foreach (['diem_chuyen_can', 'diem_giua_ky', 'diem_cuoi_ky'] as $truong) {
+                    if ($this->giaTriDiemAudit($cacGiaTriCu[$truong]) !== $this->giaTriDiemAudit($dong[$truong])) {
+                        $thanhPhanThayDoi = true;
+                        break;
+                    }
+                }
+
+                $ketQuaDiem = $thanhPhanThayDoi
+                    ? $this->tinhKetQuaDiem($dong, $trongSo, $bangQuyDoi)
+                    : array_intersect_key($cacGiaTriCu, array_flip([
+                        'diem_tong_ket',
+                        'diem_chu',
+                        'xep_loai',
+                        'diem_he_4',
+                        'ket_qua',
+                    ]));
 
                 $cacGiaTriMoi = [
                     'diem_chuyen_can' => $dong['diem_chuyen_can'],
                     'diem_giua_ky' => $dong['diem_giua_ky'],
                     'diem_cuoi_ky' => $dong['diem_cuoi_ky'],
-                    ...$this->tinhKetQuaDiem($dong, $trongSo, $bangQuyDoi),
+                    ...$ketQuaDiem,
+                    'quy_doi_diem_id' => $thanhPhanThayDoi
+                        ? ($dong['diem_chuyen_can'] === null
+                            || $dong['diem_giua_ky'] === null
+                            || $dong['diem_cuoi_ky'] === null
+                            ? null
+                            : $phienBanQuyDoi->id)
+                        : $cacGiaTriCu['quy_doi_diem_id'],
                 ];
 
                 $diem->fill($cacGiaTriMoi);
@@ -384,6 +412,8 @@ class QuanLyLopHocPhanService
                     'diem_cuoi_ky' => $this->soHoacNull($diem?->diem_cuoi_ky),
                     'diem_tong_ket' => $this->soHoacNull($diem?->diem_tong_ket),
                     'diem_chu' => $diem?->diem_chu,
+                    'xep_loai' => $diem?->xep_loai,
+                    'quy_doi_diem_id' => $diem?->quy_doi_diem_id,
                     'diem_he_4' => $this->soHoacNull($diem?->diem_he_4),
                     'ket_qua' => $diem?->ket_qua,
                     'da_chot_diem' => $lop->daChotDiem(),
@@ -606,8 +636,8 @@ class QuanLyLopHocPhanService
     /**
      * @param  array<string, int|float|null>  $diem
      * @param  array<string, int|float>  $trongSo
-     * @param  array<int, array{tu: int|float, den: int|float, chu: string, he_4: int|float, dat: bool}>  $bangQuyDoi
-     * @return array{diem_tong_ket: float|null, diem_chu: string|null, diem_he_4: float|null, ket_qua: string|null}
+     * @param  array<int, array{tu: int|float, den: int|float, chu: string, he_4: int|float, xep_loai: string, dat: bool}>  $bangQuyDoi
+     * @return array{diem_tong_ket: float|null, diem_chu: string|null, xep_loai: string|null, diem_he_4: float|null, ket_qua: string|null}
      */
     private function tinhKetQuaDiem(array $diem, array $trongSo, array $bangQuyDoi): array
     {
@@ -617,6 +647,7 @@ class QuanLyLopHocPhanService
             return [
                 'diem_tong_ket' => null,
                 'diem_chu' => null,
+                'xep_loai' => null,
                 'diem_he_4' => null,
                 'ket_qua' => null,
             ];
@@ -636,7 +667,7 @@ class QuanLyLopHocPhanService
         );
 
         foreach ($bangQuyDoi as $khoang) {
-            if (! isset($khoang['tu'], $khoang['den'], $khoang['chu'], $khoang['he_4'], $khoang['dat'])) {
+            if (! isset($khoang['tu'], $khoang['den'], $khoang['chu'], $khoang['he_4'], $khoang['xep_loai'], $khoang['dat'])) {
                 throw new LogicException('Cấu hình bảng quy đổi điểm không hợp lệ.');
             }
 
@@ -644,6 +675,7 @@ class QuanLyLopHocPhanService
                 return [
                     'diem_tong_ket' => $tongKet,
                     'diem_chu' => $khoang['chu'],
+                    'xep_loai' => $khoang['xep_loai'],
                     'diem_he_4' => (float) $khoang['he_4'],
                     'ket_qua' => $khoang['dat'] ? Diem::DAT : Diem::KHONG_DAT,
                 ];

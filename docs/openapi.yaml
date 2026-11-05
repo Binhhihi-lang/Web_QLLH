@@ -1739,6 +1739,8 @@ paths:
       description: |
         Chỉ tiến: `UPCOMING → ONGOING → CLOSED`. Nhảy cóc hoặc chuyển lùi → 409
         `SEMESTER_TRANSITION_INVALID`. Chỉ một kỳ `ONGOING` tại một thời điểm.
+        Chuyển sang `ONGOING` cần cấu hình điểm đã lưu, nếu thiếu trả 409
+        `SEMESTER_CONFIG_REQUIRED`.
       requestBody:
         required: true
         content:
@@ -2132,11 +2134,53 @@ paths:
         "404":
           $ref: "#/components/responses/Loi404"
 
+  /settings/semesters:
+    get:
+      tags: [Cấu hình]
+      summary: Danh sách học kỳ và tình trạng cấu hình điểm (ADMIN)
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, ma_hoc_ky, label, nam_hoc, ky_thu, ngay_bat_dau, ngay_ket_thuc, trang_thai, cau_hinh_da_luu]
+                          properties:
+                            id: { type: integer }
+                            ma_hoc_ky: { type: string }
+                            label: { type: string }
+                            nam_hoc: { type: string }
+                            ky_thu: { type: integer }
+                            ngay_bat_dau: { type: string, format: date }
+                            ngay_ket_thuc: { type: string, format: date }
+                            trang_thai: { type: string, enum: [UPCOMING, ONGOING, CLOSED] }
+                            cau_hinh_da_luu: { type: boolean }
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+
   /settings:
     get:
       tags: [Cấu hình]
       summary: Đọc cấu hình hệ thống (ADMIN)
-      description: Trả object khoá → giá trị, gồm `diem.trong_so`, `diem.bang_quy_doi`, `diem.diem_danh.sua_trong_so_ngay`.
+      description: Trả cấu hình riêng của học kỳ; giá trị mặc định được dùng nếu học kỳ chưa lưu cấu hình. Metadata nằm trong `diem.cau_hinh_hoc_ky`.
+      parameters:
+        - in: query
+          name: hoc_ky_id
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: Học kỳ cần đọc cấu hình.
       responses:
         "200":
           description: Thành công
@@ -2155,8 +2199,8 @@ paths:
           $ref: "#/components/responses/Loi403"
     put:
       tags: [Cấu hình]
-      summary: Ghi cấu hình hệ thống (ADMIN)
-      description: Ghi từng khóa gửi lên, khóa không gửi giữ nguyên và trả lại toàn bộ cấu hình. `diem.trong_so` phải có đủ ba trọng số 0–1, tổng bằng 1. `diem.bang_quy_doi` bị 422 nếu khoảng chồng lấn, có khoảng trống, không phủ kín 0–10 hoặc `chu` ngoài A/B/C/D/F; mốc điểm có tối đa hai chữ số thập phân.
+      summary: Tạo hoặc cập nhật cấu hình điểm cho học kỳ sắp diễn ra (ADMIN)
+      description: Mỗi học kỳ có một cấu hình riêng. Có thể cập nhật khi trạng thái là UPCOMING; ONGOING/CLOSED chỉ đọc. `HALF_UP_2` làm tròn half-up đến hai chữ số trước khi quy đổi.
       requestBody:
         required: true
         content:
@@ -2181,6 +2225,8 @@ paths:
           $ref: "#/components/responses/Loi403"
         "422":
           $ref: "#/components/responses/Loi422"
+        "409":
+          $ref: "#/components/responses/Loi409"
 
   /dashboard/admin:
     get:
@@ -3272,7 +3318,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/Option"
         - type: object
-          required: [trang_thai, nam_hoc, ky_thu]
+          required: [trang_thai, nam_hoc, ngay_bat_dau]
           properties:
             trang_thai:
               type: string
@@ -3280,6 +3326,10 @@ components:
             nam_hoc:
               type: string
               example: "2026-2027"
+            ngay_bat_dau:
+              type: string
+              format: date
+              example: "2026-09-07"
             ky_thu:
               type: integer
               minimum: 1
@@ -3821,7 +3871,7 @@ components:
           type: string
         dong_dang_ky_luc:
           type: string
-          description: Phải sau mo_dang_ky_luc và nằm trong khoảng ngày của kỳ (BR-25)
+          description: Phải sau mo_dang_ky_luc; ngày đóng không được sau ngày bắt đầu học kỳ (BR-25). Thời gian mở được phép trước ngày bắt đầu.
 
     # ---------- Phòng học ----------
     PhongHoc:
@@ -3937,13 +3987,17 @@ components:
     CauHinhInput:
       type: object
       description: |
-        Object khoá → giá trị. Gửi khoá nào ghi khoá đó, không gửi thì giữ nguyên.
+        Tạo hoặc cập nhật cấu hình điểm gắn với một học kỳ sắp diễn ra.
+        Gửi khoá cấu hình nào thì dùng giá trị đó; khoá bị thiếu lấy từ cấu hình đã lưu của kỳ hoặc giá trị mặc định.
         `diem.trong_so` phải có đủ ba trường 0–1 và tổng bằng 1.
         `diem.bang_quy_doi` bị 422 nếu khoảng chồng lấn, có khoảng trống,
         không phủ kín 0–10, mốc vượt quá hai chữ số thập phân hoặc `chu`
-        không thuộc A/B/C/D/F.
+        không thuộc A/B+/B/C+/C/D+/D/F. Mỗi khoảng có thêm `xep_loai`.
+        Làm tròn điểm tổng kết theo `HALF_UP_2` trước khi quy đổi.
+      required: [hoc_ky_id]
       additionalProperties: true
       example:
+        hoc_ky_id: 45
         diem.trong_so:
           chuyen_can: 0.25
           giua_ky: 0.25
@@ -3957,16 +4011,23 @@ components:
         (`diem.trong_so`), giá trị là object/mảng/số tuỳ khoá.
       additionalProperties: true
       example:
+        diem.cau_hinh_hoc_ky:
+          id: 12
+          hoc_ky_id: 45
+          quy_tac_lam_tron: HALF_UP_2
         diem.trong_so:
           chuyen_can: 0.25
           giua_ky: 0.25
           cuoi_ky: 0.5
         diem.bang_quy_doi:
-          - { tu: 8.5, den: 10.0, chu: A, he_4: 4.0, dat: true }
-          - { tu: 7.0, den: 8.49, chu: B, he_4: 3.0, dat: true }
-          - { tu: 5.5, den: 6.99, chu: C, he_4: 2.0, dat: true }
-          - { tu: 4.0, den: 5.49, chu: D, he_4: 1.0, dat: true }
-          - { tu: 0.0, den: 3.99, chu: F, he_4: 0.0, dat: false }
+          - { tu: 8.5, den: 10.0, chu: A, he_4: 4.0, xep_loai: Giỏi, dat: true }
+          - { tu: 8.0, den: 8.49, chu: B+, he_4: 3.5, xep_loai: Khá giỏi, dat: true }
+          - { tu: 7.0, den: 7.99, chu: B, he_4: 3.0, xep_loai: Khá, dat: true }
+          - { tu: 6.5, den: 6.99, chu: C+, he_4: 2.5, xep_loai: Trung bình khá, dat: true }
+          - { tu: 5.5, den: 6.49, chu: C, he_4: 2.0, xep_loai: Trung bình, dat: true }
+          - { tu: 5.0, den: 5.49, chu: D+, he_4: 1.5, xep_loai: Trung bình yếu, dat: true }
+          - { tu: 4.0, den: 4.99, chu: D, he_4: 1.0, xep_loai: Yếu, dat: true }
+          - { tu: 0.0, den: 3.99, chu: F, he_4: 0.0, xep_loai: Kém (không đạt), dat: false }
 
     # ---------- Thao tác hàng loạt (BR-31) ----------
     BulkStatusInput:
@@ -4256,10 +4317,17 @@ components:
         diem_chu:
           type: string
           nullable: true
-          enum: [A, B, C, D, F, null]
+          enum: [A, B+, B, C+, C, D+, D, F, null]
+        xep_loai:
+          type: string
+          nullable: true
         diem_he_4:
           type: number
           nullable: true
+        quy_doi_diem_id:
+          type: integer
+          nullable: true
+          description: Cấu hình học kỳ đã dùng để tính kết quả; null với dữ liệu legacy chưa xác định nguồn.
         ket_qua:
           type: string
           nullable: true

@@ -17,6 +17,7 @@ import {
   sortBy,
 } from '@core/mock/mock-response';
 import { LopHocPhan, TrangThaiLopHocPhan } from '@core/models/dao-tao.model';
+import { SystemRegistry } from '@core/mock/registry/system.registry';
 import type {
   DiemNhap,
   DongDiem,
@@ -39,6 +40,8 @@ export class HocVuRegistry {
   }));
   private readonly diemDaLuu = new Map<number, DongDiem[]>();
   private readonly dangKyDaHuy = new Set<number>();
+
+  constructor(private readonly system: SystemRegistry) {}
 
   resolve(
     method: string,
@@ -304,28 +307,14 @@ export class HocVuRegistry {
       const diemChuyenCan = 7 + (index % 3);
       const diemGiuaKy = 6 + (index % 4);
       const diemCuoiKy = 6.5 + (index % 4) * 0.5;
-      const tongKet = Number(
-        (diemChuyenCan * 0.25 + diemGiuaKy * 0.25 + diemCuoiKy * 0.5).toFixed(2),
-      );
+      const ketQua = this.tinhKetQuaDiem(id, diemChuyenCan, diemGiuaKy, diemCuoiKy);
       return {
         dang_ky_hoc_phan_id: student.dang_ky_hoc_phan_id,
         sinh_vien: student,
         diem_chuyen_can: diemChuyenCan,
         diem_giua_ky: diemGiuaKy,
         diem_cuoi_ky: diemCuoiKy,
-        diem_tong_ket: tongKet,
-        diem_chu:
-          tongKet >= 8.5
-            ? 'A'
-            : tongKet >= 7
-              ? 'B'
-              : tongKet >= 5.5
-                ? 'C'
-                : tongKet >= 4
-                  ? 'D'
-                  : 'F',
-        diem_he_4:
-          tongKet >= 8.5 ? 4 : tongKet >= 7 ? 3 : tongKet >= 5.5 ? 2 : tongKet >= 4 ? 1 : 0,
+        ...ketQua,
       };
     });
   }
@@ -371,6 +360,13 @@ export class HocVuRegistry {
       ) {
         return;
       }
+      if (
+        row.diem_chuyen_can === submission.diem_chuyen_can &&
+        row.diem_giua_ky === submission.diem_giua_ky &&
+        row.diem_cuoi_ky === submission.diem_cuoi_ky
+      ) {
+        return;
+      }
 
       const updated: DongDiem = {
         ...row,
@@ -379,6 +375,7 @@ export class HocVuRegistry {
         diem_cuoi_ky: submission.diem_cuoi_ky ?? null,
         diem_tong_ket: null,
         diem_chu: null,
+        xep_loai: null,
         diem_he_4: null,
       };
       if (
@@ -386,23 +383,48 @@ export class HocVuRegistry {
         updated.diem_giua_ky !== null &&
         updated.diem_cuoi_ky !== null
       ) {
-        const total = Number(
-          (
-            updated.diem_chuyen_can * 0.25 +
-            updated.diem_giua_ky * 0.25 +
-            updated.diem_cuoi_ky * 0.5
-          ).toFixed(2),
+        Object.assign(
+          updated,
+          this.tinhKetQuaDiem(
+            id,
+            updated.diem_chuyen_can,
+            updated.diem_giua_ky,
+            updated.diem_cuoi_ky,
+          ),
         );
-        updated.diem_tong_ket = total;
-        updated.diem_chu =
-          total >= 8.5 ? 'A' : total >= 7 ? 'B' : total >= 5.5 ? 'C' : total >= 4 ? 'D' : 'F';
-        updated.diem_he_4 =
-          total >= 8.5 ? 4 : total >= 7 ? 3 : total >= 5.5 ? 2 : total >= 4 ? 1 : 0;
       }
       rows[rowIndex] = updated;
     });
 
     return Object.keys(errors).length ? { ok: false, errors } : { ok: true, rows };
+  }
+
+  private tinhKetQuaDiem(
+    lopHocPhanId: number,
+    diemChuyenCan: number,
+    diemGiuaKy: number,
+    diemCuoiKy: number,
+  ): Pick<DongDiem, 'diem_tong_ket' | 'diem_chu' | 'xep_loai' | 'diem_he_4'> {
+    const hocKyId = this.tim(lopHocPhanId)?.hoc_ky.id;
+    const config = this.system.layCauHinhDiem(hocKyId);
+    const weights = config['diem.trong_so'];
+    const total =
+      diemChuyenCan * weights.chuyen_can +
+      diemGiuaKy * weights.giua_ky +
+      diemCuoiKy * weights.cuoi_ky;
+    const tongKet = Math.round((total + Number.EPSILON) * 100) / 100;
+    const range = config['diem.bang_quy_doi'].find(
+      (row) => tongKet >= row.tu && tongKet <= row.den,
+    );
+
+    if (!range) throw new Error('Bảng quy đổi điểm mock không bao phủ điểm tổng kết.');
+
+    return {
+      diem_tong_ket: tongKet,
+      diem_chu: range.chu,
+      xep_loai: range.xep_loai,
+      diem_he_4: range.he_4,
+    };
   }
 
   private bodyRecord(body: unknown): Record<string, unknown> {

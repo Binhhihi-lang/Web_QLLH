@@ -27,10 +27,10 @@ import { ApiResponse, readParams, stripOrigin } from '@core/mock/mock-response';
 @Injectable()
 export class MockRegistry {
   private readonly auth = new AuthRegistry();
-  private readonly daoTao = new DaoTaoRegistry();
-  private readonly hocVu = new HocVuRegistry();
-  private readonly menu = new MenuRegistry();
   private readonly system = new SystemRegistry();
+  private readonly daoTao = new DaoTaoRegistry(this.system);
+  private readonly menu = new MenuRegistry();
+  private readonly hocVu = new HocVuRegistry(this.system);
   private readonly trash = new TrashRegistry();
 
   private readonly nguon = [this.daoTao, this.hocVu, this.menu, this.system, this.trash];

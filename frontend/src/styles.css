@@ -64,3 +64,15 @@ a {
     padding: 18px 14px 44px;
   }
 }
+/* Thông báo dùng chung ở góc trên bên phải. */
+.app-toast .mdc-snackbar__surface {
+  color: var(--color-ink) !important;
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgb(15 23 42 / 16%));
+}
+
+.app-toast-success .mdc-snackbar__surface { border-left: 4px solid var(--color-success); }
+.app-toast-info .mdc-snackbar__surface { border-left: 4px solid var(--color-info); }
+.app-toast-warning .mdc-snackbar__surface { border-left: 4px solid var(--color-warning); }
+.app-toast-danger .mdc-snackbar__surface { border-left: 4px solid var(--color-danger); }

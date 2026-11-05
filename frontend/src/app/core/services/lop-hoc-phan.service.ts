@@ -130,6 +130,8 @@ export interface DongDiem {
   diem_cuoi_ky: number | null;
   diem_tong_ket: number | null;
   diem_chu: string | null;
+  xep_loai: string | null;
+  quy_doi_diem_id?: number | null;
   diem_he_4: number | null;
 }
 export interface DiemNhap {

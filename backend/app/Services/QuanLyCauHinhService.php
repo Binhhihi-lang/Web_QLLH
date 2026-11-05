@@ -3,36 +3,127 @@
 namespace App\Services;
 
 use App\Models\CauHinh;
+use App\Models\HocKy;
+use App\Models\QuyDoiDiem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class QuanLyCauHinhService
 {
-    public function danhSach(): array
+    public function danhSach(?int $hocKyId = null): array
     {
-        return CauHinh::query()
+        $cauHinh = CauHinh::query()
             ->get(['khoa', 'gia_tri'])
             ->mapWithKeys(fn (CauHinh $cauHinh) => [$cauHinh->khoa => $cauHinh->gia_tri])
+            ->all();
+
+        if ($hocKyId !== null) {
+            $hocKy = HocKy::query()->findOrFail($hocKyId);
+            $quyDoi = QuyDoiDiem::query()->where('hoc_ky_id', $hocKy->id)->first();
+            if ($quyDoi !== null) {
+                $cauHinh['diem.trong_so'] = $quyDoi->trong_so;
+                $cauHinh['diem.bang_quy_doi'] = $quyDoi->bang_quy_doi;
+                $cauHinh['diem.diem_danh.sua_trong_so_ngay'] = $quyDoi->so_ngay_sua_diem_danh;
+            }
+            $cauHinh['diem.cau_hinh_hoc_ky'] = $quyDoi === null ? null : [
+                'id' => $quyDoi->id,
+                'hoc_ky_id' => $hocKy->id,
+                'quy_tac_lam_tron' => $quyDoi->quy_tac_lam_tron,
+            ];
+        }
+
+        return $cauHinh;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function danhSachHocKy(): array
+    {
+        return HocKy::query()
+            ->with('quyDoiDiem:id,hoc_ky_id')
+            ->orderByDesc('ngay_bat_dau')
+            ->get()
+            ->map(fn (HocKy $hocKy) => [
+                'id' => $hocKy->id,
+                'ma_hoc_ky' => $hocKy->ma_hoc_ky,
+                'ten_hoc_ky' => $hocKy->ten_hoc_ky,
+                'label' => $hocKy->ten_hoc_ky,
+                'nam_hoc' => $hocKy->nam_hoc,
+                'ky_thu' => $hocKy->ky_thu,
+                'ngay_bat_dau' => $hocKy->ngay_bat_dau->toDateString(),
+                'ngay_ket_thuc' => $hocKy->ngay_ket_thuc->toDateString(),
+                'mo_dang_ky_luc' => $hocKy->mo_dang_ky_luc->format('Y-m-d H:i:s'),
+                'dong_dang_ky_luc' => $hocKy->dong_dang_ky_luc->format('Y-m-d H:i:s'),
+                'trang_thai' => $hocKy->trang_thai,
+                'cau_hinh_da_luu' => $hocKy->quyDoiDiem !== null,
+            ])
             ->all();
     }
 
     public function capNhat(array $duLieu): array
     {
-        $this->kiemTra($duLieu);
+        $hocKyId = $duLieu['hoc_ky_id'] ?? null;
+        if (! is_numeric($hocKyId)) {
+            $this->baoLoi('hoc_ky_id', 'Cần chọn học kỳ để lưu cấu hình.');
+        }
 
-        return DB::transaction(function () use ($duLieu): array {
-            $hienCo = CauHinh::query()
-                ->whereIn('khoa', array_keys($duLieu))
-                ->get()
-                ->keyBy('khoa');
-
-            foreach ($duLieu as $khoa => $giaTri) {
-                CauHinh::dat($khoa, $giaTri, $hienCo->get($khoa)?->mo_ta);
+        return DB::transaction(function () use ($duLieu, $hocKyId): array {
+            $hocKy = HocKy::query()->lockForUpdate()->findOrFail((int) $hocKyId);
+            if ($hocKy->trang_thai !== HocKy::UPCOMING) {
+                throw new \App\Exceptions\LoiNghiepVu(
+                    'SEMESTER_CONFIG_LOCKED',
+                    'Chỉ được sửa cấu hình của học kỳ sắp diễn ra.',
+                );
             }
 
-            return $this->danhSach();
+            $cauHinhDaLuu = QuyDoiDiem::query()->where('hoc_ky_id', $hocKy->id)->first();
+            $trongSo = $cauHinhDaLuu?->trong_so
+                ?? CauHinh::lay('diem.trong_so', []);
+            $bangQuyDoi = $cauHinhDaLuu?->bang_quy_doi
+                ?? CauHinh::lay('diem.bang_quy_doi', []);
+            $soNgay = $cauHinhDaLuu?->so_ngay_sua_diem_danh
+                ?? CauHinh::lay('diem.diem_danh.sua_trong_so_ngay', 7);
+
+            if (array_key_exists('diem.trong_so', $duLieu)) {
+                $trongSo = $duLieu['diem.trong_so'];
+            }
+            if (array_key_exists('diem.bang_quy_doi', $duLieu)) {
+                $bangQuyDoi = $duLieu['diem.bang_quy_doi'];
+            }
+            if (array_key_exists('diem.diem_danh.sua_trong_so_ngay', $duLieu)) {
+                $soNgay = $duLieu['diem.diem_danh.sua_trong_so_ngay'];
+            }
+            $this->kiemTra([
+                'diem.trong_so' => $trongSo,
+                'diem.bang_quy_doi' => $bangQuyDoi,
+                'diem.diem_danh.sua_trong_so_ngay' => $soNgay,
+            ]);
+
+            QuyDoiDiem::query()->updateOrCreate(
+                ['hoc_ky_id' => $hocKy->id],
+                [
+                'trong_so' => $trongSo,
+                'bang_quy_doi' => $bangQuyDoi,
+                'so_ngay_sua_diem_danh' => $soNgay,
+                'quy_tac_lam_tron' => QuyDoiDiem::QUY_TAC_LAM_TRON,
+                ],
+            );
+
+            return $this->danhSach($hocKy->id);
         });
+    }
+
+    public function layApDungChoHocKy(HocKy $hocKy): QuyDoiDiem
+    {
+        return QuyDoiDiem::query()->firstOrCreate(
+            ['hoc_ky_id' => $hocKy->id],
+            [
+                'trong_so' => CauHinh::lay('diem.trong_so'),
+                'bang_quy_doi' => CauHinh::lay('diem.bang_quy_doi'),
+                'so_ngay_sua_diem_danh' => CauHinh::lay('diem.diem_danh.sua_trong_so_ngay', 7),
+                'quy_tac_lam_tron' => QuyDoiDiem::QUY_TAC_LAM_TRON,
+            ],
+        );
     }
 
     private function kiemTra(array $duLieu): void
@@ -78,16 +169,17 @@ class QuanLyCauHinhService
         }
 
         $validator = Validator::make(['gia_tri' => $giaTri], [
-            'gia_tri.*' => ['required', 'array:tu,den,chu,he_4,dat'],
+            'gia_tri.*' => ['required', 'array:tu,den,chu,he_4,xep_loai,dat'],
             'gia_tri.*.tu' => ['required', 'numeric', 'between:0,10'],
             'gia_tri.*.den' => ['required', 'numeric', 'between:0,10'],
-            'gia_tri.*.chu' => ['required', 'string', 'in:A,B,C,D,F'],
+            'gia_tri.*.chu' => ['required', 'string', 'in:A,B+,B,C+,C,D+,D,F'],
             'gia_tri.*.he_4' => ['required', 'numeric', 'between:0,4'],
+            'gia_tri.*.xep_loai' => ['required', 'string', 'max:100'],
             'gia_tri.*.dat' => ['required', 'boolean'],
         ]);
 
         if ($validator->fails()) {
-            $this->baoLoi('diem.bang_quy_doi', 'Mỗi khoảng cần có tu, den, chu, he_4 và dat hợp lệ.');
+            $this->baoLoi('diem.bang_quy_doi', 'Mỗi khoảng cần có tu, den, chu, he_4, xep_loai và dat hợp lệ.');
         }
 
         $khoang = [];
