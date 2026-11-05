@@ -82,7 +82,7 @@ export class LopHocPhanService {
       .pipe(map((response) => response.data));
   }
 
-  capNhatDiem(id: number, diem: DongDiem[]): Observable<DongDiem[]> {
+  capNhatDiem(id: number, diem: DongDiem[], lyDo?: string): Observable<DongDiem[]> {
     const payload: DiemNhap[] = diem.map((row) => ({
       dang_ky_hoc_phan_id: row.dang_ky_hoc_phan_id,
       diem_chuyen_can: row.diem_chuyen_can,
@@ -90,7 +90,10 @@ export class LopHocPhanService {
       diem_cuoi_ky: row.diem_cuoi_ky,
     }));
     return this.http
-      .put<{ data: DongDiem[] }>(`${this.goc}/sections/${id}/grades`, { diem: payload })
+      .put<{ data: DongDiem[] }>(`${this.goc}/sections/${id}/grades`, {
+        diem: payload,
+        ...(lyDo ? { ly_do: lyDo } : {}),
+      })
       .pipe(map((response) => response.data));
   }
 

@@ -215,6 +215,34 @@ describe('DaoTaoRegistry admin classes', () => {
     });
   });
 
+  it('filters students in an admin class by keyword and account status', () => {
+    const roster = goi(
+      'GET',
+      '/admin-classes/1/students',
+      null,
+      new HttpParams().set('page', 1).set('per_page', 100),
+    ) as PaginatedResponse<SinhVien>;
+    const inactiveStudent = roster.data.find((student) => !student.trang_thai);
+    expect(inactiveStudent).toBeDefined();
+
+    const filtered = goi(
+      'GET',
+      '/admin-classes/1/students',
+      null,
+      new HttpParams()
+        .set('q', inactiveStudent!.ma_sv)
+        .set('trang_thai', 'false')
+        .set('page', 1)
+        .set('per_page', 100),
+    ) as PaginatedResponse<SinhVien>;
+
+    expect(filtered.data).toHaveLength(1);
+    expect(filtered.data[0]).toMatchObject({
+      id: inactiveStudent!.id,
+      trang_thai: false,
+    });
+  });
+
   it('blocks deletion while students remain and soft-deletes an empty class', () => {
     const blocked = goi('DELETE', '/admin-classes/1') as { ma_loi: string };
     expect(blocked.ma_loi).toBe('DELETE_BLOCKED');

@@ -1,7 +1,11 @@
 import { ActivatedRoute } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { AuthService } from '@core/auth/auth.service';
+import { LopHocPhan } from '@core/models/dao-tao.model';
 import { DongDiem, LopHocPhanService, SinhVienLop } from '@core/services/lop-hoc-phan.service';
+import { DiemService } from '../diem/diem.service';
 import { LopHocPhanDiem } from './diem';
 
 describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
@@ -46,7 +50,14 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
 
   async function taoTrang(danhSach: DongDiem[]) {
     mockService = {
-      layMot: () => of({ id: 7, da_chot_diem: false }),
+      layMot: () =>
+        of({
+          id: 7,
+          ma_lop_hp: 'INT3306-01',
+          mon_hoc: { ten_mon: 'Lập trình web' },
+          hoc_ky: { ten_hoc_ky: 'Học kỳ 1', trang_thai: 'ONGOING' },
+          da_chot_diem: false,
+        } as LopHocPhan),
       layDiem: () => of(danhSach),
       capNhatDiem: (_id: number, diem: DongDiem[]) => of(diem),
       chotDiem: () => of({ id: 7, da_chot_diem: true }),
@@ -55,10 +66,19 @@ describe('LopHocPhanDiem — tìm kiếm trong bảng điểm', () => {
     await TestBed.configureTestingModule({
       imports: [LopHocPhanDiem],
       providers: [
+        provideRouter([]),
         { provide: LopHocPhanService, useValue: mockService },
+        { provide: DiemService, useValue: { layLichSu: () => of([]) } },
+        { provide: AuthService, useValue: { nguoiDung: () => ({ vai_tro: 'GIANG_VIEN' }) } },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: { get: () => '7' } } },
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => '7' },
+              queryParamMap: { get: () => null },
+              routeConfig: { path: 'lop-hoc-phan/:id/diem' },
+            },
+          },
         },
       ],
     }).compileComponents();
