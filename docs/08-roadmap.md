@@ -148,7 +148,7 @@ Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng đ
 | Auth phía client (AuthService, bearer interceptor, auth/role/password guard, ba giao diện login) | Tuần 2 (dời sang Tuần 8) | ✅ Đã triển khai; trình duyệt xác minh đăng nhập cả ba vai trò, `/auth/me` và menu tương ứng với backend thật ngày 26/10; test FE/BE pass | CORS cho phép `localhost:4200` và `127.0.0.1:4200`; dashboard gọi `GET /api/dashboard/admin` nhưng backend chưa có route; SCR-52/53 còn lại, PM phụ trách |
 | CRUD nghiệp vụ + bulk | Tuần 3–9 | 🔶 triển khai một phần | Backend có 8 route mỗi nhóm `students`, `teachers`, `admin-classes`, `subjects`, `rooms`; CRUD `subjects`/`rooms` đã merge cùng 9 test. Thêm `menus` (5) + `settings` (2) ở nhánh `pm-menu-cau-hinh`. FE có SCR-10–15, SCR-47/48; E2E vẫn cần backend/DB sẵn sàng |
 | Đăng ký công khai / quên mật khẩu | Chưa chốt | ⏸ hoãn | Đăng ký chờ PM chốt phạm vi; quên mật khẩu công khai chưa có API/SMTP. Tạm hướng dẫn liên hệ phòng đào tạo/Admin |
-| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; SCR-47/48 (menu) xong ngày 27/10. Các module nghiệp vụ khác còn trong kế hoạch. Đức Anh: SCR-10–24; Đạt: SCR-25–43, SCR-03–05, SCR-47–51; PM: auth, màn toàn cục, SCR-45 |
+| Màn hình FE | Tuần 3–9 | 🔶 đang triển khai | SCR-10–15 (sinh viên, giảng viên) đã có danh sách/form/chi tiết; SCR-47/48 (menu) xong ngày 27/10. Các module nghiệp vụ khác còn trong kế hoạch. Đức Anh: SCR-10–24 và cụm đăng ký SCR-30–33 theo phân công PM; Đạt: SCR-25–29, SCR-35–43, SCR-03–05, SCR-47–51; PM: auth, màn toàn cục, SCR-45 |
 | `openapi.yaml` | Tuần 1 → dần | 🔶 41 path / 65 operation | Đã có 65/113 operation hợp đồng; còn 48 operation cần đặc tả |
 
 **Tổng endpoint:** 59 route Laravel khớp hợp đồng / 113 endpoint được mô tả trong
@@ -275,7 +275,7 @@ chốt trong đợt này:
 |---|---|
 | API | `EnrollmentService` dùng chung; `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; hủy |
 | Nghiệp vụ | BR-08, BR-09 (khóa dòng), BR-10, BR-11, BR-20, BR-22, **BR-23 (năm thứ)**, BR-26 (đợt theo kỳ của lớp), BR-27 (đăng ký lại) |
-| FE | Đạt: SCR-30 → SCR-33 |
+| FE | Đức Anh: SCR-30 → SCR-33 (theo phân công PM); FE + mock hoàn tất, chờ API |
 | Test | TC-07, TC-08, TC-09, TC-17, TC-20, TC-21, TC-25, BR-09 tranh chấp chỗ cuối |
 | **Bàn giao** | ADMIN đăng ký hộ và STUDENT tự đăng ký; tranh chấp chỗ cuối an toàn |
 

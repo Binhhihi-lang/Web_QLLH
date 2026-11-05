@@ -4,6 +4,7 @@ import { LOP_HOC_PHAN_MOCK } from '@core/mock/data/hoc-vu.mock';
 import {
   GIANG_VIEN_MOCK,
   HOC_KY_MOCK,
+  LOP_HANH_CHINH_MOCK,
   MON_HOC_MOCK,
   SINH_VIEN_MOCK,
 } from '@core/mock/data/dao-tao.mock';
@@ -24,9 +25,13 @@ import type {
   LopHocPhanInput,
   SinhVienLop,
 } from '@core/services/lop-hoc-phan.service';
+import type {
+  DangKyHocPhan,
+  KetQuaDangKyDong,
+} from '@features/hoc-vu/dang-ky/dang-ky.service';
 
 /**
- * Mock cho nhóm HỌC VỤ — thuộc Đạt.
+ * Mock cho nhóm HỌC VỤ; cụm đăng ký SCR-30–33 do Đức Anh phụ trách theo phân công PM.
  *
  * Lớp học phần, lịch, đăng ký, điểm danh, điểm, dashboard. Thêm endpoint mới
  * thì thêm ở đây, không đụng registry đào tạo của Đức Anh.
@@ -40,6 +45,8 @@ export class HocVuRegistry {
   }));
   private readonly diemDaLuu = new Map<number, DongDiem[]>();
   private readonly dangKyDaHuy = new Set<number>();
+  private readonly dangKyThem: Array<{ lop_hoc_phan_id: number; sinh_vien: SinhVienLop }> = [];
+  private readonly lichSuDangKy = new Map<number, DangKyHocPhan>();
 
   constructor(private readonly system: SystemRegistry) {}
 
@@ -48,24 +55,46 @@ export class HocVuRegistry {
     path: string,
     params: HttpParams,
     body: unknown = null,
-    _vaiTro: string | null = null,
+    vaiTro: string | null = null,
   ): object | undefined {
+    if (path === '/enrollments' && method === 'GET') {
+      if (vaiTro && vaiTro !== 'ADMIN' && vaiTro !== 'GIANG_VIEN') {
+        return loi('FORBIDDEN', 'Bạn không có quyền xem danh sách đăng ký.');
+      }
+      return this.danhSachDangKy(params);
+    }
+    if (path === '/enrollments' && method === 'POST') {
+      if (vaiTro && vaiTro !== 'ADMIN') return loi('FORBIDDEN', 'Chỉ quản trị viên được đăng ký hộ.');
+      const data = this.bodyRecord(body);
+      return this.taoDangKy(Number(data['sinh_vien_id']), Number(data['lop_hoc_phan_id']), vaiTro);
+    }
+    if (path === '/enrollments/bulk' && method === 'POST') {
+      if (vaiTro && vaiTro !== 'ADMIN') return loi('FORBIDDEN', 'Chỉ quản trị viên được đăng ký hàng loạt.');
+      return this.dangKyHangLoat(body);
+    }
+    if (path === '/me/enrollments' && method === 'GET') {
+      if (vaiTro && vaiTro !== 'SINH_VIEN') return loi('FORBIDDEN', 'Chỉ sinh viên được xem đăng ký của mình.');
+      return this.danhSachDangKy(params, 1);
+    }
+    if (path === '/me/enrollments' && method === 'POST') {
+      if (vaiTro && vaiTro !== 'SINH_VIEN') return loi('FORBIDDEN', 'Chỉ sinh viên được tự đăng ký.');
+      const data = this.bodyRecord(body);
+      return this.taoDangKy(1, Number(data['lop_hoc_phan_id']), vaiTro);
+    }
+    const dangKyCuaToi = path.match(/^\/me\/enrollments\/(\d+)$/);
+    if (dangKyCuaToi && method === 'DELETE') {
+      if (vaiTro && vaiTro !== 'SINH_VIEN') return loi('FORBIDDEN', 'Chỉ sinh viên được hủy đăng ký của mình.');
+      return this.huyDangKy(Number(dangKyCuaToi[1]), vaiTro);
+    }
+
     const enrollment = path.match(/^\/enrollments\/(\d+)$/);
     if (enrollment && method === 'DELETE') {
-      const id = Number(enrollment[1]);
       const lyDo = this.bodyRecord(body)['ly_do'];
       if (typeof lyDo !== 'string' || !lyDo.trim()) {
         return loiValidation({ ly_do: ['Lý do hủy đăng ký là bắt buộc.'] });
       }
-      const section = this.lopHocPhan.find(
-        (row) =>
-          this.tim(row.id) &&
-          this.sinhVienLop(row.id).some((student) => student.dang_ky_hoc_phan_id === id),
-      );
-      if (!section) return loi('NOT_FOUND', 'Không tìm thấy đăng ký học phần.');
-      this.dangKyDaHuy.add(id);
-      section.si_so_hien_tai = Math.max(0, section.si_so_hien_tai - 1);
-      return ok(null, 'Đã hủy đăng ký học phần.');
+      if (vaiTro && vaiTro !== 'ADMIN') return loi('FORBIDDEN', 'Chỉ quản trị viên được hủy đăng ký hộ.');
+      return this.huyDangKy(Number(enrollment[1]), vaiTro);
     }
 
     if (path === '/sections' && method === 'GET') {
@@ -289,6 +318,16 @@ export class HocVuRegistry {
   }
 
   private sinhVienLop(id: number): SinhVienLop[] {
+    const banDau = this.sinhVienLopBanDau(id);
+    const themMoi = this.dangKyThem
+      .filter((row) => row.lop_hoc_phan_id === id)
+      .map((row) => row.sinh_vien);
+    return [...banDau, ...themMoi].filter(
+      (student) => !this.dangKyDaHuy.has(student.dang_ky_hoc_phan_id),
+    );
+  }
+
+  private sinhVienLopBanDau(id: number): SinhVienLop[] {
     const start = (id - 1) % SINH_VIEN_MOCK.length;
     return SINH_VIEN_MOCK.slice(start, start + 10)
       .map((student, index) => ({
@@ -298,8 +337,248 @@ export class HocVuRegistry {
         email: student.email,
         lop: student.lop_hanh_chinh?.ma_lop ?? null,
         dang_ky_hoc_phan_id: id * 100 + index + 1,
-      }))
-      .filter((student) => !this.dangKyDaHuy.has(student.dang_ky_hoc_phan_id));
+      }));
+  }
+
+  private danhSachDangKy(params: HttpParams, sinhVienId?: number): object {
+    let rows = this.lopHocPhan.flatMap((section) =>
+      this.tatCaSinhVienLop(section.id).map((student) =>
+        this.dangKyTheoDong(section.id, student),
+      ),
+    );
+    if (sinhVienId !== undefined) rows = rows.filter((row) => row.sinh_vien.id === sinhVienId);
+    const hocKyId = params.get('hoc_ky_id');
+    const sectionId = params.get('lop_hoc_phan_id');
+    const studentId = params.get('sinh_vien_id');
+    const status = params.get('trang_thai');
+    if (hocKyId) rows = rows.filter((row) => row.lop_hoc_phan.hoc_ky?.id === Number(hocKyId));
+    if (sectionId) rows = rows.filter((row) => row.lop_hoc_phan.id === Number(sectionId));
+    if (studentId) rows = rows.filter((row) => row.sinh_vien.id === Number(studentId));
+    if (status) rows = rows.filter((row) => row.trang_thai === status);
+    rows = searchBy(rows, params.get('q'), [
+      'sinh_vien.ma_sv',
+      'sinh_vien.ho_ten',
+      'lop_hoc_phan.ma_lop_hp',
+      'lop_hoc_phan.mon_hoc',
+    ]);
+    rows = sortBy(rows, params, 'dang_ky_luc');
+    return paginate(rows, params, '/api/enrollments');
+  }
+
+  private tatCaSinhVienLop(id: number): SinhVienLop[] {
+    return [
+      ...this.sinhVienLopBanDau(id),
+      ...this.dangKyThem
+        .filter((row) => row.lop_hoc_phan_id === id)
+        .map((row) => row.sinh_vien),
+    ];
+  }
+
+  private dangKyTheoDong(sectionId: number, student: SinhVienLop): DangKyHocPhan {
+    const cached = this.lichSuDangKy.get(student.dang_ky_hoc_phan_id);
+    if (cached) {
+      return {
+        ...cached,
+        trang_thai: this.dangKyDaHuy.has(cached.id) ? 'CANCELLED' : 'ACTIVE',
+        huy_luc: this.dangKyDaHuy.has(cached.id) ? cached.huy_luc : null,
+      };
+    }
+
+    const section = this.lopHocPhan.find((row) => row.id === sectionId)!;
+    const studentRecord = SINH_VIEN_MOCK.find((row) => row.id === student.id);
+    const enrollment: DangKyHocPhan = {
+      id: student.dang_ky_hoc_phan_id,
+      sinh_vien: { id: student.id, ma_sv: student.ma_sv, ho_ten: student.ho_ten },
+      lop_hoc_phan: {
+        id: section.id,
+        ma_lop_hp: section.ma_lop_hp,
+        mon_hoc: section.mon_hoc.ten_mon,
+        hoc_ky: {
+          id: section.hoc_ky.id,
+          ma_hoc_ky: section.hoc_ky.ma_hoc_ky,
+          ten_hoc_ky: section.hoc_ky.ten_hoc_ky,
+        },
+      },
+      trang_thai: this.dangKyDaHuy.has(student.dang_ky_hoc_phan_id) ? 'CANCELLED' : 'ACTIVE',
+      dang_ky_boi: { id: 1, name: 'Quản trị viên' },
+      dang_ky_luc: '2026-08-20 09:00:00',
+      huy_boi: null,
+      huy_luc: this.dangKyDaHuy.has(student.dang_ky_hoc_phan_id)
+        ? '2026-08-25 10:00:00'
+        : null,
+    };
+    if (studentRecord?.id === 1) this.lichSuDangKy.set(enrollment.id, enrollment);
+    return enrollment;
+  }
+
+  private taoDangKy(sinhVienId: number, sectionId: number, vaiTro: string | null): object {
+    const student = SINH_VIEN_MOCK.find((row) => row.id === sinhVienId && !row.da_xoa);
+    if (!student) return loi('NOT_FOUND', 'Không tìm thấy sinh viên.');
+    if (!student.trang_thai) return loi('STUDENT_INACTIVE', 'Sinh viên không hoạt động.');
+
+    const section = this.tim(sectionId);
+    if (!section) return loi('NOT_FOUND', 'Không tìm thấy lớp học phần.');
+    if (section.trang_thai !== 'OPEN') return loi('SECTION_NOT_OPEN', 'Lớp không nhận đăng ký.');
+    if (section.hoc_ky.trang_thai === 'CLOSED') {
+      return loi('SEMESTER_CLOSED', 'Học kỳ đã đóng.');
+    }
+    if (vaiTro === 'SINH_VIEN' && !this.dangTrongDotDangKy(section.hoc_ky.id)) {
+      return loi('OUTSIDE_REGISTRATION', 'Ngoài thời gian đăng ký của học kỳ.');
+    }
+    if (section.si_so_hien_tai >= section.si_so_toi_da) {
+      return loi('SECTION_FULL', 'Lớp học phần đã đủ sĩ số.');
+    }
+
+    const enrollments = this.tatCaSinhVienLop(sectionId);
+    const existing = enrollments.find((row) => row.id === sinhVienId);
+    const oldEnrollment = existing
+      ? this.dangKyTheoDong(sectionId, existing)
+      : undefined;
+    if (oldEnrollment?.trang_thai === 'ACTIVE') {
+      return loi('DUPLICATE_ENROLLMENT', 'Đã đăng ký lớp học phần này.');
+    }
+    const sameSubject = this.lopHocPhan.some(
+      (other) =>
+        other.id !== sectionId &&
+        other.hoc_ky.id === section.hoc_ky.id &&
+        other.mon_hoc.id === section.mon_hoc.id &&
+        this.tatCaSinhVienLop(other.id).some(
+          (row) =>
+            row.id === sinhVienId && !this.dangKyDaHuy.has(row.dang_ky_hoc_phan_id),
+        ),
+    );
+    if (sameSubject) {
+      return loi('DUPLICATE_SUBJECT_IN_SEMESTER', 'Đã đăng ký lớp khác cùng môn trong học kỳ.');
+    }
+
+    if (oldEnrollment) {
+      this.dangKyDaHuy.delete(oldEnrollment.id);
+      oldEnrollment.trang_thai = 'ACTIVE';
+      oldEnrollment.dang_ky_luc = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      oldEnrollment.huy_luc = null;
+      this.lichSuDangKy.set(oldEnrollment.id, oldEnrollment);
+      section.si_so_hien_tai += 1;
+      return ok(oldEnrollment, 'Đã đăng ký học phần.');
+    }
+
+    const id = Math.max(
+      0,
+      ...this.lopHocPhan.flatMap((row) =>
+        this.tatCaSinhVienLop(row.id).map((item) => item.dang_ky_hoc_phan_id),
+      ),
+    ) + 1;
+    const studentRow: SinhVienLop = {
+      id: student.id,
+      ma_sv: student.ma_sv,
+      ho_ten: student.ho_ten,
+      email: student.email,
+      lop: student.lop_hanh_chinh?.ma_lop ?? null,
+      dang_ky_hoc_phan_id: id,
+    };
+    this.dangKyThem.push({ lop_hoc_phan_id: sectionId, sinh_vien: studentRow });
+    section.si_so_hien_tai += 1;
+    const enrollment = this.dangKyTheoDong(sectionId, studentRow);
+    enrollment.dang_ky_boi = {
+      id: vaiTro === 'SINH_VIEN' ? 3 : 1,
+      name: vaiTro === 'SINH_VIEN' ? student.ho_ten : 'Quản trị viên',
+    };
+    enrollment.dang_ky_luc = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    this.lichSuDangKy.set(enrollment.id, enrollment);
+    return ok(enrollment, 'Đã đăng ký học phần.');
+  }
+
+  private dangKyHangLoat(body: unknown): object {
+    const data = this.bodyRecord(body);
+    const sectionId = Number(data['lop_hoc_phan_id']);
+    const section = this.tim(sectionId);
+    if (!section) return loiValidation({ lop_hoc_phan_id: ['Lớp học phần không hợp lệ.'] });
+
+    let studentIds: number[];
+    if (Array.isArray(data['sinh_vien_ids'])) {
+      studentIds = data['sinh_vien_ids'].map(Number);
+    } else if (data['lop_hanh_chinh_id'] !== undefined) {
+      const classId = Number(data['lop_hanh_chinh_id']);
+      if (!LOP_HANH_CHINH_MOCK.some((row) => row.id === classId && !row.da_xoa)) {
+        return loiValidation({ lop_hanh_chinh_id: ['Lớp hành chính không hợp lệ.'] });
+      }
+      studentIds = SINH_VIEN_MOCK.filter(
+        (row) =>
+          row.lop_hanh_chinh?.id === classId && row.trang_thai && !row.da_xoa,
+      ).map((row) => row.id);
+    } else {
+      return loiValidation({
+        sinh_vien_ids: ['Cần chọn sinh viên hoặc lớp hành chính để đăng ký hàng loạt.'],
+      });
+    }
+
+    const chiTiet: KetQuaDangKyDong[] = studentIds.map((studentId) => {
+      const student = SINH_VIEN_MOCK.find((row) => row.id === studentId);
+      const result = this.taoDangKy(studentId, sectionId, 'ADMIN') as {
+        success: boolean;
+        data?: DangKyHocPhan;
+        ma_loi?: string;
+        message?: string;
+      };
+      return {
+        sinh_vien_id: studentId,
+        ma_sv: student?.ma_sv ?? '',
+        ket_qua: result.success ? 'THANH_CONG' : 'THAT_BAI',
+        ...(!result.success
+          ? { ma_loi: result.ma_loi, message: result.message }
+          : {}),
+      };
+    });
+    const thanhCong = chiTiet.filter((row) => row.ket_qua === 'THANH_CONG').length;
+    return ok(
+      {
+        thanh_cong: thanhCong,
+        that_bai: chiTiet.length - thanhCong,
+        chi_tiet: chiTiet,
+      },
+      `Đã xử lý ${chiTiet.length} sinh viên.`,
+    );
+  }
+
+  private huyDangKy(id: number, vaiTro: string | null): object {
+    const row = this.tatCaDangKy().find((item) => item.id === id);
+    if (!row || row.trang_thai !== 'ACTIVE') {
+      return loi('NOT_FOUND', 'Không tìm thấy đăng ký đang hiệu lực.');
+    }
+    if (vaiTro === 'SINH_VIEN' && row.sinh_vien.id !== 1) {
+      return loi('FORBIDDEN', 'Bạn không có quyền hủy đăng ký của sinh viên khác.');
+    }
+    const section = this.tim(row.lop_hoc_phan.id);
+    if (!section) return loi('NOT_FOUND', 'Không tìm thấy lớp học phần.');
+    if (vaiTro === 'SINH_VIEN' && !this.dangTrongDotDangKy(section.hoc_ky.id)) {
+      return loi('OUTSIDE_REGISTRATION', 'Ngoài thời gian đăng ký của học kỳ.');
+    }
+    this.dangKyDaHuy.add(id);
+    section.si_so_hien_tai = Math.max(0, section.si_so_hien_tai - 1);
+    const updated = {
+      ...row,
+      trang_thai: 'CANCELLED' as const,
+      huy_boi: { id: vaiTro === 'SINH_VIEN' ? 3 : 1, name: 'Người dùng hiện tại' },
+      huy_luc: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    };
+    this.lichSuDangKy.set(id, updated);
+    return ok(null, 'Đã hủy đăng ký học phần.');
+  }
+
+  private tatCaDangKy(): DangKyHocPhan[] {
+    return this.lopHocPhan.flatMap((section) =>
+      this.tatCaSinhVienLop(section.id).map((student) =>
+        this.dangKyTheoDong(section.id, student),
+      ),
+    );
+  }
+
+  private dangTrongDotDangKy(hocKyId: number): boolean {
+    const semester = HOC_KY_MOCK.find((row) => row.id === hocKyId);
+    if (!semester) return false;
+    const now = new Date();
+    const opens = new Date(semester.mo_dang_ky_luc.replace(' ', 'T'));
+    const closes = new Date(semester.dong_dang_ky_luc.replace(' ', 'T'));
+    return now >= opens && now <= closes && semester.dang_mo_dang_ky;
   }
 
   private diemLop(id: number): DongDiem[] {

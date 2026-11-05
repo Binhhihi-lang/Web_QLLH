@@ -2,7 +2,8 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '@core/auth/auth.guard';
 
 /**
- * Route nhóm HỌC VỤ — thuộc Đạt.
+ * Route nhóm HỌC VỤ. SCR-30–33 được PM chuyển sang Đức Anh; các màn còn lại
+ * trong nhóm vẫn do Đạt phụ trách.
  *
  * Lớp học phần, đăng ký, lịch, điểm danh, điểm và dashboard.
  * `app.routes.ts` chỉ gộp lại; hai bạn FE không sửa cùng một file route.
@@ -50,19 +51,19 @@ export const hocVuRoutes: Routes = [
     path: 'dang-ky',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'], ma: 'SCR-30', title: 'Đăng ký' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () => import('@features/hoc-vu/dang-ky/dang-ky-ho').then((m) => m.DangKyHo),
   },
   {
     path: 'dang-ky/danh-sach',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-31', title: 'Danh sách đăng ký' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () => import('@features/hoc-vu/dang-ky/danh-sach').then((m) => m.DangKyDanhSach),
   },
   {
     path: 'dang-ky-cua-toi',
     canActivate: [roleGuard],
     data: { roles: ['SINH_VIEN'], ma: 'SCR-33', title: 'Đăng ký của tôi' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () => import('@features/hoc-vu/dang-ky/cua-toi').then((m) => m.DangKyCuaToi),
   },
 
   // SCR-35/36/37 — Lịch học

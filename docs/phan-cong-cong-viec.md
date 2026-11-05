@@ -133,13 +133,13 @@ và [docs/08-roadmap.md](08-roadmap.md).
 
 ### Cách chia việc trong một câu
 
-> **Đức Anh** nhận toàn bộ màn **đào tạo** (bảng, form, CRUD lặp lại — làm một lần rồi nhân bản), **Đạt** nhận toàn bộ màn **học vụ** (tương tác phức tạp: đăng ký, lịch, điểm danh, điểm), **Tiến** nhận phần lõi API nghiệp vụ, **PM** giữ hợp đồng API, hạ tầng, merge và phần API khuôn mẫu.
+> **Đức Anh** nhận toàn bộ màn **đào tạo** và cụm **đăng ký học phần SCR-30–33** theo phân công cập nhật của PM; **Đạt** nhận các màn học vụ còn lại (lớp học phần, lịch, điểm danh, điểm), dashboard và quản trị; **Tiến** nhận phần lõi API nghiệp vụ, **PM** giữ hợp đồng API, hạ tầng, merge và phần API khuôn mẫu.
 
 | Vai trò        | Thành viên | Phụ trách chính                                       | Nhánh làm việc             |
 | -------------- | ---------- | ----------------------------------------------------- | -------------------------- |
 | PM / điều phối | Bạn        | Hợp đồng API, tài liệu, merge, hạ tầng, API khuôn mẫu, **Auth + phân quyền FE**, **module lớp học phần** | `develop` + `feature/pm-*` |
-| Frontend 1     | Đức Anh    | Toàn bộ màn đào tạo + CRUD                            | `feature/fe-dao-tao`       |
-| Frontend 2     | Đạt        | Toàn bộ màn học vụ + dashboard + quản trị             | `feature/fe-hoc-vu`        |
+| Frontend 1     | Đức Anh    | Toàn bộ màn đào tạo + CRUD; cụm đăng ký SCR-30–33     | `feature/fe-dao-tao` / nhánh cụm đăng ký |
+| Frontend 2     | Đạt        | Học vụ SCR-25–29, SCR-35–43; dashboard + quản trị     | `feature/fe-hoc-vu`        |
 | Backend        | Tiến       | Phần lõi API nghiệp vụ — trừ module lớp học phần (đã chuyển cho PM 29/10) | `feature/be-*` |
 
 ### Phạm vi Auth và phân quyền do PM phụ trách
@@ -356,10 +356,10 @@ Danh sách đầy đủ SCR-01 → SCR-55 theo `docs/05-screens.md`. Quy tắc s
 | 27  | Chi tiết lớp học phần                   | `/lop-hoc-phan/:id`                | Đạt (tuần 5)     | ✅ Xong 29/10 |
 | 28  | Sinh viên của lớp                       | `/lop-hoc-phan/:id/sinh-vien`      | Đạt (tuần 5)     | ✅ Xong 29/10 |
 | 29  | Bảng điểm lớp                           | `/lop-hoc-phan/:id/diem`           | Đạt (tuần 9)    | 🔶 FE + API GET/PUT đã có trên nhánh hiện tại; backend có test; E2E với backend thật còn chờ |
-| 30  | Đăng ký hộ + đăng ký hàng loạt          | `/dang-ky`                         | Đạt (tuần 7)     | Chưa có                    |
-| 31  | Danh sách đăng ký                       | `/dang-ky/danh-sach`               | Đạt (tuần 7)     | Chưa có                    |
-| 32  | Lớp đang mở (sinh viên)                 | `/lop-hoc-phan`                    | Đạt (tuần 7)     | Chưa có                    |
-| 33  | Đăng ký của tôi                         | `/dang-ky-cua-toi`                 | Đạt (tuần 7)     | Chưa có                    |
+| 30  | Đăng ký hộ + đăng ký hàng loạt          | `/dang-ky`                         | Đức Anh (theo phân công PM) | ✅ FE + mock; chờ API |
+| 31  | Danh sách đăng ký                       | `/dang-ky/danh-sach`               | Đức Anh (theo phân công PM) | ✅ FE + mock; chờ API |
+| 32  | Lớp đang mở (sinh viên)                 | `/lop-hoc-phan`                    | Đức Anh (theo phân công PM) | ✅ FE + mock; chờ API |
+| 33  | Đăng ký của tôi                         | `/dang-ky-cua-toi`                 | Đức Anh (theo phân công PM) | ✅ FE + mock; chờ API |
 | 35  | Xem lịch                                | `/lich-hoc`                        | Đạt (tuần 5)     | Chưa có                    |
 | 36  | Thêm buổi học                           | `/lop-hoc-phan/:id/lich/them`      | Đạt (tuần 5)     | Chưa có                    |
 | 37  | Sinh lịch hàng tuần                     | `/lop-hoc-phan/:id/lich/sinh`      | Đạt (tuần 5)     | Chưa có                    |
