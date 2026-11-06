@@ -38,7 +38,10 @@ Mất khoảng 2 phút vì DB ở xa. Kết quả: 555 tài khoản, 120 lớp h
 | Biến | Ý nghĩa | Tự động lưu? |
 |---|---|---|
 | `base_url` | Địa chỉ backend | Cố định, sửa tay nếu đổi cổng |
-| `token` | Bearer token sau khi đăng nhập | ✅ Tự lưu khi login |
+| `token_admin` | Bearer token ADMIN | ✅ Tự lưu khi đăng nhập ADMIN |
+| `token_sinh_vien` | Bearer token SINH_VIEN | ✅ Tự lưu khi đăng nhập SINH_VIEN |
+| `token_giang_vien` | Bearer token GIANG_VIEN | ✅ Tự lưu khi đăng nhập GIANG_VIEN |
+| `token` | Token ADMIN tương thích với các request cũ | ✅ Cập nhật khi đăng nhập ADMIN |
 | `mon_hoc_id` | ID môn học đầu tiên | ✅ Tự lưu khi gọi options/subjects |
 | `hoc_ky_id` | ID học kỳ đang diễn ra | ✅ Tự lưu |
 | `giang_vien_id` | ID giảng viên đầu tiên | ✅ Tự lưu |
@@ -48,20 +51,19 @@ Xem/sửa biến: click vào collection → tab **Variables**.
 
 ### 2.2. Cơ chế tự lưu token
 
-Request **"Đăng nhập (ADMIN)"** có đoạn script ở tab **Tests**:
+Collection có script **Tests** ở cấp collection: sau mọi request đăng nhập thành công, script đọc vai trò từ response và tự lưu token vào `token_admin`, `token_sinh_vien` hoặc `token_giang_vien`. ADMIN cũng cập nhật biến `token` để tương thích với request cũ. Request đăng nhập SINH_VIEN trong folder 01 có thêm assertion xác nhận `token_sinh_vien` đã được ghi.
 
-```javascript
-const body = pm.response.json();
-pm.collectionVariables.set('token', body.data.token);
-```
+Các request kiểm tra hồ sơ cá nhân đã gắn đúng biến theo vai trò. Không cần mở collection Variables để dán token thủ công.
 
-Nghĩa là: chạy login xong, token tự ghi vào biến `token`. Mọi request khác dùng header:
+Request ADMIN cũ dùng header:
 
 ```
 Authorization: Bearer {{token}}
 ```
 
-**Không cần copy-paste token bằng tay.**
+`token` vẫn được cập nhật khi đăng nhập ADMIN để giữ tương thích với các request cũ. Đăng xuất ADMIN sẽ xóa `token` và `token_admin`.
+
+Nếu collection đã được import vào Postman trước khi file này cập nhật, hãy import lại `docs/postman/QLLH.postman_collection.json` để lấy script mới; collection trong workspace không tự đồng bộ theo file trên máy.
 
 ### 2.3. Cơ chế kiểm tra tự động
 
@@ -94,7 +96,7 @@ Chạy lần lượt theo số thứ tự:
 | Bước | Request | Kỳ vọng |
 |---|---|---|
 | 1 | `00 → Health check` | 200, `success: true` |
-| 2 | `01 → Đăng nhập (ADMIN)` | 200, có token, lưu biến `token` |
+| 2 | `01 → Đăng nhập (ADMIN)` | 200, tự lưu `token_admin` và `token` |
 | 3 | `01 → Hồ sơ của tôi (me)` | 200, `vai_tro: ADMIN`, `ho_so: null` |
 | 4 | `02 → Môn học` | 200, 30 phần tử |
 | 5 | `02 → Học kỳ` | 200, 3 phần tử |
@@ -116,10 +118,10 @@ Chạy lần lượt theo số thứ tự:
 
 **Quy trình test:**
 
-1. Chạy `Đăng nhập (SINH VIÊN)` → biến `token` giờ là token sinh viên
-2. Chạy `Hồ sơ của tôi` → phải trả `vai_tro: SINH_VIEN` và có `ho_so`
-3. Chạy `Đăng nhập (ADMIN)` → token đổi lại thành admin
-4. Chạy `Hồ sơ của tôi` → phải trả `vai_tro: ADMIN`, `ho_so: null`
+1. Chạy `Đăng nhập (SINH VIÊN)` → token tự lưu vào `token_sinh_vien`
+2. Chạy request hồ sơ sinh viên trong folder 14 → phải trả `vai_tro: SINH_VIEN` và có `ho_so`
+3. Chạy `Đăng nhập (ADMIN)` → token tự lưu vào `token_admin` (và `token` tương thích)
+4. Chạy request hồ sơ ADMIN trong folder 14 → phải trả `vai_tro: ADMIN`, `ho_so: null`
 
 Nếu bước 2 trả ADMIN → backend đang cache token sai.
 
@@ -272,3 +274,15 @@ Bảng đầy đủ: [04-api-contract.md](../04-api-contract.md) mục 1.5.
 - Hợp đồng API đầy đủ: [04-api-contract.md](../04-api-contract.md)
 - OpenAPI (sinh model TS): [openapi.yaml](../openapi.yaml)
 - Ma trận test case: [06-test-plan.md](../06-test-plan.md)
+
+## 12. Đăng ký học phần (folder 16)
+
+1. Đăng nhập ADMIN ở folder 01; đăng nhập STUDENT ở request 01 của folder 16. Request này tự lưu `token_sinh_vien` và `enrollment_student_id`.
+2. Chạy folder 04 để tạo hai sinh viên test (`sinh_vien_id`, `sinh_vien_bulk_id`). Điền `enrollment_section_id` bằng ID lớp `OPEN`, còn chỗ và học kỳ đang trong đợt đăng ký.
+3. Chạy request 02–04 và 07–15 theo thứ tự để kiểm tra tự đăng ký, xem danh sách, trùng lớp, ADMIN đăng ký hộ/bulk, quyền, validate, hủy và đăng ký lại.
+4. Chạy request 05–06 và 16–22 để kiểm tra lỗi nghiệp vụ. Điền ID vào biến `enrollment_duplicate_subject_section_id`, `enrollment_conflict_section_id`, `enrollment_outside_section_id`, `enrollment_full_section_id`, `enrollment_protected_id`, `enrollment_wrong_year_section_id`, `enrollment_inactive_student_id`, `enrollment_closed_section_id` theo mô tả từng request.
+5. Hủy đăng ký chỉ thành công khi chưa phát sinh điểm/điểm danh. STUDENT chỉ hủy trong đợt; ADMIN được hủy ngoài đợt.
+
+**Riêng request 06 — Trùng lịch:** request 02 trước đó phải đăng ký thành công cho sinh viên vào một lớp có buổi `SCHEDULED`. Biến `enrollment_conflict_section_id` phải là **một lớp khác**, cũng có buổi `SCHEDULED` cùng ngày với buổi ở lớp đã đăng ký và giờ học giao nhau. Ví dụ lớp đã đăng ký học 09:00–10:00, lớp ở request 06 học 09:30–10:30 cùng ngày thì bị trùng; nếu lớp mới bắt đầu lúc 10:00 thì không trùng. Kiểm tra ngày/giờ ở bảng `buoi_hoc`; không cần cùng phòng. Nếu dữ liệu hiện tại không có cặp buổi như vậy thì request 06 sẽ không thể tạo lỗi `SCHEDULE_CONFLICT` chỉ bằng cách điền một ID bất kỳ. Response lỗi có `errors.trung_lich` để xem mã lớp và thời gian của cả hai buổi.
+
+Các lỗi được kiểm tra: `OUTSIDE_REGISTRATION`, `SECTION_FULL`, `DUPLICATE_ENROLLMENT`, `DUPLICATE_SUBJECT_IN_SEMESTER`, `SCHEDULE_CONFLICT`, `WRONG_STUDY_YEAR`, `HAS_GRADE_OR_ATTENDANCE`, cùng các lỗi quyền `403` và validate `422`.

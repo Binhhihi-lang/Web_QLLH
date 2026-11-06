@@ -4,6 +4,9 @@
 
 | Phiên bản | Ngày       | Trạng thái              | Căn cứ                                                 |
 | --------- | ---------- | ----------------------- | ------------------------------------------------------ |
+| 2.1       | 06/11/2026 | Khôi phục phân công backend lịch và bổ sung tài khoản cá nhân cho Tiến | Tiến: lịch học, tài khoản cá nhân, điểm, điểm danh, nhật ký; PM review/sửa lỗi lịch và phụ trách đăng ký |
+| 2.0       | 05/11/2026 | Chốt lại quyền sở hữu backend | Tiến phụ trách điểm, điểm danh, nhật ký; PM phụ trách backend còn lại |
+| 1.9       | 05/11/2026 | Cập nhật cấu hình điểm theo học kỳ và chuyển backend lịch/đăng ký cho PM | Commit `db79469`; điều chỉnh phân công Tuần 6–7 |
 | 1.8       | 03/11/2026 | Hoàn thiện giao diện Hệ thống | Nhánh `giao-dien-he-thong`; SCR-45, SCR-49–51; tách route hệ thống |
 | 1.7       | 03/11/2026 | Bổ sung giao diện Khoa/Ngành | SCR-54/55, lọc Khoa tại SCR-19; menu ADMIN |
 | 1.6       | 29/10/2026 | Bổ sung lưu điểm hàng loạt | Nhánh `fix/luu-diem-phan-cong-tuan`; endpoint `PUT /sections/{id}/grades` + test hồi quy |
@@ -11,6 +14,27 @@
 | 1.4       | 29/10/2026 | Đối chiếu code `develop` | Commit `6192548` + đo thật: 62/113 endpoint, test FE/BE |
 | 1.3       | 27/10/2026 | Đề xuất — chờ nhóm chốt | `docs/08-roadmap.md` + trạng thái code nhánh `pm-menu-cau-hinh` (SCR-47/48 xong) |
 | 1.2       | 26/10/2026 | Đề xuất — chờ nhóm chốt | `docs/08-roadmap.md` + trạng thái code nhánh `develop` |
+
+### Cập nhật 05/11/2026 — cấu hình điểm theo học kỳ và điều chỉnh backend
+
+- **Đã hoàn thành:** API quản lý học kỳ và cấu hình quy đổi điểm theo từng học kỳ;
+  cấu hình có trang danh sách/lọc, trang chi tiết riêng, chỉ sửa được trước khi học kỳ
+  diễn ra. Đã cập nhật luồng hiển thị điểm theo dữ liệu API và hỗ trợ mở đợt đăng ký
+  trước ngày bắt đầu học kỳ. Giao diện có test cấu hình; build development đạt.
+- **Chuyển giao từ Tiến sang PM:** toàn bộ backend lịch học ở Tuần 6 và đăng ký học
+  phần ở Tuần 7, gồm nghiệp vụ lõi, API, kiểm tra xung đột/tranh chấp và test.
+- **Chưa hoàn thành:** backend `/sessions`, `/schedules`, `/enrollments` và các luồng
+  sinh lịch/đăng ký chưa được tính là xong; tiếp tục theo mốc Tuần 6–7 trong roadmap.
+
+### Cập nhật 06/11/2026 — điều chỉnh phân công backend
+
+- **Tiến phụ trách backend:** lịch học, tài khoản cá nhân (hồ sơ `/api/me`, avatar và thao tác tài khoản của chính mình), điểm,
+  điểm danh và nhật ký/audit log; gồm nghiệp vụ, API và kiểm thử.
+- **PM phụ trách đăng ký học phần** cùng backend còn lại. Với lịch học, PM review và sửa lỗi sau khi nhận nhánh của Tiến;
+  không nhận quyền sở hữu triển khai lịch.
+- **Auth nền tảng** (đăng nhập, phát hành/lưu token, xác thực, guard/policy và phân quyền) vẫn do PM phụ trách;
+  phần tài khoản cá nhân `/api/me` thuộc Tiến.
+- Cập nhật này thay thế phân công backend ngày 05/11 trong bảng tuần và mục 4; các phần Tiến đã được giao trước đó vẫn giữ nguyên.
 
 ### Cập nhật 03/11/2026 — giao diện Hệ thống
 
@@ -30,16 +54,16 @@ hình gọi dữ liệu giả. Các route quản trị được gom vào `routes
 > hợp lệ FR-08.05 khi đổi giảng viên, `LopHocPhanPolicy` theo vai trò, `sections/{id}/students`,
 > `sections/{id}/attendance-summary`.
 >
-> **KHÔNG chuyển giao gì khác.** Tiến vẫn giữ: `semesters` (vòng đời trạng thái),
+> **Tại thời điểm 29/10, không chuyển giao gì khác.** Tiến vẫn giữ: `semesters` (vòng đời trạng thái),
 > `ScheduleService` lõi (trùng phòng/GV/SV), `EnrollmentService` lõi (sĩ số, trùng lịch,
 > tranh chấp chỗ cuối), nhập điểm + tổng kết + quy đổi + GPA/CPA, `/users`.
 >
 > **Lý do:** `sections` là đường găng — màn SCR-25–28 đã có giao diện mà chưa có backend,
 > và lịch học, đăng ký, điểm danh, điểm đều chờ nó.
 >
-> **Hệ quả cho tài liệu:** ở [mục 4](#4-ranh-giới-sở-hữu-file) và
-> [mục 5](#5-phân-công-theo-tuần), chỉ các dòng thuộc module lớp học phần đổi chủ
-> từ Tiến sang PM. Mọi dòng backend khác giữ nguyên.
+> **Phạm vi tại ngày 29/10:** ở [mục 4](#4-ranh-giới-sở-hữu-file) và
+> [mục 5](#5-phân-công-theo-tuần), module lớp học phần đổi chủ từ Tiến sang PM.
+> Phân công này được cập nhật tiếp vào ngày 05/11 ở các mục bên dưới.
 
 ---
 
@@ -133,14 +157,14 @@ và [docs/08-roadmap.md](08-roadmap.md).
 
 ### Cách chia việc trong một câu
 
-> **Đức Anh** nhận toàn bộ màn **đào tạo** (bảng, form, CRUD lặp lại — làm một lần rồi nhân bản), **Đạt** nhận toàn bộ màn **học vụ** (tương tác phức tạp: đăng ký, lịch, điểm danh, điểm), **Tiến** nhận phần lõi API nghiệp vụ, **PM** giữ hợp đồng API, hạ tầng, merge và phần API khuôn mẫu.
+> **Đức Anh** nhận toàn bộ màn **đào tạo**, **Đạt** nhận toàn bộ màn **học vụ**; về backend, **Tiến** phụ trách lịch học, tài khoản cá nhân, điểm, điểm danh và nhật ký; **PM** phụ trách đăng ký cùng backend còn lại, hợp đồng API, hạ tầng và tích hợp. PM review/sửa lỗi lịch sau khi nhận nhánh Tiến.
 
 | Vai trò        | Thành viên | Phụ trách chính                                       | Nhánh làm việc             |
 | -------------- | ---------- | ----------------------------------------------------- | -------------------------- |
-| PM / điều phối | Bạn        | Hợp đồng API, tài liệu, merge, hạ tầng, API khuôn mẫu, **Auth + phân quyền FE**, **module lớp học phần** | `develop` + `feature/pm-*` |
+| PM / điều phối | Bạn        | Hợp đồng API, tài liệu, merge, hạ tầng, **backend đăng ký và phần còn lại trừ lịch, tài khoản cá nhân, điểm, điểm danh, nhật ký**, **Auth nền tảng + phân quyền FE**; review/sửa lỗi lịch | `develop` + `feature/pm-*` |
 | Frontend 1     | Đức Anh    | Toàn bộ màn đào tạo + CRUD                            | `feature/fe-dao-tao`       |
 | Frontend 2     | Đạt        | Toàn bộ màn học vụ + dashboard + quản trị             | `feature/fe-hoc-vu`        |
-| Backend        | Tiến       | Phần lõi API nghiệp vụ — trừ module lớp học phần (đã chuyển cho PM 29/10) | `feature/be-*` |
+| Backend        | Tiến       | Backend lịch học, tài khoản cá nhân (`/api/me`), điểm, điểm danh và nhật ký/audit log | `feature/be-*` |
 
 ### Phạm vi Auth và phân quyền do PM phụ trách
 
@@ -264,14 +288,21 @@ Quy tắc duy nhất: **mỗi thư mục có đúng một người được sử
 
 | Đường dẫn                                                    | Người sở hữu | Người khác được làm gì           |
 | ------------------------------------------------------------ | ------------ | -------------------------------- |
-| `backend/app/**`, `backend/database/**`, `backend/routes/**` | Tiến         | Đọc thì được, sửa thì không — **trừ các file thuộc module lớp học phần ở dưới, nay của PM** |
-| `backend/tests/**`                                           | Tiến         | PM đọc khi review                |
+| `backend/app/**`, `backend/database/**`, `backend/routes/**` | PM           | Tiến sở hữu lịch học, tài khoản cá nhân, điểm, điểm danh và nhật ký/audit log |
+| Backend `sessions` / `schedules` — controller, service, request, resource, model, migration, factory, seeder | **Tiến** | PM review và sửa lỗi sau khi nhận nhánh |
+| Backend hồ sơ/tài khoản cá nhân — `HoSoController`, `QuanLyHoSoService`, request/resource và `/api/me`/avatar routes | **Tiến** | PM review phần tích hợp; Auth nền tảng vẫn PM |
+| Backend `enrollments` — controller, service, request, resource, model, migration, factory, seeder | **PM (từ 05/11)** | Tiến đọc |
+| Backend điểm, điểm danh và nhật ký — controller, service, request, resource, model, migration, seeder | **Tiến** | PM đọc |
+| `backend/tests/**`                                           | PM, trừ test lịch, tài khoản cá nhân, điểm, điểm danh và nhật ký thuộc Tiến | Tiến đọc khi review |
 | `backend/app/Http/Controllers/Api/LopHocPhanController.php`  | **PM** (từ 29/10) | Tiến đọc                     |
 | `backend/app/Http/Requests/QuanLy/LopHocPhanRequest.php`     | **PM** (từ 29/10) | Tiến đọc                     |
 | `backend/app/Http/Resources/LopHocPhanResource.php`          | **PM** (từ 29/10) | Tiến đọc                     |
 | `backend/app/Services/QuanLyLopHocPhanService.php`           | **PM** (từ 29/10) | Tiến đọc                     |
 | `backend/app/Policies/LopHocPhanPolicy.php`                  | **PM** (từ 29/10) | Tiến đọc                     |
 | `backend/routes/api.php` → nhóm `sections`                   | **PM** (từ 29/10) | Tiến đọc                     |
+| `backend/routes/api.php` → nhóm lịch và `/me` hồ sơ cá nhân | **Tiến** | PM review/tích hợp |
+| `backend/routes/api.php` → mọi nhóm ngoài lịch, `/me`, điểm, điểm danh và nhật ký | **PM** | Tiến đọc |
+| `backend/routes/api.php` → nhóm điểm, điểm danh và nhật ký | **Tiến** | PM đọc |
 | `backend/tests/Feature/LopHocPhanTest.php`                   | **PM** (từ 29/10) | Tiến đọc                     |
 | `docs/**`, `docs/openapi.yaml`                               | PM           | Đọc. Cần sửa hợp đồng → báo PM   |
 | `frontend/src/app/features/dao-tao/**`                       | Đức Anh      | Đọc                              |
@@ -311,14 +342,14 @@ Cột "Bàn giao" là điều kiện để tuần đó được coi là xong —
 | Tuần           | Tiến — Backend lõi                                                                                                                             | Đức Anh — FE đào tạo                                                                                    | Đạt — FE học vụ                                                                                        | PM                                                                                                                |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | **0** (2 ngày) | — (chờ hợp đồng)                                                                                                                               | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                            | Đọc `docs/04` + `05`, đọc code mẫu dashboard                                                           | ✅ Khung dùng chung đã dựng; test registry 18 case. |
-| **3**          | CRUD `students` + `teachers` + `admin-classes`; tạo kèm tài khoản, trả mật khẩu một lần; bulk-status + bulk-delete; BR-30 thu hồi token, BR-31 | SCR-10 → 18 (sinh viên, giảng viên, lớp hành chính)                                                       | —                                                                                                      | CRUD `subjects` + `rooms` ✅ đã merge cùng 9 test; review PR |
-| **4**          | CRUD `semesters` (vòng đời trạng thái, BR-24/25) + hoàn thiện `/options/*`                                                                     | SCR-19 → 24 (môn học, học kỳ, phòng học)                                                                 | SCR-47/48 (menu) — **xong 27/10**                                                                       | CRUD `menus` + `settings` ✅; SCR-49–51 được PM nhận triển khai giao diện trên nhánh `giao-dien-he-thong` |
+| **3** | — (backend đào tạo thuộc PM theo phân công 05/11) | SCR-10 → 18 (sinh viên, giảng viên, lớp hành chính) | — | Backend CRUD `students`, `teachers`, `admin-classes`, `subjects`, `rooms`; tạo kèm tài khoản, bulk-status/delete; BR-30/31; review test |
+| **4** | — (backend đào tạo thuộc PM theo phân công 05/11) | SCR-19 → 24 (môn học, học kỳ, phòng học) | SCR-47/48 (menu) — xong 27/10 | Backend `semesters`, `menus`, `settings`, `/options/*`; hoàn thiện SCR-49–51 |
 | **5**          | ~~CRUD `sections` lõi + đổi trạng thái + FR-08.05 + Policy~~ **→ chuyển PM (29/10)**                                                          | —                                                                                                        | SCR-25 → 28 (lớp học phần): danh sách, form, chi tiết, sinh viên của lớp                                | **CRUD `sections` lõi + đổi trạng thái + FR-08.05 + `LopHocPhanPolicy`** (nhận từ Tiến); `/sections/{id}/students` + attendance-summary; Sinh OpenAPI lô 6–7; bắt đầu bộ test E2E |
-| **6**          | `ScheduleService`: trùng phòng / giảng viên / sinh viên (BR-06, BR-22) + `/schedules` — phần khó nhất tuần                                     | —                                                                                                        | SCR-35 → 37 (lịch tuần/tháng, thêm buổi, sinh lịch)                                                    | CRUD `sessions` + sinh lịch hàng tuần; SCR-45 (thùng rác); seeder dữ liệu demo; rà test plan |
-| **7**          | `EnrollmentService` lõi: sĩ số, trùng lịch, năm thứ, đợt đăng ký, khóa dòng tranh chấp chỗ cuối (BR-08/09/23/26)                               | —                                                                                                        | SCR-30 → 33 (đăng ký)                                                                                   | `/enrollments` (CRUD) + `/enrollments/bulk` + `/me/enrollments` + hủy; test tranh chấp chỗ cuối                   |
-| **8**          | Nhập điểm đơn + hàng loạt; tổng kết 25/25/50; quy đổi A/B/C/D/F; chốt/mở khóa; GPA + CPA                                                       | SCR-02 (đổi mật khẩu), SCR-02B (ảnh đại diện); nối `AuthService` thật + guard + chế độ xem theo vai trò | SCR-38 → 40 (điểm danh); rà responsive toàn bộ màn học vụ                                                | Điểm danh nâng cao: BR-21 mốc thời gian, 7 ngày sửa, chuyển DONE, ngoại lệ ADMIN trên kỳ CLOSED; E2E luồng đầy đủ |
-| **9**          | Lịch sử sửa điểm + hoàn thiện phần điểm; sửa lỗi khi tắt mock                                                                                  | —                                           | SCR-29, SCR-41 → 43 (bảng điểm, nhập điểm, điểm của tôi, lịch sử); SCR-03 → 05 (dashboard) | `/trash/*`, khôi phục, SCR-49 cấu hình; `nhat_ky` chờ API đọc; bổ sung PUT bulk `/sections/{id}/grades` để sửa lỗi 405; E2E lưu/chốt điểm còn chờ; tắt mock toàn bộ; chạy ma trận phân quyền |
-| **10**         | Hỗ trợ sửa lỗi tích hợp; rà test plan                                                                                                          | Rà responsive, trạng thái UI toàn bộ màn đào tạo                                                        | Kịch bản demo + dữ liệu demo; rà responsive                                                            | README, kịch bản demo 10 phút, merge cuối, đóng gói staging                                                       |
+| **6**          | **Backend lịch học:** `ScheduleService` (trùng phòng/GV/SV), CRUD `sessions`, sinh lịch, `/schedules`; test nghiệp vụ | — | SCR-35 → 37 (lịch tuần/tháng, thêm buổi, sinh lịch) | SCR-45; seeder dữ liệu demo; rà test plan; PM review và sửa lỗi sau khi nhận nhánh Tiến |
+| **7**          | ~~Backend đăng ký học phần~~ **→ chuyển PM (05/11)**                                                                                           | —                                                                                                        | SCR-30 → 33 (đăng ký)                                                                                   | **Toàn bộ backend đăng ký:** `EnrollmentService` (sĩ số, trùng lịch, năm thứ, đợt đăng ký, khóa dòng chống tranh chấp), `/enrollments`, bulk, `/me/enrollments`, hủy; test luồng và tranh chấp |
+| **8** | Backend điểm danh; backend tài khoản cá nhân `/api/me`, avatar và thao tác hồ sơ của chính mình; nghiệp vụ, API, test | SCR-02, SCR-02B; nối `AuthService` + guard | SCR-38 → 40; rà responsive | PM giữ Auth nền tảng; rà tích hợp và sửa lỗi các nhánh đã nhận |
+| **9** | Backend điểm + nhật ký: nhập điểm đơn/hàng loạt, tổng kết, quy đổi, chốt/mở khóa, lịch sử, GPA/CPA; API đọc/ghi `nhat_ky`; kiểm thử | — | SCR-29, SCR-41 → 43, SCR-03 → 05 | `/trash/*`, khôi phục; E2E lưu/chốt; tắt mock, ma trận phân quyền |
+| **10** | Ổn định backend điểm, điểm danh, nhật ký; rà test plan | Rà responsive màn đào tạo | Kịch bản demo + dữ liệu demo; rà responsive | Backend còn lại, README, demo, merge cuối, đóng gói staging |
 
 ---
 
@@ -375,7 +406,7 @@ Danh sách đầy đủ SCR-01 → SCR-55 theo `docs/05-screens.md`. Quy tắc s
 | 49  | Cấu hình                                | `/cau-hinh`                        | PM (nhánh `giao-dien-he-thong`) | ✅ FE + `GET`/`PUT /settings`; kiểm tra trọng số, khoảng quy đổi và số ngày |
 | 50  | Quản lý người dùng                      | `/nguoi-dung`                      | PM (nhánh `giao-dien-he-thong`) | ✅ Tìm kiếm/lọc/phân trang, trạng thái hàng loạt, đặt lại mật khẩu, xóa ADMIN |
 | 51  | Thêm/sửa người dùng                     | `/nguoi-dung/them`, `/:id/sua`     | PM (nhánh `giao-dien-he-thong`) | ✅ Tạo/sửa; mật khẩu tạm chỉ hiện một lần khi tạo |
-| —   | Nhật ký                                | `/nhat-ky`                         | Chờ API đọc từ backend | Chưa làm UI; không có endpoint danh sách nhật ký |
+| —   | Nhật ký                                | `/nhat-ky`                         | Tiến (backend); PM (UI) | Chưa làm UI; Tiến phụ trách API ghi/đọc nhật ký |
 | 52  | Nút xem theo vai trò (ADMIN)            | header                             | PM (tuần 8)      | Chưa có                    |
 | 53  | Banner đang xem theo vai trò            | toàn cục                           | PM (tuần 8)      | Chưa có                    |
 | 54  | Quản lý Khoa                             | `/khoa`                            | PM               | ✅ FE + API; menu chỉ ADMIN |
@@ -464,13 +495,16 @@ Thứ tự cắt đầy đủ ở `docs/08-roadmap.md` mục "Thứ tự cắt k
 
 ### Rủi ro số 1
 
-| **A. PM nhận phần backend khuôn mẫu** ✅ đã chốt | PM nhận: CRUD đào tạo khuôn mẫu (`subjects`, `rooms`, `menus`, `settings`) tuần 3–4; CRUD `sessions` + sinh lịch hàng tuần tuần 6; toàn bộ `/enrollments` + bulk + `/me/enrollments` tuần 7; điểm danh nâng cao tuần 8; `/trash/*` tuần 9. Khoảng **45 endpoint**. | Tiến giữ phần lõi cần hiểu sâu nghiệp vụ: `students`/`teachers`/`admin-classes`, `semesters` (vòng đời trạng thái), `sections` + Policy, `ScheduleService`, `EnrollmentService` lõi, nhập điểm + quy đổi + GPA. Khoảng **57 endpoint**. |
+| **Phạm vi backend hiện hành** | **PM:** đăng ký học phần, Auth nền tảng và backend còn lại; review/sửa lỗi lịch sau khi nhận nhánh Tiến. | **Tiến:** backend lịch học, tài khoản cá nhân (`/api/me`), điểm, điểm danh và nhật ký/audit log, gồm nghiệp vụ, API và test. |
 
-> **Phương án A đã chốt.** Cột PM trong bảng tuần (mục 5) đã phản ánh cách chia này. Ranh giới: PM làm phần khuôn mẫu và phần nối (endpoint, validate, Resource); Tiến làm phần cần quyết định nghiệp vụ và có test tranh chấp. Hai người dùng chung Service khi cần — PM mở PR trước, Tiến review.
+> **Phân công hiện hành ngày 06/11/2026:** Tiến sở hữu backend lịch học, tài khoản cá nhân (`/api/me`), điểm, điểm danh và nhật ký/audit log. PM sở hữu đăng ký học phần, Auth nền tảng và backend còn lại; với lịch học PM review/sửa lỗi sau khi nhận nhánh Tiến. Khi thay đổi chạm phần dùng chung, hai bên thống nhất phạm vi trước khi sửa.
 >
 > **Cập nhật 29/10/2026:** module **lớp học phần** (`sections` + `LopHocPhanPolicy`) chuyển
-> từ Tiến sang PM vì là đường găng. Tiến vẫn giữ `semesters`, `ScheduleService` lõi,
-> `EnrollmentService` lõi, nhập điểm + GPA/CPA, `/users`. Xem khối cảnh báo đầu tài liệu.
+> từ Tiến sang PM vì là đường găng. Tiến vẫn giữ phần lịch, đăng ký lõi tại thời điểm đó.
+>
+> **Cập nhật lần 1 ngày 05/11/2026:** backend lịch học và đăng ký chuyển từ Tiến sang PM.
+> **Cập nhật ngày 06/11/2026:** lịch học trở lại phạm vi Tiến; Tiến nhận thêm tài khoản cá nhân.
+> Đăng ký vẫn do PM phụ trách. Các phần điểm, điểm danh và nhật ký của Tiến được giữ nguyên.
 
 ### Các rủi ro còn lại
 
@@ -480,7 +514,7 @@ Thứ tự cắt đầy đủ ở `docs/08-roadmap.md` mục "Thứ tự cắt k
 | FE code xong nhưng BE trả khác hợp đồng | Ngày tắt mock, hàng loạt màn hình trắng hoặc trống      | Đây là lý do phải tắt mock theo từng lô (tuần 4, 9) chứ không đợi đến cuối. Phát hiện sớm thì sửa rẻ.   |
 | Tiến bị chặn vì chờ quyết định hợp đồng | Daily có câu "đang chờ PM trả lời"                      | PM phải trả lời trong ngày. Hợp đồng chưa chốt thì Tiến làm phần không phụ thuộc, không ngồi chờ.       |
 | Đổi schema giữa chừng làm hỏng code FE  | Migration mới xuất hiện mà model FE không đổi           | Quy tắc: đổi schema phải đi kèm cập nhật `docs/03` + model FE + mock trong cùng một PR do PM mở.        |
-| Tuần 7 quá tải                          | Giữa tuần 7 mà đăng ký chưa chạy được luồng chính       | Đã dự trù: PM cùng làm tuần 7. Nếu vẫn chậm, cắt SCR-31 và SCR-30 phần hàng loạt.                       |
+| Tuần 7 quá tải                          | Giữa tuần 7 mà đăng ký chưa chạy được luồng chính       | PM sở hữu toàn bộ backend đăng ký; ưu tiên luồng chính và kiểm thử tranh chấp chỗ cuối. Nếu vẫn chậm, cắt SCR-31 và SCR-30 phần hàng loạt. |
 | Merge dồn đến cuối kỳ                   | Cuối tuần 9 mà `develop` còn nhiều nhánh chưa merge     | Cửa sổ merge hằng ngày là biện pháp. Không merge thì conflict tích lũy theo cấp số nhân.                |
 
 ---

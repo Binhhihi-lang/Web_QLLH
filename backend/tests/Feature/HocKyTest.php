@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\HocKy;
 use App\Models\CauHinh;
+use App\Models\HocKy;
 use App\Models\QuyDoiDiem;
 use App\Models\User;
 use Database\Seeders\CauHinhSeeder;
@@ -34,6 +34,38 @@ class HocKyTest extends TestCase
             ->assertJsonPath('data.trang_thai', HocKy::UPCOMING);
 
         $this->assertDatabaseHas('hoc_ky', ['ma_hoc_ky' => '2027-1']);
+    }
+
+    public function test_bao_ro_hoc_ky_va_khoang_ngay_bi_chong_lan(): void
+    {
+        HocKy::factory()->create([
+            'ma_hoc_ky' => '2026-1',
+            'ten_hoc_ky' => 'Học kỳ 1 năm học 2026-2027',
+            'nam_hoc' => '2026-2027',
+            'ky_thu' => 1,
+            'ngay_bat_dau' => '2026-11-18',
+            'ngay_ket_thuc' => '2026-11-21',
+        ]);
+
+        $this->actingAs(User::factory()->admin()->create(), 'sanctum')
+            ->postJson('/api/semesters', [
+                'ma_hoc_ky' => '2026-3',
+                'ten_hoc_ky' => 'Học kỳ 3 năm học 2026-2027',
+                'nam_hoc' => '2026-2027',
+                'ky_thu' => 3,
+                'ngay_bat_dau' => '2026-11-12',
+                'ngay_ket_thuc' => '2026-11-25',
+                'mo_dang_ky_luc' => '2026-11-09 09:21:00',
+                'dong_dang_ky_luc' => '2026-11-10 09:21:00',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'message',
+                'Khoảng ngày 2026-11-12 đến 2026-11-25 bị chồng lấn với học kỳ 2026-1 - Học kỳ 1 năm học 2026-2027 (2026-11-18 đến 2026-11-21).',
+            )
+            ->assertJsonPath('errors.hoc_ky_trung.ma_hoc_ky', '2026-1')
+            ->assertJsonPath('errors.hoc_ky_trung.ngay_bat_dau', '2026-11-18')
+            ->assertJsonPath('errors.hoc_ky_trung.ngay_ket_thuc', '2026-11-21');
     }
 
     public function test_luong_tao_hoc_ky_luu_cau_hinh_roi_bat_dau_ky(): void
@@ -216,7 +248,8 @@ class HocKyTest extends TestCase
         $this->actingAs(User::factory()->admin()->create(), 'sanctum')
             ->getJson('/api/semesters?ky_thu=4&sort_by=unexpected')
             ->assertUnprocessable()
-            ->assertJsonPath('ma_loi', 'VALIDATION_ERROR');
+            ->assertJsonPath('ma_loi', 'VALIDATION_ERROR')
+            ->assertJsonPath('errors.ky_thu.0', 'kỳ thứ được chọn không hợp lệ.');
     }
 
     public function test_xem_chi_tiet_hoc_ky_tra_du_thong_tin_cho_moi_vai_tro(): void
@@ -255,5 +288,39 @@ class HocKyTest extends TestCase
             ->getJson("/api/semesters/{$hocKy->id}")
             ->assertNotFound()
             ->assertJsonPath('ma_loi', 'NOT_FOUND');
+    }
+
+    public function test_ma_hoc_ky_sai_dinh_dang_tra_loi_tieng_viet(): void
+    {
+        $this->actingAs(User::factory()->admin()->create(), 'sanctum')
+            ->postJson('/api/semesters', [
+                'ma_hoc_ky' => '2026-30',
+                'ten_hoc_ky' => 'Học kỳ test năm học 2026-2027',
+                'nam_hoc' => '2026-2027',
+                'ky_thu' => 3,
+                'ngay_bat_dau' => '2026-11-12',
+                'ngay_ket_thuc' => '2026-11-25',
+                'mo_dang_ky_luc' => '2026-11-09 09:21:00',
+                'dong_dang_ky_luc' => '2026-11-10 09:21:00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.ma_hoc_ky.0', 'Mã học kỳ phải có dạng YYYY-N, với N từ 1 đến 3.');
+    }
+
+    public function test_ma_hoc_ky_ky_thu_ba_co_the_dung_ma_2026_3(): void
+    {
+        $this->actingAs(User::factory()->admin()->create(), 'sanctum')
+            ->postJson('/api/semesters', [
+                'ma_hoc_ky' => '2026-3',
+                'ten_hoc_ky' => 'Học kỳ 3 năm học 2026-2027',
+                'nam_hoc' => '2026-2027',
+                'ky_thu' => 3,
+                'ngay_bat_dau' => '2026-11-12',
+                'ngay_ket_thuc' => '2026-11-25',
+                'mo_dang_ky_luc' => '2026-11-09 09:21:00',
+                'dong_dang_ky_luc' => '2026-11-10 09:21:00',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.ma_hoc_ky', '2026-3');
     }
 }

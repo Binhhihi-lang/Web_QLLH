@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
+use App\Http\Controllers\Api\DangKyHocPhanController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HocKyController;
@@ -140,6 +141,20 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('{lopHanhChinh}/students', [LopHanhChinhController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::post('{lopHanhChinh}/students', [LopHanhChinhController::class, 'ganSinhVien'])->middleware('vai.tro:ADMIN');
         Route::delete('{lopHanhChinh}/students/{sinhVien}', [LopHanhChinhController::class, 'goSinhVien'])->middleware('vai.tro:ADMIN');
+    });
+
+    /* Đăng ký học phần — FR-09. */
+    Route::prefix('enrollments')->group(function () {
+        Route::get('/', [DangKyHocPhanController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::post('/', [DangKyHocPhanController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::post('/bulk', [DangKyHocPhanController::class, 'bulk'])->middleware('vai.tro:ADMIN');
+        Route::delete('/{dangKy}', [DangKyHocPhanController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    });
+
+    Route::prefix('me/enrollments')->middleware('vai.tro:SINH_VIEN')->group(function () {
+        Route::get('/', [DangKyHocPhanController::class, 'cuaToi']);
+        Route::post('/', [DangKyHocPhanController::class, 'cuaToiStore']);
+        Route::delete('/{dangKy}', [DangKyHocPhanController::class, 'cuaToiDestroy']);
     });
 
     /*

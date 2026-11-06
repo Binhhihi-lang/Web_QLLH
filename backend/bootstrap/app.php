@@ -3,6 +3,7 @@
 use App\Exceptions\LoiNghiepVu;
 use App\Http\Middleware\CheckTaiKhoanHoatDong as CheckTaiKhoanHoatDongMiddleware;
 use App\Http\Middleware\CheckVaiTro as CheckVaiTroMiddleware;
+use App\Http\Middleware\SetApiLocale;
 use App\Http\Middleware\YeuCauDoiMatKhau;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Backend không còn trang đăng nhập (ADR-001) — khách vào api/* phải
         // nhận 401 JSON thay vì bị redirect tới route login không tồn tại.
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
+        $middleware->appendToGroup('api', SetApiLocale::class);
 
         $middleware->alias([
             'vai.tro' => CheckVaiTroMiddleware::class,

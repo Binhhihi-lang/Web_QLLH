@@ -112,7 +112,7 @@ Lỗi validation (422):
 | `SECTION_NOT_OPEN` | 409 | Lớp không nhận đăng ký |
 | `DUPLICATE_ENROLLMENT` | 409 | Đã đăng ký lớp này |
 | `DUPLICATE_SUBJECT_IN_SEMESTER` | 409 | Đã đăng ký lớp khác cùng môn trong học kỳ |
-| `SCHEDULE_CONFLICT` | 409 | Trùng lịch giảng viên/phòng/sinh viên |
+| `SCHEDULE_CONFLICT` | 409 | Có xung đột lịch; tùy API, lỗi trả chi tiết buổi/đối tượng bị trùng |
 | `OUTSIDE_REGISTRATION` | 409 | Ngoài đợt đăng ký |
 | `STUDENT_INACTIVE` | 409 | Sinh viên không hoạt động |
 | `HAS_GRADE_OR_ATTENDANCE` | 409 | Đã có điểm/điểm danh, không tự hủy được |
@@ -127,7 +127,7 @@ Lỗi validation (422):
 | `SEMESTER_TRANSITION_INVALID` | 409 | Chuyển trạng thái học kỳ không hợp lệ (chỉ tiến, một kỳ ONGOING) |
 | `SEMESTER_CONFIG_REQUIRED` | 409 | Phải lưu cấu hình điểm trước khi chuyển học kỳ sang ONGOING |
 | `SEMESTER_CONFIG_LOCKED` | 409 | Chỉ được sửa cấu hình của học kỳ UPCOMING |
-| `SEMESTER_OVERLAP` | 409 | Khoảng ngày chồng lấn với học kỳ khác |
+| `SEMESTER_OVERLAP` | 409 | Khoảng ngày học chồng lấn; `errors.hoc_ky_trung` cho biết học kỳ và khoảng ngày bị trùng |
 | `SESSION_OUTSIDE_SEMESTER` | 409 | Ngày buổi học nằm ngoài khoảng ngày của học kỳ |
 | `UPLOAD_NOT_CONFIGURED` | 503 | Chưa cấu hình Cloudinary trên máy chủ |
 | `UPLOAD_FAILED` | 502 | Upload ảnh lên Cloudinary thất bại |
@@ -499,6 +499,8 @@ Response mẫu:
 
 `PATCH /api/semesters/{id}/status` — body `{ "trang_thai": "CLOSED" }`. Trả 409 `SEMESTER_TRANSITION_INVALID` khi chuyển lùi, bỏ qua `ONGOING`, hoặc khi đã có kỳ khác `ONGOING`. Khi bắt đầu kỳ, API yêu cầu cấu hình điểm đã lưu (`SEMESTER_CONFIG_REQUIRED`).
 
+Khi tạo/cập nhật học kỳ, hệ thống chỉ so khoảng ngày học (`ngay_bat_dau..ngay_ket_thuc`), không so thời gian mở/đóng đăng ký. Nếu khoảng ngày giao nhau, API trả 409 `SEMESTER_OVERLAP`; `message` nêu khoảng ngày gửi lên và học kỳ bị trùng, còn `errors.hoc_ky_trung` chứa mã, tên và khoảng ngày của học kỳ đó.
+
 ---
 
 ## 9. Phòng học
@@ -617,6 +619,12 @@ Thành công 201 trả danh sách buổi đã tạo. Nếu có bất kỳ buổi
 | GET | `/api/me/enrollments` | STUDENT | Lọc `hoc_ky_id`, `trang_thai` |
 | POST | `/api/me/enrollments` | STUDENT | Body `{ "lop_hoc_phan_id": 10 }` |
 | DELETE | `/api/me/enrollments/{id}` | STUDENT | Hủy trong đợt, khi chưa có điểm/điểm danh |
+
+Quy tắc thực thi: STUDENT chỉ đăng ký/hủy trong khoảng `mo_dang_ky_luc..dong_dang_ky_luc` của học kỳ gắn với lớp; ADMIN đăng ký hộ và hủy ngoài đợt được, mọi thao tác ghi do ADMIN thực hiện đều ghi `nhat_ky`. Cả hai luồng vẫn bị chặn nếu lớp không OPEN, học kỳ đã CLOSED, hết sĩ số, trùng lớp/môn/lịch hoặc sinh viên không hoạt động. ADMIN có thể bỏ qua điều kiện `nam_thu`; sinh viên tự đăng ký thì nhận `WRONG_STUDY_YEAR` khi xác định được năm thứ và không khớp.
+
+`SCHEDULE_CONFLICT` áp dụng khi buổi học của lớp đang đăng ký và buổi `SCHEDULED` thuộc một lớp sinh viên đã đăng ký `ACTIVE` có cùng `ngay_hoc` và khoảng giờ giao nhau (`giờ bắt đầu mới < giờ kết thúc cũ` và `giờ kết thúc mới > giờ bắt đầu cũ`). Ví dụ 09:00–10:00 chồng với 09:30–10:30; 09:00–10:00 không chồng với 10:00–11:00. Không xét phòng học. Response 409 trả `errors.trung_lich` với mã lớp và ngày/giờ của cả hai buổi gây trùng.
+
+Danh sách trả phân trang Laravel với các bộ lọc trong bảng. `GET /api/enrollments` của GIANG_VIEN chỉ trả lớp do giảng viên đó phụ trách; `/api/me/enrollments` chỉ trả hồ sơ sinh viên đang đăng nhập. Hủy và đăng ký lại dùng lại cùng bản ghi `dang_ky_hoc_phan`; đăng ký lại bị chặn nếu bản ghi cũ đã có điểm.
 
 Response đăng ký:
 ```json

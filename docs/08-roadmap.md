@@ -110,10 +110,10 @@ Tạm thời bật `environment.useMock = true` khi cần demo nhóm màn này.
 | Nhóm | Thiếu | Ai làm theo phân công |
 |---|---|---|
 | Học kỳ | 6 | Tiến (vòng đời trạng thái BR-24/25) |
-| Buổi học & lịch | 8 | PM (Tuần 6) |
+| Buổi học & lịch | 8 | Tiến backend; PM review/sửa lỗi sau khi nhận nhánh (Tuần 6) |
 | Đăng ký | 7 | PM + Tiến (Tuần 7) |
 | Điểm | 6 | Tiến (Tuần 9) |
-| Điểm danh & dashboard | 5 | PM (Tuần 8) + Tiến |
+| Điểm danh & dashboard | 5 | PM (dashboard); Tiến (điểm danh, Tuần 8) |
 
 > Đã xong trong đợt này: hồ sơ (1), người dùng (8), lớp học phần (11). Tổng 3 nhóm
 > cộng lại 20 endpoint, khớp mức tăng 62 → 82.
@@ -131,7 +131,26 @@ Tạm thời bật `environment.useMock = true` khi cần demo nhóm màn này.
 
 ---
 
-## Trạng thái thực tế tại 2026-10-26
+## Trạng thái cập nhật tại 2026-11-06
+
+Các thay đổi đã tích hợp trên `develop` tại commit `db79469`:
+
+| Hạng mục | Trạng thái hiện tại | Ghi chú |
+|---|---|---|
+| Quản lý học kỳ | ✅ Có API danh sách, tạo, xem, sửa, xóa và đổi trạng thái | `POST /api/semesters` đã được khai báo; đợt đăng ký có thể mở trước ngày bắt đầu học kỳ |
+| Cấu hình quy đổi điểm | ✅ Lưu cấu hình riêng theo học kỳ | Có danh sách, bộ lọc, trang chi tiết và trang sửa; học kỳ đang diễn ra/đã đóng chỉ xem |
+| Hiển thị điểm | ✅ Dùng dữ liệu quy đổi API theo học kỳ | Không áp cấu hình mới ngược lên điểm lịch sử |
+| Phân công backend hiện hành (06/11/2026) | PM phụ trách đăng ký, Auth nền tảng và backend còn lại; review/sửa lỗi lịch sau khi nhận nhánh | Tiến phụ trách lịch học, tài khoản cá nhân (`/api/me`), điểm, điểm danh và nhật ký/audit log; gồm nghiệp vụ, API và test |
+| Backend lịch học | ⏳ Chưa hoàn thành | `/sessions`, `/schedules` và nghiệp vụ `ScheduleService`; Tiến triển khai theo Tuần 6, PM review/sửa lỗi sau khi nhận nhánh |
+| Backend tài khoản cá nhân | ⏳ Cần hoàn thiện theo phạm vi màn hình | `/api/me`, cập nhật hồ sơ, avatar và thao tác tài khoản của chính mình thuộc Tiến; Auth nền tảng/login/token/guard vẫn thuộc PM |
+| Backend đăng ký | ✅ API lõi hoàn thành | `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; lọc, phân quyền, đợt theo học kỳ, sĩ số, trùng môn/lịch, hủy/đăng ký lại; 10 feature test và 22 request Postman. Còn kiểm chứng tranh chấp đồng thời trên MySQL và dùng chung `ScheduleService` sau khi merge nhánh lịch của Tiến |
+
+Giao diện cấu hình: build development thành công, 9/9 kiểm thử cấu hình đạt.
+Backend lịch học vẫn đang chờ. Tuần đăng ký chưa chốt end-to-end cho đến khi kiểm chứng tranh chấp đồng thời và hoàn thành giao diện liên quan.
+
+---
+
+## Trạng thái thực tế tại 2026-11-05
 
 Bảng dưới là ảnh chụp đối chiếu code với kế hoạch, dùng để biết tuần nào thực sự đã xong.
 
@@ -209,6 +228,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | CRUD `students`, `teachers`, `admin-classes`; tạo kèm tài khoản; trả mật khẩu một lần; **bulk-status + bulk-delete** |
 | Nghiệp vụ | Unique xuyên `users`; chặn xóa theo mục 6.1; phạm vi xem của TEACHER; **khóa tài khoản phải thu hồi token (BR-30)**; **thao tác hàng loạt xử lý từng dòng (BR-31)** |
+| Phụ trách backend | **PM** — toàn bộ backend nhóm này |
 | FE | Đức Anh: SCR-10 → SCR-18 |
 | Test | TC-03, TC-04, TC-27, TC-28, TC-29, TC-30 |
 | Hạ tầng | Docker Compose staging (PHP + Nginx + MySQL + Angular build) |
@@ -222,6 +242,7 @@ registry tách theo nhóm (`core/mock/registry/*`).
 |---|---|
 | API | CRUD `subjects`, `semesters`, `rooms`, `menus`, `settings`; endpoint `/options/*` |
 | Nghiệp vụ | Chặn xóa học kỳ không phải UPCOMING (BR-24); vòng đời trạng thái chỉ tiến; chặn chồng lấn kỳ (BR-25); chặn xóa phòng còn buổi; menu theo vai trò |
+| Phụ trách backend | **PM** — toàn bộ backend nhóm này |
 | FE | Đức Anh: SCR-19 → SCR-24; Đạt: SCR-47 → SCR-51 |
 | Test | TC-05 (phần đào tạo), TC-18, TC-19, BR-15, BR-19 |
 | **Bàn giao** | Đủ dữ liệu đào tạo để mở lớp học phần |
@@ -251,6 +272,7 @@ chốt trong đợt này:
 |---|---|
 | API | CRUD `sections`, đổi trạng thái, sinh viên của lớp, policy theo vai trò |
 | Nghiệp vụ | FR-08.05; đổi giảng viên kiểm tra trùng lịch (khung); chặn đổi học kỳ/môn khi đã có đăng ký; chặn hủy lớp đã chốt điểm (BR-29) |
+| Phụ trách backend | **PM** — tiếp nhận từ Tiến ngày 2026-10-29 |
 | FE | Đạt: SCR-25 → SCR-28 |
 | Test | TC-05, TC-24, BR-03 |
 | **Bàn giao** | ADMIN mở lớp, gán giảng viên; TEACHER thấy lớp mình; STUDENT thấy lớp OPEN |
@@ -263,6 +285,7 @@ chốt trong đợt này:
 |---|---|
 | API | CRUD `sessions`, sinh lịch hàng tuần, `/schedules` |
 | Nghiệp vụ | `ScheduleService`: trùng phòng, trùng giảng viên, trùng sinh viên (BR-06, BR-22); buổi học phải trong khoảng ngày của kỳ (BR-25) |
+| Phụ trách backend | **Tiến** — triển khai; PM review và sửa lỗi sau khi nhận nhánh |
 | FE | Đạt: SCR-35 → SCR-37; PM: SCR-45 (thùng rác) |
 | Test | TC-06, TC-15, TC-19 |
 | **Bàn giao** | Sinh lịch 1 lớp, phát hiện trùng phòng/GV/SV, xem lịch theo vai trò |
@@ -273,10 +296,11 @@ chốt trong đợt này:
 
 | Việc | Chi tiết |
 |---|---|
-| API | `EnrollmentService` dùng chung; `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; hủy |
-| Nghiệp vụ | BR-08, BR-09 (khóa dòng), BR-10, BR-11, BR-20, BR-22, **BR-23 (năm thứ)**, BR-26 (đợt theo kỳ của lớp), BR-27 (đăng ký lại) |
+| API | `DangKyHocPhanService`; `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; phân trang/lọc, hủy và đăng ký lại |
+| Nghiệp vụ | Đã triển khai BR-08, BR-10, BR-11, BR-20, BR-22, **BR-23 (năm thứ)**, BR-26 (đợt theo học kỳ của lớp), BR-27 (đăng ký lại); có khóa dòng để bảo vệ sĩ số. Còn kiểm chứng BR-09 bằng MySQL đồng thời |
+| Phụ trách backend | **PM** — đăng ký học phần vẫn thuộc PM theo phân công ngày 2026-11-06 |
 | FE | Đạt: SCR-30 → SCR-33 |
-| Test | TC-07, TC-08, TC-09, TC-17, TC-20, TC-21, TC-25, BR-09 tranh chấp chỗ cuối |
+| Test | 10 feature test đăng ký đang pass; Postman folder 16 có 22 request cho luồng và lỗi. Còn test tranh chấp chỗ cuối trên MySQL |
 | **Bàn giao** | ADMIN đăng ký hộ và STUDENT tự đăng ký; tranh chấp chỗ cuối an toàn |
 
 ---
@@ -287,6 +311,7 @@ chốt trong đợt này:
 |---|---|
 | API | `/sessions/{id}/attendance`, thống kê chuyên cần |
 | Nghiệp vụ | BR-21 (mốc thời gian), BR-27 (chuyên cần tính từ `dang_ky_luc`), 7 ngày sửa, chuyển `DONE`, ADMIN sửa được trên kỳ CLOSED (BR-14 ngoại lệ) |
+| Phụ trách backend | **Tiến** — backend điểm danh và tài khoản cá nhân (`/api/me`), gồm nghiệp vụ, API và test |
 | FE | Đạt: SCR-38 → SCR-40 |
 | Test | TC-10, công thức chuyên cần |
 | **Bàn giao** | TEACHER điểm danh, STUDENT xem chuyên cần |
@@ -299,6 +324,7 @@ chốt trong đợt này:
 |---|---|
 | API | Nhập điểm đơn/hàng loạt, tính tổng kết, **quy đổi điểm chữ + hệ 4**, chốt, mở khóa, lịch sử |
 | Nghiệp vụ | Công thức 25/25/50; bảng quy đổi A/B/C/D/F cấu hình trong `cau_hinh`; GPA hệ 10 và hệ 4, **học lại lấy điểm cao nhất** (BR-28), **CPA** (FR-12.08); BR-13 |
+| Phụ trách backend | **Tiến** — toàn bộ backend điểm, gồm nghiệp vụ, API và test |
 | FE | Đạt: SCR-29, SCR-41 → SCR-43, SCR-03 → SCR-05; hoàn thiện bảng quy đổi tại SCR-49 |
 | Test | TC-11, TC-12, TC-16, TC-22, unit công thức + quy đổi |
 | **Bàn giao** | Toàn bộ luồng end-to-end: mở lớp → sinh lịch → đăng ký → điểm danh → nhập điểm → chốt |
@@ -309,7 +335,8 @@ chốt trong đợt này:
 
 | Việc | Chi tiết |
 |---|---|
-| API | `/trash/*`, khôi phục, `nhat_ky` |
+| API | PM: `/trash/*`, khôi phục; Tiến: API ghi/đọc `nhat_ky` |
+| Phụ trách backend | **PM** phụ trách thùng rác và backend còn lại; **Tiến** phụ trách nhật ký/audit log |
 | FE | PM: SCR-45 thùng rác; Đức Anh/Đạt: rà soát responsive, trạng thái rỗng/lỗi theo phần phụ trách |
 | Test | TC-13, TC-14, chạy toàn bộ ma trận phân quyền |
 | Tài liệu | Cập nhật `openapi.yaml`, README, kịch bản demo |
@@ -353,7 +380,7 @@ Cắt **từ dưới lên**, giữ nguyên luồng Must:
 |---|---|
 | FE và BE lệch hợp đồng | `openapi.yaml` cập nhật trước khi code; sinh model TS từ đó |
 | Đổi schema làm hỏng code cũ | DB local chỉ có seed; backup trước khi `migrate:fresh` |
-| Tuần 7 quá tải (đăng ký là phần khó nhất) | Đã dồn toàn bộ tuần 7, không ghép việc khác |
+| Tuần 7 quá tải (đăng ký là phần khó nhất) | PM sở hữu backend đăng ký; ưu tiên luồng chính và kiểm thử tranh chấp chỗ cuối |
 | Trùng lịch phức tạp | Tách `ScheduleService` + unit test riêng từ tuần 6 |
 | Tài liệu trôi khỏi code | Cập nhật `.md` trong cùng commit (ADR-012) |
 | Cháy tiến độ tuần 9 | Dashboard là Should, cắt trước khi cắt phần điểm |

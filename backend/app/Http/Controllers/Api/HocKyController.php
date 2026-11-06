@@ -161,9 +161,25 @@ class HocKyController extends Controller
 
         $overlap = HocKy::query()->when($hocKy, fn ($query) => $query->whereKeyNot($hocKy->id))
             ->whereDate('ngay_bat_dau', '<=', $data['ngay_ket_thuc'])
-            ->whereDate('ngay_ket_thuc', '>=', $data['ngay_bat_dau'])->exists();
-        if ($overlap) {
-            throw new LoiNghiepVu('SEMESTER_OVERLAP', 'Khoảng ngày bị trùng với học kỳ khác.');
+            ->whereDate('ngay_ket_thuc', '>=', $data['ngay_bat_dau'])
+            ->orderBy('ngay_bat_dau')
+            ->first();
+        if ($overlap !== null) {
+            $ngayBatDau = $overlap->ngay_bat_dau->toDateString();
+            $ngayKetThuc = $overlap->ngay_ket_thuc->toDateString();
+
+            throw new LoiNghiepVu(
+                'SEMESTER_OVERLAP',
+                "Khoảng ngày {$data['ngay_bat_dau']} đến {$data['ngay_ket_thuc']} bị chồng lấn với học kỳ {$overlap->ma_hoc_ky} - {$overlap->ten_hoc_ky} ({$ngayBatDau} đến {$ngayKetThuc}).",
+                errors: [
+                    'hoc_ky_trung' => [
+                        'ma_hoc_ky' => $overlap->ma_hoc_ky,
+                        'ten_hoc_ky' => $overlap->ten_hoc_ky,
+                        'ngay_bat_dau' => $ngayBatDau,
+                        'ngay_ket_thuc' => $ngayKetThuc,
+                    ],
+                ],
+            );
         }
     }
 }

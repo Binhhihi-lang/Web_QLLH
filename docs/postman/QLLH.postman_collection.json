@@ -2,7 +2,7 @@
     "info": {
         "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
         "name": "QLLH API — Hệ thống quản lý lớp học",
-        "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên; folder **09 → 11** cho menu/cấu hình, dashboard, thùng rác; folder **12 → 15** cho người dùng, lớp học phần, hồ sơ cá nhân, khoa/ngành. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
+        "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào `token_admin` (đồng thời duy trì `token` cho các request cũ). Token STUDENT tự lưu vào `token_sinh_vien`; token GIANG_VIEN vào `token_giang_vien`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên; folder **09 → 11** cho menu/cấu hình, dashboard, thùng rác; folder **12 → 15** cho người dùng, lớp học phần, hồ sơ cá nhân, khoa/ngành. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Folder **16 — Đăng ký học phần** kiểm tra luồng STUDENT/ADMIN, lọc danh sách, bulk và các lỗi 403/409/422. Folder này dùng biến `enrollment_section_id` cho lớp có đợt đăng ký đang mở; điền thêm các biến tùy chọn để kiểm tra lỗi ngoài đợt, đầy lớp, trùng môn và trùng lịch.\n6. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
@@ -67,7 +67,8 @@
                                     "// Lưu token cho các request sau.",
                                     "pm.collectionVariables.set('token', body.data.token);",
                                     "console.log('Đã lưu token:', body.data.token.substring(0, 20) + '...');",
-                                    "pm.collectionVariables.set('admin_id', body.data.nguoi_dung.id);"
+                                    "pm.collectionVariables.set('admin_id', body.data.nguoi_dung.id);",
+                                    "pm.collectionVariables.set('token_admin', body.data.token);"
                                 ]
                             }
                         }
@@ -99,7 +100,7 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập bằng tài khoản ADMIN demo. Token tự động lưu vào biến collection `token`."
+                        "description": "Đăng nhập bằng tài khoản ADMIN demo. Tự lưu `token_admin` và biến `token` tương thích với các request hiện có."
                     },
                     "response": []
                 },
@@ -119,7 +120,8 @@
                                     "pm.test('Có hồ sơ giảng viên', () => {",
                                     "    pm.expect(body.data.nguoi_dung.ho_so.loai).to.eql('giang_vien');",
                                     "});",
-                                    "pm.collectionVariables.set('token', body.data.token);"
+                                    "pm.collectionVariables.set('token', body.data.token);",
+                                    "pm.collectionVariables.set('token_giang_vien', body.data.token);"
                                 ]
                             }
                         }
@@ -151,7 +153,7 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập bằng tài khoản giảng viên demo. Trả kèm hồ sơ `giang_vien`."
+                        "description": "Đăng nhập bằng tài khoản giảng viên demo. Tự lưu `token_giang_vien`."
                     },
                     "response": []
                 },
@@ -172,7 +174,8 @@
                                     "    pm.expect(body.data.nguoi_dung.ho_so.loai).to.eql('sinh_vien');",
                                     "});",
                                     "// Lưu token sinh viên",
-                                    "pm.collectionVariables.set('token_sinh_vien', body.data.token);"
+                                    "pm.collectionVariables.set('token_sinh_vien', body.data.token);",
+                                    "pm.collectionVariables.set('enrollment_student_id', body.data.nguoi_dung.ho_so.id);"
                                 ]
                             }
                         }
@@ -204,7 +207,7 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập bằng tài khoản sinh viên demo. Trả kèm hồ sơ `sinh_vien`."
+                        "description": "Đăng nhập bằng tài khoản sinh viên demo. Tự lưu `token_sinh_vien` và ID sinh viên."
                     },
                     "response": []
                 },
@@ -412,7 +415,8 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "pm.test('Trả 200', () => pm.response.to.have.status(200));",
-                                    "pm.collectionVariables.set('token', '');"
+                                    "pm.collectionVariables.set('token', '');",
+                                    "pm.collectionVariables.set('token_admin', '');"
                                 ]
                             }
                         }
@@ -1161,7 +1165,8 @@
                                     "    pm.expect(data.nguoi_dung.vai_tro).to.eql('SINH_VIEN');",
                                     "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
                                     "});",
-                                    "pm.collectionVariables.set('sinh_vien_test_token', data.token);"
+                                    "pm.collectionVariables.set('sinh_vien_test_token', data.token);",
+                                    "pm.collectionVariables.set('token_sinh_vien', data.token);"
                                 ]
                             }
                         }
@@ -1673,7 +1678,8 @@
                                     "    pm.expect(data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN');",
                                     "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
                                     "});",
-                                    "pm.collectionVariables.set('giang_vien_test_token', data.token);"
+                                    "pm.collectionVariables.set('giang_vien_test_token', data.token);",
+                                    "pm.collectionVariables.set('token_giang_vien', data.token);"
                                 ]
                             }
                         }
@@ -5927,6 +5933,847 @@
                 }
             ],
             "description": "Danh mục Khoa/Ngành hai cấp (ADR-020). Ngành bắt buộc thuộc một khoa; xóa khoa còn ngành hoặc còn môn học bị chặn, xóa ngành còn giảng viên hoặc lớp hành chính bị chặn. Cả hai vào được thùng rác. Chạy folder 02 — Đào tạo trước để có `khoa_id` và `nganh_id`."
+        },
+        {
+            "name": "16 — Đăng ký học phần (FR-09)",
+            "description": "Luồng dùng API thật. Trước khi chạy: đăng nhập ADMIN ở folder 01; chạy folder 02 để lấy môn/học kỳ/giảng viên; chạy folder 04 để tạo sinh viên thứ hai hoặc tự nhập ID. Đăng nhập sinh viên tại request 01 để tự lưu token và ID. Điền `enrollment_section_id` bằng lớp OPEN còn chỗ thuộc học kỳ đang trong đợt đăng ký; `enrollment_student_id_2` bằng ID sinh viên khác. Các ID lỗi ở cuối folder là tùy chọn, lấy từ dữ liệu đã chuẩn bị tương ứng. Không chạy request hủy nếu đăng ký đã có điểm hoặc điểm danh.",
+            "item": [
+                {
+                    "name": "01. Đăng nhập sinh viên demo (tự lưu token_sinh_vien)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/auth/login",
+                        "description": "Đăng nhập sinh viên demo. Tự lưu token_sinh_vien và enrollment_student_id; các request STUDENT bên dưới dùng token_sinh_vien, request ADMIN dùng token_admin.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"sinhvien@example.com\",\n    \"password\": \"password\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đăng nhập sinh viên thành công', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Đúng vai trò SINH_VIEN', () => pm.expect(body.data.nguoi_dung.vai_tro).to.eql('SINH_VIEN'));",
+                                    "pm.collectionVariables.set('token_sinh_vien', body.data.token);",
+                                    "pm.test('Token sinh viên đã lưu vào token_sinh_vien', () => {",
+                                    "    pm.expect(pm.collectionVariables.get('token_sinh_vien')).to.eql(body.data.token);",
+                                    "});",
+                                    "pm.collectionVariables.set('enrollment_student_id', body.data.nguoi_dung.ho_so.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "02. STUDENT tự đăng ký lớp",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "Điều kiện: học kỳ của lớp đang trong thời gian đăng ký, sinh viên hoạt động, lớp còn chỗ và không trùng môn/lịch.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo đăng ký thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Đăng ký đang ACTIVE', () => pm.expect(body.data.trang_thai).to.eql('ACTIVE'));",
+                                    "pm.collectionVariables.set('enrollment_id', body.data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "03. STUDENT xem đăng ký của tôi",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments?trang_thai=ACTIVE&per_page=25",
+                        "description": ""
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Chỉ trả đăng ký của tài khoản hiện tại', () => body.data.forEach(row => pm.expect(row.sinh_vien.id).to.eql(Number(pm.collectionVariables.get('enrollment_student_id')))));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "04. STUDENT đăng ký trùng lớp → 409 DUPLICATE_ENROLLMENT",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Từ chối đăng ký trùng (409)', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi DUPLICATE_ENROLLMENT', () => pm.expect(pm.response.json().ma_loi).to.eql('DUPLICATE_ENROLLMENT'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "05. Trùng môn cùng kỳ → 409 DUPLICATE_SUBJECT_IN_SEMESTER (cần ID lớp)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "Điền ID lớp khác cùng môn và học kỳ với một lớp sinh viên đang ACTIVE.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_duplicate_subject_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trùng môn trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi DUPLICATE_SUBJECT_IN_SEMESTER', () => pm.expect(pm.response.json().ma_loi).to.eql('DUPLICATE_SUBJECT_IN_SEMESTER'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "06. Trùng lịch → 409 (cần lớp đã đăng ký + lớp xung đột)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "Trước tiên chạy request 02 để sinh viên có đăng ký ACTIVE ở một lớp. Điền enrollment_conflict_section_id bằng ID lớp KHÁC có buổi SCHEDULED cùng ngày và giờ giao nhau với buổi của lớp đã đăng ký (ví dụ 09:00-10:00 chồng với 09:30-10:30). Không cần cùng phòng. Nếu không có cặp buổi phù hợp trong DB, request này không thể trả SCHEDULE_CONFLICT chỉ bằng ID bất kỳ. Chi tiết hai lớp và thời gian trả trong errors.trung_lich.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_conflict_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trùng lịch trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi SCHEDULE_CONFLICT', () => pm.expect(pm.response.json().ma_loi).to.eql('SCHEDULE_CONFLICT'));",
+                                    "pm.test('Trả chi tiết hai buổi bị trùng', () => pm.expect(pm.response.json().errors.trung_lich[0]).to.have.keys('lop_moi', 'buoi_moi', 'lop_da_dang_ky', 'buoi_da_dang_ky'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "07. ADMIN đăng ký hộ một sinh viên",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments",
+                        "description": "ADMIN có thể đăng ký hộ ngoài đợt và bỏ qua điều kiện năm thứ; lớp vẫn phải OPEN, còn sĩ số và không trùng môn/lịch.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"sinh_vien_id\": \"{{sinh_vien_id}}\",\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Tạo đăng ký hộ thành công (201)', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.collectionVariables.set('enrollment_admin_id', body.data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "08. ADMIN lọc danh sách đăng ký theo lớp và trạng thái",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments?lop_hoc_phan_id={{enrollment_section_id}}&trang_thai=ACTIVE&per_page=25",
+                        "description": ""
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả danh sách 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Các dòng khớp lớp đã lọc', () => body.data.forEach(row => pm.expect(row.lop_hoc_phan.id).to.eql(Number(pm.collectionVariables.get('enrollment_section_id')))));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "09. ADMIN bulk đăng ký (mỗi sinh viên có kết quả riêng)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments/bulk",
+                        "description": "Dòng đầu là sinh viên đã đăng ký để kiểm tra lỗi trùng; dòng sau dùng sinh_vien_bulk_id từ folder 04 để thử đăng ký mới và kiểm tra kết quả từng dòng.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\",\n    \"sinh_vien_ids\": [\n        \"{{enrollment_student_id}}\",\n        \"{{sinh_vien_bulk_id}}\"\n    ]\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Bulk luôn trả 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Có bộ đếm và kết quả từng dòng', () => { pm.expect(body.data.thanh_cong + body.data.that_bai).to.eql(body.data.chi_tiet.length); });",
+                                    "pm.test('Có dòng báo trùng đăng ký', () => pm.expect(body.data.chi_tiet.some(row => row.ma_loi === 'DUPLICATE_ENROLLMENT')).to.eql(true));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "10. STUDENT gọi endpoint đăng ký hộ → 403",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments",
+                        "description": "",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"sinh_vien_id\": \"{{enrollment_student_id}}\",\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Chặn sai vai trò (403)', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "11. ADMIN gọi endpoint của tôi → 403",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": ""
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Chặn sai vai trò (403)', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "12. Thiếu trường bắt buộc → 422 VALIDATION_ERROR",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments",
+                        "description": "",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Validate dữ liệu (422)', () => pm.response.to.have.status(422));",
+                                    "pm.test('Envelope có mã VALIDATION_ERROR', () => pm.expect(pm.response.json().ma_loi).to.eql('VALIDATION_ERROR'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "13. STUDENT hủy trong đợt (chưa có điểm/điểm danh)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments/{{enrollment_id}}",
+                        "description": ""
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Hủy thành công', () => pm.response.to.have.status(200));",
+                                    "pm.test('Trạng thái CANCELLED', () => pm.expect(pm.response.json().data.trang_thai).to.eql('CANCELLED'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "14. Đăng ký lại sau khi hủy (dùng lại bản ghi)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Đăng ký lại thành công', () => pm.response.to.have.status(201));",
+                                    "pm.test('Dùng lại ID đăng ký cũ', () => pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('enrollment_id'))));",
+                                    "pm.collectionVariables.set('enrollment_reenrolled_id', pm.response.json().data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "15. ADMIN hủy đăng ký ngoài đợt",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments/{{enrollment_id}}",
+                        "description": "Chạy sau các bước tạo đăng ký; ADMIN được hủy ngoài đợt nhưng không được hủy bản ghi đã có điểm/điểm danh.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ly_do\": \"Kiểm thử Postman\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('ADMIN hủy thành công', () => pm.response.to.have.status(200));",
+                                    "pm.test('Đã chuyển CANCELLED', () => pm.expect(pm.response.json().data.trang_thai).to.eql('CANCELLED'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "16. Ngoài đợt đăng ký → 409 OUTSIDE_REGISTRATION (cần ID lớp)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "Điền enrollment_outside_section_id bằng lớp thuộc học kỳ chưa mở hoặc đã đóng đợt đăng ký.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_outside_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Ngoài đợt trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi OUTSIDE_REGISTRATION', () => pm.expect(pm.response.json().ma_loi).to.eql('OUTSIDE_REGISTRATION'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "17. Lớp đủ sĩ số → 409 SECTION_FULL (cần ID lớp)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "Điền ID của lớp OPEN có sĩ số ACTIVE bằng sĩ số tối đa.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_full_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Lớp đầy trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi SECTION_FULL', () => pm.expect(pm.response.json().ma_loi).to.eql('SECTION_FULL'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "18. Hủy đăng ký đã có điểm/điểm danh → 409 HAS_GRADE_OR_ATTENDANCE",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments/{{enrollment_protected_id}}",
+                        "description": "Điền enrollment_protected_id bằng đăng ký ACTIVE đã có điểm hoặc ít nhất một bản ghi điểm danh.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ly_do\": \"Kiểm tra ràng buộc điểm danh\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Không cho hủy (409)', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi HAS_GRADE_OR_ATTENDANCE', () => pm.expect(pm.response.json().ma_loi).to.eql('HAS_GRADE_OR_ATTENDANCE'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "19. Sai năm thứ → 409 WRONG_STUDY_YEAR",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_sinh_vien}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/me/enrollments",
+                        "description": "Điền ID lớp giới hạn năm thứ khác với năm hiện tại của tài khoản sinh viên demo.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lop_hoc_phan_id\": \"{{enrollment_wrong_year_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi WRONG_STUDY_YEAR', () => pm.expect(pm.response.json().ma_loi).to.eql('WRONG_STUDY_YEAR'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "20. Sinh viên không hoạt động → 409 STUDENT_INACTIVE",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments",
+                        "description": "Điền ID sinh viên có trang_thai=false hoặc tài khoản đã bị khóa.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"sinh_vien_id\": \"{{enrollment_inactive_student_id}}\",\n    \"lop_hoc_phan_id\": \"{{enrollment_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi STUDENT_INACTIVE', () => pm.expect(pm.response.json().ma_loi).to.eql('STUDENT_INACTIVE'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "21. Học kỳ đã đóng → 409 SEMESTER_CLOSED",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments",
+                        "description": "Điền ID lớp thuộc học kỳ có trạng thái CLOSED.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"sinh_vien_id\": \"{{sinh_vien_id}}\",\n    \"lop_hoc_phan_id\": \"{{enrollment_closed_section_id}}\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 409', () => pm.response.to.have.status(409));",
+                                    "pm.test('Mã lỗi SEMESTER_CLOSED', () => pm.expect(pm.response.json().ma_loi).to.eql('SEMESTER_CLOSED'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "22. Bản ghi không tồn tại → 404",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token_admin}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/enrollments/999999999",
+                        "description": "Dùng ID không tồn tại để xác nhận API không làm thay đổi dữ liệu.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ly_do\": \"Kiểm tra NOT_FOUND\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Trả 404', () => pm.response.to.have.status(404));",
+                                    "pm.test('Mã lỗi NOT_FOUND', () => pm.expect(pm.response.json().ma_loi).to.eql('NOT_FOUND'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "variable": [
@@ -6073,6 +6920,95 @@
         {
             "key": "nganh_tam_id",
             "value": ""
+        },
+        {
+            "key": "enrollment_section_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_student_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_admin_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_outside_section_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_full_section_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_duplicate_subject_section_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_conflict_section_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_protected_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_reenrolled_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_wrong_year_section_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_inactive_student_id",
+            "value": ""
+        },
+        {
+            "key": "enrollment_closed_section_id",
+            "value": ""
+        },
+        {
+            "key": "token_admin",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Save role-specific tokens after every successful login request in this collection.",
+                    "const loginUrl = pm.request.url.toString();",
+                    "if (loginUrl.includes('/api/auth/login') && pm.response.code >= 200 && pm.response.code < 300) {",
+                    "    let loginBody = null;",
+                    "    try { loginBody = pm.response.json(); } catch (error) { console.error(\"Login response is not valid JSON\", error); }",
+                    "    const loginData = loginBody && loginBody.data;",
+                    "    const role = loginData && loginData.nguoi_dung && loginData.nguoi_dung.vai_tro;",
+                    "    const token = loginData && loginData.token;",
+                    "    const roleTokenVariable = { ADMIN: \"token_admin\", SINH_VIEN: \"token_sinh_vien\", GIANG_VIEN: \"token_giang_vien\" }[role];",
+                    "    if (roleTokenVariable && typeof token === \"string\" && token.length > 0) {",
+                    "        pm.collectionVariables.set(roleTokenVariable, token);",
+                    "        if (role === \"ADMIN\") pm.collectionVariables.set(\"token\", token);",
+                    "        pm.test(\"Role token saved to \" + roleTokenVariable, () => {",
+                    "            pm.expect(pm.collectionVariables.get(roleTokenVariable)).to.eql(token);",
+                    "        });",
+                    "        console.log(\"Saved login token to collection variable:\", roleTokenVariable);",
+                    "    } else {",
+                    "        pm.test(\"Login response contains a valid role and token\", () => {",
+                    "            pm.expect(roleTokenVariable, \"vai_tro\").to.be.a(\"string\");",
+                    "            pm.expect(token, \"data.token\").to.be.a(\"string\").and.not.empty;",
+                    "        });",
+                    "    }",
+                    "}"
+                ]
+            }
         }
     ]
 }
