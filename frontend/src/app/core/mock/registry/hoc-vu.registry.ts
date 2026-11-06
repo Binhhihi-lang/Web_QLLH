@@ -4,6 +4,7 @@ import { LOP_HOC_PHAN_MOCK } from '@core/mock/data/hoc-vu.mock';
 import {
   GIANG_VIEN_MOCK,
   HOC_KY_MOCK,
+  LOP_HANH_CHINH_MOCK,
   MON_HOC_MOCK,
   SINH_VIEN_MOCK,
 } from '@core/mock/data/dao-tao.mock';
@@ -724,6 +725,8 @@ export class HocVuRegistry {
   private capNhatBangDiem(
     id: number,
     submissions: unknown[],
+    lyDo: string | null = null,
+    nguoiSua = 'Giảng viên demo',
   ): { ok: true; rows: DongDiem[] } | { ok: false; errors: Record<string, string[]> } {
     const current = this.diemDaLuu.get(id) ?? this.diemLop(id);
     const indexById = new Map(current.map((row, index) => [row.dang_ky_hoc_phan_id, index]));
