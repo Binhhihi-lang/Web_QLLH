@@ -667,17 +667,26 @@ class QuanLyLopHocPhanService
         );
 
         foreach ($bangQuyDoi as $khoang) {
-            if (! isset($khoang['tu'], $khoang['den'], $khoang['chu'], $khoang['he_4'], $khoang['xep_loai'], $khoang['dat'])) {
-                throw new LogicException('Cấu hình bảng quy đổi điểm không hợp lệ.');
+            if (! isset($khoang['tu'], $khoang['den'], $khoang['chu'], $khoang['he_4'])) {
+                continue;
             }
 
             if ($tongKet >= (float) $khoang['tu'] && $tongKet <= (float) $khoang['den']) {
+                $dat = isset($khoang['dat']) ? (bool) $khoang['dat'] : ((float) $khoang['he_4'] > 0);
+                $xepLoai = $khoang['xep_loai'] ?? match ($khoang['chu']) {
+                    'A' => 'Giỏi',
+                    'B+', 'B' => 'Khá',
+                    'C+', 'C' => 'Trung bình',
+                    'D+', 'D' => 'Yếu',
+                    default => 'Kém',
+                };
+
                 return [
                     'diem_tong_ket' => $tongKet,
                     'diem_chu' => $khoang['chu'],
-                    'xep_loai' => $khoang['xep_loai'],
+                    'xep_loai' => $xepLoai,
                     'diem_he_4' => (float) $khoang['he_4'],
-                    'ket_qua' => $khoang['dat'] ? Diem::DAT : Diem::KHONG_DAT,
+                    'ket_qua' => $dat ? Diem::DAT : Diem::KHONG_DAT,
                 ];
             }
         }

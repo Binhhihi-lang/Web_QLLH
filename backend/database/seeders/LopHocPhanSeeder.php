@@ -24,6 +24,7 @@ class LopHocPhanSeeder extends Seeder
 
         $monIds = MonHoc::query()->orderBy('id')->pluck('id')->all();
         $gvIds = GiangVien::query()->orderBy('id')->pluck('id')->all();
+        $gvDemo = GiangVien::query()->where('email', 'giangvien@example.com')->first();
 
         $bayGio = now();
         $rows = [];
@@ -36,7 +37,9 @@ class LopHocPhanSeeder extends Seeder
                     'ma_lop_hp' => sprintf('LHP%04d', $dem),
                     'mon_hoc_id' => $monIds[($dem - 1) % count($monIds)],
                     'hoc_ky_id' => $hocKyId,
-                    'giang_vien_id' => $gvIds[($dem * 3) % count($gvIds)],
+                    'giang_vien_id' => ($gvDemo && in_array($dem, [1, 61], true))
+                        ? $gvDemo->id
+                        : $gvIds[($dem * 3) % count($gvIds)],
                     'si_so_toi_da' => [60, 70, 80, 90][$dem % 4],
                     // Cứ 5 lớp thì 1 lớp dành riêng cho một năm thứ (BR-23);
                     // còn lại null = mọi năm, giống môn đại cương.
