@@ -75,6 +75,7 @@ src/app/
 /dang-nhap/giang-vien → SCR-01B (GIANG_VIEN)
 /dang-nhap/sinh-vien  → SCR-01C (SINH_VIEN, dùng mã sinh viên)
 /doi-mat-khau         → SCR-02
+/tai-khoan            → SCR-02C (mọi vai trò đã đăng nhập)
 /dashboard            → SCR-03/04/05 (theo vai trò)
 /gioi-thieu           → trang giới thiệu (đang xây dựng)
 /sinh-vien            → SCR-10 (ADMIN, TEACHER)
@@ -173,6 +174,7 @@ tin thử nghiệm không hiển thị.
 | SCR-01C | Đăng nhập sinh viên | `/dang-nhap/sinh-vien` | công khai | Giao diện nhận diện sinh viên; mã sinh viên/password (`ma_sv`); xác minh role `SINH_VIEN` |
 | SCR-02 | Đổi mật khẩu | `/doi-mat-khau` | mọi vai trò đã đăng nhập | Form gọi API, kiểm tra mật khẩu mới/xác nhận; bắt buộc khi `must_change_password = true` |
 | SCR-02B | 🆕 Ảnh đại diện | Dialog trên header (mọi trang) | mọi vai trò | Chọn ảnh → xem trước → tải lên; nút "Gỡ ảnh". Hiển thị ảnh tròn 32 px ở header, `avatar_url` null thì hiện chữ cái đầu tên trên nền màu theo vai trò |
+| SCR-02C | Tài khoản của tôi | `/tai-khoan` | mọi vai trò đã đăng nhập | ADMIN sửa tên/email; giảng viên sửa số điện thoại; sinh viên sửa số điện thoại/địa chỉ; thông tin định danh chỉ đọc |
 
 ### 3.2. Dashboard
 

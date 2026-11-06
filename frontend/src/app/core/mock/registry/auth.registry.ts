@@ -1,6 +1,7 @@
 import { SINH_VIEN_MOCK, GIANG_VIEN_MOCK } from '@core/mock/data/dao-tao.mock';
 import { ApiResponse, loi, loiValidation, ok } from '@core/mock/mock-response';
 import { NguoiDung, VaiTro } from '@core/models/dao-tao.model';
+import { CapNhatHoSoInput } from '@core/auth/auth.service';
 
 interface TaiKhoanMock {
   vaiTro: VaiTro;
@@ -65,10 +66,17 @@ const NGUOI_DUNG_MOCK: NguoiDung[] = [
 ];
 
 export class AuthRegistry {
+  constructor(
+    private readonly khiCapNhatHoSo?: (nguoiDung: NguoiDung, duLieu: CapNhatHoSoInput) => void,
+  ) {}
+
   private readonly taiKhoan: TaiKhoanMock[] = [
     ...TAI_KHOAN_DANG_NHAP_MOCK.map((thongTin, index) => ({
       ...thongTin,
-      nguoiDung: NGUOI_DUNG_MOCK[index],
+      nguoiDung: {
+        ...NGUOI_DUNG_MOCK[index],
+        ho_so: NGUOI_DUNG_MOCK[index].ho_so && { ...NGUOI_DUNG_MOCK[index].ho_so },
+      },
     })),
     {
       vaiTro: 'ADMIN',
@@ -99,6 +107,9 @@ export class AuthRegistry {
     const nguoiDung = this.layNguoiDungTheoToken(authorization);
     if (path === '/auth/me' && method === 'GET') {
       return nguoiDung ? ok(nguoiDung) : loi('UNAUTHENTICATED', 'Vui lòng đăng nhập.');
+    }
+    if (path === '/me' && method === 'PUT') {
+      return this.capNhatHoSo(nguoiDung, body);
     }
     if (path === '/auth/logout' && method === 'POST') {
       const token = this.layToken(authorization);
@@ -174,6 +185,67 @@ export class AuthRegistry {
     taiKhoan.matKhau = matKhauMoi;
     taiKhoan.nguoiDung = { ...taiKhoan.nguoiDung, must_change_password: false };
     return ok(null, 'Đổi mật khẩu thành công.');
+  }
+
+  private capNhatHoSo(
+    nguoiDung: NguoiDung | null,
+    body: unknown,
+  ): ApiResponse<unknown> | Record<string, unknown> {
+    if (!nguoiDung) return loi('UNAUTHENTICATED', 'Vui lòng đăng nhập.');
+
+    const data = this.docLieu(body);
+    const duLieu: CapNhatHoSoInput = {};
+
+    if (nguoiDung.vai_tro === 'ADMIN') {
+      if (Object.prototype.hasOwnProperty.call(data, 'name')) {
+        if (typeof data['name'] !== 'string' || data['name'].length > 255) {
+          return loiValidation({ name: ['Họ và tên không hợp lệ.'] });
+        }
+        duLieu.name = data['name'];
+      }
+      if (Object.prototype.hasOwnProperty.call(data, 'email')) {
+        const email = data['email'];
+        if (
+          typeof email !== 'string' ||
+          email.length > 255 ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ) {
+          return loiValidation({ email: ['Email không hợp lệ.'] });
+        }
+        if (
+          this.taiKhoan.some(
+            (taiKhoan) =>
+              taiKhoan.nguoiDung.id !== nguoiDung.id &&
+              taiKhoan.nguoiDung.email.toLowerCase() === email.toLowerCase(),
+          )
+        ) {
+          return loiValidation({ email: ['Email đã được sử dụng.'] });
+        }
+        duLieu.email = email;
+      }
+      Object.assign(nguoiDung, duLieu);
+    } else {
+      if (Object.prototype.hasOwnProperty.call(data, 'so_dien_thoai')) {
+        const soDienThoai = data['so_dien_thoai'];
+        if (soDienThoai !== null && (typeof soDienThoai !== 'string' || soDienThoai.length > 20)) {
+          return loiValidation({ so_dien_thoai: ['Số điện thoại không hợp lệ.'] });
+        }
+        duLieu.so_dien_thoai = soDienThoai;
+      }
+      if (
+        nguoiDung.vai_tro === 'SINH_VIEN' &&
+        Object.prototype.hasOwnProperty.call(data, 'dia_chi')
+      ) {
+        const diaChi = data['dia_chi'];
+        if (diaChi !== null && typeof diaChi !== 'string') {
+          return loiValidation({ dia_chi: ['Địa chỉ không hợp lệ.'] });
+        }
+        duLieu.dia_chi = diaChi;
+      }
+    }
+
+    this.khiCapNhatHoSo?.(nguoiDung, duLieu);
+    return ok(nguoiDung, 'Cập nhật hồ sơ thành công.');
   }
 
   /**

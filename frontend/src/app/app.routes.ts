@@ -69,6 +69,11 @@ export const routes: Routes = [
         loadComponent: () => import('@features/style-guide/style-guide').then((m) => m.StyleGuide),
       },
       {
+        path: 'tai-khoan',
+        data: { title: 'Tài khoản của tôi' },
+        loadComponent: () => import('@features/tai-khoan/tai-khoan').then((m) => m.TaiKhoanPage),
+      },
+      {
         path: 'thung-rac',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN'], ma: 'SCR-45', title: 'Thùng rác' },
@@ -87,7 +92,8 @@ export const routes: Routes = [
       {
         path: '**',
         canMatch: [laTrangChuaLamGuard],
-        loadComponent: () => import('@features/not-found/trang-chua-lam').then((m) => m.TrangChuaLam),
+        loadComponent: () =>
+          import('@features/not-found/trang-chua-lam').then((m) => m.TrangChuaLam),
       },
     ],
   },

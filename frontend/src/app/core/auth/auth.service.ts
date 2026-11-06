@@ -26,6 +26,13 @@ interface PhanHoi<T> {
   data: T;
 }
 
+export interface CapNhatHoSoInput {
+  name?: string;
+  email?: string;
+  so_dien_thoai?: string | null;
+  dia_chi?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -70,6 +77,13 @@ export class AuthService {
         }
         return throwError(() => loi);
       }),
+    );
+  }
+
+  capNhatHoSo(duLieu: CapNhatHoSoInput): Observable<NguoiDung> {
+    return this.http.put<PhanHoiNguoiDung>(`${this.goc}/me`, duLieu).pipe(
+      map(({ data }) => data),
+      tap((nguoiDung) => this.nguoiDung.set(nguoiDung)),
     );
   }
 
