@@ -42,8 +42,67 @@ tags:
     description: Thống kê số liệu tổng quan theo vai trò
   - name: Thùng rác
     description: Quản lý bản ghi đã xóa mềm và khôi phục (SCR-45, ADMIN)
+  - name: Lịch học
+    description: Lịch tổng hợp theo vai trò, BR-06 và BR-22
 
 paths:
+  /schedules:
+    get:
+      tags: [Lịch học]
+      summary: Xem lịch tổng hợp theo vai trò
+      description: |
+        ADMIN xem tất cả; GIANG_VIEN chỉ lớp mình phụ trách; SINH_VIEN chỉ lớp
+        đang đăng ký ACTIVE. Bộ lọc không mở rộng quyền xem. Không có hồ sơ hoặc
+        không có buổi phù hợp vẫn trả 200 với data rỗng. Không trả buổi/lớp đã xóa.
+        Mặc định gồm cả SCHEDULED, DONE và CANCELLED để hiển thị lịch sử.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - name: hoc_ky_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: giang_vien_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: phong_hoc_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: tu_ngay
+          in: query
+          schema: { type: string, format: date }
+        - name: den_ngay
+          in: query
+          description: Bao gồm ngày kết thúc, phải >= tu_ngay nếu có cả hai mốc
+          schema: { type: string, format: date }
+        - name: trang_thai
+          in: query
+          schema: { type: string, enum: [SCHEDULED, DONE, CANCELLED] }
+        - name: sort_by
+          in: query
+          schema: { type: string, enum: [id, ngay_hoc, gio_bat_dau, gio_ket_thuc, trang_thai], default: id }
+        - $ref: "#/components/parameters/SortDir"
+      responses:
+        "200":
+          description: Danh sách buổi học có phân trang
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - $ref: "#/components/schemas/PhanTrang"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/LichHoc"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+        "422":
+          $ref: "#/components/responses/Loi422"
+
   /auth/login:
     post:
       tags: [Auth]
@@ -3171,6 +3230,53 @@ components:
         type: integer
 
   schemas:
+    LichHoc:
+      type: object
+      required: [id, ngay_hoc, gio_bat_dau, gio_ket_thuc, trang_thai, ly_do_huy, lop_hoc_phan, mon_hoc, hoc_ky, giang_vien, phong_hoc]
+      properties:
+        id: { type: integer }
+        ngay_hoc: { type: string, format: date }
+        gio_bat_dau: { type: string, example: "07:00" }
+        gio_ket_thuc: { type: string, example: "09:00" }
+        trang_thai: { type: string, enum: [SCHEDULED, DONE, CANCELLED] }
+        ly_do_huy: { type: string, nullable: true }
+        lop_hoc_phan:
+          type: object
+          required: [id, ma_lop_hp]
+          properties:
+            id: { type: integer }
+            ma_lop_hp: { type: string }
+        mon_hoc:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            ma_mon: { type: string }
+            ten_mon: { type: string }
+        hoc_ky:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            ma_hoc_ky: { type: string }
+            ten_hoc_ky: { type: string }
+        giang_vien:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            ma_gv: { type: string }
+            ho_ten: { type: string }
+            da_xoa: { type: boolean }
+        phong_hoc:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            ma_phong: { type: string }
+            ten_phong: { type: string }
+            da_xoa: { type: boolean }
+
     ThanhCong:
       type: object
       required: [success, message, data]

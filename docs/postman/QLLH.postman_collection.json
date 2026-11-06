@@ -7831,6 +7831,721 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "17 — Lịch học (luồng thành công)",
+            "description": "Chỉ gồm các request hợp lệ, mong đợi HTTP 200. Run riêng folder theo thứ tự 00–13. Dùng các tài khoản demo đã seed; nếu đã đổi mật khẩu, sửa biến lich_*_email/password. Token riêng của folder, không thay biến token chung. Bước 01 tự lấy ID/ngày từ lịch sẵn có; nếu chưa có buổi, các bước lọc cần ID tự bỏ qua. Không tạo/sửa/xóa dữ liệu lịch. CRUD buổi học và sinh lịch do PM triển khai; kiểm tra tình huống xung đột nằm trong PHPUnit LichHocTest.",
+            "item": [
+                {
+                    "name": "00. Đăng nhập ADMIN",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.unset('lich_token_admin');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Đúng vai trò ADMIN', () => pm.expect(body.data && body.data.nguoi_dung && body.data.nguoi_dung.vai_tro).to.eql('ADMIN'));",
+                                    "if (pm.response.code === 200 && body.data && body.data.token) pm.collectionVariables.set('lich_token_admin', body.data.token);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{lich_admin_email}}\",\n    \"password\": \"{{lich_admin_password}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/auth/login"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "01. Xem lịch tổng hợp và tự lấy ID mẫu",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "['lich_hoc_ky_id','lich_giang_vien_id','lich_phong_hoc_id','lich_ngay_mau','lich_trang_thai'].forEach(k => pm.collectionVariables.unset(k));"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                    "if (pm.response.code === 200 && Array.isArray(body.data)) {",
+                                    "    const row = body.data.find(x => x.hoc_ky && x.giang_vien && x.phong_hoc);",
+                                    "    if (row) {",
+                                    "        pm.collectionVariables.set('lich_hoc_ky_id', row.hoc_ky.id);",
+                                    "        pm.collectionVariables.set('lich_giang_vien_id', row.giang_vien.id);",
+                                    "        pm.collectionVariables.set('lich_phong_hoc_id', row.phong_hoc.id);",
+                                    "        pm.collectionVariables.set('lich_ngay_mau', row.ngay_hoc);",
+                                    "        pm.collectionVariables.set('lich_trang_thai', row.trang_thai);",
+                                    "    } else console.info('Chưa có buổi học. Danh sách rỗng là hợp lệ; bước lọc cần ID sẽ tự bỏ qua.');",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?per_page=10&sort_by=ngay_hoc&sort_dir=desc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "02. Lọc lịch theo học kỳ",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_hoc_ky_id')) { console.warn('Chạy bước chuẩn bị để có biến lich_hoc_ky_id.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                    "pm.test('Các buổi thuộc học kỳ đã chọn', () => body.data.forEach(x => pm.expect(x.hoc_ky.id).to.eql(Number(pm.collectionVariables.get('lich_hoc_ky_id')))));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?hoc_ky_id={{lich_hoc_ky_id}}&per_page=10"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "03. Lọc lịch theo giảng viên",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_giang_vien_id')) { console.warn('Chạy bước chuẩn bị để có biến lich_giang_vien_id.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                    "pm.test('Các buổi thuộc giảng viên đã chọn', () => body.data.forEach(x => pm.expect(x.giang_vien.id).to.eql(Number(pm.collectionVariables.get('lich_giang_vien_id')))));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?giang_vien_id={{lich_giang_vien_id}}&per_page=10"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "04. Lọc lịch theo phòng học",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_phong_hoc_id')) { console.warn('Chạy bước chuẩn bị để có biến lich_phong_hoc_id.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                    "pm.test('Các buổi dùng đúng phòng', () => body.data.forEach(x => pm.expect(x.phong_hoc.id).to.eql(Number(pm.collectionVariables.get('lich_phong_hoc_id')))));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?phong_hoc_id={{lich_phong_hoc_id}}&per_page=10"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "05. Xem lịch trong một ngày",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_ngay_mau')) { console.warn('Chạy bước chuẩn bị để có biến lich_ngay_mau.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                "pm.test('Các buổi thuộc đúng ngày', () => { body.data.forEach(x => pm.expect(x.ngay_hoc).to.eql(pm.collectionVariables.get('lich_ngay_mau'))); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?tu_ngay={{lich_ngay_mau}}&den_ngay={{lich_ngay_mau}}&sort_by=gio_bat_dau&sort_dir=asc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "06. Kết hợp học kỳ, giảng viên, phòng và ngày",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_hoc_ky_id')) { console.warn('Chạy bước chuẩn bị để có biến lich_hoc_ky_id.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_giang_vien_id')) { console.warn('Chạy bước chuẩn bị để có biến lich_giang_vien_id.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_phong_hoc_id')) { console.warn('Chạy bước chuẩn bị để có biến lich_phong_hoc_id.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_ngay_mau')) { console.warn('Chạy bước chuẩn bị để có biến lich_ngay_mau.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?hoc_ky_id={{lich_hoc_ky_id}}&giang_vien_id={{lich_giang_vien_id}}&phong_hoc_id={{lich_phong_hoc_id}}&tu_ngay={{lich_ngay_mau}}&den_ngay={{lich_ngay_mau}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "07. Lọc theo trạng thái buổi học",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }",
+                                    "if (!pm.collectionVariables.get('lich_trang_thai')) { console.warn('Chạy bước chuẩn bị để có biến lich_trang_thai.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                "pm.test('Các buổi có đúng trạng thái', () => { body.data.forEach(x => pm.expect(x.trang_thai).to.eql(pm.collectionVariables.get('lich_trang_thai'))); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?trang_thai={{lich_trang_thai}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "08. Phân trang 25 dòng và sắp xếp ngày",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_admin')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_admin.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                    "pm.test('Số dòng mỗi trang = 25', () => pm.expect(body.meta.per_page).to.eql(25));",
+                                    "pm.test('Ngày tăng dần', () => { const days=body.data.map(x=>x.ngay_hoc); pm.expect(days).to.eql([...days].sort()); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?page=1&per_page=25&sort_by=ngay_hoc&sort_dir=asc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "09. Đăng nhập GIẢNG VIÊN",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.unset('lich_token_gv');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Đúng vai trò GIANG_VIEN', () => pm.expect(body.data && body.data.nguoi_dung && body.data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN'));",
+                                    "if (pm.response.code === 200 && body.data && body.data.token) pm.collectionVariables.set('lich_token_gv', body.data.token);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{lich_gv_email}}\",\n    \"password\": \"{{lich_gv_password}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/auth/login"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "10. Lấy hồ sơ giảng viên đang đăng nhập",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_gv')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_gv.'); pm.execution.skipRequest(); }",
+                                    "pm.collectionVariables.unset('lich_gv_cua_toi_id');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "if (body.data && body.data.ho_so) pm.collectionVariables.set('lich_gv_cua_toi_id', body.data.ho_so.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_gv}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/auth/me"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "11. Giảng viên xem lịch của mình",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_gv')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_gv.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });",
+                                    "pm.test('Chỉ có lớp do mình phụ trách', () => body.data.forEach(x => pm.expect(x.giang_vien.id).to.eql(Number(pm.collectionVariables.get('lich_gv_cua_toi_id')))));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_gv}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?per_page=25&sort_by=ngay_hoc&sort_dir=asc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "12. Đăng nhập SINH VIÊN",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.unset('lich_token_sv');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Đúng vai trò SINH_VIEN', () => pm.expect(body.data && body.data.nguoi_dung && body.data.nguoi_dung.vai_tro).to.eql('SINH_VIEN'));",
+                                    "if (pm.response.code === 200 && body.data && body.data.token) pm.collectionVariables.set('lich_token_sv', body.data.token);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{lich_sv_email}}\",\n    \"password\": \"{{lich_sv_password}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/auth/login"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "13. Sinh viên xem thời khóa biểu của mình",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('lich_token_sv')) { console.warn('Chạy bước chuẩn bị để có biến lich_token_sv.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('success = true', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Danh sách và phân trang hợp lệ', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta).to.include.keys('current_page','per_page','total'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{lich_token_sv}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/schedules?per_page=25&sort_by=ngay_hoc&sort_dir=asc",
+                        "description": "Server chỉ trả buổi của các lớp sinh viên đang đăng ký ACTIVE. Danh sách rỗng cũng là response 200 hợp lệ."
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
@@ -7856,6 +8571,66 @@
         },
         {
             "key": "hk_da_ongoing",
+            "value": ""
+        },
+        {
+            "key": "lich_admin_email",
+            "value": "admin@example.com"
+        },
+        {
+            "key": "lich_admin_password",
+            "value": "password"
+        },
+        {
+            "key": "lich_gv_email",
+            "value": "giangvien@example.com"
+        },
+        {
+            "key": "lich_gv_password",
+            "value": "password"
+        },
+        {
+            "key": "lich_sv_email",
+            "value": "sinhvien@example.com"
+        },
+        {
+            "key": "lich_sv_password",
+            "value": "password"
+        },
+        {
+            "key": "lich_token_admin",
+            "value": ""
+        },
+        {
+            "key": "lich_token_gv",
+            "value": ""
+        },
+        {
+            "key": "lich_token_sv",
+            "value": ""
+        },
+        {
+            "key": "lich_hoc_ky_id",
+            "value": ""
+        },
+        {
+            "key": "lich_giang_vien_id",
+            "value": ""
+        },
+        {
+            "key": "lich_phong_hoc_id",
+            "value": ""
+        },
+        {
+            "key": "lich_ngay_mau",
+            "value": ""
+        },
+        {
+            "key": "lich_trang_thai",
+            "value": ""
+        },
+        {
+            "key": "lich_gv_cua_toi_id",
             "value": ""
         },
         {

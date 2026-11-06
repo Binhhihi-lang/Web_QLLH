@@ -577,6 +577,41 @@ Response chi tiết:
 | PUT | `/api/sessions/{id}/attendance` | TEACHER (lớp mình), ADMIN | Điểm danh hàng loạt |
 | GET | `/api/schedules` | theo vai trò | Lịch tổng hợp, lọc `hoc_ky_id`, `giang_vien_id`, `phong_hoc_id`, `tu_ngay`, `den_ngay` |
 
+### Lịch tổng hợp (`GET /api/schedules`)
+
+- Danh sách có `meta`, `links`, nhận `page`, `per_page` (10/25/50/100).
+- ADMIN xem toàn bộ; GIANG_VIEN chỉ xem lớp mình phụ trách; SINH_VIEN chỉ xem
+  các lớp đang đăng ký ACTIVE. Bộ lọc không mở rộng quyền xem. Chưa có hồ sơ
+  hoặc không có lịch phù hợp trả 200 với `data: []`.
+- `tu_ngay`, `den_ngay` nhận `YYYY-MM-DD`, bao gồm cả hai ngày biên; có thể
+  truyền riêng một mốc. Thêm lọc `trang_thai`: SCHEDULED, DONE, CANCELLED.
+- `sort_by`: `id` (mặc định), `ngay_hoc`, `gio_bat_dau`, `gio_ket_thuc`,
+  `trang_thai`; `sort_dir`: `asc` (mặc định) hoặc `desc`.
+- Buổi/lớp đã xóa mềm không xuất hiện. Vẫn hiển thị lịch sử DONE/CANCELLED
+  và thông tin giảng viên/phòng đã xóa, kèm `da_xoa` trên hai object đó.
+
+Mỗi phần tử `data` có dạng:
+
+```json
+{
+  "id": 12,
+  "ngay_hoc": "2026-11-10",
+  "gio_bat_dau": "07:00",
+  "gio_ket_thuc": "09:00",
+  "trang_thai": "SCHEDULED",
+  "ly_do_huy": null,
+  "lop_hoc_phan": { "id": 3, "ma_lop_hp": "INT3306-01" },
+  "mon_hoc": { "id": 4, "ma_mon": "INT3306", "ten_mon": "Lập trình web" },
+  "hoc_ky": { "id": 2, "ma_hoc_ky": "2026-1", "ten_hoc_ky": "Học kỳ 1" },
+  "giang_vien": { "id": 5, "ma_gv": "GV005", "ho_ten": "Nguyễn Văn A", "da_xoa": false },
+  "phong_hoc": { "id": 6, "ma_phong": "A101", "ten_phong": "Phòng A101", "da_xoa": false }
+}
+```
+
+`ScheduleService` là phần kiểm tra trùng dùng chung, không có endpoint kiểm tra
+trùng riêng. PM gọi service khi triển khai CRUD/sinh buổi. Cách tích hợp:
+[lich-hoc-backend.md](lich-hoc-backend.md).
+
 Sinh lịch hàng tuần — request:
 ```json
 {

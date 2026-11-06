@@ -54,6 +54,15 @@ hình gọi dữ liệu giả. Các route quản trị được gom vào `routes
 - Trạng thái: triển khai trên nhánh feature, chờ Tiến kiểm thử Postman và PM
   review/merge; chưa coi là đã tích hợp vào `develop`.
 
+### Cập nhật 03/11/2026 — Tiến: lịch tổng hợp và lõi kiểm tra trùng
+
+- Nhánh `feature/be-schedules`: thêm `GET /api/schedules`, phân quyền theo
+  vai trò, lọc/phân trang và `ScheduleService` kiểm tra trùng phòng/GV/SV.
+- Kiểm tra riêng một buổi, cả lô và adapter cho đăng ký; test `LichHocTest`.
+- Postman thêm folder **17 — Lịch học (luồng thành công)**, chỉ request hợp lệ.
+- CRUD/sinh buổi vẫn thuộc PM; interface tích hợp tại `docs/lich-hoc-backend.md`.
+  Trạng thái: code trên nhánh feature, chờ Tiến test Postman và PM review/merge.
+
 ---
 
 > ## ⚠ Thay đổi phân công ngày 29/10/2026 — module lớp học phần chuyển cho PM
@@ -415,7 +424,7 @@ Danh sách đầy đủ SCR-01 → SCR-55 theo `docs/05-screens.md`. Quy tắc s
 | 49  | Cấu hình                                | `/cau-hinh`                        | PM (nhánh `giao-dien-he-thong`) | ✅ FE + `GET`/`PUT /settings`; kiểm tra trọng số, khoảng quy đổi và số ngày |
 | 50  | Quản lý người dùng                      | `/nguoi-dung`                      | PM (nhánh `giao-dien-he-thong`) | ✅ Tìm kiếm/lọc/phân trang, trạng thái hàng loạt, đặt lại mật khẩu, xóa ADMIN |
 | 51  | Thêm/sửa người dùng                     | `/nguoi-dung/them`, `/:id/sua`     | PM (nhánh `giao-dien-he-thong`) | ✅ Tạo/sửa; mật khẩu tạm chỉ hiện một lần khi tạo |
-| —   | Nhật ký                                | `/nhat-ky`                         | Tiến (backend); PM (UI) | Chưa làm UI; Tiến phụ trách API ghi/đọc nhật ký |
+| —   | Nhật ký                                | `/nhat-ky`                         | Chờ API đọc từ backend | Chưa làm UI; không có endpoint danh sách nhật ký |
 | 52  | Nút xem theo vai trò (ADMIN)            | header                             | PM (tuần 8)      | Chưa có                    |
 | 53  | Banner đang xem theo vai trò            | toàn cục                           | PM (tuần 8)      | Chưa có                    |
 | 54  | Quản lý Khoa                             | `/khoa`                            | PM               | ✅ FE + API; menu chỉ ADMIN |

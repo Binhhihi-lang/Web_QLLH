@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HocKyController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\KhoaController;
+use App\Http\Controllers\Api\LichHocController;
 use App\Http\Controllers\Api\LopHanhChinhController;
 use App\Http\Controllers\Api\LopHocPhanController;
 use App\Http\Controllers\Api\MenuController;
@@ -51,6 +52,9 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
     Route::put('/me', [HoSoController::class, 'capNhatHoSo'])->name('api/me/cap-nhat');
     Route::post('/me/avatar', [HoSoController::class, 'taiAnhDaiDien'])->name('api/me/avatar');
     Route::delete('/me/avatar', [HoSoController::class, 'xoaAnhDaiDien'])->name('api/me/avatar/xoa');
+
+    Route::get('/schedules', [LichHocController::class, 'index'])
+        ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->name('api/schedules');
 
     Route::prefix('options')->group(function () {
         Route::get('subjects', [OptionController::class, 'subjects']);

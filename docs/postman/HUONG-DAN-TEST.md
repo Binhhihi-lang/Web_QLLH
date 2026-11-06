@@ -291,6 +291,25 @@ Scripts chỉ lưu ID khi tạo thành công. Nếu nhận 422, mở response **
 để đọc `errors` theo trường. Chỉ Run folder 16 sau khi login ADMIN; chạy cả
 collection có thể làm đổi token/mật khẩu ở các folder xác thực trước đó.
 
+### Kiểm thử lịch học — folder 17
+
+1. Chạy `php artisan serve` trong `backend/`, import lại collection JSON.
+2. Run riêng **17 — Lịch học (luồng thành công)** theo thứ tự 00–13.
+   Folder tự đăng nhập ADMIN/GIẢNG VIÊN/SINH VIÊN; các biến token riêng
+   `lich_token_*` không thay token chung của các folder khác.
+3. Tài khoản demo mặc định dùng email demo + `password`. Nếu đã đổi mật khẩu,
+   sửa các biến `lich_admin_*`, `lich_gv_*`, `lich_sv_*` trong collection.
+4. Bước 01 lấy ID học kỳ/giảng viên/phòng và ngày từ lịch sẵn có, các bước
+   02–08 kiểm tra lọc/phân trang; bước 09–13 kiểm tra lịch theo vai trò.
+5. Mọi request mới mong đợi **200**. Danh sách rỗng cũng hợp lệ. Nếu chưa có
+   buổi, các bước cần ID mẫu tự bỏ qua; không tự tạo/xóa lịch trên DB thật.
+6. Chỉ đăng nhập ba lần mỗi lượt chạy; nếu vừa thử nhiều lần và gặp 429,
+   chờ hết một phút rồi chạy lại. Không Run toàn collection để tránh các
+   request đổi mật khẩu/xóa dữ liệu ở những folder cũ.
+
+Kiểm tra tình huống trùng lịch nằm trong `php artisan test --filter=LichHocTest`;
+folder 17 không có request cố tình trả 4xx.
+
 - Hợp đồng API đầy đủ: [04-api-contract.md](../04-api-contract.md)
 - OpenAPI (sinh model TS): [openapi.yaml](../openapi.yaml)
 - Ma trận test case: [06-test-plan.md](../06-test-plan.md)
