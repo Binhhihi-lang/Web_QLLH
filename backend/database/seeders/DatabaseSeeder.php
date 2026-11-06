@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             DangKyHocPhanSeeder::class,
             DiemDanhSeeder::class,
             DiemSeeder::class,
+            NhatKySeeder::class,
         ]);
     }
 }

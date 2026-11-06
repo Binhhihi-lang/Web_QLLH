@@ -345,3 +345,25 @@ Folder **18 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)** bao gồm c�
    - **Request 08 — Validate số thập phân (422):** Điểm có quá 2 chữ số thập phân bị chặn.
    - **Request 09 — Phân quyền vai trò (403):** Sinh viên cố ý nhập điểm bị chặn 403.
 
+---
+
+## 14. Nhật ký hệ thống (folder 19)
+
+Folder **19 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API đọc và lọc nhật ký hệ thống dành riêng cho Quản trị viên:
+
+1. **Chuẩn bị:** Chạy `php artisan serve` ở `backend/` và import lại file `docs/postman/QLLH.postman_collection.json`.
+2. **Thứ tự thực thi:**
+   - **Request 00 — Đăng nhập ADMIN:** Login bằng `admin@example.com` / `password`, tự động lưu `token_admin`.
+   - **Request 01 — Lấy danh mục options bộ lọc (`GET /api/logs/options`):** Trả về danh sách đối tượng (`doi_tuong_loai`) và hành động (`hanh_dong`) kèm nhãn tiếng Việt để giao diện dựng dropdown bộ lọc.
+   - **Request 02 — Lấy danh sách nhật ký hệ thống (`GET /api/logs`):** Danh sách nhật ký có phân trang, tự động lưu `nhat_ky_id` đầu tiên.
+   - **Request 03 — Xem chi tiết một bản ghi nhật ký (`GET /api/logs/:id`):** Xem đầy đủ giá trị cũ (`gia_tri_cu`), giá trị mới (`gia_tri_moi`), người thực hiện và ghi chú thao tác.
+   - **Request 04 — Lọc theo đối tượng và hành động:** Kiểm tra bộ lọc `doi_tuong_loai` và `hanh_dong`.
+   - **Request 05 — Lọc theo khoảng ngày:** Kiểm tra bộ lọc `tu_ngay` và `den_ngay`.
+   - **Request 06 — Đăng nhập Giảng viên:** Login bằng `giangvien@example.com` / `password`, lưu `token_giang_vien`.
+   - **Request 07 — Giảng viên truy cập nhật ký:** Kiểm tra chặn `403 Forbidden` do vi phạm phân quyền (nhật ký hệ thống chỉ dành cho ADMIN).
+3. **Kiểm thử tự động PHPUnit:**
+   ```bash
+   php backend/vendor/bin/phpunit backend/tests/Feature/NhatKyTest.php
+   ```
+   Kết quả kỳ vọng: 8 tests passed, 191 assertions.
+

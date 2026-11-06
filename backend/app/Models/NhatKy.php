@@ -28,6 +28,34 @@ class NhatKy extends Model
 
     public const CHOT_DIEM = 'CHOT_DIEM';
 
+    public const HANH_DONG = [
+        self::TAO => 'Tạo mới',
+        self::CAP_NHAT => 'Cập nhật',
+        self::XOA => 'Xóa',
+        self::KHOI_PHUC => 'Khôi phục',
+        self::KHOA => 'Khóa',
+        self::MO_KHOA => 'Mở khóa',
+        self::DOI_TRANG_THAI => 'Đổi trạng thái',
+        self::CHOT_DIEM => 'Chốt điểm',
+    ];
+
+    public const DOI_TUONG = [
+        'users' => 'Người dùng',
+        'sinh_vien' => 'Sinh viên',
+        'giang_vien' => 'Giảng viên',
+        'lop_hanh_chinh' => 'Lớp hành chính',
+        'lop_hoc_phan' => 'Lớp học phần',
+        'hoc_ky' => 'Học kỳ',
+        'buoi_hoc' => 'Buổi học',
+        'dang_ky_hoc_phan' => 'Đăng ký học phần',
+        'khoa' => 'Khoa',
+        'nganh' => 'Ngành',
+        'mon_hoc' => 'Môn học',
+        'phong_hoc' => 'Phòng học',
+        'menu' => 'Menu',
+        'cau_hinh' => 'Cấu hình',
+    ];
+
     protected $fillable = [
         'doi_tuong_loai',
         'doi_tuong_id',
@@ -51,6 +79,16 @@ class NhatKy extends Model
     public function nguoiThucHien(): BelongsTo
     {
         return $this->belongsTo(User::class, 'nguoi_thuc_hien_id');
+    }
+
+    public function tenHanhDong(): string
+    {
+        return self::HANH_DONG[$this->hanh_dong] ?? $this->hanh_dong;
+    }
+
+    public function tenDoiTuongLoai(): string
+    {
+        return self::DOI_TUONG[$this->doi_tuong_loai] ?? $this->doi_tuong_loai;
     }
 
     public static function ghi(

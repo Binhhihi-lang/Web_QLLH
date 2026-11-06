@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\MonHocController;
 use App\Http\Controllers\Api\NganhController;
 use App\Http\Controllers\Api\NguoiDungController;
+use App\Http\Controllers\Api\NhatKyController;
 use App\Http\Controllers\Api\OptionController;
 use App\Http\Controllers\Api\PhongHocController;
 use App\Http\Controllers\Api\SinhVienController;
@@ -95,6 +96,10 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('api/dashboard/admin');
         Route::get('/trash/{type}', [ThungRacController::class, 'index'])->name('api/trash/danh-sach');
         Route::post('/trash/{type}/{id}/restore', [ThungRacController::class, 'restore'])->name('api/trash/khoi-phuc');
+        Route::get('/logs/options', [NhatKyController::class, 'options'])->name('api/logs/options');
+        Route::get('/logs', [NhatKyController::class, 'index'])->name('api/logs');
+        Route::get('/logs/{nhatKy}', [NhatKyController::class, 'show'])->name('api/logs/chi-tiet');
+        Route::get('/audit-logs', [NhatKyController::class, 'index'])->name('api/audit-logs');
     });
 
     Route::prefix('semesters')->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->group(function () {
