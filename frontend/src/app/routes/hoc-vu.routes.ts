@@ -41,6 +41,13 @@ export const hocVuRoutes: Routes = [
     data: { roles: ['ADMIN', 'GIANG_VIEN'] },
     loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/sinh-vien').then((m) => m.LopHocPhanSinhVien),
   },
+  {
+    path: 'lop-hoc-phan/:id/chuyen-can',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-40', title: 'Thống kê chuyên cần' },
+    loadComponent: () =>
+      import('@features/hoc-vu/diem-danh/chuyen-can').then((m) => m.DiemDanhChuyenCan),
+  },
   { path: 'lop-hoc-phan/:id/diem/lich-su', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-43', title: 'Lịch sử sửa điểm' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
   { path: 'lop-hoc-phan/:id/diem', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-41', title: 'Bảng điểm lớp' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
   { path: 'lop-hoc-phan/them', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
@@ -80,7 +87,15 @@ export const hocVuRoutes: Routes = [
     path: 'diem-danh',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-38', title: 'Điểm danh' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/hoc-vu/diem-danh/danh-sach').then((m) => m.DiemDanhDanhSach),
+  },
+  {
+    path: 'diem-danh/:sessionId',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-39', title: 'Điểm danh buổi học' },
+    loadComponent: () =>
+      import('@features/hoc-vu/diem-danh/chi-tiet').then((m) => m.DiemDanhChiTiet),
   },
 
   // SCR-41/42/43 — Điểm theo vai trò

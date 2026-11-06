@@ -29,6 +29,13 @@ import type {
   DangKyHocPhan,
   KetQuaDangKyDong,
 } from '@features/hoc-vu/dang-ky/dang-ky.service';
+import type {
+  BuoiHocDiemDanh,
+  DongDiemDanh,
+  DongDiemDanhInput,
+  ThongKeChuyenCan,
+  TrangThaiDiemDanh,
+} from '@features/hoc-vu/diem-danh/diem-danh.service';
 
 interface LichSuDiemMock {
   id: number;
@@ -59,6 +66,8 @@ export class HocVuRegistry {
   private soLichSu = 1;
   private readonly dangKyThem: Array<{ lop_hoc_phan_id: number; sinh_vien: SinhVienLop }> = [];
   private readonly lichSuDangKy = new Map<number, DangKyHocPhan>();
+  private readonly buoiHoc = new Map<number, BuoiHocDiemDanh[]>();
+  private readonly diemDanh = new Map<number, DongDiemDanh[]>();
 
   constructor(private readonly system: SystemRegistry) {}
 
@@ -191,6 +200,64 @@ export class HocVuRegistry {
         ? ok(this.sinhVienLop(id))
         : loi('NOT_FOUND', 'Không tìm thấy lớp học phần.');
     }
+    const sessions = path.match(/^\/sections\/(\d+)\/sessions$/);
+    if (sessions && method === 'GET') {
+      const id = Number(sessions[1]);
+      return this.tim(id)
+        ? ok(this.buoiHocCuaLop(id))
+        : loi('NOT_FOUND', 'Không tìm thấy lớp học phần.');
+    }
+    const attendanceSummary = path.match(/^\/sections\/(\d+)\/attendance-summary$/);
+    if (attendanceSummary && method === 'GET') {
+      const id = Number(attendanceSummary[1]);
+      return this.tim(id)
+        ? ok(this.thongKeChuyenCan(id))
+        : loi('NOT_FOUND', 'Không tìm thấy lớp học phần.');
+    }
+    const sessionAttendance = path.match(/^\/sessions\/(\d+)\/attendance$/);
+    if (sessionAttendance && method === 'GET') {
+      const rows = this.dongDiemDanh(Number(sessionAttendance[1]));
+      return rows ? ok(rows) : loi('NOT_FOUND', 'Không tìm thấy buổi học.');
+    }
+    if (sessionAttendance && method === 'PUT') {
+      const id = Number(sessionAttendance[1]);
+      const rows = this.dongDiemDanh(id);
+      if (!rows) return loi('NOT_FOUND', 'Không tìm thấy buổi học.');
+      const input = this.bodyRecord(body)['diem_danh'];
+      if (!Array.isArray(input))
+        return loiValidation({ diem_danh: ['Danh sách điểm danh không hợp lệ.'] });
+      const statusHopLe: TrangThaiDiemDanh[] = ['PRESENT', 'LATE', 'ABSENT', 'EXCUSED'];
+      const errors: Record<string, string[]> = {};
+      for (const [index, raw] of input.entries()) {
+        const row = this.bodyRecord(raw);
+        const student = rows.find(
+          (item) => item.dang_ky_hoc_phan_id === Number(row['dang_ky_hoc_phan_id']),
+        );
+        if (!student)
+          errors[`diem_danh.${index}.dang_ky_hoc_phan_id`] = ['Đăng ký học phần không hợp lệ.'];
+        if (!statusHopLe.includes(row['trang_thai'] as TrangThaiDiemDanh)) {
+          errors[`diem_danh.${index}.trang_thai`] = ['Trạng thái điểm danh không hợp lệ.'];
+        }
+        if (
+          row['ghi_chu'] !== null &&
+          row['ghi_chu'] !== undefined &&
+          (typeof row['ghi_chu'] !== 'string' || row['ghi_chu'].length > 500)
+        ) {
+          errors[`diem_danh.${index}.ghi_chu`] = ['Ghi chú tối đa 500 ký tự.'];
+        }
+      }
+      if (Object.keys(errors).length) return loiValidation(errors);
+      const values = input as DongDiemDanhInput[];
+      values.forEach((value) => {
+        const row = rows.find((item) => item.dang_ky_hoc_phan_id === value.dang_ky_hoc_phan_id);
+        if (row) {
+          row.trang_thai = value.trang_thai;
+          row.ghi_chu = value.ghi_chu;
+        }
+      });
+      this.diemDanh.set(id, rows);
+      return ok(rows);
+    }
     const grades = path.match(/^\/sections\/(\d+)\/grades$/);
     if (grades && method === 'GET') {
       const id = Number(grades[1]);
@@ -256,6 +323,84 @@ export class HocVuRegistry {
     if (path === '/options/rooms' && method === 'GET') return ok([]);
 
     return undefined;
+  }
+
+  private buoiHocCuaLop(id: number): BuoiHocDiemDanh[] {
+    const stored = this.buoiHoc.get(id);
+    if (stored) return stored;
+    const lop = this.tim(id);
+    if (!lop) return [];
+
+    const dates = ['2026-10-28', '2026-11-03', '2026-11-10'];
+    const rows = dates.map((ngay_hoc, index) => ({
+      id: id * 10 + index + 1,
+      ngay_hoc,
+      gio_bat_dau: '08:00',
+      gio_ket_thuc: '10:00',
+      trang_thai: (index < 2 ? 'DONE' : 'SCHEDULED') as BuoiHocDiemDanh['trang_thai'],
+      lop_hoc_phan: { id: lop.id, ma_lop_hp: lop.ma_lop_hp },
+      mon_hoc: {
+        id: lop.mon_hoc.id,
+        ma_mon: lop.mon_hoc.ma_mon,
+        ten_mon: lop.mon_hoc.ten_mon,
+      },
+    }));
+    this.buoiHoc.set(id, rows);
+    return rows;
+  }
+
+  private dongDiemDanh(buoiHocId: number): DongDiemDanh[] | null {
+    const lopId = Math.floor(buoiHocId / 10);
+    const buoi = this.buoiHocCuaLop(lopId).find((row) => row.id === buoiHocId);
+    if (!buoi) return null;
+
+    const stored = this.diemDanh.get(buoiHocId);
+    if (stored) return stored;
+    const roster = this.sinhVienLop(lopId).map((sinhVien, index) => ({
+      dang_ky_hoc_phan_id: sinhVien.dang_ky_hoc_phan_id,
+      sinh_vien: sinhVien,
+      trang_thai:
+        buoiHocId % 10 === 1
+          ? (['PRESENT', 'PRESENT', 'LATE', 'EXCUSED'][index % 4] as TrangThaiDiemDanh)
+          : null,
+      ghi_chu: null,
+    }));
+    this.diemDanh.set(buoiHocId, roster);
+    return roster;
+  }
+
+  private thongKeChuyenCan(lopId: number): ThongKeChuyenCan {
+    const lop = this.tim(lopId)!;
+    const buoi = this.buoiHocCuaLop(lopId);
+    const students = this.sinhVienLop(lopId).map((sinhVien) => {
+      const attendance = buoi.flatMap(
+        (session) =>
+          this.dongDiemDanh(session.id)?.filter(
+            (row) => row.dang_ky_hoc_phan_id === sinhVien.dang_ky_hoc_phan_id,
+          ) ?? [],
+      );
+      const coMat = attendance.filter((row) => row.trang_thai === 'PRESENT').length;
+      const diMuon = attendance.filter((row) => row.trang_thai === 'LATE').length;
+      const vang = attendance.filter((row) => row.trang_thai === 'ABSENT').length;
+      const coPhep = attendance.filter((row) => row.trang_thai === 'EXCUSED').length;
+      const mauSo = coMat + diMuon + vang;
+      return {
+        dang_ky_hoc_phan_id: sinhVien.dang_ky_hoc_phan_id,
+        sinh_vien: sinhVien,
+        co_mat: coMat,
+        di_muon: diMuon,
+        vang,
+        co_phep: coPhep,
+        ty_le: mauSo ? Number(((coMat + diMuon) / mauSo).toFixed(4)) : null,
+      };
+    });
+
+    return {
+      lop_hoc_phan_id: lop.id,
+      ma_lop_hp: lop.ma_lop_hp,
+      tong_buoi: buoi.length,
+      sinh_vien: students,
+    };
   }
 
   private locDanhSach(rows: LopHocPhan[], params: HttpParams): LopHocPhan[] {

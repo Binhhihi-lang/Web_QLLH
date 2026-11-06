@@ -112,4 +112,57 @@ describe('HocVuRegistry — bảng điểm theo cấu hình', () => {
       xep_loai: 'Khá giỏi',
     });
   });
+
+  describe('HocVuRegistry — điểm danh', () => {
+    it('lists sessions, saves their attendance and returns the section summary', () => {
+      const registry = new HocVuRegistry(new SystemRegistry());
+      const section = LOP_HOC_PHAN_MOCK.find((row) => row.si_so_hien_tai > 0)!;
+      const sessions = registry.resolve(
+        'GET',
+        `/sections/${section.id}/sessions`,
+        new HttpParams(),
+        null,
+        'GIANG_VIEN',
+      ) as { data: Array<{ id: number }> };
+      const sessionId = sessions.data[1].id;
+      const attendance = registry.resolve(
+        'GET',
+        `/sessions/${sessionId}/attendance`,
+        new HttpParams(),
+        null,
+        'GIANG_VIEN',
+      ) as {
+        data: Array<{ dang_ky_hoc_phan_id: number; trang_thai: string | null }>;
+      };
+      const payload = {
+        diem_danh: attendance.data.map((row) => ({
+          dang_ky_hoc_phan_id: row.dang_ky_hoc_phan_id,
+          trang_thai: 'PRESENT',
+          ghi_chu: null,
+        })),
+      };
+      const saved = registry.resolve(
+        'PUT',
+        `/sessions/${sessionId}/attendance`,
+        new HttpParams(),
+        payload,
+        'GIANG_VIEN',
+      ) as { data: Array<{ trang_thai: string | null }> };
+      const summary = registry.resolve(
+        'GET',
+        `/sections/${section.id}/attendance-summary`,
+        new HttpParams(),
+        null,
+        'GIANG_VIEN',
+      ) as {
+        data: { tong_buoi: number; sinh_vien: Array<{ co_mat: number; ty_le: number | null }> };
+      };
+
+      expect(sessions.data).toHaveLength(3);
+      expect(saved.data.every((row) => row.trang_thai === 'PRESENT')).toBe(true);
+      expect(summary.data.tong_buoi).toBe(3);
+      expect(summary.data.sinh_vien[0].co_mat).toBe(2);
+      expect(summary.data.sinh_vien[0].ty_le).toBe(1);
+    });
+  });
 });

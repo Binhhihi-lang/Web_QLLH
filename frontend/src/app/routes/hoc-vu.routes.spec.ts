@@ -2,6 +2,9 @@ import { DangXayDung } from '@shared/ui/dang-xay-dung';
 import { DangKyHo } from '@features/hoc-vu/dang-ky/dang-ky-ho';
 import { DangKyDanhSach } from '@features/hoc-vu/dang-ky/danh-sach';
 import { DangKyCuaToi } from '@features/hoc-vu/dang-ky/cua-toi';
+import { DiemDanhChiTiet } from '@features/hoc-vu/diem-danh/chi-tiet';
+import { DiemDanhChuyenCan } from '@features/hoc-vu/diem-danh/chuyen-can';
+import { DiemDanhDanhSach } from '@features/hoc-vu/diem-danh/danh-sach';
 import { hocVuRoutes } from './hoc-vu.routes';
 
 describe('hocVuRoutes', () => {
@@ -31,5 +34,24 @@ describe('hocVuRoutes', () => {
     await expect(admin?.loadComponent?.()).resolves.toBe(DangKyHo);
     await expect(list?.loadComponent?.()).resolves.toBe(DangKyDanhSach);
     await expect(mine?.loadComponent?.()).resolves.toBe(DangKyCuaToi);
+  });
+
+  it('routes the three attendance screens to their implementations', async () => {
+    const list = hocVuRoutes.find((item) => item.path === 'diem-danh');
+    const session = hocVuRoutes.find((item) => item.path === 'diem-danh/:sessionId');
+    const summary = hocVuRoutes.find((item) => item.path === 'lop-hoc-phan/:id/chuyen-can');
+
+    expect(list?.data).toEqual(
+      expect.objectContaining({ roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-38' }),
+    );
+    expect(session?.data).toEqual(
+      expect.objectContaining({ roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-39' }),
+    );
+    expect(summary?.data).toEqual(
+      expect.objectContaining({ roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-40' }),
+    );
+    await expect(list?.loadComponent?.()).resolves.toBe(DiemDanhDanhSach);
+    await expect(session?.loadComponent?.()).resolves.toBe(DiemDanhChiTiet);
+    await expect(summary?.loadComponent?.()).resolves.toBe(DiemDanhChuyenCan);
   });
 });

@@ -42,7 +42,8 @@ import { StatusBadge } from '@shared/ui/status-badge';
         <a class="active" [routerLink]="['/lop-hoc-phan', x.id]">Thông tin</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'sinh-vien']">Sinh viên</a>
         <span title="Chức năng lịch học chưa được triển khai">Lịch học</span>
-        <span title="Chức năng điểm danh chưa được triển khai">Điểm danh</span>
+        <a [routerLink]="['/diem-danh']" [queryParams]="{ lop_hoc_phan_id: x.id }">Điểm danh</a>
+        <a [routerLink]="['/lop-hoc-phan', x.id, 'chuyen-can']">Chuyên cần</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'diem']">Điểm</a>
       </nav>
 
