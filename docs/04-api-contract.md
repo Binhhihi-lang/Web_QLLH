@@ -471,6 +471,13 @@ Response mẫu:
 
 ## 8. Học kỳ
 
+Tạo mới luôn ở `UPCOMING`. Body tạo/sửa không nhận `trang_thai`; dùng endpoint
+`/status` để chuyển trạng thái. Ngày nhận `YYYY-MM-DD`, thời điểm đăng ký nhận
+`YYYY-MM-DD HH:mm:ss` (giờ Việt Nam). Năm học có dạng hai năm liên tiếp, ví dụ
+`2026-2027`. Đợt đăng ký phải nằm trong khoảng ngày của kỳ (BR-25).
+Kỳ `CLOSED` chỉ đọc. Khi sửa khoảng ngày, mọi buổi học hiện có phải còn nằm
+trong kỳ; vi phạm trả 409 `SESSION_OUTSIDE_SEMESTER`.
+
 | Method | Endpoint | Quyền |
 |---|---|---|
 | GET | `/api/semesters` | mọi vai trò — lọc `nam_hoc`, `ky_thu`, `trang_thai` |
@@ -490,8 +497,8 @@ Response mẫu:
   "ky_thu": 1,
   "ngay_bat_dau": "2026-09-07",
   "ngay_ket_thuc": "2027-01-15",
-  "mo_dang_ky_luc": "2026-08-01 08:00:00",
-  "dong_dang_ky_luc": "2026-08-20 17:00:00",
+  "mo_dang_ky_luc": "2026-09-07 08:00:00",
+  "dong_dang_ky_luc": "2026-09-20 17:00:00",
   "trang_thai": "ONGOING",
   "dang_mo_dang_ky": false
 }

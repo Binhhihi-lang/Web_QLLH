@@ -101,8 +101,8 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | BR-21 | `DiemDanhTest` | Hủy trước buổi không xuất hiện |
 | BR-22 | `SuaLichTest` | Sửa giờ tạo trùng lịch SV → 409 |
 | BR-23 | `NamThuTest` | Lớp `nam_thu` khác năm thứ → 409; ADMIN override; `null` không chặn |
-| BR-24 | `VongDoiHocKyTest` | Chỉ tiến; `CLOSED` không quay lại; một kỳ ONGOING |
-| BR-25 | `ThoiGianHocKyTest` | Chồng lấn kỳ; đợt ngoài kỳ; buổi ngoài kỳ |
+| BR-24 | `HocKyTest` (đã triển khai) | Chỉ tiến; `CLOSED` không quay lại; một kỳ ONGOING; nhật ký chuyển trạng thái |
+| BR-25 | `HocKyTest` (phần học kỳ đã triển khai) | Chồng lấn kỳ; đợt ngoài kỳ; sửa ngày kỳ không làm buổi đã có nằm ngoài kỳ. Test tạo/sửa buổi học thuộc module lịch |
 | BR-26 | `DotDangKyTest` | Đợt tính theo học kỳ chứa lớp, không theo kỳ hiện tại |
 | BR-27 | `DangKyLaiTest` | Chặn khi có điểm; chuyên cần chỉ tính buổi sau `dang_ky_luc` |
 | BR-28 | `TinhGpaTest` | Học lại lấy điểm cao nhất; không cộng hai lần |

@@ -2,7 +2,7 @@
     "info": {
         "_postman_id": "a1b2c3d4-0000-4000-8000-000000000001",
         "name": "QLLH API — Hệ thống quản lý lớp học",
-        "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào `token_admin` (đồng thời duy trì `token` cho các request cũ). Token STUDENT tự lưu vào `token_sinh_vien`; token GIANG_VIEN vào `token_giang_vien`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên; folder **09 → 11** cho menu/cấu hình, dashboard, thùng rác; folder **12 → 15** cho người dùng, lớp học phần, hồ sơ cá nhân, khoa/ngành. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Folder **16 — Đăng ký học phần** kiểm tra luồng STUDENT/ADMIN, lọc danh sách, bulk và các lỗi 403/409/422. Folder này dùng biến `enrollment_section_id` cho lớp có đợt đăng ký đang mở; điền thêm các biến tùy chọn để kiểm tra lỗi ngoài đợt, đầy lớp, trùng môn và trùng lịch.\n6. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
+        "description": "Collection test API backend QLLH độc lập, không cần frontend.\n\n## Cách dùng\n1. Import file này vào Postman (File → Import).\n2. Chạy backend bằng `php artisan serve`.\n3. Chạy **01 — Xác thực → Đăng nhập (ADMIN)** — token tự lưu vào biến `token`.\n4. Chạy lần lượt folder **03 → 08** để kiểm tra CRUD lớp hành chính, sinh viên và giảng viên; folder **09 → 11** cho menu/cấu hình, dashboard, thùng rác; folder **12 → 15** cho người dùng, lớp học phần, hồ sơ cá nhân, khoa/ngành. Request tạo mới tự lưu ID/mật khẩu để các bước sau sử dụng.\n5. Các request cuối mỗi nhóm dọn dữ liệu kiểm thử đã tạo.\n\n## Quy ước\n- Mọi response bọc trong `{ success, message, data }` hoặc `{ success, message, ma_loi, errors }`.\n- Token hạn 7 ngày, gửi qua header `Authorization: Bearer <token>`.\n- Vai trò: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
@@ -67,8 +67,7 @@
                                     "// Lưu token cho các request sau.",
                                     "pm.collectionVariables.set('token', body.data.token);",
                                     "console.log('Đã lưu token:', body.data.token.substring(0, 20) + '...');",
-                                    "pm.collectionVariables.set('admin_id', body.data.nguoi_dung.id);",
-                                    "pm.collectionVariables.set('token_admin', body.data.token);"
+                                    "pm.collectionVariables.set('admin_id', body.data.nguoi_dung.id);"
                                 ]
                             }
                         }
@@ -100,7 +99,7 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập bằng tài khoản ADMIN demo. Tự lưu `token_admin` và biến `token` tương thích với các request hiện có."
+                        "description": "Đăng nhập bằng tài khoản ADMIN demo. Token tự động lưu vào biến collection `token`."
                     },
                     "response": []
                 },
@@ -120,8 +119,7 @@
                                     "pm.test('Có hồ sơ giảng viên', () => {",
                                     "    pm.expect(body.data.nguoi_dung.ho_so.loai).to.eql('giang_vien');",
                                     "});",
-                                    "pm.collectionVariables.set('token', body.data.token);",
-                                    "pm.collectionVariables.set('token_giang_vien', body.data.token);"
+                                    "pm.collectionVariables.set('token', body.data.token);"
                                 ]
                             }
                         }
@@ -153,7 +151,7 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập bằng tài khoản giảng viên demo. Tự lưu `token_giang_vien`."
+                        "description": "Đăng nhập bằng tài khoản giảng viên demo. Trả kèm hồ sơ `giang_vien`."
                     },
                     "response": []
                 },
@@ -174,8 +172,7 @@
                                     "    pm.expect(body.data.nguoi_dung.ho_so.loai).to.eql('sinh_vien');",
                                     "});",
                                     "// Lưu token sinh viên",
-                                    "pm.collectionVariables.set('token_sinh_vien', body.data.token);",
-                                    "pm.collectionVariables.set('enrollment_student_id', body.data.nguoi_dung.ho_so.id);"
+                                    "pm.collectionVariables.set('token_sinh_vien', body.data.token);"
                                 ]
                             }
                         }
@@ -207,7 +204,7 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập bằng tài khoản sinh viên demo. Tự lưu `token_sinh_vien` và ID sinh viên."
+                        "description": "Đăng nhập bằng tài khoản sinh viên demo. Trả kèm hồ sơ `sinh_vien`."
                     },
                     "response": []
                 },
@@ -415,8 +412,7 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "pm.test('Trả 200', () => pm.response.to.have.status(200));",
-                                    "pm.collectionVariables.set('token', '');",
-                                    "pm.collectionVariables.set('token_admin', '');"
+                                    "pm.collectionVariables.set('token', '');"
                                 ]
                             }
                         }
@@ -1165,8 +1161,7 @@
                                     "    pm.expect(data.nguoi_dung.vai_tro).to.eql('SINH_VIEN');",
                                     "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
                                     "});",
-                                    "pm.collectionVariables.set('sinh_vien_test_token', data.token);",
-                                    "pm.collectionVariables.set('token_sinh_vien', data.token);"
+                                    "pm.collectionVariables.set('sinh_vien_test_token', data.token);"
                                 ]
                             }
                         }
@@ -1678,8 +1673,7 @@
                                     "    pm.expect(data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN');",
                                     "    pm.expect(data.nguoi_dung.must_change_password).to.be.true;",
                                     "});",
-                                    "pm.collectionVariables.set('giang_vien_test_token', data.token);",
-                                    "pm.collectionVariables.set('token_giang_vien', data.token);"
+                                    "pm.collectionVariables.set('giang_vien_test_token', data.token);"
                                 ]
                             }
                         }
@@ -6774,9 +6768,1096 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "16 — Học kỳ (CRUD + vòng đời BR-24/25)",
+            "description": "Đăng nhập ADMIN, rồi Run riêng folder này theo thứ tự 00 → 23. Tự tạo mã/năm/ID và kiểm tra lỗi, không cần nhập ID thủ công. Nếu đã có kỳ ONGOING, bước 15 kiểm tra lỗi 409 và 16–21 tự bỏ qua; không đóng kỳ đang dùng. Nếu chuyển trạng thái thành công, một kỳ test CLOSED sẽ được giữ lại đúng luật nghiệp vụ. Các bước xóa chỉ tác động ID do folder tự tạo.",
+            "auth": {
+                "type": "bearer",
+                "bearer": [
+                    {
+                        "key": "token",
+                        "value": "{{token}}",
+                        "type": "string"
+                    }
+                ]
+            },
+            "item": [
+                {
+                    "name": "00. Chuẩn bị: đọc học kỳ đang có",
+                    "description": "Đăng nhập ADMIN trước. Chọn năm kiểm thử sau kỳ đang có; không sửa dữ liệu học kỳ cũ.",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "if (pm.response.code === 200 && Array.isArray(body.data)) {",
+                                    "    const years = body.data.flatMap(k => [Number(String(k.nam_hoc).slice(0,4)), Number(String(k.ngay_ket_thuc).slice(0,4))]);",
+                                    "    const year = Math.max(new Date().getFullYear() + 1, Number(pm.collectionVariables.get('hk_test_nam') || 0) + 1, ...years.map(y => y + 1));",
+                                    "    pm.collectionVariables.set('hk_test_nam', year);",
+                                    "    pm.collectionVariables.set('hk_test_nam_sau', year + 1);",
+                                    "    pm.collectionVariables.set('hk_test_ma', 'HK-PM' + Date.now());",
+                                    "    ['hk_test_id', 'hk_vong_doi_id'].forEach(k => pm.collectionVariables.unset(k));",
+                                    "    pm.collectionVariables.set('hk_da_ongoing', 'false');",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters?per_page=100&sort_by=ngay_ket_thuc&sort_dir=desc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "01. Chuẩn bị: tránh trùng năm với dữ liệu test đã xóa",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "if (pm.response.code === 200 && Array.isArray(body.data)) {",
+                                    "    const years = body.data.map(k => Number(String(k.nam_hoc).slice(0,4)) + 1);",
+                                    "    const year = Math.max(Number(pm.collectionVariables.get('hk_test_nam')), ...years);",
+                                    "    pm.collectionVariables.set('hk_test_nam', year);",
+                                    "    pm.collectionVariables.set('hk_test_nam_sau', year + 1);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/trash/semesters?q=HK-PM&per_page=100"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "02. Tạo học kỳ UPCOMING",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "if (pm.response.code === 201 && body.data) pm.collectionVariables.set('hk_test_id', body.data.id);",
+                                    "pm.test('Trạng thái UPCOMING', () => pm.expect(body.data && body.data.trang_thai).to.eql('UPCOMING'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 1,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "03. Tìm kiếm + lọc + phân trang",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Tìm thấy đúng kỳ vừa tạo', () => { pm.expect(body.meta.total).to.eql(1); pm.expect(body.data[0].id).to.eql(Number(pm.collectionVariables.get('hk_test_id'))); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters?q={{hk_test_ma}}&nam_hoc={{hk_test_nam}}-{{hk_test_nam_sau}}&ky_thu=1&trang_thai=UPCOMING&per_page=10&sort_by=ngay_bat_dau&sort_dir=desc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "04. Chi tiết học kỳ",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Có đầy đủ ngày giờ và cờ đăng ký', () => pm.expect(body.data).to.include.keys('nam_hoc','ky_thu','ngay_bat_dau','ngay_ket_thuc','mo_dang_ky_luc','dong_dang_ky_luc','dang_mo_dang_ky'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters/{{hk_test_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "05. Cập nhật học kỳ",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Tên đã đổi', () => pm.expect(body.data && body.data.ten_hoc_ky).to.eql('Học kỳ Postman đã cập nhật'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}\",\n    \"ten_hoc_ky\": \"Học kỳ Postman đã cập nhật\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 1,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_test_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "06. Trùng khoảng ngày → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi SEMESTER_OVERLAP', () => pm.expect(body.ma_loi).to.eql('SEMESTER_OVERLAP'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}X\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 2,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "07. Đợt đăng ký ngoài kỳ → 422",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi VALIDATION_ERROR', () => pm.expect(body.ma_loi).to.eql('VALIDATION_ERROR'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}Y\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 3,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-06-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-06-02 08:00:00\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "08. Không được sửa trạng thái qua PUT → 422",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi VALIDATION_ERROR', () => pm.expect(body.ma_loi).to.eql('VALIDATION_ERROR'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 1,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\",\n    \"trang_thai\": \"CLOSED\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_test_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "09. Không được bỏ qua ONGOING → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi SEMESTER_TRANSITION_INVALID', () => pm.expect(body.ma_loi).to.eql('SEMESTER_TRANSITION_INVALID'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"CLOSED\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_test_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "10. Options có năm học và kỳ thứ",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Options chứa học kỳ kiểm thử', () => { const k = body.data.find(k => k.id === Number(pm.collectionVariables.get('hk_test_id'))); pm.expect(k).to.include.keys('id','label','trang_thai','nam_hoc','ky_thu'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/options/semesters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "11. Xóa mềm học kỳ UPCOMING",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('data null', () => pm.expect(body.data).to.eql(null));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters/{{hk_test_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "12. Xem học kỳ đã xóa → 404",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi NOT_FOUND', () => pm.expect(body.ma_loi).to.eql('NOT_FOUND'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters/{{hk_test_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "13. Mã/năm học đã xóa vẫn giữ chỗ → 422",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi VALIDATION_ERROR', () => pm.expect(body.ma_loi).to.eql('VALIDATION_ERROR'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 1,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "14. Tạo học kỳ riêng cho vòng đời",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_test_id')) { console.warn('Chạy request tạo học kỳ trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "if (pm.response.code === 201 && body.data) pm.collectionVariables.set('hk_vong_doi_id', body.data.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}L\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 2,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "15. UPCOMING → ONGOING (hoặc chặn kỳ thứ hai)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('200 hoặc 409 khi đã có kỳ ONGOING', () => pm.expect([200,409]).to.include(pm.response.code));",
+                                    "pm.collectionVariables.set('hk_da_ongoing', pm.response.code === 200 ? 'true' : 'false');",
+                                    "if (pm.response.code === 409) { pm.test('Chặn kỳ ONGOING thứ hai', () => pm.expect(body.ma_loi).to.eql('SEMESTER_TRANSITION_INVALID')); console.warn('Không tự đóng kỳ đang dùng. Các bước vòng đời phụ thuộc sẽ được bỏ qua.'); }",
+                                    "if (pm.response.code === 200) pm.test('Đã chuyển ONGOING', () => pm.expect(body.data.trang_thai).to.eql('ONGOING'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"ONGOING\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "16. ONGOING không được chuyển lùi → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') !== 'true') { console.warn('Đã có kỳ ONGOING thật: bỏ qua bước thay đổi trạng thái này.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi SEMESTER_TRANSITION_INVALID', () => pm.expect(body.ma_loi).to.eql('SEMESTER_TRANSITION_INVALID'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"UPCOMING\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "17. ONGOING không được xóa → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') !== 'true') { console.warn('Đã có kỳ ONGOING thật: bỏ qua bước thay đổi trạng thái này.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi DELETE_BLOCKED', () => pm.expect(body.ma_loi).to.eql('DELETE_BLOCKED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "18. ONGOING → CLOSED",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') !== 'true') { console.warn('Đã có kỳ ONGOING thật: bỏ qua bước thay đổi trạng thái này.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));",
+                                    "pm.test('Đã đóng kỳ', () => pm.expect(body.data && body.data.trang_thai).to.eql('CLOSED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"CLOSED\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "19. CLOSED không được mở lại → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') !== 'true') { console.warn('Đã có kỳ ONGOING thật: bỏ qua bước thay đổi trạng thái này.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi SEMESTER_TRANSITION_INVALID', () => pm.expect(body.ma_loi).to.eql('SEMESTER_TRANSITION_INVALID'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"trang_thai\": \"ONGOING\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "20. CLOSED không được sửa → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') !== 'true') { console.warn('Đã có kỳ ONGOING thật: bỏ qua bước thay đổi trạng thái này.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi SEMESTER_CLOSED', () => pm.expect(body.ma_loi).to.eql('SEMESTER_CLOSED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"ma_hoc_ky\": \"{{hk_test_ma}}L\",\n    \"ten_hoc_ky\": \"Học kỳ kiểm thử Postman\",\n    \"nam_hoc\": \"{{hk_test_nam}}-{{hk_test_nam_sau}}\",\n    \"ky_thu\": 2,\n    \"ngay_bat_dau\": \"{{hk_test_nam}}-01-01\",\n    \"ngay_ket_thuc\": \"{{hk_test_nam}}-05-31\",\n    \"mo_dang_ky_luc\": \"{{hk_test_nam}}-01-01 08:00:00\",\n    \"dong_dang_ky_luc\": \"{{hk_test_nam}}-01-31 23:59:59\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "21. CLOSED không được xóa → 409",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') !== 'true') { console.warn('Đã có kỳ ONGOING thật: bỏ qua bước thay đổi trạng thái này.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi DELETE_BLOCKED', () => pm.expect(body.ma_loi).to.eql('DELETE_BLOCKED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "22. Dọn kỳ thử nếu bị chặn ONGOING",
+                    "description": "Nếu có kỳ ONGOING thật, chỉ xóa kỳ UPCOMING vừa tạo cho test. Nếu đã đi hết vòng đời, kỳ CLOSED kiểm thử được giữ lại.",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('hk_vong_doi_id')) { console.warn('Chạy request tạo học kỳ vòng đời trước.'); pm.execution.skipRequest(); }",
+                                    "if (pm.collectionVariables.get('hk_da_ongoing') === 'true') { console.warn('Kỳ test đã CLOSED: giữ lịch sử theo quy tắc, không xóa.'); pm.execution.skipRequest(); }"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(true));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters/{{hk_vong_doi_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "23. Không có token → 401",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope đúng', () => pm.expect(body.success).to.eql(false));",
+                                    "pm.test('Mã lỗi UNAUTHENTICATED', () => pm.expect(body.ma_loi).to.eql('UNAUTHENTICATED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/semesters",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
+        {
+            "key": "hk_test_id",
+            "value": ""
+        },
+        {
+            "key": "hk_vong_doi_id",
+            "value": ""
+        },
+        {
+            "key": "hk_test_ma",
+            "value": ""
+        },
+        {
+            "key": "hk_test_nam",
+            "value": ""
+        },
+        {
+            "key": "hk_test_nam_sau",
+            "value": ""
+        },
+        {
+            "key": "hk_da_ongoing",
+            "value": ""
+        },
         {
             "key": "base_url",
             "value": "http://127.0.0.1:8000"

@@ -88,6 +88,17 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::post('/trash/{type}/{id}/restore', [ThungRacController::class, 'restore'])->name('api/trash/khoi-phuc');
     });
 
+    Route::prefix('semesters')->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->group(function () {
+        Route::get('/', [HocKyController::class, 'index']);
+        Route::get('{hocKy}', [HocKyController::class, 'show']);
+        Route::middleware('vai.tro:ADMIN')->group(function () {
+            Route::post('/', [HocKyController::class, 'store']);
+            Route::put('{hocKy}', [HocKyController::class, 'update']);
+            Route::delete('{hocKy}', [HocKyController::class, 'destroy']);
+            Route::patch('{hocKy}/status', [HocKyController::class, 'capNhatTrangThai']);
+        });
+    });
+
     Route::prefix('subjects')->group(function () {
         Route::get('/', [MonHocController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::post('/', [MonHocController::class, 'store'])->middleware('vai.tro:ADMIN');
