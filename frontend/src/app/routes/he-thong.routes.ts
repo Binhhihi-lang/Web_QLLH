@@ -61,4 +61,10 @@ export const heThongRoutes: Routes = [
     loadComponent: () =>
       import('@features/he-thong/nguoi-dung/danh-sach').then((m) => m.NguoiDungDanhSach),
   },
+  {
+    path: 'nhat-ky',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], title: 'Nhật ký hệ thống' },
+    loadComponent: () => import('@features/he-thong/nhat-ky/nhat-ky').then((m) => m.NhatKyPage),
+  },
 ];
