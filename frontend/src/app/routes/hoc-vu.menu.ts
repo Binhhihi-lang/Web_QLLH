@@ -1,7 +1,7 @@
 import { NhomMenu } from './dao-tao.menu';
 
 /**
- * Nhóm menu HỌC VỤ — thuộc Đạt.
+ * Nhóm menu HỌC VỤ — menu đăng ký SCR-30–33 theo phân công cập nhật của PM.
  *
  * Tách khỏi `sidebar.ts` để hai bạn FE không sửa cùng một file.
  */
@@ -19,6 +19,12 @@ export const HOC_VU_MENU: NhomMenu = {
       duong_dan: '/dang-ky',
       icon: 'how_to_reg',
       vai_tro: ['ADMIN'],
+    },
+    {
+      nhan: 'Danh sách đăng ký',
+      duong_dan: '/dang-ky/danh-sach',
+      icon: 'list_alt',
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
     },
     {
       nhan: 'Đăng ký của tôi',

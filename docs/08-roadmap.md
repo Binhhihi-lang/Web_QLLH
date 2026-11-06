@@ -301,6 +301,10 @@ chốt trong đợt này:
 | Phụ trách backend | **PM** — đăng ký học phần vẫn thuộc PM theo phân công ngày 2026-11-06 |
 | FE | Đạt: SCR-30 → SCR-33 |
 | Test | 10 feature test đăng ký đang pass; Postman folder 16 có 22 request cho luồng và lỗi. Còn test tranh chấp chỗ cuối trên MySQL |
+| API | `EnrollmentService` dùng chung; `/enrollments`, `/enrollments/bulk`, `/me/enrollments`; hủy |
+| Nghiệp vụ | BR-08, BR-09 (khóa dòng), BR-10, BR-11, BR-20, BR-22, **BR-23 (năm thứ)**, BR-26 (đợt theo kỳ của lớp), BR-27 (đăng ký lại) |
+| FE | Đức Anh: SCR-30 → SCR-33 (theo phân công PM); FE + mock hoàn tất, chờ API |
+| Test | TC-07, TC-08, TC-09, TC-17, TC-20, TC-21, TC-25, BR-09 tranh chấp chỗ cuối |
 | **Bàn giao** | ADMIN đăng ký hộ và STUDENT tự đăng ký; tranh chấp chỗ cuối an toàn |
 
 ---

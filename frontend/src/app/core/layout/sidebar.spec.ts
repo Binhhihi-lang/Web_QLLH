@@ -1,9 +1,12 @@
-import { signal } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { Component, signal } from '@angular/core';
+import { provideRouter, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { MenuService } from '@core/services/menu.service';
 import { Sidebar } from './sidebar';
+
+@Component({ standalone: true, template: '' })
+class TrangKiemTra {}
 
 describe('Sidebar', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<Sidebar>>;
@@ -59,10 +62,53 @@ describe('Sidebar', () => {
     menuService = { layMenuSidebar: vi.fn(() => of(menus)), phienBan: signal(0) };
     TestBed.configureTestingModule({
       imports: [Sidebar],
-      providers: [provideRouter([]), { provide: MenuService, useValue: menuService }],
+      providers: [
+        provideRouter([
+          {
+            path: 'dang-ky',
+            children: [
+              { path: '', component: TrangKiemTra },
+              { path: 'danh-sach', component: TrangKiemTra },
+            ],
+          },
+        ]),
+        { provide: MenuService, useValue: menuService },
+      ],
     });
     fixture = TestBed.createComponent(Sidebar);
     fixture.componentRef.setInput('vaiTro', 'ADMIN');
+  });
+
+  it('only activates the exact registration entry when sibling routes overlap', async () => {
+    menuService.layMenuSidebar.mockReturnValue(
+      of([
+        { ...menus[2], vai_tro: ['ADMIN'] },
+        {
+          ...menus[2],
+          id: 5,
+          ten: 'Danh sách đăng ký',
+          url: '/dang-ky/danh-sach',
+          vai_tro: ['ADMIN'],
+          thu_tu: 13,
+        },
+      ]),
+    );
+    fixture.detectChanges();
+
+    await TestBed.inject(Router).navigateByUrl('/dang-ky/danh-sach');
+    fixture.detectChanges();
+
+    const dangKy = fixture.nativeElement.querySelector('a[href="/dang-ky"]');
+    const danhSachDangKy = fixture.nativeElement.querySelector(
+      'a[href="/dang-ky/danh-sach"]',
+    );
+    expect(dangKy.classList.contains('active')).toBe(false);
+    expect(danhSachDangKy.classList.contains('active')).toBe(true);
+
+    await TestBed.inject(Router).navigateByUrl('/dang-ky');
+    fixture.detectChanges();
+    expect(dangKy.classList.contains('active')).toBe(true);
+    expect(danhSachDangKy.classList.contains('active')).toBe(false);
   });
 
   it('renders menu groups and entries supplied by the API for the current role', () => {

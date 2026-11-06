@@ -49,6 +49,7 @@ export type { MucMenu, NhomMenu } from '../../routes/dao-tao.menu';
                   <a
                     [routerLink]="muc.duong_dan"
                     routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: canKhopChinhXac(muc) }"
                     [title]="thuGon() ? muc.nhan : ''"
                     (click)="chonMuc.emit(muc)"
                   >
@@ -310,6 +311,17 @@ export class Sidebar {
     return [...nhomTheoTen].map(([tieu_de, muc]) => ({ tieu_de, muc }));
   });
 
+  canKhopChinhXac(muc: MucMenu): boolean {
+    const duongDanCon = `${muc.duong_dan.replace(/\/$/, '')}/`;
+    return this.nhomHienThi().some((nhom) =>
+      nhom.muc.some(
+        (mucKhac) =>
+          mucKhac.duong_dan !== muc.duong_dan &&
+          mucKhac.duong_dan.startsWith(duongDanCon),
+      ),
+    );
+  }
+
   taiMenu(): void {
     this.dangTai.set(true);
     this.loi.set(null);
@@ -340,6 +352,7 @@ export class Sidebar {
         '/lop-hoc-phan': 'class',
         '/lich-hoc': 'calendar_month',
         '/dang-ky': 'how_to_reg',
+        '/dang-ky/danh-sach': 'list_alt',
         '/dang-ky-cua-toi': 'how_to_reg',
         '/diem-danh': 'fact_check',
         '/diem': 'grading',

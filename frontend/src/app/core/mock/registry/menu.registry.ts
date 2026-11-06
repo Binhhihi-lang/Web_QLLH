@@ -30,6 +30,7 @@ const MENU_MOCK: MenuMock[] = [
   { id: 2, ten: 'Lớp học phần', url: '/lop-hoc-phan', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: null, thu_tu: 10, trang_thai: true },
   { id: 3, ten: 'Lịch học', url: '/lich-hoc', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: null, thu_tu: 11, trang_thai: true },
   { id: 4, ten: 'Đăng ký', url: '/dang-ky', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: ['ADMIN'], thu_tu: 12, trang_thai: true },
+  { id: 24, ten: 'Danh sách đăng ký', url: '/dang-ky/danh-sach', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: ['ADMIN', 'GIANG_VIEN'], thu_tu: 12, trang_thai: true },
   { id: 5, ten: 'Điểm danh', url: '/diem-danh', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: ['ADMIN', 'GIANG_VIEN'], thu_tu: 13, trang_thai: true },
   { id: 6, ten: 'Điểm', url: '/diem', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: ['ADMIN', 'GIANG_VIEN'], thu_tu: 14, trang_thai: true },
   { id: 20, ten: 'Đăng ký của tôi', url: '/dang-ky-cua-toi', vi_tri: 'sidebar', nhom: 'Học vụ', vai_tro: ['SINH_VIEN'], thu_tu: 15, trang_thai: true },
