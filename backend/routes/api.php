@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\DangKyHocPhanController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DiemController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HocKyController;
 use App\Http\Controllers\Api\HoSoController;
@@ -52,6 +53,10 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
     Route::put('/me', [HoSoController::class, 'capNhatHoSo'])->name('api/me/cap-nhat');
     Route::post('/me/avatar', [HoSoController::class, 'taiAnhDaiDien'])->name('api/me/avatar');
     Route::delete('/me/avatar', [HoSoController::class, 'xoaAnhDaiDien'])->name('api/me/avatar/xoa');
+    Route::get('/me/grades', [DiemController::class, 'diemCuaToi'])
+        ->middleware('vai.tro:SINH_VIEN')->name('api/me/grades');
+    Route::get('/me/gpa', [DiemController::class, 'gpaCuaToi'])
+        ->middleware('vai.tro:SINH_VIEN')->name('api/me/gpa');
 
     Route::get('/schedules', [LichHocController::class, 'index'])
         ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->name('api/schedules');
@@ -164,6 +169,8 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::post('/', [DangKyHocPhanController::class, 'store'])->middleware('vai.tro:ADMIN');
         Route::post('/bulk', [DangKyHocPhanController::class, 'bulk'])->middleware('vai.tro:ADMIN');
         Route::delete('/{dangKy}', [DangKyHocPhanController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+        Route::put('/{dangKyHocPhan}/grade', [DiemController::class, 'nhapDiemDon'])->middleware('vai.tro:GIANG_VIEN,ADMIN');
+        Route::get('/{dangKyHocPhan}/grade-history', [DiemController::class, 'lichSuDiem'])->middleware('vai.tro:GIANG_VIEN,ADMIN');
     });
 
     Route::prefix('me/enrollments')->middleware('vai.tro:SINH_VIEN')->group(function () {

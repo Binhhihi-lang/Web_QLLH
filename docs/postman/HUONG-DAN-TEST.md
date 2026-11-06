@@ -325,3 +325,23 @@ folder 17 không có request cố tình trả 4xx.
 **Riêng request 06 — Trùng lịch:** request 02 trước đó phải đăng ký thành công cho sinh viên vào một lớp có buổi `SCHEDULED`. Biến `enrollment_conflict_section_id` phải là **một lớp khác**, cũng có buổi `SCHEDULED` cùng ngày với buổi ở lớp đã đăng ký và giờ học giao nhau. Ví dụ lớp đã đăng ký học 09:00–10:00, lớp ở request 06 học 09:30–10:30 cùng ngày thì bị trùng; nếu lớp mới bắt đầu lúc 10:00 thì không trùng. Kiểm tra ngày/giờ ở bảng `buoi_hoc`; không cần cùng phòng. Nếu dữ liệu hiện tại không có cặp buổi như vậy thì request 06 sẽ không thể tạo lỗi `SCHEDULE_CONFLICT` chỉ bằng cách điền một ID bất kỳ. Response lỗi có `errors.trung_lich` để xem mã lớp và thời gian của cả hai buổi.
 
 Các lỗi được kiểm tra: `OUTSIDE_REGISTRATION`, `SECTION_FULL`, `DUPLICATE_ENROLLMENT`, `DUPLICATE_SUBJECT_IN_SEMESTER`, `SCHEDULE_CONFLICT`, `WRONG_STUDY_YEAR`, `HAS_GRADE_OR_ATTENDANCE`, cùng các lỗi quyền `403` và validate `422`.
+
+---
+
+## 13. Quản lý điểm (folder 18)
+
+Folder **18 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)** bao gồm các API quản lý và tính toán điểm theo hợp đồng `docs/04-api-contract.md` mục 13:
+
+1. **Chuẩn bị:** Chạy `php artisan serve` ở `backend/` và import lại file `docs/postman/QLLH.postman_collection.json`.
+2. **Thứ tự thực thi:**
+   - **Request 00 — Đăng nhập Giảng viên:** Lưu `diem_token_gv`.
+   - **Request 01 — Lấy danh sách lớp:** Tự động lấy `diem_lop_hp_id`.
+   - **Request 02 — Bảng điểm cả lớp:** Lấy danh sách sinh viên và gán `diem_dang_ky_id`.
+   - **Request 03 — Giảng viên nhập điểm đơn lẻ (`PUT /enrollments/:id/grade`):** Kiểm tra tính điểm tổng kết 25/25/50, quy đổi điểm chữ, hệ 4 và ghi vết audit `lich_su_diem`.
+   - **Request 04 — Xem lịch sử sửa điểm (`GET /enrollments/:id/grade-history`):** Đọc danh sách các lần chỉnh sửa điểm của đăng ký học phần kèm người sửa và thời gian.
+   - **Request 05 — Đăng nhập Sinh viên:** Lưu `diem_token_sv`.
+   - **Request 06 — Sinh viên xem điểm cá nhân (`GET /me/grades`):** Trả danh sách môn học của học kỳ, GPA hệ 10 và GPA hệ 4.
+   - **Request 07 — Sinh viên xem GPA & CPA tích lũy (`GET /me/gpa`):** Trả GPA kỳ hiện tại và CPA tích lũy từ các kỳ CLOSED.
+   - **Request 08 — Validate số thập phân (422):** Điểm có quá 2 chữ số thập phân bị chặn.
+   - **Request 09 — Phân quyền vai trò (403):** Sinh viên cố ý nhập điểm bị chặn 403.
+
