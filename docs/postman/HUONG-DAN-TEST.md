@@ -325,3 +325,27 @@ folder 17 không có request cố tình trả 4xx.
 **Riêng request 06 — Trùng lịch:** request 02 trước đó phải đăng ký thành công cho sinh viên vào một lớp có buổi `SCHEDULED`. Biến `enrollment_conflict_section_id` phải là **một lớp khác**, cũng có buổi `SCHEDULED` cùng ngày với buổi ở lớp đã đăng ký và giờ học giao nhau. Ví dụ lớp đã đăng ký học 09:00–10:00, lớp ở request 06 học 09:30–10:30 cùng ngày thì bị trùng; nếu lớp mới bắt đầu lúc 10:00 thì không trùng. Kiểm tra ngày/giờ ở bảng `buoi_hoc`; không cần cùng phòng. Nếu dữ liệu hiện tại không có cặp buổi như vậy thì request 06 sẽ không thể tạo lỗi `SCHEDULE_CONFLICT` chỉ bằng cách điền một ID bất kỳ. Response lỗi có `errors.trung_lich` để xem mã lớp và thời gian của cả hai buổi.
 
 Các lỗi được kiểm tra: `OUTSIDE_REGISTRATION`, `SECTION_FULL`, `DUPLICATE_ENROLLMENT`, `DUPLICATE_SUBJECT_IN_SEMESTER`, `SCHEDULE_CONFLICT`, `WRONG_STUDY_YEAR`, `HAS_GRADE_OR_ATTENDANCE`, cùng các lỗi quyền `403` và validate `422`.
+
+---
+
+## 13. Điểm danh (folder 18)
+
+1. Khởi động backend bằng `php artisan serve` trong thư mục `backend/`.
+2. Import lại `docs/postman/QLLH.postman_collection.json`.
+3. Mở folder **18 — Điểm danh (SCR-38 → SCR-40, FR-11)** và chạy tuần tự từ **00 → 09**:
+   - **00. Đăng nhập Giảng viên:** Login bằng `giangvien@example.com` / `password`, tự động lưu `token`.
+   - **01. Giảng viên lấy danh sách lịch dạy:** Tự động lấy `buoi_hoc_id` và `lop_hp_id` lưu vào collection variables `diem_danh_buoi_hoc_id` và `diem_danh_lop_hp_id`.
+   - **02. Giảng viên lấy danh sách sinh viên buổi học (GET /sessions/:id/attendance):** Lấy danh sách sinh viên hợp lệ tại thời điểm buổi học (BR-21), lưu `diem_danh_dang_ky_id`.
+   - **03. Giảng viên điểm danh hàng loạt (PUT /sessions/:id/attendance):** Lưu trạng thái điểm danh (`PRESENT`, `ABSENT`, `LATE`, `EXCUSED`), buổi học tự động chuyển sang `DONE`.
+   - **04. Xem thống kê chuyên cần lớp học phần (GET /sections/:id/attendance-summary):** Bảng thống kê tỷ lệ chuyên cần cả lớp theo công thức FR-11.05.
+   - **05. Đăng nhập Sinh viên:** Login bằng `sinhvien@example.com` / `password`, cập nhật `token`.
+   - **06. Sinh viên xem lịch sử điểm danh của mình (GET /me/attendance):** Xem trạng thái điểm danh từng buổi đã diễn ra kèm phân trang.
+   - **07. Sinh viên xem thống kê chuyên cần (GET /me/attendance-summary):** Thống kê số buổi có mặt, đi muộn, vắng và tỷ lệ chuyên cần theo từng lớp học phần đã đăng ký (BR-27).
+   - **08. Đăng nhập Giảng viên khác:** Login bằng `giangvien1@example.com` / `password`, lưu `token_gv_khac`.
+   - **09. Giảng viên khác điểm danh lớp không phụ trách:** Kiểm tra chặn `403 Forbidden` do vi phạm phân quyền BR-03.
+4. Chạy toàn bộ test tự động:
+   ```bash
+   cd backend
+   php vendor/bin/phpunit tests/Feature/DiemDanhTest.php
+   ```
+   Kết quả kỳ vọng: 8 tests passed, 37 assertions.

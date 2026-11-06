@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\DangKyHocPhanController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DiemDanhController;
 use App\Http\Controllers\Api\GiangVienController;
 use App\Http\Controllers\Api\HocKyController;
 use App\Http\Controllers\Api\HoSoController;
@@ -172,6 +173,11 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::delete('/{dangKy}', [DangKyHocPhanController::class, 'cuaToiDestroy']);
     });
 
+    Route::prefix('me')->middleware('vai.tro:SINH_VIEN')->group(function () {
+        Route::get('attendance', [DiemDanhController::class, 'cuaToi'])->name('api/me/attendance');
+        Route::get('attendance-summary', [DiemDanhController::class, 'thongKeCuaToi'])->name('api/me/attendance-summary');
+    });
+
     /*
     | Danh mục Khoa / Ngành — ADR-020. Đọc mở cho cả ba vai trò (dữ liệu tham chiếu),
     | ghi chỉ ADMIN. Dropdown ở FE dùng `/options/khoa` và `/options/nganh` cho nhẹ.
@@ -190,6 +196,13 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('{nganh}', [NganhController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::put('{nganh}', [NganhController::class, 'update'])->middleware('vai.tro:ADMIN');
         Route::delete('{nganh}', [NganhController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    });
+
+    Route::prefix('sessions')->group(function () {
+        Route::get('{buoiHoc}/attendance', [DiemDanhController::class, 'danhSach'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::put('{buoiHoc}/attendance', [DiemDanhController::class, 'luu'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
     });
 
     /*
