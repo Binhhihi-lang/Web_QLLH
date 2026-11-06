@@ -40,7 +40,8 @@ export const hocVuRoutes: Routes = [
     data: { roles: ['ADMIN', 'GIANG_VIEN'] },
     loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/sinh-vien').then((m) => m.LopHocPhanSinhVien),
   },
-  { path: 'lop-hoc-phan/:id/diem', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
+  { path: 'lop-hoc-phan/:id/diem/lich-su', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-43', title: 'Lịch sử sửa điểm' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
+  { path: 'lop-hoc-phan/:id/diem', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-41', title: 'Bảng điểm lớp' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
   { path: 'lop-hoc-phan/them', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
   { path: 'lop-hoc-phan/:id/sua', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
   { path: 'lop-hoc-phan/:id', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/chi-tiet').then((m) => m.LopHocPhanChiTiet) },
@@ -86,13 +87,15 @@ export const hocVuRoutes: Routes = [
     path: 'diem',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-41', title: 'Nhập điểm' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/hoc-vu/diem/danh-sach-lop').then((m) => m.DanhSachLopNhapDiem),
   },
   {
     path: 'diem-cua-toi',
     canActivate: [roleGuard],
     data: { roles: ['SINH_VIEN'], ma: 'SCR-42', title: 'Điểm của tôi' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () =>
+      import('@features/hoc-vu/diem/diem-cua-toi').then((m) => m.DiemCuaToi),
   },
 
 ];

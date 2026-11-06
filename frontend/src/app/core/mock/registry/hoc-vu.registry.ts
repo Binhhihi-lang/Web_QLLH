@@ -25,6 +25,16 @@ import type {
   SinhVienLop,
 } from '@core/services/lop-hoc-phan.service';
 
+interface LichSuDiemMock {
+  id: number;
+  truong: string;
+  gia_tri_cu: string | null;
+  gia_tri_moi: string | null;
+  nguoi_sua: string;
+  ly_do: string | null;
+  thoi_diem: string;
+}
+
 /**
  * Mock cho nhóm HỌC VỤ — thuộc Đạt.
  *
@@ -39,7 +49,9 @@ export class HocVuRegistry {
     giang_vien: { ...row.giang_vien },
   }));
   private readonly diemDaLuu = new Map<number, DongDiem[]>();
+  private readonly lichSuDiem = new Map<number, LichSuDiemMock[]>();
   private readonly dangKyDaHuy = new Set<number>();
+  private soLichSu = 1;
 
   constructor(private readonly system: SystemRegistry) {}
 
@@ -48,8 +60,26 @@ export class HocVuRegistry {
     path: string,
     params: HttpParams,
     body: unknown = null,
-    _vaiTro: string | null = null,
+    vaiTro: string | null = null,
   ): object | undefined {
+    if (path === '/me/grades' && method === 'GET') {
+      return vaiTro === 'SINH_VIEN'
+        ? ok(this.bangDiemSinhVien())
+        : loi('FORBIDDEN', 'Chỉ sinh viên mới xem được điểm cá nhân.');
+    }
+
+    if (path === '/me/gpa' && method === 'GET') {
+      return vaiTro === 'SINH_VIEN'
+        ? ok(this.tongQuanGpa())
+        : loi('FORBIDDEN', 'Chỉ sinh viên mới xem được GPA cá nhân.');
+    }
+
+    const gradeHistory = path.match(/^\/enrollments\/(\d+)\/grade-history$/);
+    if (gradeHistory && method === 'GET') {
+      const id = Number(gradeHistory[1]);
+      return ok(this.lichSuDiem.get(id) ?? []);
+    }
+
     const enrollment = path.match(/^\/enrollments\/(\d+)$/);
     if (enrollment && method === 'DELETE') {
       const id = Number(enrollment[1]);
@@ -136,9 +166,19 @@ export class HocVuRegistry {
       const row = this.tim(id);
       if (!row) return loi('NOT_FOUND', 'Không tìm thấy lớp học phần.');
       if (row.da_chot_diem) return loi('GRADE_LOCKED', 'Lớp học phần đã chốt điểm.');
-      const diem = this.bodyRecord(body)['diem'];
+      const request = this.bodyRecord(body);
+      const lyDo = request['ly_do'];
+      if (lyDo !== undefined && (typeof lyDo !== 'string' || lyDo.length > 500)) {
+        return loiValidation({ ly_do: ['Lý do tối đa 500 ký tự.'] });
+      }
+      const diem = request['diem'];
       if (!Array.isArray(diem)) return loiValidation({ diem: ['Danh sách điểm không hợp lệ.'] });
-      const capNhat = this.capNhatBangDiem(id, diem);
+      const capNhat = this.capNhatBangDiem(
+        id,
+        diem,
+        typeof lyDo === 'string' ? lyDo.trim() : null,
+        vaiTro ?? 'Giảng viên demo',
+      );
       if (!capNhat.ok) return loiValidation(capNhat.errors);
       this.diemDaLuu.set(id, capNhat.rows);
       return ok(capNhat.rows);
@@ -319,9 +359,87 @@ export class HocVuRegistry {
     });
   }
 
+  private bangDiemSinhVien() {
+    const hocKy = this.lopHocPhan[0]?.hoc_ky;
+    const lopCungKy = this.lopHocPhan.filter((lop) => lop.hoc_ky.id === hocKy?.id).slice(0, 5);
+    const monHoc = lopCungKy.flatMap((lop) => {
+      const row = this.diemDaLuu.get(lop.id)?.[0] ?? this.diemLop(lop.id)[0];
+      if (!row) return [];
+      return [
+        {
+          ma_mon: lop.mon_hoc.ma_mon,
+          ten_mon: lop.mon_hoc.ten_mon,
+          so_tin_chi: lop.mon_hoc.so_tin_chi,
+          diem_chuyen_can: row.diem_chuyen_can,
+          diem_giua_ky: row.diem_giua_ky,
+          diem_cuoi_ky: row.diem_cuoi_ky,
+          diem_tong_ket: row.diem_tong_ket,
+          diem_chu: row.diem_chu,
+          diem_he_4: row.diem_he_4,
+          ket_qua:
+            row.diem_tong_ket === null ? null : row.diem_tong_ket >= 4 ? 'DAT' : 'KHONG_DAT',
+        },
+      ];
+    });
+    const tongTinChi = monHoc.reduce((sum, mon) => sum + mon.so_tin_chi, 0);
+    const gpaHe10 =
+      tongTinChi > 0
+        ? Number(
+            (
+              monHoc.reduce((sum, mon) => sum + (mon.diem_tong_ket ?? 0) * mon.so_tin_chi, 0) /
+              tongTinChi
+            ).toFixed(2),
+          )
+        : null;
+    const gpaHe4 =
+      tongTinChi > 0
+        ? Number(
+            (
+              monHoc.reduce((sum, mon) => sum + (mon.diem_he_4 ?? 0) * mon.so_tin_chi, 0) /
+              tongTinChi
+            ).toFixed(2),
+          )
+        : null;
+
+    return {
+      hoc_ky: hocKy
+        ? {
+            id: hocKy.id,
+            ma_hoc_ky: hocKy.ma_hoc_ky,
+            ten_hoc_ky: hocKy.ten_hoc_ky,
+          }
+        : { id: 1, ma_hoc_ky: 'DEMO-1', ten_hoc_ky: 'Học kỳ demo' },
+      mon_hoc: monHoc,
+      gpa_he_10: gpaHe10,
+      gpa_he_4: gpaHe4,
+      tong_tin_chi: tongTinChi,
+    };
+  }
+
+  private tongQuanGpa() {
+    const bangDiem = this.bangDiemSinhVien();
+    return {
+      hoc_ky_hien_tai: {
+        ...bangDiem.hoc_ky,
+        gpa_he_10: bangDiem.gpa_he_10,
+        gpa_he_4: bangDiem.gpa_he_4,
+        tong_tin_chi: bangDiem.tong_tin_chi,
+      },
+      tich_luy: {
+        gpa_he_10: 7.42,
+        gpa_he_4: 2.87,
+        tong_tin_chi: 96,
+        tin_chi_dat: 88,
+        so_hoc_ky_da_tinh: 5,
+      },
+    };
+  }
+
   private capNhatBangDiem(
     id: number,
     submissions: unknown[],
+    lyDo: string | null,
+    nguoiSua: string,
   ): { ok: true; rows: DongDiem[] } | { ok: false; errors: Record<string, string[]> } {
     const current = this.diemDaLuu.get(id) ?? this.diemLop(id);
     const indexById = new Map(current.map((row, index) => [row.dang_ky_hoc_phan_id, index]));
@@ -392,6 +510,20 @@ export class HocVuRegistry {
             updated.diem_cuoi_ky,
           ),
         );
+      }
+      for (const field of ['diem_chuyen_can', 'diem_giua_ky', 'diem_cuoi_ky'] as const) {
+        if (row[field] === updated[field]) continue;
+        const history = this.lichSuDiem.get(enrollmentId) ?? [];
+        history.unshift({
+          id: this.soLichSu++,
+          truong: field,
+          gia_tri_cu: row[field] === null ? null : String(row[field]),
+          gia_tri_moi: updated[field] === null ? null : String(updated[field]),
+          nguoi_sua: nguoiSua,
+          ly_do: lyDo,
+          thoi_diem: new Date().toISOString(),
+        });
+        this.lichSuDiem.set(enrollmentId, history);
       }
       rows[rowIndex] = updated;
     });

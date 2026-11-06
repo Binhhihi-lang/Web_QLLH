@@ -29,6 +29,7 @@ export interface ThamSoDanhSachLopHanhChinh extends ThamSoDanhSach {
 
 export interface SinhVienLopInput extends ThamSoDanhSach {
   q?: string;
+  trang_thai?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

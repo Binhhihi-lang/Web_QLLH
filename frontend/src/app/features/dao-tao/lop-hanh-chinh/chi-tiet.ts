@@ -7,6 +7,7 @@ import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import { PageHeader } from '@shared/ui/page-header';
+import { SearchInput } from '@shared/ui/search-input';
 import {
   LopHanhChinhChiTiet as LopHanhChinhData,
   LopHanhChinhService,
@@ -17,7 +18,15 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
 @Component({
   selector: 'app-lop-hanh-chinh-chi-tiet',
   standalone: true,
-  imports: [AppAlert, AppButton, ChonSinhVienDialog, ConfirmDialog, PageHeader, RouterLink],
+  imports: [
+    AppAlert,
+    AppButton,
+    ChonSinhVienDialog,
+    ConfirmDialog,
+    PageHeader,
+    RouterLink,
+    SearchInput,
+  ],
   template: `
     @if (dangTai()) {
       <div class="dang-tai" role="status" aria-live="polite">Đang tải thông tin lớp…</div>
@@ -77,10 +86,9 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
             <span class="nhan-muc">THÀNH VIÊN LỚP</span>
             <h2 id="tieu-de-sinh-vien">Danh sách sinh viên</h2>
             <p>
-              @if (tongSinhVien() !== null) {
-                {{ tongSinhVien() }} sinh viên trong lớp
-              } @else {
-                Sinh viên được xếp theo họ tên
+              {{ lopHienTai.si_so }} sinh viên trong lớp
+              @if (coLocRoster() && tongSinhVien() !== null) {
+                · {{ tongSinhVien() }} kết quả phù hợp
               }
             </p>
           </div>
@@ -88,6 +96,32 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
             <span class="material-icons" aria-hidden="true">person_add</span>
             Gán sinh viên
           </app-button>
+        </div>
+
+        <div class="bo-loc-sinh-vien" aria-label="Tìm kiếm và lọc sinh viên">
+          <app-search-input
+            id="tim-sinh-vien-trong-lop"
+            placeholder="Tìm mã sinh viên, họ tên hoặc email…"
+            [value]="tuKhoaDanhSach()"
+            (valueChange)="doiTuKhoaDanhSach($event)"
+          />
+          <label class="loc-trang-thai-sinh-vien">
+            <span>Trạng thái</span>
+            <select
+              aria-label="Lọc sinh viên theo trạng thái"
+              [value]="locTrangThaiDanhSach()"
+              (change)="doiLocTrangThaiDanhSach($event)"
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="true">Đang hoạt động</option>
+              <option value="false">Đã khóa</option>
+            </select>
+          </label>
+          @if (coLocRoster()) {
+            <button type="button" class="xoa-loc-sinh-vien" (click)="xoaLocDanhSach()">
+              Xóa bộ lọc
+            </button>
+          }
         </div>
 
         @if (loiRoster()) {
@@ -102,9 +136,16 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
         } @else if (sinhVienTrongLop().length === 0) {
           <div class="rong">
             <span class="material-icons" aria-hidden="true">groups</span>
-            <strong>Lớp chưa có sinh viên</strong>
-            <p>Gán sinh viên hiện có vào lớp để cập nhật danh sách.</p>
-            <app-button variant="secondary" (click)="moHopGanSinhVien()">Gán sinh viên</app-button>
+            @if (coLocRoster()) {
+              <strong>Không tìm thấy sinh viên phù hợp</strong>
+              <p>Thử thay đổi từ khóa hoặc trạng thái lọc.</p>
+            } @else {
+              <strong>Lớp chưa có sinh viên</strong>
+              <p>Gán sinh viên hiện có vào lớp để cập nhật danh sách.</p>
+              <app-button variant="secondary" (click)="moHopGanSinhVien()">
+                Gán sinh viên
+              </app-button>
+            }
           </div>
         } @else {
           <div class="bang-bao">
@@ -131,15 +172,14 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
                       </span>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        class="nut-go"
+                      <app-button
+                        variant="danger"
+                        size="sm"
                         [disabled]="dangCapNhat()"
-                        [attr.aria-label]="'Gỡ ' + sv.ho_ten + ' khỏi lớp'"
                         (click)="xacNhanGo(sv)"
                       >
                         Gỡ khỏi lớp
-                      </button>
+                      </app-button>
                     </td>
                   </tr>
                 }
@@ -380,6 +420,41 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
       font-size: var(--text-caption);
     }
 
+    .bo-loc-sinh-vien {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .loc-trang-thai-sinh-vien {
+      display: grid;
+      gap: 6px;
+      font-size: var(--text-caption);
+      font-weight: 600;
+    }
+
+    .loc-trang-thai-sinh-vien select {
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+      color: var(--color-ink);
+    }
+
+    .xoa-loc-sinh-vien {
+      grid-column: 1 / -1;
+      justify-self: start;
+      padding: 6px 0;
+      border: 0;
+      background: transparent;
+      color: var(--color-primary);
+      font: 600 var(--text-small) var(--font-body);
+      cursor: pointer;
+    }
+
     .bang-bao {
       overflow-x: auto;
       border: 1px solid var(--color-border);
@@ -432,7 +507,6 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
       color: var(--color-ink-muted);
     }
 
-    .nut-go,
     .nut-thu-lai {
       min-height: 32px;
       padding: 5px 8px;
@@ -445,20 +519,13 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
       white-space: nowrap;
     }
 
-    .nut-go:hover:not(:disabled),
     .nut-thu-lai:hover {
       background: var(--color-danger-soft);
     }
 
-    .nut-go:focus-visible,
     .nut-thu-lai:focus-visible {
       outline: 2px solid var(--color-primary);
       outline-offset: 2px;
-    }
-
-    .nut-go:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
     }
 
     .phan-trang {
@@ -587,6 +654,10 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
         flex-direction: column;
       }
 
+      .bo-loc-sinh-vien {
+        grid-template-columns: 1fr;
+      }
+
     }
 
     @media (max-width: 380px) {
@@ -620,6 +691,8 @@ export class LopHanhChinhChiTiet {
   readonly hopGanMo = signal(false);
   readonly hopXacNhanChuyen = signal(false);
   readonly tuKhoa = signal('');
+  readonly tuKhoaDanhSach = signal('');
+  readonly locTrangThaiDanhSach = signal('');
   readonly loiTai = signal('');
   readonly loiRoster = signal('');
   readonly loiTimKiem = signal('');
@@ -632,6 +705,9 @@ export class LopHanhChinhChiTiet {
   readonly tongSinhVien = signal<number | null>(null);
   readonly trangHienTai = signal(1);
   readonly soTrang = signal(1);
+  readonly coLocRoster = computed(
+    () => Boolean(this.tuKhoaDanhSach().trim()) || this.locTrangThaiDanhSach() !== '',
+  );
   readonly svCanChuyen = computed(() =>
     this.daChon().filter((sv) => sv.lop_hanh_chinh && sv.lop_hanh_chinh.id !== this.id),
   );
@@ -774,8 +850,16 @@ export class LopHanhChinhChiTiet {
     if (this.id === null) return;
     this.dangTaiRoster.set(true);
     this.loiRoster.set('');
+    const trangThai = this.locTrangThaiDanhSach();
     this.service
-      .laySinhVien(this.id, { page, per_page: 25, sort_by: 'ho_ten', sort_dir: 'asc' })
+      .laySinhVien(this.id, {
+        page,
+        per_page: 25,
+        sort_by: 'ho_ten',
+        sort_dir: 'asc',
+        q: this.tuKhoaDanhSach().trim() || undefined,
+        trang_thai: trangThai === '' ? undefined : trangThai === 'true',
+      })
       .subscribe({
         next: (response) => {
           this.sinhVienTrongLop.set(response.data);
@@ -789,6 +873,25 @@ export class LopHanhChinhChiTiet {
           this.dangTaiRoster.set(false);
         },
       });
+  }
+
+  doiTuKhoaDanhSach(q: string): void {
+    this.tuKhoaDanhSach.set(q);
+    this.trangHienTai.set(1);
+    this.taiDanhSachSinhVien();
+  }
+
+  doiLocTrangThaiDanhSach(event: Event): void {
+    this.locTrangThaiDanhSach.set((event.target as HTMLSelectElement).value);
+    this.trangHienTai.set(1);
+    this.taiDanhSachSinhVien();
+  }
+
+  xoaLocDanhSach(): void {
+    this.tuKhoaDanhSach.set('');
+    this.locTrangThaiDanhSach.set('');
+    this.trangHienTai.set(1);
+    this.taiDanhSachSinhVien();
   }
 
   private tai(): void {

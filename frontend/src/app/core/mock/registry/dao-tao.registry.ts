@@ -241,6 +241,10 @@ export class DaoTaoRegistry {
       }
       let rows = this.sinhVien.filter((r) => !r.da_xoa && r.lop_hanh_chinh?.id === lopId);
       rows = searchBy(rows, params.get('q'), ['ma_sv', 'ho_ten', 'email']);
+      const trangThai = params.get('trang_thai');
+      if (trangThai === 'true' || trangThai === 'false') {
+        rows = rows.filter((sinhVien) => sinhVien.trang_thai === (trangThai === 'true'));
+      }
       rows = sortBy(rows, params, 'ho_ten');
       return paginate(rows, params, `/api/admin-classes/${lopId}/students`);
     }
