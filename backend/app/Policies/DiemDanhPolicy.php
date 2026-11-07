@@ -13,14 +13,14 @@ class DiemDanhPolicy
 {
     public function diemDanh(User $nguoiDung, BuoiHoc $buoiHoc): bool
     {
+        if ($nguoiDung->laAdmin()) {
+            return true;
+        }
+
         $lop = $buoiHoc->lopHocPhan;
 
         if ($lop->hocKy?->trang_thai === 'CLOSED') {
             return false;
-        }
-
-        if ($nguoiDung->laAdmin()) {
-            return true;
         }
 
         return $nguoiDung->giangVien !== null

@@ -9161,6 +9161,339 @@
           ]
         }
       ]
+    },
+    {
+      "name": "20 — Điểm danh (SCR-38 → SCR-40, FR-11)",
+      "description": "Điểm danh buổi học, sửa điểm danh (BR-21, BR-14), thống kê chuyên cần theo lớp và cá nhân (/me/attendance, /me/attendance-summary).",
+      "item": [
+        {
+          "name": "00. Đăng nhập Giảng viên",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"giangvien@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập GV thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Vai trò là GIANG_VIEN', () => pm.expect(body.data.nguoi_dung.vai_tro).to.eql('GIANG_VIEN'));",
+                  "pm.collectionVariables.set('token', body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01. Giảng viên lấy danh sách lịch dạy để lấy buoi_hoc_id và lop_hp_id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/schedules?per_page=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy lịch dạy thành công (200)', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.length > 0) {",
+                  "    pm.collectionVariables.set('diem_danh_buoi_hoc_id', res.data[0].id);",
+                  "    pm.collectionVariables.set('diem_danh_lop_hp_id', res.data[0].lop_hoc_phan.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02. Giảng viên lấy danh sách sinh viên buổi học để điểm danh (GET /sessions/:id/attendance)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sessions/{{diem_danh_buoi_hoc_id}}/attendance"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy danh sách điểm danh buổi học thành công (200)', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.danh_sach && res.data.danh_sach.length > 0) {",
+                  "    pm.collectionVariables.set('diem_danh_dang_ky_id', res.data.danh_sach[0].dang_ky_hoc_phan_id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03. Giảng viên điểm danh hàng loạt (PUT /sessions/:id/attendance)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diem_danh\": [\n    {\n      \"dang_ky_hoc_phan_id\": {{diem_danh_dang_ky_id}},\n      \"trang_thai\": \"PRESENT\",\n      \"ghi_chu\": \"Có mặt đúng giờ\"\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/api/sessions/{{diem_danh_buoi_hoc_id}}/attendance"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Điểm danh hàng loạt thành công (200)', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Buổi học chuyển sang DONE', () => pm.expect(res.data.trang_thai_buoi_hoc).to.eql('DONE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04. Xem thống kê chuyên cần của lớp học phần (GET /sections/:id/attendance-summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sections/{{diem_danh_lop_hp_id}}/attendance-summary"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy thống kê chuyên cần lớp thành công (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05. Đăng nhập Sinh viên",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sinhvien@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập SV thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Vai trò là SINH_VIEN', () => pm.expect(body.data.nguoi_dung.vai_tro).to.eql('SINH_VIEN'));",
+                  "pm.collectionVariables.set('token', body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06. Sinh viên xem lịch sử điểm danh của mình (GET /me/attendance)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/me/attendance?per_page=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy lịch sử điểm danh thành công (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07. Sinh viên xem thống kê chuyên cần (GET /me/attendance-summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/me/attendance-summary"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy thống kê chuyên cần SV thành công (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08. Đăng nhập Giảng viên khác",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"giangvien1@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập GV khác thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token_gv_khac', body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09. Giảng viên khác điểm danh lớp không phụ trách -> 403 Forbidden",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_gv_khac}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diem_danh\": [\n    {\n      \"dang_ky_hoc_phan_id\": {{diem_danh_dang_ky_id}},\n      \"trang_thai\": \"PRESENT\"\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/api/sessions/{{diem_danh_buoi_hoc_id}}/attendance"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Bị chặn 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -9466,6 +9799,26 @@
     },
     {
       "key": "nhat_ky_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "diem_danh_buoi_hoc_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "diem_danh_lop_hp_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "diem_danh_dang_ky_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "token_gv_khac",
       "value": "1",
       "type": "string"
     }

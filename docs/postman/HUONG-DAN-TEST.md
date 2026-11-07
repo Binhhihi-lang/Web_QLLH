@@ -367,3 +367,27 @@ Folder **19 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API
    ```
    Kết quả kỳ vọng: 8 tests passed, 191 assertions.
 
+
+---
+
+## 13. Điểm danh (folder 18)
+
+1. Khởi động backend bằng `php artisan serve` trong thư mục `backend/`.
+2. Import lại `docs/postman/QLLH.postman_collection.json`.
+3. Mở folder **18 — Điểm danh (SCR-38 → SCR-40, FR-11)** và chạy tuần tự từ **00 → 09**:
+   - **00. Đăng nhập Giảng viên:** Login bằng `giangvien@example.com` / `password`, tự động lưu `token`.
+   - **01. Giảng viên lấy danh sách lịch dạy:** Tự động lấy `buoi_hoc_id` và `lop_hp_id` lưu vào collection variables `diem_danh_buoi_hoc_id` và `diem_danh_lop_hp_id`.
+   - **02. Giảng viên lấy danh sách sinh viên buổi học (GET /sessions/:id/attendance):** Lấy danh sách sinh viên hợp lệ tại thời điểm buổi học (BR-21), lưu `diem_danh_dang_ky_id`.
+   - **03. Giảng viên điểm danh hàng loạt (PUT /sessions/:id/attendance):** Lưu trạng thái điểm danh (`PRESENT`, `ABSENT`, `LATE`, `EXCUSED`), buổi học tự động chuyển sang `DONE`.
+   - **04. Xem thống kê chuyên cần lớp học phần (GET /sections/:id/attendance-summary):** Bảng thống kê tỷ lệ chuyên cần cả lớp theo công thức FR-11.05.
+   - **05. Đăng nhập Sinh viên:** Login bằng `sinhvien@example.com` / `password`, cập nhật `token`.
+   - **06. Sinh viên xem lịch sử điểm danh của mình (GET /me/attendance):** Xem trạng thái điểm danh từng buổi đã diễn ra kèm phân trang.
+   - **07. Sinh viên xem thống kê chuyên cần (GET /me/attendance-summary):** Thống kê số buổi có mặt, đi muộn, vắng và tỷ lệ chuyên cần theo từng lớp học phần đã đăng ký (BR-27).
+   - **08. Đăng nhập Giảng viên khác:** Login bằng `giangvien1@example.com` / `password`, lưu `token_gv_khac`.
+   - **09. Giảng viên khác điểm danh lớp không phụ trách:** Kiểm tra chặn `403 Forbidden` do vi phạm phân quyền BR-03.
+4. Chạy toàn bộ test tự động:
+   ```bash
+   cd backend
+   php vendor/bin/phpunit tests/Feature/DiemDanhTest.php
+   ```
+   Kết quả kỳ vọng: 8 tests passed, 37 assertions.
