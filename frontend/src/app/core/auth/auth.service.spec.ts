@@ -115,6 +115,20 @@ describe('AuthService', () => {
     expect(service.nguoiDung()).toEqual(nguoiDung);
   });
 
+  it('updates the current profile through PUT /me and refreshes the session user', async () => {
+    const updatedUser = { ...nguoiDung, name: 'Quản trị mới', email: 'moi@example.com' };
+    const result = firstValueFrom(
+      service.capNhatHoSo({ name: 'Quản trị mới', email: 'moi@example.com' }),
+    );
+    const request = http.expectOne(`${environment.apiBaseUrl}/me`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ name: 'Quản trị mới', email: 'moi@example.com' });
+    request.flush({ success: true, message: 'Cập nhật hồ sơ thành công.', data: updatedUser });
+
+    await expect(result).resolves.toEqual(updatedUser);
+    expect(service.nguoiDung()).toEqual(updatedUser);
+  });
+
   it('changes the password and clears the forced-change flag', async () => {
     service.nguoiDung.set({ ...nguoiDung, must_change_password: true });
 

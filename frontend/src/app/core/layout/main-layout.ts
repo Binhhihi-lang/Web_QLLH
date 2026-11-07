@@ -28,10 +28,7 @@ import { AppAlert } from '@shared/ui/app-alert';
       }
 
       <div class="sidebar-wrap" [class.mo]="moDrawer()">
-        <app-sidebar
-          [vaiTro]="vaiTro()"
-          (chonMuc)="khiChonMenu($event)"
-        />
+        <app-sidebar [vaiTro]="vaiTro()" (chonMuc)="khiChonMenu($event)" />
       </div>
 
       <div class="cot-phai">
@@ -147,13 +144,14 @@ export class MainLayout {
         });
         break;
       case 'ho-so':
-        // Màn hồ sơ cá nhân chưa thuộc phạm vi tuần này.
+        void this.router.navigate(['/tai-khoan']);
         break;
     }
   }
 
   private thongBaoLoi(loi: unknown): string {
-    if (!(loi instanceof HttpErrorResponse)) return 'Không thể đăng xuất lúc này. Vui lòng thử lại.';
+    if (!(loi instanceof HttpErrorResponse))
+      return 'Không thể đăng xuất lúc này. Vui lòng thử lại.';
     return loi.error?.message ?? 'Máy chủ không thể hoàn tất yêu cầu đăng xuất.';
   }
 }

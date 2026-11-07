@@ -8,10 +8,12 @@ import {
   Nganh,
   PhongHoc,
   NganhRutGon,
+  NguoiDung,
   SinhVien,
   HocKy,
   TrangThaiHocKy,
 } from '@core/models/dao-tao.model';
+import { CapNhatHoSoInput } from '@core/auth/auth.service';
 import {
   LOP_HANH_CHINH_MOCK,
   MON_HOC_MOCK,
@@ -59,6 +61,21 @@ export class DaoTaoRegistry {
   private hocKyDaXoa = new Set<number>();
   private khoa = KHOA_MOCK.map((r) => ({ ...r }));
   private nganh = NGANH_MOCK.map((r) => ({ ...r }));
+
+  capNhatHoSo(nguoiDung: NguoiDung, duLieu: CapNhatHoSoInput): void {
+    const hoSo = nguoiDung.ho_so;
+    if (hoSo?.loai === 'giang_vien' && duLieu.so_dien_thoai !== undefined) {
+      const giangVien = this.giangVien.find((item) => item.id === hoSo.id);
+      if (giangVien) giangVien.so_dien_thoai = duLieu.so_dien_thoai;
+    }
+    if (hoSo?.loai === 'sinh_vien') {
+      const sinhVien = this.sinhVien.find((item) => item.id === hoSo.id);
+      if (sinhVien && duLieu.so_dien_thoai !== undefined) {
+        sinhVien.so_dien_thoai = duLieu.so_dien_thoai;
+      }
+      if (sinhVien && duLieu.dia_chi !== undefined) sinhVien.dia_chi = duLieu.dia_chi;
+    }
+  }
 
   resolve(
     method: string,

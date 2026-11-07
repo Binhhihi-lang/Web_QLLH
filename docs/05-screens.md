@@ -75,6 +75,7 @@ src/app/
 /dang-nhap/giang-vien → SCR-01B (GIANG_VIEN)
 /dang-nhap/sinh-vien  → SCR-01C (SINH_VIEN, dùng mã sinh viên)
 /doi-mat-khau         → SCR-02
+/tai-khoan            → SCR-02C (mọi vai trò đã đăng nhập)
 /dashboard            → SCR-03/04/05 (theo vai trò)
 /gioi-thieu           → trang giới thiệu (đang xây dựng)
 /sinh-vien            → SCR-10 (ADMIN, TEACHER)
@@ -101,8 +102,9 @@ src/app/
 /nguoi-dung/:id/sua   → SCR-51 sửa tài khoản (ADMIN)
 ```
 
-`/nhat-ky` chưa có màn đọc nhật ký vì backend hiện chưa khai báo API danh sách;
-không gọi endpoint giả hoặc hiển thị dữ liệu mẫu như thể là nhật ký thật.
+`/nhat-ky` có màn hình trạng thái chờ API; không gọi endpoint giả hoặc hiển thị
+dữ liệu mẫu như thể là nhật ký thật. Chỉ bổ sung chức năng tra cứu khi backend
+công bố hợp đồng API đọc danh sách.
 
 **Đường dẫn không khớp route nào** — hai kết cục khác nhau, không được gộp:
 
@@ -172,6 +174,7 @@ tin thử nghiệm không hiển thị.
 | SCR-01C | Đăng nhập sinh viên | `/dang-nhap/sinh-vien` | công khai | Giao diện nhận diện sinh viên; mã sinh viên/password (`ma_sv`); xác minh role `SINH_VIEN` |
 | SCR-02 | Đổi mật khẩu | `/doi-mat-khau` | mọi vai trò đã đăng nhập | Form gọi API, kiểm tra mật khẩu mới/xác nhận; bắt buộc khi `must_change_password = true` |
 | SCR-02B | 🆕 Ảnh đại diện | Dialog trên header (mọi trang) | mọi vai trò | Chọn ảnh → xem trước → tải lên; nút "Gỡ ảnh". Hiển thị ảnh tròn 32 px ở header, `avatar_url` null thì hiện chữ cái đầu tên trên nền màu theo vai trò |
+| SCR-02C | Tài khoản của tôi | `/tai-khoan` | mọi vai trò đã đăng nhập | ADMIN sửa tên/email; giảng viên sửa số điện thoại; sinh viên sửa số điện thoại/địa chỉ; thông tin định danh chỉ đọc |
 
 ### 3.2. Dashboard
 
@@ -291,7 +294,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 | SCR-49 | Cấu hình | `/cau-hinh` | ADMIN — bảng học kỳ có tìm kiếm/lọc theo năm học, trạng thái và tình trạng cấu hình; chọn dòng để xem cấu hình riêng. Chỉ `UPCOMING` được lưu/cập nhật; `ONGOING` và `CLOSED` chỉ xem. Mỗi học kỳ có một cấu hình; trọng số tổng bằng 1, bảng quy đổi phủ liên tục 0–10, làm tròn `HALF_UP_2`, số ngày sửa điểm danh |
 | SCR-50 | Quản lý người dùng | `/nguoi-dung` | ADMIN — tìm kiếm, lọc vai trò/trạng thái, phân trang, kích hoạt/khóa hàng loạt, đặt lại mật khẩu, xóa tài khoản ADMIN |
 | SCR-51 | Thêm/Sửa người dùng | `/nguoi-dung/them`, `/:id/sua` | ADMIN — tạo/sửa tài khoản; mật khẩu tạm chỉ hiện một lần khi tạo; hồ sơ giảng viên/sinh viên được quản lý ở màn tương ứng |
-| — | Nhật ký | `/nhat-ky` | ADMIN — chưa triển khai: backend chưa có endpoint đọc danh sách nhật ký |
+| — | Nhật ký | `/nhat-ky` | ADMIN — giao diện trạng thái chờ API; chưa hiển thị dữ liệu cho tới khi backend công bố endpoint đọc danh sách |
 
 ### 3.13. Chế độ xem theo vai trò (ADMIN)
 
