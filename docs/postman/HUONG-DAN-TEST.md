@@ -370,11 +370,11 @@ Folder **19 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API
 
 ---
 
-## 13. Điểm danh (folder 18)
+## 15. Điểm danh (folder 20)
 
 1. Khởi động backend bằng `php artisan serve` trong thư mục `backend/`.
 2. Import lại `docs/postman/QLLH.postman_collection.json`.
-3. Mở folder **18 — Điểm danh (SCR-38 → SCR-40, FR-11)** và chạy tuần tự từ **00 → 09**:
+3. Mở folder **20 — Điểm danh (SCR-38 → SCR-40, FR-11)** và chạy tuần tự từ **00 → 09**:
    - **00. Đăng nhập Giảng viên:** Login bằng `giangvien@example.com` / `password`, tự động lưu `token`.
    - **01. Giảng viên lấy danh sách lịch dạy:** Tự động lấy `buoi_hoc_id` và `lop_hp_id` lưu vào collection variables `diem_danh_buoi_hoc_id` và `diem_danh_lop_hp_id`.
    - **02. Giảng viên lấy danh sách sinh viên buổi học (GET /sessions/:id/attendance):** Lấy danh sách sinh viên hợp lệ tại thời điểm buổi học (BR-21), lưu `diem_danh_dang_ky_id`.
@@ -391,3 +391,25 @@ Folder **19 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API
    php vendor/bin/phpunit tests/Feature/DiemDanhTest.php
    ```
    Kết quả kỳ vọng: 8 tests passed, 37 assertions.
+---
+
+## 16. Hồ sơ cá nhân & Ảnh đại diện (folder 14)
+
+Folder **14 — Hồ sơ cá nhân & Ảnh đại diện (PUT /me, avatar)** kiểm thử các thao tác người dùng cập nhật thông tin cá nhân và quản lý ảnh đại diện (FR-01.06, FR-01.10, FR-01.11, ADR-019):
+
+1. **Chuẩn bị:** Chạy `php artisan serve` ở `backend/` và import lại file `docs/postman/QLLH.postman_collection.json`.
+2. **Thứ tự thực thi:**
+   - **Request 01 — ADMIN sửa tên và email:** Kiểm tra ADMIN sửa trực tiếp `name` và `email` trên bảng `users`.
+   - **Request 02 — ADMIN gửi trường không thuộc vai trò:** Gửi thêm `so_dien_thoai`, `dia_chi` → backend tự động bỏ qua, không gây lỗi.
+   - **Request 03 — SINH VIÊN sửa số điện thoại và địa chỉ:** Đăng nhập SINH VIÊN và cập nhật thông tin liên hệ trên bảng `sinh_vien`.
+   - **Request 04 — SINH VIÊN gửi tên tài khoản:** Gửi kèm `name` → trường `name` bị bỏ qua vì sinh viên không được tự đổi họ tên.
+   - **Request 05 — Email trùng:** ADMIN đổi email sang email đã tồn tại của người khác → 422 `VALIDATION_ERROR`.
+   - **Request 06 — Lấy thông tin tài khoản hiện tại (`GET /api/auth/me`):** Trả về đầy đủ thông tin tài khoản, vai trò và hồ sơ tương ứng.
+   - **Request 07 — Tải ảnh đại diện lên Cloudinary (`POST /api/me/avatar`):** Gửi form-data với trường `anh` là file hình ảnh (jpg, png, webp, gif <= 5MB). Backend tải lên Cloudinary, cắt vuông 512px và lưu `avatar_url` trên bảng `users`.
+   - **Request 08 — Gỡ ảnh đại diện (`DELETE /api/me/avatar`):** Xóa ảnh đại diện trên Cloudinary và cập nhật `avatar_url` về `null`.
+   - **Request 09 — Validate file upload (422):** Gửi request upload không có file hoặc file sai định dạng → 422 `VALIDATION_ERROR`.
+3. **Kiểm thử tự động PHPUnit:**
+   ```bash
+   php backend/vendor/bin/phpunit backend/tests/Feature/HoSoTest.php
+   ```
+   Kết quả kỳ vọng: 11 tests passed, 47 assertions.

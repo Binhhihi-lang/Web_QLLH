@@ -5132,7 +5132,7 @@
       "description": "Module lớp học phần (docs/04-api-contract.md §10). Chạy folder 02 — Đào tạo trước để có `mon_hoc_id` và `hoc_ky_id`. Ca lớp không có đăng ký ACTIVE bị chặn chốt với `NO_ACTIVE_ENROLLMENTS`; các ca cần đăng ký (`DELETE_BLOCKED`, `SUBJECT_CHANGE_BLOCKED`/`SEMESTER_CHANGE_BLOCKED`, `GRADE_INCOMPLETE`, giảm sĩ số dưới số đăng ký) đã phủ bằng PHPUnit `LopHocPhanTest`."
     },
     {
-      "name": "14 — Hồ sơ cá nhân (PUT /me)",
+      "name": "14 — Hồ sơ cá nhân & Ảnh đại diện (PUT /me, avatar)",
       "item": [
         {
           "name": "01. ADMIN sửa tên và email",
@@ -5334,9 +5334,148 @@
               }
             }
           ]
+        },
+        {
+          "name": "06. Lấy thông tin tài khoản hiện tại (GET /api/auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy thông tin tài khoản thành công (200)', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Có thông tin id và email', () => {",
+                  "    pm.expect(res.data).to.have.property('id');",
+                  "    pm.expect(res.data).to.have.property('email');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07. Tải ảnh đại diện lên Cloudinary (POST /api/me/avatar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "anh",
+                  "type": "file",
+                  "description": "Chọn file ảnh (jpg, png, webp, gif <= 5MB)"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/me/avatar",
+            "description": "Upload file ảnh đại diện. Hệ thống tải lên Cloudinary, cắt vuông 512px và lưu avatar_url trên users."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tải ảnh đại diện thành công (200)', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('Có avatar_url', () => pm.expect(res.data.avatar_url).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08. Gỡ ảnh đại diện (DELETE /api/me/avatar)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/me/avatar",
+            "description": "Xóa ảnh đại diện trên Cloudinary và đặt avatar_url trên users về null."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Gỡ ảnh đại diện thành công (200)', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.test('avatar_url là null', () => pm.expect(res.data.avatar_url).to.be.null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09. Upload ảnh không gửi file -> 422 VALIDATION_ERROR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": "{{base_url}}/api/me/avatar"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Bị chặn 422 VALIDATION_ERROR', () => pm.response.to.have.status(422));",
+                  "const res = pm.response.json();",
+                  "pm.test('ma_loi là VALIDATION_ERROR', () => pm.expect(res.ma_loi).to.eql('VALIDATION_ERROR'));"
+                ]
+              }
+            }
+          ]
         }
       ],
-      "description": "FR-01.06 — mỗi vai trò chỉ sửa được trường của mình; trường ngoài vai trò bị bỏ qua."
+      "description": "Cập nhật thông tin hồ sơ theo vai trò (FR-01.06), tải ảnh đại diện lên Cloudinary (FR-01.10, ADR-019), gỡ ảnh đại diện (FR-01.11) và xem thông tin tài khoản."
     },
     {
       "name": "15 — Khoa & Ngành (ADR-020)",
