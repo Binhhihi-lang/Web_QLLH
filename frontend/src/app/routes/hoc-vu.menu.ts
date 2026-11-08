@@ -12,7 +12,7 @@ export const HOC_VU_MENU: NhomMenu = {
       nhan: 'Lớp học phần',
       duong_dan: '/lop-hoc-phan',
       icon: 'class',
-      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+      vai_tro: ['ADMIN', 'GIANG_VIEN'],
     },
     {
       nhan: 'Đăng ký',
@@ -27,9 +27,15 @@ export const HOC_VU_MENU: NhomMenu = {
       vai_tro: ['ADMIN', 'GIANG_VIEN'],
     },
     {
-      nhan: 'Đăng ký của tôi',
-      duong_dan: '/dang-ky-cua-toi',
+      nhan: 'Đăng ký học phần',
+      duong_dan: '/dang-ky-hoc-phan',
       icon: 'how_to_reg',
+      vai_tro: ['SINH_VIEN'],
+    },
+    {
+      nhan: 'Lịch sử đăng ký',
+      duong_dan: '/dang-ky-cua-toi',
+      icon: 'history',
       vai_tro: ['SINH_VIEN'],
     },
     {
@@ -39,10 +45,22 @@ export const HOC_VU_MENU: NhomMenu = {
       vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
     },
     {
+      nhan: 'Lịch thi',
+      duong_dan: '/lich-thi',
+      icon: 'event_note',
+      vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
+    },
+    {
       nhan: 'Điểm danh',
       duong_dan: '/diem-danh',
       icon: 'fact_check',
       vai_tro: ['ADMIN', 'GIANG_VIEN'],
+    },
+    {
+      nhan: 'Điểm danh',
+      duong_dan: '/diem-danh-cua-toi',
+      icon: 'fact_check',
+      vai_tro: ['SINH_VIEN'],
     },
     {
       nhan: 'Nhập điểm',
@@ -51,7 +69,7 @@ export const HOC_VU_MENU: NhomMenu = {
       vai_tro: ['ADMIN', 'GIANG_VIEN'],
     },
     {
-      nhan: 'Điểm của tôi',
+      nhan: 'Điểm',
       duong_dan: '/diem-cua-toi',
       icon: 'grade',
       vai_tro: ['SINH_VIEN'],

@@ -275,7 +275,7 @@ Bảng đầy đủ: [04-api-contract.md](../04-api-contract.md) mục 1.5.
 
 1. Khởi động backend bằng `php artisan serve` trong `backend/`.
 2. Import lại `QLLH.postman_collection.json`; chạy **01 — Xác thực → Đăng nhập (ADMIN)**.
-3. Chọn **16 — Học kỳ (CRUD + vòng đời BR-24/25)**, Run riêng folder này theo
+3. Chọn **17 — Học kỳ (CRUD + vòng đời BR-24/25)**, Run riêng folder này theo
    thứ tự **00 → 23**. Dữ liệu body đã chọn **raw → JSON**.
 4. Bước 00–01 tự chọn năm/mã sau các kỳ có sẵn và dữ liệu test đã xóa;
    bước tạo tự lưu ID. Không cần tự điền `hoc_ky_id` hay sửa ID dữ liệu thật.
@@ -294,7 +294,7 @@ collection có thể làm đổi token/mật khẩu ở các folder xác thực 
 ### Kiểm thử lịch học — folder 17
 
 1. Chạy `php artisan serve` trong `backend/`, import lại collection JSON.
-2. Run riêng **17 — Lịch học (luồng thành công)** theo thứ tự 00–13.
+2. Run riêng **18 — Lịch học (luồng thành công)** theo thứ tự 00–13.
    Folder tự đăng nhập ADMIN/GIẢNG VIÊN/SINH VIÊN; các biến token riêng
    `lich_token_*` không thay token chung của các folder khác.
 3. Tài khoản demo mặc định dùng email demo + `password`. Nếu đã đổi mật khẩu,
@@ -330,7 +330,7 @@ Các lỗi được kiểm tra: `OUTSIDE_REGISTRATION`, `SECTION_FULL`, `DUPLICA
 
 ## 13. Quản lý điểm (folder 18)
 
-Folder **18 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)** bao gồm các API quản lý và tính toán điểm theo hợp đồng `docs/04-api-contract.md` mục 13:
+Folder **19 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)** bao gồm các API quản lý và tính toán điểm theo hợp đồng `docs/04-api-contract.md` mục 13:
 
 1. **Chuẩn bị:** Chạy `php artisan serve` ở `backend/` và import lại file `docs/postman/QLLH.postman_collection.json`.
 2. **Thứ tự thực thi:**
@@ -349,7 +349,7 @@ Folder **18 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)** bao gồm c�
 
 ## 14. Nhật ký hệ thống (folder 19)
 
-Folder **19 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API đọc và lọc nhật ký hệ thống dành riêng cho Quản trị viên:
+Folder **20 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API đọc và lọc nhật ký hệ thống dành riêng cho Quản trị viên:
 
 1. **Chuẩn bị:** Chạy `php artisan serve` ở `backend/` và import lại file `docs/postman/QLLH.postman_collection.json`.
 2. **Thứ tự thực thi:**
@@ -374,7 +374,7 @@ Folder **19 — Nhật ký hệ thống (SCR-46, Audit log)** bao gồm các API
 
 1. Khởi động backend bằng `php artisan serve` trong thư mục `backend/`.
 2. Import lại `docs/postman/QLLH.postman_collection.json`.
-3. Mở folder **20 — Điểm danh (SCR-38 → SCR-40, FR-11)** và chạy tuần tự từ **00 → 09**:
+3. Mở folder **21 — Điểm danh (SCR-38 → SCR-40, FR-11)** và chạy tuần tự từ **00 → 09**:
    - **00. Đăng nhập Giảng viên:** Login bằng `giangvien@example.com` / `password`, tự động lưu `token`.
    - **01. Giảng viên lấy danh sách lịch dạy:** Tự động lấy `buoi_hoc_id` và `lop_hp_id` lưu vào collection variables `diem_danh_buoi_hoc_id` và `diem_danh_lop_hp_id`.
    - **02. Giảng viên lấy danh sách sinh viên buổi học (GET /sessions/:id/attendance):** Lấy danh sách sinh viên hợp lệ tại thời điểm buổi học (BR-21), lưu `diem_danh_dang_ky_id`.

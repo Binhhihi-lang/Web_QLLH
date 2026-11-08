@@ -24,9 +24,12 @@ class BuoiHoc extends Model
     protected $fillable = [
         'lop_hoc_phan_id',
         'ngay_hoc',
+        'tiet_bat_dau',
+        'tiet_ket_thuc',
         'gio_bat_dau',
         'gio_ket_thuc',
         'phong_hoc_id',
+        'buoi_goc_id',
         'trang_thai',
         'ly_do_huy',
     ];
@@ -35,6 +38,8 @@ class BuoiHoc extends Model
     {
         return [
             'ngay_hoc' => 'date',
+            'tiet_bat_dau' => 'integer',
+            'tiet_ket_thuc' => 'integer',
         ];
     }
 
@@ -56,6 +61,17 @@ class BuoiHoc extends Model
     public function xoaBoi(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    /** Buổi gốc bị hủy mà buổi này dạy bù. */
+    public function buoiGoc(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'buoi_goc_id');
+    }
+
+    public function buoiBu(): HasMany
+    {
+        return $this->hasMany(self::class, 'buoi_goc_id');
     }
 
     public function khoiPhucBoi(): BelongsTo

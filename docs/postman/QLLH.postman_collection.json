@@ -6909,7 +6909,7 @@
       ]
     },
     {
-      "name": "16 — Học kỳ (CRUD + vòng đời BR-24/25)",
+      "name": "17 — Học kỳ (CRUD + vòng đời BR-24/25)",
       "description": "Đăng nhập ADMIN, rồi Run riêng folder này theo thứ tự 00 → 23. Tự tạo mã/năm/ID và kiểm tra lỗi, không cần nhập ID thủ công. Nếu đã có kỳ ONGOING, bước 15 kiểm tra lỗi 409 và 16–21 tự bỏ qua; không đóng kỳ đang dùng. Nếu chuyển trạng thái thành công, một kỳ test CLOSED sẽ được giữ lại đúng luật nghiệp vụ. Các bước xóa chỉ tác động ID do folder tự tạo.",
       "auth": {
         "type": "bearer",
@@ -7972,7 +7972,7 @@
       ]
     },
     {
-      "name": "17 — Lịch học (luồng thành công)",
+      "name": "18 — Lịch học (luồng thành công)",
       "description": "Chỉ gồm các request hợp lệ, mong đợi HTTP 200. Run riêng folder theo thứ tự 00–13. Dùng các tài khoản demo đã seed; nếu đã đổi mật khẩu, sửa biến lich_*_email/password. Token riêng của folder, không thay biến token chung. Bước 01 tự lấy ID/ngày từ lịch sẵn có; nếu chưa có buổi, các bước lọc cần ID tự bỏ qua. Không tạo/sửa/xóa dữ liệu lịch. CRUD buổi học và sinh lịch do PM triển khai; kiểm tra tình huống xung đột nằm trong PHPUnit LichHocTest.",
       "item": [
         {
@@ -8687,7 +8687,7 @@
       ]
     },
     {
-      "name": "18 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)",
+      "name": "19 — Quản lý điểm (SCR-29, SCR-41 → 43, FR-12)",
       "description": "Folder test nghiệp vụ điểm theo hợp đồng docs/04 mục 13: nhập điểm đơn lẻ, xem lịch sử sửa điểm, sinh viên xem điểm cá nhân theo kỳ (GET /me/grades), sinh viên xem GPA/CPA (GET /me/gpa), các ca kiểm tra phân quyền và validate.",
       "item": [
         {
@@ -9043,7 +9043,7 @@
       ]
     },
     {
-      "name": "19 — Nhật ký hệ thống (SCR-46, Audit log)",
+      "name": "20 — Nhật ký hệ thống (SCR-46, Audit log)",
       "description": "API đọc danh sách nhật ký hệ thống, bộ lọc theo đối tượng, hành động, thời gian và xem chi tiết bản ghi (chỉ dành cho ADMIN).",
       "item": [
         {
@@ -9302,7 +9302,7 @@
       ]
     },
     {
-      "name": "20 — Điểm danh (SCR-38 → SCR-40, FR-11)",
+      "name": "21 — Điểm danh (SCR-38 → SCR-40, FR-11)",
       "description": "Điểm danh buổi học, sửa điểm danh (BR-21, BR-14), thống kê chuyên cần theo lớp và cá nhân (/me/attendance, /me/attendance-summary).",
       "item": [
         {
@@ -9627,6 +9627,652 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Bị chặn 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "22 — Buổi học & khung tiết (SCR-36/37, FR-10)",
+      "description": "Sinh lịch hàng tuần, thêm/sửa/hủy/mở lại/xóa buổi học, và danh mục 15 tiết. Buổi học lưu tiet_bat_dau/tiet_ket_thuc, giờ suy ra từ bảng tiet_hoc.",
+      "item": [
+        {
+          "name": "00. Khung tiết — 15 tiết chia Sáng/Chiều/Tối (GET /options/periods)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/options/periods"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Đủ 15 tiết', () => pm.expect(body.data).to.have.lengthOf(15));",
+                  "pm.test('Mỗi tiết có đủ trường', () => {",
+                  "  pm.expect(body.data[0]).to.have.all.keys('id', 'so_tiet', 'ca', 'label', 'gio_bat_dau', 'gio_ket_thuc');",
+                  "});",
+                  "pm.collectionVariables.set('tiet_id', body.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01. Xem các buổi của một lớp (GET /sections/:id/sessions)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sections/{{section_id}}/sessions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Mỗi buổi có da_diem_danh và so_diem_danh', () => {",
+                  "  if (body.data.length) {",
+                  "    pm.expect(body.data[0]).to.have.property('da_diem_danh');",
+                  "    pm.expect(body.data[0]).to.have.property('so_diem_danh');",
+                  "  }",
+                  "});",
+                  "if (body.data.length) pm.collectionVariables.set('buoi_hoc_id', body.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02. Sinh lịch hàng tuần (POST /sections/:id/sessions/generate)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sections/{{section_id}}/sessions/generate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"thu\": [\n    2,\n    4\n  ],\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 3,\n  \"phong_hoc_id\": 1,\n  \"tu_ngay\": \"2026-09-07\",\n  \"den_ngay\": \"2026-12-31\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03. Thêm một buổi lẻ (POST /sections/:id/sessions)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sections/{{section_id}}/sessions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ngay_hoc\": \"2026-12-01\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 3,\n  \"phong_hoc_id\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tạo buổi thành công (201)', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('Giờ được suy ra từ tiết', () => pm.expect(body.data.gio_bat_dau).to.match(/^\\d{2}:\\d{2}$/));",
+                  "pm.collectionVariables.set('buoi_hoc_moi_id', body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04. Sửa buổi học (PUT /sessions/:id)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sessions/{{buoi_hoc_moi_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ngay_hoc\": \"2026-12-01\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 3,\n  \"phong_hoc_id\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05. Hủy buổi — giữ trên lịch (PATCH /sessions/:id/status)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sessions/{{buoi_hoc_moi_id}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trang_thai\": \"CANCELLED\",\n  \"ly_do_huy\": \"Giảng viên ốm\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Hủy thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Trạng thái là CANCELLED', () => pm.expect(body.data.trang_thai).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06. Mở lại buổi đã hủy (PATCH /sessions/:id/status)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sessions/{{buoi_hoc_moi_id}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trang_thai\": \"SCHEDULED\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07. Xóa buổi (DELETE /sessions/:id) — cần xac_nhan khi đã có điểm danh",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sessions/{{buoi_hoc_moi_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"xac_nhan\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08. Sinh lịch trùng phòng phải trả 409 SCHEDULE_CONFLICT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/sections/{{section_id}}/sessions/generate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"thu\": [\n    2,\n    4\n  ],\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 3,\n  \"phong_hoc_id\": 1,\n  \"tu_ngay\": \"2026-09-07\",\n  \"den_ngay\": \"2026-12-31\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Xung đột lịch (409)', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('ma_loi là SCHEDULE_CONFLICT', () => pm.expect(body.ma_loi).to.eql('SCHEDULE_CONFLICT'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "23 — Lịch thi (SCR-35b)",
+      "description": "Ca thi theo môn trong học kỳ, dùng chung khung tiết với buổi học. Sinh viên chỉ thấy ca của môn đã đăng ký ACTIVE; ADMIN thêm/sửa/xóa.",
+      "item": [
+        {
+          "name": "00. Đăng nhập ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập ADMIN thành công (200)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01. Danh sách ca thi theo kỳ (GET /exams)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams?hoc_ky_id=2"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "pm.test('Là mảng', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02. Lọc ca thi theo khoảng ngày (GET /exams?tu_ngay&den_ngay)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams?tu_ngay=2026-12-01&den_ngay=2026-12-31"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03. Thêm ca thi (POST /exams)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoc_ky_id\": 2,\n  \"mon_hoc_id\": 1,\n  \"ngay_thi\": \"2026-12-20\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 2,\n  \"phong_hoc_id\": 1,\n  \"dot_thi\": \"Cuối kỳ\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tạo ca thi thành công (201)', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('ca_thi_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04. Sửa ca thi (PUT /exams/:id)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams/{{ca_thi_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoc_ky_id\": 2,\n  \"mon_hoc_id\": 1,\n  \"ngay_thi\": \"2026-12-20\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 2,\n  \"phong_hoc_id\": 1,\n  \"dot_thi\": \"Cuối kỳ\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05. Trùng phòng cùng ngày cùng tiết phải trả 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoc_ky_id\": 2,\n  \"mon_hoc_id\": 1,\n  \"ngay_thi\": \"2026-12-20\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 2,\n  \"phong_hoc_id\": 1,\n  \"dot_thi\": \"Cuối kỳ\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Xung đột (409)', () => pm.response.to.have.status(409));",
+                  "pm.test('ma_loi là SCHEDULE_CONFLICT', () => pm.expect(pm.response.json().ma_loi).to.eql('SCHEDULE_CONFLICT'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06. Đăng nhập SINH VIÊN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sinhvien@example.com\",\n  \"password\": \"password\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập SV thành công (200)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token_sv', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07. Sinh viên chỉ thấy ca thi của môn đã đăng ký (GET /exams)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams?hoc_ky_id=2"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08. Xóa ca thi (DELETE /exams/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams/{{ca_thi_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thành công (200)', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Có envelope data', () => pm.expect(body).to.have.property('data'));"
                 ]
               }
             }

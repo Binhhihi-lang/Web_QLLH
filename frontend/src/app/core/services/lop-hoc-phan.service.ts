@@ -2,6 +2,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { LopHocPhan, ThamSoDanhSach, TrangThaiLopHocPhan } from '@core/models/dao-tao.model';
+import {
+  TuyChonGiangVien,
+  TuyChonMonHoc,
+  TuyChonTietHoc,
+} from '@core/models/dao-tao.model';
 import { PaginatedResponse } from '@core/mock/mock-response';
 import { environment } from '@env/environment';
 
@@ -28,9 +33,37 @@ export class LopHocPhanService {
     return this.http.get<PaginatedResponse<LopHocPhan>>(`${this.goc}/sections`, { params });
   }
 
-  layTuyChon(duongDan: 'semesters' | 'subjects' | 'teachers'): Observable<TuyChon[]> {
+  layTuyChon(
+    duongDan: 'semesters' | 'subjects' | 'teachers' | 'rooms' | 'periods',
+    q?: string,
+  ): Observable<TuyChon[]> {
+    let params = new HttpParams();
+    if (q) params = params.set('q', q);
     return this.http
-      .get<{ data: TuyChon[] }>(`${this.goc}/options/${duongDan}`)
+      .get<{ data: TuyChon[] }>(`${this.goc}/options/${duongDan}`, { params })
+      .pipe(map((response) => response.data));
+  }
+
+  /** Tìm môn theo mã hoặc tên, không dấu. Dùng cho ô chọn có tìm kiếm. */
+  timMonHoc(q: string, limit = 20): Observable<TuyChonMonHoc[]> {
+    return this.http
+      .get<{ data: TuyChonMonHoc[] }>(`${this.goc}/options/subjects`, {
+        params: new HttpParams().set('q', q).set('limit', limit),
+      })
+      .pipe(map((response) => response.data));
+  }
+
+  timGiangVien(q: string, limit = 20): Observable<TuyChonGiangVien[]> {
+    return this.http
+      .get<{ data: TuyChonGiangVien[] }>(`${this.goc}/options/teachers`, {
+        params: new HttpParams().set('q', q).set('limit', limit),
+      })
+      .pipe(map((response) => response.data));
+  }
+
+  layTiet(): Observable<TuyChonTietHoc[]> {
+    return this.http
+      .get<{ data: TuyChonTietHoc[] }>(`${this.goc}/options/periods`)
       .pipe(map((response) => response.data));
   }
 

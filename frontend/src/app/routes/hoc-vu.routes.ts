@@ -36,6 +36,13 @@ export const hocVuRoutes: Routes = [
       import('@features/hoc-vu/lop-hoc-phan/danh-sach').then((m) => m.LopHocPhanDanhSach),
   },
   {
+    path: 'lop-hoc-phan/:id/lich-hoc',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-27', title: 'Lịch học của lớp' },
+    loadComponent: () =>
+      import('@features/hoc-vu/lop-hoc-phan/lich-hoc').then((m) => m.LopHocPhanLichHocPage),
+  },
+  {
     path: 'lop-hoc-phan/:id/sinh-vien',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'] },
@@ -62,6 +69,13 @@ export const hocVuRoutes: Routes = [
     loadComponent: () => import('@features/hoc-vu/dang-ky/dang-ky-ho').then((m) => m.DangKyHo),
   },
   {
+    path: 'dang-ky-hoc-phan',
+    canActivate: [roleGuard],
+    data: { roles: ['SINH_VIEN'], ma: 'SCR-32', title: 'Đăng ký học phần' },
+    loadComponent: () =>
+      import('@features/hoc-vu/dang-ky/dang-ky-hoc-phan').then((m) => m.DangKyHocPhanSinhVien),
+  },
+  {
     path: 'dang-ky/danh-sach',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-31', title: 'Danh sách đăng ký' },
@@ -79,10 +93,24 @@ export const hocVuRoutes: Routes = [
     path: 'lich-hoc',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-35', title: 'Lịch học' },
-    loadComponent: () => import('@shared/ui/dang-xay-dung').then((m) => m.DangXayDung),
+    loadComponent: () => import('@features/hoc-vu/lich-hoc/tuan').then((m) => m.LichHocTuan),
   },
 
   // SCR-38/39/40 — Điểm danh
+  {
+    path: 'lich-thi',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ma: 'SCR-36', title: 'Lịch thi' },
+    loadComponent: () =>
+      import('@features/hoc-vu/lich-thi/danh-sach').then((m) => m.LichThiTrang),
+  },
+  {
+    path: 'diem-danh-cua-toi',
+    canActivate: [roleGuard],
+    data: { roles: ['SINH_VIEN'], ma: 'SCR-38', title: 'Điểm danh' },
+    loadComponent: () =>
+      import('@features/hoc-vu/diem-danh/cua-toi').then((m) => m.DiemDanhCuaToi),
+  },
   {
     path: 'diem-danh',
     canActivate: [roleGuard],

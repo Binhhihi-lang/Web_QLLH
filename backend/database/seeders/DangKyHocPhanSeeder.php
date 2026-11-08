@@ -26,6 +26,12 @@ class DangKyHocPhanSeeder extends Seeder
         $demoSvUserId = User::query()->where('email', 'sinhvien@example.com')->value('id');
         $bayGio = now();
 
+        // BR-21/BR-27: danh sách điểm danh chỉ tính sinh viên có dang_ky_luc
+        // trước buổi học. Dữ liệu demo phải đăng ký trước ngày bắt đầu học kỳ
+        // sớm nhất, nếu không mọi buổi đã qua đều rỗng.
+        $mocDangKy = HocKy::query()->min('ngay_bat_dau');
+        $dangKyLuc = $mocDangKy === null ? $bayGio : Carbon::parse($mocDangKy)->subDays(14);
+
         foreach ([['2026-1', 8], ['2025-2', 6]] as [$maHocKy, $soLopMoiSv]) {
             $hocKy = HocKy::query()->where('ma_hoc_ky', $maHocKy)->firstOrFail();
 
@@ -74,7 +80,7 @@ class DangKyHocPhanSeeder extends Seeder
                         'lop_hoc_phan_id' => $lop->id,
                         'trang_thai' => DangKyHocPhan::ACTIVE,
                         'dang_ky_boi' => $laDemo ? $demoSvUserId : $adminId,
-                        'dang_ky_luc' => $bayGio,
+                        'dang_ky_luc' => $dangKyLuc,
                         'created_at' => $bayGio,
                         'updated_at' => $bayGio,
                     ];
@@ -88,7 +94,7 @@ class DangKyHocPhanSeeder extends Seeder
             // Dồn lớp đầu tiên của học kỳ đang chạy cho đầy, để có sẵn
             // một ca kiểm chứng SECTION_FULL khi demo.
             if ($maHocKy === '2026-1') {
-                $this->lamDayLop($lopTheoMon->first(), $sinhVienIds, $rows, $adminId, $bayGio);
+                $this->lamDayLop($lopTheoMon->first(), $sinhVienIds, $rows, $adminId, $bayGio, $dangKyLuc);
             }
         }
     }
@@ -102,6 +108,7 @@ class DangKyHocPhanSeeder extends Seeder
         array $daDangKy,
         int $adminId,
         Carbon $bayGio,
+        Carbon $dangKyLuc,
     ): void {
         $daCo = DangKyHocPhan::query()
             ->where('lop_hoc_phan_id', $lop->id)
@@ -127,7 +134,7 @@ class DangKyHocPhanSeeder extends Seeder
                 'lop_hoc_phan_id' => $lop->id,
                 'trang_thai' => DangKyHocPhan::ACTIVE,
                 'dang_ky_boi' => $adminId,
-                'dang_ky_luc' => $bayGio,
+                'dang_ky_luc' => $dangKyLuc,
                 'created_at' => $bayGio,
                 'updated_at' => $bayGio,
             ];

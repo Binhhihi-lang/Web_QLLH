@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\QuanLy\BulkRequest;
 use App\Http\Requests\QuanLy\GiangVienRequest;
 use App\Http\Requests\QuanLy\TrangThaiRequest;
+use App\Http\Resources\GiangVienLienHeResource;
 use App\Http\Resources\GiangVienResource;
 use App\Models\GiangVien;
 use App\Services\QuanLyHoSoService;
@@ -66,6 +67,11 @@ class GiangVienController extends Controller
 
     public function show(Request $request, GiangVien $giangVien): JsonResponse
     {
+        // Sinh viên chỉ cần thông tin liên hệ để hỏi về lịch học/điểm (popup tên giảng viên).
+        if ($request->user()->laSinhVien()) {
+            return $this->success(new GiangVienLienHeResource($giangVien->load('user')));
+        }
+
         $this->kiemTraSoHuu($request, $giangVien);
 
         return $this->success(new GiangVienResource($giangVien->load(['user', 'nganh'])));

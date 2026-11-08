@@ -221,8 +221,24 @@ export interface TuyChon<T = number> {
 }
 
 export interface TuyChonMonHoc extends TuyChon {
+  ma_mon: string;
+  ten_mon: string;
   so_tin_chi: number;
   khoa_id: number | null;
+}
+
+export interface TuyChonGiangVien extends TuyChon {
+  ma_gv: string;
+  ho_ten: string;
+}
+
+export interface TuyChonTietHoc {
+  id: number;
+  so_tiet: number;
+  ca: 'SANG' | 'CHIEU' | 'TOI';
+  label: string;
+  gio_bat_dau: string;
+  gio_ket_thuc: string;
 }
 
 export interface TuyChonKhoa extends TuyChon {

@@ -12,6 +12,41 @@ export interface BuoiHocDiemDanh {
   gio_bat_dau: string;
   gio_ket_thuc: string;
   trang_thai: 'SCHEDULED' | 'DONE' | 'CANCELLED';
+  /** Buổi đã có ít nhất một dòng điểm danh — API sessions trả sẵn, không cần gọi thêm. */
+  da_diem_danh: boolean;
+  so_diem_danh: number;
+}
+
+/**
+ * Hình dạng `GET /sessions/{id}/attendance`: `data` là MỘT OBJECT chứa
+ * `buoi_hoc` và `danh_sach`, không phải mảng. Nhầm thành mảng thì
+ * `rows.length` là `undefined` và mọi buổi bị coi là chưa điểm danh.
+ */
+export interface PhanHoiDiemDanh {
+  buoi_hoc: {
+    id: number;
+    ngay_hoc: string;
+    gio_bat_dau: string;
+    gio_ket_thuc: string;
+    trang_thai: 'SCHEDULED' | 'DONE' | 'CANCELLED';
+    ly_do_huy: string | null;
+    co_the_sua: boolean;
+    phong_hoc: { id: number; ma_phong: string; ten_phong: string } | null;
+    lop_hoc_phan: {
+      id: number;
+      ma_lop_hp: string;
+      ten_mon_hoc: string | null;
+      hoc_ky: { id: number; ma_hoc_ky: string; trang_thai: string } | null;
+    };
+  };
+  danh_sach: DongDiemDanh[];
+}
+
+/** `PUT /sessions/{id}/attendance` trả tóm tắt, KHÔNG trả lại danh sách dòng. */
+export interface KetQuaLuuDiemDanh {
+  buoi_hoc_id: number;
+  so_luong: number;
+  trang_thai_buoi_hoc: 'SCHEDULED' | 'DONE' | 'CANCELLED';
 }
 
 export interface DongDiemDanh {
@@ -53,15 +88,16 @@ export class DiemDanhService {
       .pipe(map((response) => response.data));
   }
 
+  /** Danh sách dòng điểm danh — bóc `data.danh_sach`, không lấy nguyên `data`. */
   layDiemDanh(buoiHocId: number): Observable<DongDiemDanh[]> {
     return this.http
-      .get<{ data: DongDiemDanh[] }>(`${this.goc}/sessions/${buoiHocId}/attendance`)
-      .pipe(map((response) => response.data));
+      .get<{ data: PhanHoiDiemDanh }>(`${this.goc}/sessions/${buoiHocId}/attendance`)
+      .pipe(map((response) => response.data.danh_sach ?? []));
   }
 
-  luuDiemDanh(buoiHocId: number, diemDanh: DongDiemDanhInput[]): Observable<DongDiemDanh[]> {
+  luuDiemDanh(buoiHocId: number, diemDanh: DongDiemDanhInput[]): Observable<KetQuaLuuDiemDanh> {
     return this.http
-      .put<{ data: DongDiemDanh[] }>(`${this.goc}/sessions/${buoiHocId}/attendance`, {
+      .put<{ data: KetQuaLuuDiemDanh }>(`${this.goc}/sessions/${buoiHocId}/attendance`, {
         diem_danh: diemDanh,
       })
       .pipe(map((response) => response.data));

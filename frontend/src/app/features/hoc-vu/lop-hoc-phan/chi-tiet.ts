@@ -41,7 +41,7 @@ import { StatusBadge } from '@shared/ui/status-badge';
       <nav class="tabs" aria-label="Thông tin lớp học phần">
         <a class="active" [routerLink]="['/lop-hoc-phan', x.id]">Thông tin</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'sinh-vien']">Sinh viên</a>
-        <span title="Chức năng lịch học chưa được triển khai">Lịch học</span>
+        <a [routerLink]="['/lop-hoc-phan', x.id, 'lich-hoc']">Lịch học</a>
         <a [routerLink]="['/diem-danh']" [queryParams]="{ lop_hoc_phan_id: x.id }">Điểm danh</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'chuyen-can']">Chuyên cần</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'diem']">Điểm</a>

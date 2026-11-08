@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BuoiHocController;
 use App\Http\Controllers\Api\CauHinhController;
 use App\Http\Controllers\Api\DangKyHocPhanController;
 use App\Http\Controllers\Api\DashboardController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\HocKyController;
 use App\Http\Controllers\Api\HoSoController;
 use App\Http\Controllers\Api\KhoaController;
 use App\Http\Controllers\Api\LichHocController;
+use App\Http\Controllers\Api\LichThiController;
 use App\Http\Controllers\Api\LopHanhChinhController;
 use App\Http\Controllers\Api\LopHocPhanController;
 use App\Http\Controllers\Api\MenuController;
@@ -68,6 +70,7 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('semesters', [OptionController::class, 'semesters']);
         Route::get('teachers', [OptionController::class, 'teachers']);
         Route::get('rooms', [OptionController::class, 'rooms']);
+        Route::get('periods', [OptionController::class, 'periods']);
         Route::get('admin-classes', [OptionController::class, 'adminClasses']);
         Route::get('sections', [OptionController::class, 'sections']);
         Route::get('khoa', [OptionController::class, 'khoa']);
@@ -152,7 +155,7 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::post('/', [GiangVienController::class, 'store'])->middleware('vai.tro:ADMIN');
         Route::patch('bulk-status', [GiangVienController::class, 'capNhatTrangThaiHangLoat'])->middleware('vai.tro:ADMIN');
         Route::post('bulk-delete', [GiangVienController::class, 'xoaHangLoat'])->middleware('vai.tro:ADMIN');
-        Route::get('{giangVien}', [GiangVienController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::get('{giangVien}', [GiangVienController::class, 'show'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::put('{giangVien}', [GiangVienController::class, 'update'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::delete('{giangVien}', [GiangVienController::class, 'destroy'])->middleware('vai.tro:ADMIN');
         Route::patch('{giangVien}/status', [GiangVienController::class, 'capNhatTrangThai'])->middleware('vai.tro:ADMIN');
@@ -210,10 +213,23 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::delete('{nganh}', [NganhController::class, 'destroy'])->middleware('vai.tro:ADMIN');
     });
 
+    Route::prefix('exams')->group(function () {
+        Route::get('/', [LichThiController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [LichThiController::class, 'store'])->middleware('vai.tro:ADMIN');
+        Route::put('{lichThi}', [LichThiController::class, 'update'])->middleware('vai.tro:ADMIN');
+        Route::delete('{lichThi}', [LichThiController::class, 'destroy'])->middleware('vai.tro:ADMIN');
+    });
+
     Route::prefix('sessions')->group(function () {
         Route::get('{buoiHoc}/attendance', [DiemDanhController::class, 'danhSach'])
             ->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::put('{buoiHoc}/attendance', [DiemDanhController::class, 'luu'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::put('{buoiHoc}', [BuoiHocController::class, 'update'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::patch('{buoiHoc}/status', [BuoiHocController::class, 'capNhatTrangThai'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::delete('{buoiHoc}', [BuoiHocController::class, 'destroy'])
             ->middleware('vai.tro:ADMIN,GIANG_VIEN');
     });
 
@@ -227,6 +243,9 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::post('{lopHocPhan}/finalize', [LopHocPhanController::class, 'chotDiem'])->middleware('vai.tro:GIANG_VIEN');
         Route::post('{lopHocPhan}/unlock', [LopHocPhanController::class, 'moKhoaDiem'])->middleware('vai.tro:ADMIN');
         Route::get('{lopHocPhan}/students', [LopHocPhanController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::get('{lopHocPhan}/sessions', [BuoiHocController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('{lopHocPhan}/sessions/generate', [BuoiHocController::class, 'generate'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::post('{lopHocPhan}/sessions', [BuoiHocController::class, 'store'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::get('{lopHocPhan}/grades', [LopHocPhanController::class, 'bangDiem'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::put('{lopHocPhan}/grades', [LopHocPhanController::class, 'capNhatDiemHangLoat'])->middleware('vai.tro:GIANG_VIEN');
         Route::get('{lopHocPhan}/attendance-summary', [LopHocPhanController::class, 'thongKeChuyenCan'])->middleware('vai.tro:ADMIN,GIANG_VIEN');

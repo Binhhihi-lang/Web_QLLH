@@ -568,14 +568,33 @@ Response chi tiết:
 
 | Method | Endpoint | Quyền | Ghi chú |
 |---|---|---|---|
-| GET | `/api/sections/{id}/sessions` | theo vai trò | |
-| POST | `/api/sections/{id}/sessions` | ADMIN | |
-| POST | `/api/sections/{id}/sessions/generate` | ADMIN | Sinh lịch hàng tuần |
-| PUT | `/api/sessions/{id}` | ADMIN | Sửa; nếu đã có điểm danh cần `xac_nhan: true` |
-| DELETE | `/api/sessions/{id}` | ADMIN | Nếu đã có điểm danh cần `xac_nhan: true` |
+| GET | `/api/sections/{id}/sessions` | theo vai trò | ADMIN, giảng viên phụ trách, sinh viên đã đăng ký ACTIVE |
+| POST | `/api/sections/{id}/sessions` | ADMIN, TEACHER (lớp mình) | Buổi lẻ. Gửi `tiet_bat_dau`/`tiet_ket_thuc` thì backend tự tính giờ; hoặc gửi thẳng `gio_bat_dau`/`gio_ket_thuc`. `buoi_goc_id` để đánh dấu buổi bù |
+| POST | `/api/sections/{id}/sessions/generate` | ADMIN, TEACHER (lớp mình) | Sinh lịch hàng tuần |
+| PUT | `/api/sessions/{id}` | ADMIN, TEACHER (lớp mình) | Sửa; nếu đã có điểm danh cần `xac_nhan: true` |
+| PATCH | `/api/sessions/{id}/status` | ADMIN, TEACHER (lớp mình) | Body `{ "trang_thai": "CANCELLED", "ly_do_huy": "..." }`. Hủy giữ bản ghi trên lịch; `SCHEDULED` để mở lại |
+| DELETE | `/api/sessions/{id}` | ADMIN, TEACHER (lớp mình) | Xóa mềm; nếu đã có điểm danh cần `xac_nhan: true` |
 | GET | `/api/sessions/{id}/attendance` | ADMIN, TEACHER (lớp mình) | Danh sách + trạng thái |
 | PUT | `/api/sessions/{id}/attendance` | TEACHER (lớp mình), ADMIN | Điểm danh hàng loạt |
 | GET | `/api/schedules` | theo vai trò | Lịch tổng hợp, lọc `hoc_ky_id`, `giang_vien_id`, `phong_hoc_id`, `tu_ngay`, `den_ngay` |
+| GET | `/api/options/periods` | mọi vai trò | 15 tiết + ca + giờ, dùng cho ô chọn tiết |
+| GET | `/api/exams` | theo vai trò | Ca thi theo kỳ; sinh viên chỉ thấy môn đã đăng ký ACTIVE. Lọc `hoc_ky_id`, `mon_hoc_id`, `tu_ngay`, `den_ngay` |
+| POST | `/api/exams` | ADMIN | `{ hoc_ky_id, mon_hoc_id, ngay_thi, tiet_bat_dau, tiet_ket_thuc, phong_hoc_id, dot_thi? }`; 409 `SCHEDULE_CONFLICT` khi trùng phòng |
+| PUT | `/api/exams/{id}` | ADMIN | |
+| DELETE | `/api/exams/{id}` | ADMIN | Xóa mềm |
+
+### Khung tiết
+
+`tiet_hoc` giữ 15 tiết/ngày chia Sáng (1–6), Chiều (7–12), Tối (13–15). Buổi học
+và ca thi lưu `tiet_bat_dau`/`tiet_ket_thuc` (nullable với dữ liệu cũ) và giờ được
+suy ra từ bảng này. Ca là thuộc tính của tiết, không phải của buổi: một buổi tiết
+5–7 vắt qua sáng và chiều vẫn hợp lệ.
+
+`generate` nhận `{ thu: [2,4], tiet_bat_dau, tiet_ket_thuc, phong_hoc_id, tu_ngay, den_ngay }`.
+`thu` theo quy ước Việt Nam: 2–7 là Thứ 2–Thứ 7, 8 là Chủ nhật. Khoảng ngày vượt quá
+`ngay_ket_thuc` của học kỳ thì dừng ở ngày cuối kỳ, không báo lỗi (FR-10.02). Tối đa
+500 buổi mỗi lô; có bất kỳ buổi trùng thì không tạo buổi nào và trả 409 `SCHEDULE_CONFLICT`.
+
 
 ### Lịch tổng hợp (`GET /api/schedules`)
 
@@ -647,6 +666,68 @@ Thành công 201 trả danh sách buổi đã tạo. Nếu có bất kỳ buổi
   ]
 }
 ```
+
+`GET /api/sessions/{id}/attendance` — response. `data` là **object** gồm thông tin
+buổi học và mảng sinh viên, không phải mảng trần:
+
+```json
+{
+  "success": true,
+  "message": "Thành công",
+  "data": {
+    "buoi_hoc": {
+      "id": 1021,
+      "ngay_hoc": "2026-09-08",
+      "gio_bat_dau": "07:00",
+      "gio_ket_thuc": "08:30",
+      "trang_thai": "DONE",
+      "ly_do_huy": null,
+      "phong_hoc": { "id": 11, "ma_phong": "B201", "ten_phong": "Phòng B201" },
+      "lop_hoc_phan": {
+        "id": 61,
+        "ma_lop_hp": "LHP0061",
+        "ten_mon_hoc": "Lập trình cơ bản",
+        "hoc_ky": { "id": 2, "ma_hoc_ky": "2026-1", "trang_thai": "ONGOING" }
+      },
+      "co_the_sua": true
+    },
+    "danh_sach": [
+      {
+        "dang_ky_hoc_phan_id": 151,
+        "sinh_vien": {
+          "id": 19,
+          "ma_sv": "SV000019",
+          "ho_ten": "Đặng Thị Bảo",
+          "email": "sv0019@example.com",
+          "lop": "Lớp MTTT-K6619"
+        },
+        "trang_thai": "PRESENT",
+        "ghi_chu": null,
+        "diem_danh_luc": "2026-11-08T00:39:09+07:00",
+        "diem_danh_boi": "Nguyễn Văn Giảng"
+      }
+    ]
+  }
+}
+```
+
+`trang_thai` của từng dòng là `null` khi buổi chưa được điểm danh. `danh_sach`
+theo BR-21: chỉ gồm đăng ký ACTIVE có `dang_ky_luc` trước thời điểm kết thúc buổi.
+
+`PUT /api/sessions/{id}/attendance` — response **không** trả lại danh sách. Muốn
+cập nhật giao diện thì gọi lại `GET`:
+
+```json
+{
+  "success": true,
+  "message": "Lưu điểm danh thành công.",
+  "data": { "buoi_hoc_id": 1021, "so_luong": 51, "trang_thai_buoi_hoc": "DONE" }
+}
+```
+
+`GET /api/sections/{id}/sessions` trả sẵn `da_diem_danh` (bool) và `so_diem_danh`
+(số dòng đã ghi) cho từng buổi — dùng hai trường này để biết buổi nào đã điểm danh,
+không gọi `GET /sessions/{id}/attendance` cho từng buổi.
 
 ---
 

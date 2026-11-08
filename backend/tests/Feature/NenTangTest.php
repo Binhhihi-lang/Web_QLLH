@@ -176,11 +176,23 @@ class NenTangTest extends TestCase
         $this->assertNotContains('/dang-ky-cua-toi', $menuAdmin);
         $this->assertNotContains('/diem-cua-toi', $menuAdmin);
 
-        // Mọi mục sinh viên thấy, ADMIN cũng thấy — trừ hai mục cá nhân ở trên.
+        // Mọi mục sinh viên thấy, ADMIN cũng thấy — trừ ba mục cá nhân ở trên
+        // (/dang-ky-cua-toi, /diem-cua-toi, /diem-danh-cua-toi) và mục
+        // /dang-ky-hoc-phan: sinh viên tự đăng ký, ADMIN dùng /dang-ky.
         $this->assertSame(
-            ['/dang-ky-cua-toi', '/diem-cua-toi'],
+            ['/dang-ky-hoc-phan', '/dang-ky-cua-toi', '/diem-danh-cua-toi', '/diem-cua-toi'],
             array_values(array_diff($menuSinhVien, $menuAdmin)),
         );
+
+        // Sinh viên không thấy màn quản lý lớp học phần.
+        $this->assertNotContains('/lop-hoc-phan', $menuSinhVien);
+        $this->assertContains('/lop-hoc-phan', $menuGiangVien);
+        $this->assertContains('/lop-hoc-phan', $menuAdmin);
+
+        // Lịch thi hiện cho cả ba vai trò.
+        $this->assertContains('/lich-thi', $menuSinhVien);
+        $this->assertContains('/lich-thi', $menuGiangVien);
+        $this->assertContains('/lich-thi', $menuAdmin);
 
         // Mục giảng viên thấy, ADMIN cũng thấy hết.
         $this->assertSame([], array_diff($menuGiangVien, $menuAdmin));

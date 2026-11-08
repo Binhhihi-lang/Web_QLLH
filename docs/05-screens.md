@@ -87,9 +87,13 @@ src/app/
 /phong-hoc            → SCR-23
 /lop-hoc-phan         → SCR-25
 /dang-ky              → SCR-30 (ADMIN)
-/dang-ky-cua-toi      → SCR-33 (STUDENT)
+/dang-ky/danh-sach    → SCR-31 (ADMIN, TEACHER)
+/dang-ky-hoc-phan     → SCR-32 (STUDENT) đăng ký theo học kỳ
+/dang-ky-cua-toi      → SCR-33 (STUDENT) lịch sử đăng ký
 /lich-hoc             → SCR-35
-/diem-danh            → SCR-38
+/lich-thi             → SCR-35b
+/diem-danh            → SCR-38 (ADMIN, TEACHER)
+/diem-danh-cua-toi    → SCR-38b (STUDENT)
 /diem                 → SCR-41
 /diem-cua-toi         → SCR-42 (STUDENT)
 /thung-rac            → SCR-45 (ADMIN)
@@ -257,24 +261,32 @@ theo `environment.useMock`, giống luồng sinh viên.
 |---|---|---|---|---|
 | SCR-30 | Đăng ký hộ | `/dang-ky` | ADMIN | Chọn sinh viên + lớp, hiển thị kết quả kiểm tra. Nút **"Đăng ký theo lớp hành chính"** mở dialog chọn lớp HP + lớp HC, hiện bảng kết quả từng sinh viên (FR-09.07) |
 | SCR-31 | Danh sách đăng ký | `/dang-ky/danh-sach` | ADMIN, TEACHER | Lọc theo học kỳ, lớp, sinh viên, trạng thái |
-| SCR-32 | Danh sách lớp đang mở | `/lop-hoc-phan` (view STUDENT) | STUDENT | Hiện số chỗ còn, nút "Đăng ký" |
-| SCR-33 | Đăng ký của tôi | `/dang-ky-cua-toi` | STUDENT | Theo học kỳ, trạng thái, nút hủy |
+| SCR-32 | Danh sách lớp đang mở | `/dang-ky-hoc-phan` | STUDENT | Chọn học kỳ rồi đăng ký các lớp đang mở còn chỗ; học kỳ đã qua hiện lịch sử. Xem lại lịch sử các kỳ tại `/dang-ky-cua-toi` |
+| SCR-33 | Lịch sử đăng ký | `/dang-ky-cua-toi` | STUDENT | Theo học kỳ, trạng thái, nút hủy. Không phân trang — dữ liệu đăng ký của một sinh viên ít |
 
 ### 3.9. Lịch học
 
 | Mã | Màn hình | Route | Vai trò | Ghi chú |
 |---|---|---|---|---|
-| SCR-35 | Xem lịch | `/lich-hoc` | theo vai trò | Chế độ tuần/tháng, lọc học kỳ/giảng viên/phòng |
-| SCR-36 | Thêm buổi học | `/lop-hoc-phan/:id/lich/them` | ADMIN | |
-| SCR-37 | Sinh lịch hàng tuần | `/lop-hoc-phan/:id/lich/sinh` | ADMIN | Chọn thứ, giờ, phòng, khoảng ngày; hiện preview; hiển thị xung đột |
+| SCR-35 | Xem lịch tuần | `/lich-hoc` | theo vai trò | Lưới 7 ngày × 3 ca (Sáng/Chiều/Tối). Lọc Tất cả / Lịch học / Lịch thi bằng nút radio, chọn tuần bằng `app-date-input`, điều hướng tuần trước/sau/hôm nay. ADMIN lọc thêm giảng viên và phòng. Bấm khối ca học mở popup liên hệ giảng viên (họ tên, mã GV, email, điện thoại) |
+| SCR-35b | Lịch thi | `/lich-thi` | theo vai trò | Ca thi theo kỳ, dùng chung khung tiết với buổi học. ADMIN thêm/xóa ca; sinh viên chỉ thấy ca của môn đã đăng ký ACTIVE |
+| SCR-36 | Thêm buổi học | `/lop-hoc-phan/:id/lich-hoc` (nút "Thêm buổi") | ADMIN, TEACHER (lớp mình) | Form tại chỗ: ngày, từ tiết, đến tiết, phòng. Backend suy ra giờ từ `tiet_hoc` |
+| SCR-37 | Sinh lịch hàng tuần | `/lop-hoc-phan/them` (khối "Lịch học") | ADMIN | Chọn thứ, tiết, phòng, khoảng ngày; preview số buổi; hiển thị xung đột. Gọi `POST /sections/{id}/sessions/generate` ngay sau khi tạo lớp |
+
+Tab **Lịch học** trong chi tiết lớp (`/lop-hoc-phan/:id/lich-hoc`) là trang riêng, liệt kê
+toàn bộ buổi kèm trạng thái, số sinh viên đã điểm danh, và thao tác hủy / mở lại. Buổi đã
+hủy vẫn hiện để đối chiếu, không hiện lý do hủy trên lịch (người dùng yêu cầu).
+
 
 ### 3.10. Điểm danh
 
 | Mã | Màn hình | Route | Vai trò | Ghi chú |
 |---|---|---|---|---|
-| SCR-38 | Danh sách buổi để điểm danh | `/diem-danh` | TEACHER, ADMIN | Lọc lớp, ngày, trạng thái điểm danh |
-| SCR-39 | Điểm danh một buổi | `/diem-danh/:sessionId` | TEACHER, ADMIN | Danh sách sinh viên + 4 nút trạng thái + ghi chú + lưu hàng loạt |
+| SCR-38 | Danh sách buổi để điểm danh | `/diem-danh` | TEACHER, ADMIN | Lọc **học kỳ** trước, rồi lớp (ô tìm kiếm theo mã lớp / tên môn), ngày và trạng thái điểm danh. Biết buổi nào đã điểm danh qua `da_diem_danh` của `GET /sections/{id}/sessions`, không gọi thêm API từng buổi |
+| SCR-38b | Điểm danh của tôi | `/diem-danh-cua-toi` | STUDENT | Chọn học kỳ, xem số buổi có mặt / đi muộn / vắng có phép / vắng không phép theo từng môn. Tỉ lệ theo FR-11.05, đếm theo buổi không theo tiết |
+| SCR-39 | Điểm danh một buổi | `/diem-danh/:sessionId` | TEACHER, ADMIN | Danh sách sinh viên + 4 nút trạng thái + ghi chú + lưu hàng loạt. Response `GET` là object `{buoi_hoc, danh_sach}`, không phải mảng trần |
 | SCR-40 | Thống kê chuyên cần | `/lop-hoc-phan/:id/chuyen-can` | ADMIN, TEACHER | Bảng tổng hợp + tỷ lệ, xuất nháp |
+
 
 ### 3.11. Điểm
 

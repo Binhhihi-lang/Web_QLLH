@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
+import { LopHocPhanService } from '@core/services/lop-hoc-phan.service';
 import { BangDiemHocKy, DiemService, TongQuanGpa } from './diem.service';
 import { DiemCuaToi } from './diem-cua-toi';
 
@@ -59,7 +60,13 @@ describe('DiemCuaToi', () => {
   ) {
     TestBed.configureTestingModule({
       imports: [DiemCuaToi],
-      providers: [{ provide: DiemService, useValue: { layDiemCuaToi, layGpa } }],
+      providers: [
+        { provide: DiemService, useValue: { layDiemCuaToi, layGpa } },
+        {
+          provide: LopHocPhanService,
+          useValue: { layTuyChon: vi.fn(() => of([{ id: 2, label: 'Học kỳ 1 năm học 2026-2027' }])) },
+        },
+      ],
     });
     const fixture = TestBed.createComponent(DiemCuaToi);
     fixture.detectChanges();
@@ -71,6 +78,8 @@ describe('DiemCuaToi', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(layDiemCuaToi).toHaveBeenCalledOnce();
+    // Màn điểm lọc theo học kỳ: lần đầu gọi với kỳ đang chọn.
+    expect(layDiemCuaToi).toHaveBeenCalledWith(2);
     expect(layGpa).toHaveBeenCalledOnce();
     expect(text).toContain('Lập trình web');
     expect(text).toContain('7.88');

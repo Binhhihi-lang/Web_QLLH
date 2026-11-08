@@ -417,4 +417,23 @@ class QuanLyTuan3Test extends TestCase
             'email' => 'cam@example.com',
         ])->assertForbidden()->assertJsonPath('ma_loi', 'FORBIDDEN');
     }
+
+    public function test_sinh_vien_xem_duoc_thong_tin_lien_he_giang_vien_nhung_khong_thay_trang_thai(): void
+    {
+        $giangVien = GiangVien::factory()->create([
+            'ma_gv' => 'GV-CONTACT',
+            'ho_ten' => 'Hoàng Thu Thủy',
+            'so_dien_thoai' => '0912345678',
+        ]);
+        $sinhVien = SinhVien::factory()->create();
+
+        $this->actingAs($sinhVien->user, 'sanctum')
+            ->getJson('/api/teachers/'.$giangVien->id)
+            ->assertOk()
+            ->assertJsonPath('data.ma_gv', 'GV-CONTACT')
+            ->assertJsonPath('data.ho_ten', 'Hoàng Thu Thủy')
+            ->assertJsonPath('data.so_dien_thoai', '0912345678')
+            ->assertJsonMissingPath('data.trang_thai')
+            ->assertJsonMissingPath('data.nganh_id');
+    }
 }

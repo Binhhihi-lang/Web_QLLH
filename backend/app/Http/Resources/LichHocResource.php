@@ -16,10 +16,13 @@ class LichHocResource extends JsonResource
         return [
             'id' => $this->id,
             'ngay_hoc' => $this->ngay_hoc->format('Y-m-d'),
+            'tiet_bat_dau' => $this->tiet_bat_dau,
+            'tiet_ket_thuc' => $this->tiet_ket_thuc,
             'gio_bat_dau' => substr($this->gio_bat_dau, 0, 5),
             'gio_ket_thuc' => substr($this->gio_ket_thuc, 0, 5),
             'trang_thai' => $this->trang_thai,
             'ly_do_huy' => $this->ly_do_huy,
+            'buoi_goc_id' => $this->buoi_goc_id,
             'lop_hoc_phan' => ['id' => $lop->id, 'ma_lop_hp' => $lop->ma_lop_hp],
             'mon_hoc' => $lop->monHoc === null ? null : [
                 'id' => $lop->monHoc->id, 'ma_mon' => $lop->monHoc->ma_mon, 'ten_mon' => $lop->monHoc->ten_mon,

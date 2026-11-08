@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { GiangVien, NguoiDung, SinhVien } from '@core/models/dao-tao.model';
@@ -49,6 +50,7 @@ describe('TaiKhoanPage', () => {
     TestBed.configureTestingModule({
       imports: [TaiKhoanPage],
       providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: auth },
         { provide: GiangVienService, useValue: { layMot: vi.fn() } },
         { provide: SinhVienService, useValue: sinhVienService },
@@ -110,6 +112,7 @@ describe('TaiKhoanPage', () => {
     TestBed.configureTestingModule({
       imports: [TaiKhoanPage],
       providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: auth },
         { provide: GiangVienService, useValue: { layMot: vi.fn(() => of(giangVien)) } },
         { provide: SinhVienService, useValue: { layMot: vi.fn() } },

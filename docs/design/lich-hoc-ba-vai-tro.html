@@ -1,0 +1,2122 @@
+<title>Lịch học lớp học phần</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  /* Layout: a registrar's working document — specification, role sections, framed mockups */
+  --bg: #F2F5F5;
+  --surface: #FFFFFF;
+  --surface-2: #E9EFEF;
+  --ink: #0F1D21;
+  --ink-2: #3E5559;
+  --ink-3: #556B6F;
+  --line: #D6E1E0;
+  --line-strong: #B4C6C4;
+  --accent: #0E5C63;
+  --accent-hover: #0A4A50;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DBEDEE;
+  --accent-line: #93C0C3;
+  --ok: #21664A;
+  --ok-soft: #DBEDE3;
+  --warn: #85560F;
+  --warn-soft: #F6E9D2;
+  --danger: #8F3532;
+  --danger-soft: #F6DEDC;
+  --grid-line: #E6EDEC;
+  --slot: #F7FAFA;
+  --ses-hoc: #E3EFFA;
+  --ses-hoc-line: #A8C8E8;
+  --ses-thi: #FAE2DE;
+  --ses-thi-line: #D79E97;
+  --ses-done: #EBF0F0;
+  --ses-done-line: #CBD8D7;
+
+  --font: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --r-sm: 5px;
+  --r: 8px;
+  --r-lg: 12px;
+  --shadow: 0 1px 2px rgba(15, 29, 33, .06), 0 8px 24px -18px rgba(15, 29, 33, .35);
+  --measure: 68ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0C1416;
+    --surface: #131F22;
+    --surface-2: #1A282C;
+    --ink: #E7F0EF;
+    --ink-2: #A7BDBC;
+    --ink-3: #7C9494;
+    --line: #25373B;
+    --line-strong: #35504F;
+    --accent: #5FBFC4;
+    --accent-hover: #7FD2D6;
+    --accent-ink: #06282B;
+    --accent-soft: #173438;
+    --accent-line: #2F6268;
+    --ok: #6FC79B;
+    --ok-soft: #14342A;
+    --warn: #D9A65B;
+    --warn-soft: #33280F;
+    --danger: #E08987;
+    --danger-soft: #3A1E1D;
+    --grid-line: #202F33;
+    --slot: #101B1E;
+    --ses-hoc: #1A2F42;
+    --ses-hoc-line: #2F5A80;
+    --ses-thi: #3A2220;
+    --ses-thi-line: #7A4741;
+    --ses-done: #1B2629;
+    --ses-done-line: #2C3B3E;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -18px rgba(0, 0, 0, .8);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0C1416;
+  --surface: #131F22;
+  --surface-2: #1A282C;
+  --ink: #E7F0EF;
+  --ink-2: #A7BDBC;
+  --ink-3: #7C9494;
+  --line: #25373B;
+  --line-strong: #35504F;
+  --accent: #5FBFC4;
+  --accent-hover: #7FD2D6;
+  --accent-ink: #06282B;
+  --accent-soft: #173438;
+  --accent-line: #2F6268;
+  --ok: #6FC79B;
+  --ok-soft: #14342A;
+  --warn: #D9A65B;
+  --warn-soft: #33280F;
+  --danger: #E08987;
+  --danger-soft: #3A1E1D;
+  --grid-line: #202F33;
+  --slot: #101B1E;
+  --ses-hoc: #1A2F42;
+  --ses-hoc-line: #2F5A80;
+  --ses-thi: #3A2220;
+  --ses-thi-line: #7A4741;
+  --ses-done: #1B2629;
+  --ses-done-line: #2C3B3E;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -18px rgba(0, 0, 0, .8);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 72px;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--surface);
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+
+/* ---------- masthead ---------- */
+.mast {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+}
+.mast > .wrap { padding-block: 34px 26px; }
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+h1 {
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  font-weight: 700;
+  text-wrap: balance;
+  margin: 0 0 12px;
+}
+.lede {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+/* ---------- sticky nav ---------- */
+nav.roles {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+}
+nav.roles ul {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+nav.roles ul::-webkit-scrollbar { display: none; }
+nav.roles a {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+nav.roles a:hover { background: var(--surface-2); color: var(--ink); }
+nav.roles a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav.roles a[aria-current="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
+
+/* ---------- sections ---------- */
+section { padding-block: 44px 6px; scroll-margin-top: 64px; }
+h2 {
+  font-size: 22px;
+  letter-spacing: -.01em;
+  margin: 0 0 6px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+h3 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  margin: 0;
+}
+.sub {
+  color: var(--ink-2);
+  max-width: var(--measure);
+  margin: 0 0 22px;
+}
+p { margin: 0 0 12px; }
+a { color: var(--accent); }
+
+/* role header */
+.role-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.role-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.role-tag--gv { background: var(--ok); }
+.role-tag--sv { background: var(--warn); }
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+.card-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.card-bar .where {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+.card-body { padding: 20px; }
+
+/* notes */
+.note {
+  border-left: 3px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 12px 15px;
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.note strong { color: var(--ink); }
+.note ul { margin: 6px 0 0; padding-left: 18px; }
+.note li { margin: 3px 0; }
+
+/* ---------- tiết strip ---------- */
+.strip { display: grid; gap: 16px; }
+.ca-block { display: grid; gap: 7px; }
+.ca-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.tiets { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.tiet {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 6px 9px;
+  background: var(--surface);
+}
+.tiet b { display: block; font-size: 12.5px; font-weight: 600; }
+.tiet span { display: block; font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+
+/* ---------- mock form ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  letter-spacing: .01em;
+}
+.field .req { color: var(--danger); }
+.control {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  padding: 9px 11px;
+  font-size: 13.5px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+}
+.control.is-empty { color: var(--ink-3); }
+.control .ico { font-size: 13px; color: var(--ink-3); }
+.field .hint { font-size: 11.5px; color: var(--ink-3); }
+
+/* combobox open state */
+.combo { position: relative; }
+.combo-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r) var(--r) 0 0;
+  background: var(--surface);
+  padding: 9px 11px;
+  font-size: 13.5px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.combo-input .q { font-weight: 600; color: var(--ink); }
+.caret { margin-left: auto; color: var(--ink-3); font-size: 11px; }
+.combo-list {
+  border: 1px solid var(--accent);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r) var(--r);
+  background: var(--surface);
+  overflow: hidden;
+}
+.combo-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 11px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--grid-line);
+}
+.combo-list { list-style: none; margin: 0; padding: 0; }
+.combo-list li:last-child { border-bottom: 0; }
+.combo-list li.on { background: var(--accent-soft); }
+.combo-list .code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+}
+.combo-list .name { color: var(--ink); overflow-wrap: anywhere; }
+.combo-list .meta { font-size: 11.5px; color: var(--ink-3); }
+.combo-empty { padding: 10px 11px; font-size: 12.5px; color: var(--ink-3); }
+
+/* ---------- lịch rows (form) ---------- */
+.sched-rows { display: grid; gap: 8px; }
+.sched-row {
+  display: grid;
+  grid-template-columns: 1.1fr .8fr .8fr 1.2fr 32px;
+  gap: 8px;
+  align-items: center;
+}
+.sched-row .control { min-height: 34px; padding: 6px 9px; font-size: 12.5px; }
+.sched-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.del {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--ink-3);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  cursor: default;
+}
+.add-row {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  border-radius: var(--r);
+  padding: 7px 13px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.preview {
+  margin-top: 14px;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.preview b { color: var(--ink); }
+.preview .count {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+.form-foot {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.btn {
+  border-radius: var(--r);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.btn--primary { background: var(--accent); color: var(--accent-ink); }
+.btn--ghost { border-color: var(--line-strong); color: var(--ink-2); }
+.btn--sm { padding: 6px 11px; font-size: 12px; }
+.muted-link { color: var(--ink-3); font-size: 13px; text-decoration: none; }
+
+/* ---------- calendar ---------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.seg span {
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  border-right: 1px solid var(--line);
+}
+.seg span:last-child { border-right: 0; }
+.seg span.on { background: var(--accent); color: var(--accent-ink); }
+.datebox {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-family: var(--mono);
+  color: var(--ink);
+}
+.tool-right { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.scroll-x { overflow-x: auto; }
+.cal { min-width: 700px; }
+.cal-head, .cal-row {
+  display: grid;
+  grid-template-columns: 62px repeat(7, minmax(0, 1fr));
+}
+.cal-head { border-bottom: 1px solid var(--line-strong); }
+.cal-corner {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-right: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 7px 4px;
+}
+.cal-day {
+  padding: 8px 6px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.cal-day:last-child { border-right: 0; }
+.cal-day b { display: block; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+.cal-day span { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+.cal-day.today { background: var(--accent-soft); }
+
+.cal-row { border-bottom: 1px solid var(--line); }
+.cal-row:last-child { border-bottom: 0; }
+.cal-ca {
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-right: 1px solid var(--line);
+  padding: 10px 4px;
+  text-align: center;
+}
+.cell {
+  border-right: 1px solid var(--grid-line);
+  padding: 5px;
+  min-height: 118px;
+  min-width: 0;
+  background: repeating-linear-gradient(
+    to bottom, transparent 0 27px, var(--grid-line) 27px 28px
+  );
+}
+.cell:last-child { border-right: 0; }
+.cell.empty { background: var(--slot); }
+
+.ses {
+  border: 1px solid var(--ses-hoc-line);
+  border-left-width: 3px;
+  background: var(--ses-hoc);
+  border-radius: var(--r-sm);
+  padding: 6px 7px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.ses--thi { background: var(--ses-thi); border-color: var(--ses-thi-line); }
+.ses--done { background: var(--ses-done); border-color: var(--ses-done-line); }
+.ses--now { box-shadow: 0 0 0 2px var(--accent); }
+
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--ses-hoc-line);
+  background: var(--ses-hoc);
+  font-style: normal;
+}
+.legend i.thi { background: var(--ses-thi); border-color: var(--ses-thi-line); }
+.legend i.done { background: var(--ses-done); border-color: var(--ses-done-line); }
+.legend i.off { background: var(--surface); border: 1px dashed var(--line-strong); }
+.ses-name { font-weight: 700; font-size: 11.5px; margin: 0 0 1px; }
+.ses-code { font-family: var(--mono); font-size: 9.5px; color: var(--ink-2); margin: 0 0 4px; overflow-wrap: anywhere; }
+.ses-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 5px; margin: 0; }
+.ses-meta dt { color: var(--ink-3); font-size: 9.5px; }
+.ses-meta dd { margin: 0; font-family: var(--mono); font-size: 9.5px; overflow-wrap: anywhere; }
+.ses-act {
+  margin-top: 5px;
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.ses-ghost {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-sm);
+  padding: 8px;
+  font-size: 11px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* ---------- tabs (lớp detail) ---------- */
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-inline: 4px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs span {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.tabs span.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---------- tables ---------- */
+.table-x { overflow-x: auto; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  min-width: 520px;
+}
+th, td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  font-size: 11px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 700;
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+td.mono, .mono { font-family: var(--mono); font-size: 12px; }
+tr:last-child td { border-bottom: 0; }
+
+.pill {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pill--ok { background: var(--ok-soft); color: var(--ok); }
+.pill--warn { background: var(--warn-soft); color: var(--warn); }
+.pill--off { background: var(--surface-2); color: var(--ink-3); }
+.pill--danger { background: var(--danger-soft); color: var(--danger); }
+
+/* ---------- empty state ---------- */
+.empty {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r);
+  padding: 30px 22px;
+  text-align: center;
+  color: var(--ink-2);
+  background: var(--slot);
+}
+.empty h4 { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+.empty p { margin: 0 auto; max-width: 46ch; font-size: 13px; }
+
+/* ---------- role matrix ---------- */
+.matrix td:first-child { font-weight: 600; color: var(--ink); }
+.matrix td { font-size: 12.5px; }
+
+/* ---------- steps ---------- */
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+ol.steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+}
+ol.steps .n {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 700;
+  font-family: var(--mono);
+}
+ol.steps b { display: block; font-size: 13.5px; }
+ol.steps span { font-size: 13px; color: var(--ink-2); }
+
+footer {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* ---------- hủy buổi / dạy bù ---------- */
+.mock-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.modal {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.modal-head {
+  padding: 15px 17px 0;
+}
+.modal-head h4 { margin: 0 0 3px; font-size: 14.5px; font-weight: 700; }
+.modal-head p { margin: 0; font-size: 12px; color: var(--ink-3); font-family: var(--mono); }
+.modal-body { padding: 14px 17px; display: grid; gap: 13px; }
+.modal-foot {
+  padding: 0 17px 16px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.modal-foot .spacer { flex: 1; }
+
+.ses--off {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  border-left-color: var(--ink-3);
+  opacity: .78;
+}
+.ses--off .ses-name { text-decoration: line-through; }
+.ses--off .ses-meta dd { color: var(--ink-3); }
+.ses-tag {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  border-radius: 3px;
+  padding: 2px 5px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  line-height: 1.3;
+}
+.ses-tag--ok { background: var(--ok-soft); color: var(--ok); }
+
+.check {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.box {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  flex: none;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  line-height: 1;
+  color: transparent;
+}
+.box.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.verify {
+  border: 1px solid var(--ok);
+  background: var(--ok-soft);
+  border-radius: var(--r);
+  padding: 9px 11px;
+  font-size: 12.5px;
+  color: var(--ok);
+  font-weight: 600;
+}
+.verify small { display: block; font-weight: 400; color: var(--ink-2); font-size: 11.5px; margin-top: 2px; }
+.verify--bad { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+
+.ops { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.op {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 13px 14px;
+  background: var(--surface);
+}
+.op .k {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.op b { display: block; font-size: 13.5px; margin: 3px 0 2px; }
+.op span { font-size: 12px; color: var(--ink-2); }
+
+@media (max-width: 900px) {
+  .ops { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .mock-pair { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  section { padding-block: 34px 4px; }
+  .card-body { padding: 15px; }
+  .sched-row { grid-template-columns: 1fr 1fr; }
+  .sched-row .del { grid-column: 2; justify-self: end; }
+  .sched-head { display: none; }
+  .tool-right { margin-left: 0; }
+}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="eyebrow">QLLH · Thiết kế trước khi code</p>
+    <h1>Lịch học lớp học phần</h1>
+    <p class="lede">
+      Ba vai trò nhìn cùng một dữ liệu buổi học theo ba cách khác nhau. Trang này mô tả
+      form mở lớp cần thêm gì, sinh lịch hoạt động ra sao, và mỗi vai trò thấy lịch của mình
+      như thế nào — dùng đúng dữ liệu trong ảnh lịch tuần của bạn.
+    </p>
+  </div>
+</header>
+
+<nav class="roles" aria-label="Các phần">
+  <div class="wrap">
+    <ul>
+      <li><a href="#van-de" aria-current="true">Vấn đề</a></li>
+      <li><a href="#quy-uoc">Quy ước tiết</a></li>
+      <li><a href="#admin">Quản trị</a></li>
+      <li><a href="#giang-vien">Giảng viên</a></li>
+      <li><a href="#sinh-vien">Sinh viên</a></li>
+      <li><a href="#diem-danh">Điểm danh</a></li>
+      <li><a href="#huy-buoi">Hủy &amp; dạy bù</a></li>
+      <li><a href="#du-lieu">Dữ liệu</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ============ VẤN ĐỀ ============ -->
+  <section id="van-de">
+    <h2>Ba chỗ đang thiếu</h2>
+    <p class="sub">
+      Form mở lớp hiện chỉ có mã, môn, học kỳ, giảng viên, sĩ số, năm thứ. Không có trạng thái,
+      không có lịch, và môn/giảng viên là dropdown đổ hết một lần.
+    </p>
+
+    <div class="card">
+      <div class="table-x">
+        <table class="matrix">
+          <thead>
+            <tr><th>Thiếu gì</th><th>Hiện tại</th><th>Cần thành</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Trạng thái lớp</td>
+              <td>Form gửi cứng <span class="mono">OPEN</span>; backend đã nhận <span class="mono">trang_thai</span> nhưng giao diện không cho chọn.</td>
+              <td>Ô chọn <span class="pill pill--ok">OPEN</span> <span class="pill pill--off">CLOSED</span> <span class="pill pill--danger">CANCELLED</span>, chỉ hiện khi <b>sửa</b> lớp.</td>
+            </tr>
+            <tr>
+              <td>Lịch học</td>
+              <td>Chưa có API tạo buổi, chưa có chỗ khai báo. Tab “Lịch học” trong trang lớp đang bị vô hiệu.</td>
+              <td>Khối nhập lịch ngay trong form mở lớp, sinh buổi hàng loạt có kiểm tra trùng.</td>
+            </tr>
+            <tr>
+              <td>Tìm môn / giảng viên</td>
+              <td>Dropdown đổ hết; dữ liệu chỉ trả tên, không có mã nên không tìm theo mã được.</td>
+              <td>Ô tìm kiếm gõ mã hoặc tên, có hiển thị cả mã lẫn tên, tìm được cả khi gõ không dấu.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Một quy tắc xuyên suốt:</strong> mỗi dòng lịch là một buổi 2–3 tiết học tại
+      <b>một phòng duy nhất</b>. Phòng thuộc về buổi, không thuộc về lớp — nên không đặt ô phòng
+      trong form lớp, mà đặt ở từng dòng lịch. Lớp có thể học lý thuyết ở phòng thường và
+      thực hành ở phòng máy.
+    </p>
+  </section>
+
+  <!-- ============ QUY ƯỚC TIẾT ============ -->
+  <section id="quy-uoc">
+    <h2>Quy ước tiết học</h2>
+    <p class="sub">
+      15 tiết mỗi ngày, chia ba ca. Buổi học được khai báo bằng <b>tiết bắt đầu → tiết kết thúc</b>,
+      giờ hiển thị được suy ra từ bảng này thay vì gõ tay. Trường đổi khung giờ thì sửa dữ liệu,
+      không sửa code.
+    </p>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="strip">
+          <div class="ca-block">
+            <div class="ca-label">Sáng · tiết 1–6</div>
+            <div class="tiets">
+              <div class="tiet"><b>Tiết 1</b><span>06:30–07:20</span></div>
+              <div class="tiet"><b>Tiết 2</b><span>07:25–08:15</span></div>
+              <div class="tiet"><b>Tiết 3</b><span>08:20–09:10</span></div>
+              <div class="tiet"><b>Tiết 4</b><span>09:20–10:10</span></div>
+              <div class="tiet"><b>Tiết 5</b><span>10:15–11:05</span></div>
+              <div class="tiet"><b>Tiết 6</b><span>11:10–12:00</span></div>
+            </div>
+          </div>
+          <div class="ca-block">
+            <div class="ca-label">Chiều · tiết 7–12</div>
+            <div class="tiets">
+              <div class="tiet"><b>Tiết 7</b><span>12:30–13:20</span></div>
+              <div class="tiet"><b>Tiết 8</b><span>13:25–14:15</span></div>
+              <div class="tiet"><b>Tiết 9</b><span>14:20–15:10</span></div>
+              <div class="tiet"><b>Tiết 10</b><span>15:20–16:10</span></div>
+              <div class="tiet"><b>Tiết 11</b><span>16:15–17:05</span></div>
+              <div class="tiet"><b>Tiết 12</b><span>17:10–18:00</span></div>
+            </div>
+          </div>
+          <div class="ca-block">
+            <div class="ca-label">Tối · tiết 13–15</div>
+            <div class="tiets">
+              <div class="tiet"><b>Tiết 13</b><span>18:15–19:05</span></div>
+              <div class="tiet"><b>Tiết 14</b><span>19:10–20:00</span></div>
+              <div class="tiet"><b>Tiết 15</b><span>20:05–20:55</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Ca là thuộc tính của tiết, không phải của buổi.</strong> Một buổi tiết 5–7 vắt qua
+      sáng và chiều, nên buổi học không lưu cột “ca”. Chỉ bảng tiết mới có ca.
+    </p>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section id="admin">
+    <div class="role-head">
+      <span class="role-tag">ADMIN</span>
+      <h2 style="margin:0">Quản trị viên mở lớp và xếp lịch</h2>
+    </div>
+    <p class="sub">
+      Làm một lần khi mở lớp: chọn môn, giảng viên, khai báo các dòng lịch lặp, xem trước
+      số buổi sẽ tạo, rồi lưu. Lịch sinh ra trong cùng transaction với lớp — hoặc tất cả, hoặc không gì.
+    </p>
+
+    <!-- form -->
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 1 · Form mở lớp học phần</h3>
+        <span class="where">/lop-hoc-phan/tao</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+
+          <div class="field">
+            <label>Mã lớp học phần <span class="req">*</span></label>
+            <div class="control">68PM1-40770103</div>
+          </div>
+
+          <div class="field">
+            <label>Học kỳ <span class="req">*</span></label>
+            <div class="control">Học kỳ 1 · 2026–2027 <span class="caret">▾</span></div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Môn học <span class="req">*</span></label>
+            <div class="combo">
+              <div class="combo-input">
+                <span class="ico">⌕</span>
+                <span class="q">ly thuyet toi uu</span>
+                <span class="caret">▾</span>
+              </div>
+              <ul class="combo-list">
+                <li class="on">
+                  <span class="code">68PM1</span>
+                  <span class="name">Lý thuyết tối ưu và đồ thị</span>
+                  <span class="meta">3 TC</span>
+                </li>
+              </ul>
+            </div>
+            <span class="hint">Gõ mã hoặc tên. Không cần dấu: “ly thuyet” vẫn ra. Tối thiểu 2 ký tự, chờ 250 ms rồi tìm.</span>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Giảng viên <span class="req">*</span></label>
+            <div class="combo">
+              <div class="combo-input">
+                <span class="ico">⌕</span>
+                <span class="q">hoang thu</span>
+                <span class="caret">▾</span>
+              </div>
+              <ul class="combo-list">
+                <li class="on">
+                  <span class="code">GV0142</span>
+                  <span class="name">Hoàng Thu Thủy</span>
+                  <span class="meta">K. Công nghệ thông tin</span>
+                </li>
+                <li>
+                  <span class="code">GV0217</span>
+                  <span class="name">Nguyễn Hoàng Thư</span>
+                  <span class="meta">K. Công nghệ thông tin</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Sĩ số tối đa <span class="req">*</span></label>
+            <div class="control">60</div>
+          </div>
+
+          <div class="field">
+            <label>Năm thứ</label>
+            <div class="control">Năm 4 <span class="caret">▾</span></div>
+          </div>
+
+          <div class="field">
+            <label>Trạng thái</label>
+            <div class="control is-empty" style="border-style:dashed">
+              OPEN<span class="hint" style="margin-left:auto">chỉ hiện khi sửa</span>
+            </div>
+          </div>
+
+          <!-- lịch -->
+          <div class="field" style="grid-column:1/-1;margin-top:6px">
+            <label style="font-size:13.5px;color:var(--ink)">Lịch học</label>
+            <span class="hint" style="margin-top:-2px">
+              Mỗi dòng là một buổi 2–3 tiết tại một phòng. Ba dòng dưới sinh ra toàn bộ buổi của học kỳ.
+            </span>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <div class="sched-rows">
+              <div class="sched-row sched-head">
+                <span>Thứ</span><span>Từ tiết</span><span>Đến tiết</span><span>Phòng</span><span></span>
+              </div>
+              <div class="sched-row">
+                <div class="control">Thứ 2 <span class="caret">▾</span></div>
+                <div class="control">7</div>
+                <div class="control">9</div>
+                <div class="control">43.H2 — 60 chỗ <span class="caret">▾</span></div>
+                <span class="del">✕</span>
+              </div>
+              <div class="sched-row">
+                <div class="control">Thứ 4 <span class="caret">▾</span></div>
+                <div class="control">7</div>
+                <div class="control">9</div>
+                <div class="control">43.H2 — 60 chỗ <span class="caret">▾</span></div>
+                <span class="del">✕</span>
+              </div>
+              <div class="sched-row">
+                <div class="control">Thứ 6 <span class="caret">▾</span></div>
+                <div class="control">10</div>
+                <div class="control">12</div>
+                <div class="control">24.H2 — 60 chỗ <span class="caret">▾</span></div>
+                <span class="del">✕</span>
+              </div>
+            </div>
+            <button class="add-row" type="button">+ Thêm dòng lịch</button>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Áp dụng từ ngày → đến ngày</label>
+            <div class="sched-row" style="grid-template-columns:1fr 1fr">
+              <div class="control">02/11/2026</div>
+              <div class="control">06/01/2027</div>
+            </div>
+            <span class="hint">Mặc định theo ngày bắt đầu / kết thúc của học kỳ. Sửa được nếu lớp bắt đầu muộn.</span>
+          </div>
+
+          <div class="preview" style="grid-column:1/-1">
+            <span class="count">30</span><b>buổi sẽ được tạo</b> · buổi đầu 02/11/2026, buổi cuối 06/01/2027<br>
+            Thứ 2 &amp; Thứ 4 · Tiết 7–9 (12:30–15:10) · Phòng 43.H2<br>
+            Thứ 6 · Tiết 10–12 (15:20–18:00) · Phòng 24.H2
+          </div>
+
+          <div class="form-foot" style="grid-column:1/-1">
+            <a class="muted-link" href="#admin">Hủy</a>
+            <span style="flex:1"></span>
+            <span class="btn btn--ghost">Lưu nháp</span>
+            <span class="btn btn--primary">Mở lớp và tạo 30 buổi</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Trước khi ghi:</strong> hệ thống kiểm tra trùng phòng, trùng giảng viên và trùng
+      sinh viên trên toàn bộ lô. Chỉ cần một buổi vướng là không tạo buổi nào, và trả về đúng
+      ngày, khung tiết, phòng bị vướng. Người dùng sửa một dòng rồi bấm lại.
+    </p>
+
+    <!-- lớp detail -->
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 2 · Trang lớp, tab Lịch học</h3>
+        <span class="where">/lop-hoc-phan/:id/lich-hoc</span>
+      </div>
+      <div class="tabs">
+        <span>Thông tin</span>
+        <span>Sinh viên</span>
+        <span class="on">Lịch học</span>
+        <span>Điểm danh</span>
+        <span>Chuyên cần</span>
+        <span>Điểm</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <span class="btn btn--ghost btn--sm">+ Thêm buổi lẻ</span>
+          <span class="btn btn--ghost btn--sm">Đổi phòng từ tuần sau</span>
+          <span class="btn btn--ghost btn--sm">Hủy một buổi</span>
+        </div>
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr><th>Ngày</th><th>Tiết</th><th>Giờ</th><th>Phòng</th><th>Trạng thái</th><th>Điểm danh</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">02/11/2026</td><td>7–9</td><td class="mono">12:30–15:10</td><td>43.H2</td><td><span class="pill pill--off">Đã dạy</span></td><td>42/45</td></tr>
+              <tr><td class="mono">04/11/2026</td><td>7–9</td><td class="mono">12:30–15:10</td><td>43.H2</td><td><span class="pill pill--off">Đã dạy</span></td><td>41/45</td></tr>
+              <tr><td class="mono">06/11/2026</td><td>10–12</td><td class="mono">15:20–18:00</td><td>24.H2</td><td><span class="pill pill--ok">Sắp dạy</span></td><td>—</td></tr>
+              <tr><td class="mono">09/11/2026</td><td>7–9</td><td class="mono">12:30–15:10</td><td>43.H2</td><td><span class="pill pill--ok">Sắp dạy</span></td><td>—</td></tr>
+              <tr><td class="mono">11/11/2026</td><td>7–9</td><td class="mono">12:30–15:10</td><td>43.H2</td><td><span class="pill pill--warn">Đã hủy</span></td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Buổi đã điểm danh thì không sửa/xóa thẳng được — phải xác nhận, và buổi đã hủy vẫn hiện
+      để lịch sử đọc được. Sửa giờ hoặc phòng của một buổi chỉ ảnh hưởng buổi đó, không đụng
+      các buổi còn lại.
+    </p>
+
+    <!-- admin calendar -->
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 3 · Lịch tuần toàn trường</h3>
+        <span class="where">/lich-hoc · ADMIN</span>
+      </div>
+      <div class="toolbar">
+        <span class="seg"><span class="on">Tuần</span><span>Tháng</span></span>
+        <span class="datebox">02/11 – 08/11/2026</span>
+        <span class="btn btn--ghost btn--sm">‹ Trở về</span>
+        <span class="btn btn--ghost btn--sm">Hôm nay</span>
+        <span class="btn btn--ghost btn--sm">Tiếp ›</span>
+        <span class="tool-right">
+          <span class="control" style="min-height:32px;padding:5px 9px;font-size:12px">Giảng viên: tất cả <span class="caret">▾</span></span>
+          <span class="control" style="min-height:32px;padding:5px 9px;font-size:12px">Phòng: tất cả <span class="caret">▾</span></span>
+        </span>
+      </div>
+      <div class="legend" aria-label="Chú giải màu">
+        <span><i></i> Ca học</span>
+        <span><i class="thi"></i> Ca thi</span>
+        <span><i class="done"></i> Đã dạy</span>
+        <span><i class="off"></i> Tạm ngưng / đã hủy</span>
+        <span style="margin-left:auto;color:var(--ink-3)">Màu thể hiện loại ca. Lớp phân biệt bằng tên môn và mã lớp.</span>
+      </div>
+      <div class="scroll-x">
+        <div class="cal">
+          <div class="cal-head">
+            <div class="cal-corner">Ca học</div>
+            <div class="cal-day"><b>Thứ 2</b><span>02/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 3</b><span>03/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 4</b><span>04/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 5</b><span>05/11/2026</span></div>
+            <div class="cal-day today"><b>Thứ 6</b><span>06/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 7</b><span>07/11/2026</span></div>
+            <div class="cal-day"><b>Chủ nhật</b><span>08/11/2026</span></div>
+          </div>
+
+          <div class="cal-row">
+            <div class="cal-ca">Sáng</div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Cơ sở dữ liệu</p><p class="ses-code">68PM2 · 60770112</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>1–3</dd><dt>Giờ</dt><dd>06:30–09:10</dd><dt>Phòng</dt><dd>A.101</dd><dt>GV</dt><dd>Lê Minh</dd></dl>
+            </div></div>
+            <div class="cell"></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Mạng máy tính</p><p class="ses-code">68PM1 · 60880101</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>4–6</dd><dt>Giờ</dt><dd>09:20–12:00</dd><dt>Phòng</dt><dd>B.204</dd><dt>GV</dt><dd>Phạm An</dd></dl>
+            </div></div>
+            <div class="cell"></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Cơ sở dữ liệu</p><p class="ses-code">68PM2 · 60770112</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>1–3</dd><dt>Giờ</dt><dd>06:30–09:10</dd><dt>Phòng</dt><dd>A.101</dd><dt>GV</dt><dd>Lê Minh</dd></dl>
+            </div></div>
+            <div class="cell"><div class="ses ses--thi">
+              <p class="ses-name">Cơ sở dữ liệu</p><p class="ses-code">THI CUỐI KỲ · 68PM2</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>1–3</dd><dt>Giờ</dt><dd>06:30–09:10</dd><dt>Phòng</dt><dd>A.101</dd><dt>Giám thị</dt><dd>Lê Minh</dd></dl>
+              <span class="ses-tag">CA THI</span>
+            </div></div>
+            <div class="cell empty"></div>
+          </div>
+
+          <div class="cal-row">
+            <div class="cal-ca">Chiều</div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>43.H2</dd><dt>GV</dt><dd>Hoàng Thu Thủy</dd></dl>
+            </div></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>23.H2</dd><dt>GV</dt><dd>Đào Việt Cường</dd></dl>
+            </div></div>
+            <div class="cell"></div>
+            <div class="cell"><div class="ses ses--b ses--now">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>H3.12</dd><dt>GV</dt><dd>Đào Việt Cường</dd></dl>
+            </div></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>24.H2</dd><dt>GV</dt><dd>Hoàng Thu Thủy</dd></dl>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+
+          <div class="cal-row">
+            <div class="cal-ca">Tối</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Màu khối thể hiện <b>loại ca</b>, không phải lớp: ca học xanh, ca thi đỏ, buổi đã dạy
+      xám nhạt, buổi tạm ngưng gạch ngang. Lọc giảng viên hoặc phòng chỉ thu hẹp hiển thị,
+      không đổi dữ liệu.
+    </p>
+
+    <!-- lịch thi -->
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 4 · Thêm ca thi</h3>
+        <span class="where">/lich-thi/them · ADMIN</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Môn học <span class="req">*</span></label>
+            <div class="combo">
+              <div class="combo-input">
+                <span class="ico">⌕</span>
+                <span class="q">co so du lieu</span>
+                <span class="caret">▾</span>
+              </div>
+              <ul class="combo-list">
+                <li class="on">
+                  <span class="code">60770112</span>
+                  <span class="name">Cơ sở dữ liệu</span>
+                  <span class="meta">3 TC</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="field">
+            <label>Học kỳ <span class="req">*</span></label>
+            <div class="control">Học kỳ 1 · 2026–2027 <span class="caret">▾</span></div>
+          </div>
+          <div class="field">
+            <label>Ngày thi <span class="req">*</span></label>
+            <div class="control">07/11/2026</div>
+          </div>
+          <div class="field">
+            <label>Phòng thi <span class="req">*</span></label>
+            <div class="control">A.101 — 60 chỗ <span class="caret">▾</span></div>
+          </div>
+          <div class="field">
+            <label>Từ tiết <span class="req">*</span></label>
+            <div class="control">1</div>
+          </div>
+          <div class="field">
+            <label>Đến tiết <span class="req">*</span></label>
+            <div class="control">3</div>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Đợt thi</label>
+            <div class="control">Cuối kỳ <span class="caret">▾</span></div>
+            <span class="hint">Chỉ là nhãn để phân biệt giữa kỳ và cuối kỳ. Không ảnh hưởng nghiệp vụ.</span>
+          </div>
+          <div class="preview" style="grid-column:1/-1">
+            <b>07/11/2026 · Tiết 1–3 (06:30–09:10) · A.101</b><br>
+            Hiện thành một ca thi trên lịch tuần của quản trị, giảng viên và mọi sinh viên đã
+            đăng ký môn Cơ sở dữ liệu trong học kỳ này.
+          </div>
+          <div class="form-foot" style="grid-column:1/-1">
+            <a class="muted-link" href="#admin">Hủy</a>
+            <span style="flex:1"></span>
+            <span class="btn btn--primary">Thêm ca thi</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Ca thi dùng chung khung tiết với ca học và được kiểm tra trùng phòng, trùng giờ như buổi
+      học thường. Khác một điểm: <b>thi theo môn, không theo lớp học phần</b> — một ca thi phục
+      vụ mọi lớp của môn đó trong học kỳ. Không có trạng thái và không có hình thức thi.
+    </p>
+  </section>
+
+  <!-- ============ GIẢNG VIÊN ============ -->
+  <section id="giang-vien">
+    <div class="role-head">
+      <span class="role-tag role-tag--gv">GIẢNG VIÊN</span>
+      <h2 style="margin:0">Giảng viên xem lịch dạy, đi thẳng vào điểm danh</h2>
+    </div>
+    <p class="sub">
+      Cùng một lưới tuần, nhưng chỉ có lớp mình phụ trách và không có nút sửa lịch. Buổi đang
+      diễn ra hoặc sắp tới có nút điểm danh ngay trên khối — đây là lý do chính giảng viên mở lịch.
+    </p>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Lịch dạy tuần này</h3>
+        <span class="where">/lich-hoc · GIANG_VIEN</span>
+      </div>
+      <div class="toolbar">
+        <span class="seg"><span class="on">Tuần</span><span>Tháng</span></span>
+        <span class="datebox">02/11 – 08/11/2026</span>
+        <span class="btn btn--ghost btn--sm">‹ Trở về</span>
+        <span class="btn btn--ghost btn--sm">Hôm nay</span>
+        <span class="btn btn--ghost btn--sm">Tiếp ›</span>
+      </div>
+      <div class="scroll-x">
+        <div class="cal">
+          <div class="cal-head">
+            <div class="cal-corner">Ca học</div>
+            <div class="cal-day"><b>Thứ 2</b><span>02/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 3</b><span>03/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 4</b><span>04/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 5</b><span>05/11/2026</span></div>
+            <div class="cal-day today"><b>Thứ 6</b><span>06/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 7</b><span>07/11/2026</span></div>
+            <div class="cal-day"><b>Chủ nhật</b><span>08/11/2026</span></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Sáng</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>1–3</dd><dt>Giờ</dt><dd>06:30–09:10</dd><dt>Phòng</dt><dd>H3.12</dd><dt>Sĩ số</dt><dd>45</dd></dl>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Chiều</div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>43.H2</dd><dt>Sĩ số</dt><dd>52</dd></dl>
+            </div></div>
+            <div class="cell"></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>43.H2</dd><dt>Sĩ số</dt><dd>52</dd></dl>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell"><div class="ses ses--now">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>H3.12</dd><dt>Sĩ số</dt><dd>45</dd></dl>
+              <span class="ses-act">ĐIỂM DANH</span>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Tối</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Giảng viên <b>không</b> được thêm, sửa hay hủy buổi. Nếu thấy lịch sai, họ báo quản trị
+      viên. Đây là ranh giới phân quyền BR-03: chỉ lớp mình phụ trách mới hiện trong lịch.
+    </p>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 7 · Popup thông tin giảng viên</h3>
+        <span class="where">bấm vào tên giảng viên ở bất kỳ khối lịch nào</span>
+      </div>
+      <div class="card-body">
+        <div style="max-width:360px">
+          <div class="modal">
+            <div class="modal-head">
+              <h4>Hoàng Thu Thủy</h4>
+              <p>GV0142 · Khoa Công nghệ thông tin</p>
+            </div>
+            <div class="modal-body">
+              <div class="field">
+                <label>Email</label>
+                <div class="control">thuyth@example.edu.vn</div>
+              </div>
+              <div class="field">
+                <label>Số điện thoại</label>
+                <div class="control">0912 345 678</div>
+              </div>
+            </div>
+            <div class="modal-foot">
+              <span class="btn btn--ghost">Đóng</span>
+              <span class="btn btn--primary">Gửi email</span>
+            </div>
+          </div>
+        </div>
+        <p class="note" style="margin:16px 0 0">
+          Ba vai trò mở được popup này. Sinh viên chỉ thấy tên, mã, email và số điện thoại —
+          không thấy trạng thái tài khoản hay mã nội bộ nào khác.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SINH VIÊN ============ -->
+  <section id="sinh-vien">
+    <div class="role-head">
+      <span class="role-tag role-tag--sv">SINH VIÊN</span>
+      <h2 style="margin:0">Sinh viên chỉ thấy lịch học kỳ mình đã đăng ký</h2>
+    </div>
+    <p class="sub">
+      Sinh viên không có màn quản lý lớp học phần. Vào <b>Đăng ký học phần</b>, chọn học kỳ,
+      rồi đăng ký các lớp đang mở của kỳ đó. Chọn kỳ cũ thì màn đó chỉ còn để xem, kèm dòng
+      “Bạn đã đăng ký học kỳ này rồi”. Lịch sử đăng ký qua các kỳ nằm ở <b>Lịch sử đăng ký</b>.
+      Lịch tuần chỉ hiển thị lớp đã đăng ký ACTIVE của kỳ đang chọn.
+    </p>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Menu sinh viên</h3>
+        <span class="where">sidebar · SINH_VIEN</span>
+      </div>
+      <div class="card-body">
+        <div class="ops">
+          <div class="op"><b>Lịch học</b><span>Thời khóa biểu tuần của kỳ đã chọn.</span></div>
+          <div class="op"><b>Đăng ký học phần</b><span>Chọn kỳ, đăng ký lớp đang mở. Kỳ cũ chỉ xem.</span></div>
+          <div class="op"><b>Lịch sử đăng ký</b><span>Mọi kỳ đã đăng ký, lọc theo trạng thái, hủy được khi còn hạn.</span></div>
+          <div class="op"><b>Điểm danh</b><span>Chọn kỳ, xem số buổi vắng có phép / không phép từng môn.</span></div>
+          <div class="op"><b>Điểm</b><span>Điểm từng môn, GPA kỳ và GPA tích lũy.</span></div>
+          <div class="op"><b>Tài khoản</b><span>Hồ sơ cá nhân và ảnh đại diện.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Lịch tuần · Học kỳ 1, 2026–2027</h3>
+        <span class="where">/lich-hoc · SINH_VIEN</span>
+      </div>
+      <div class="toolbar">
+        <span class="seg"><span class="on">Tuần</span><span>Tháng</span></span>
+        <span class="datebox">02/11 – 08/11/2026</span>
+        <span class="btn btn--ghost btn--sm">‹ Trở về</span>
+        <span class="btn btn--ghost btn--sm">Hôm nay</span>
+        <span class="btn btn--ghost btn--sm">Tiếp ›</span>
+        <span class="tool-right">
+          <span style="font-size:12px;color:var(--ink-3)">Ca học và ca thi tự hiện theo môn đã đăng ký</span>
+        </span>
+      </div>
+      <div class="scroll-x">
+        <div class="cal">
+          <div class="cal-head">
+            <div class="cal-corner">Ca học</div>
+            <div class="cal-day"><b>Thứ 2</b><span>02/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 3</b><span>03/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 4</b><span>04/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 5</b><span>05/11/2026</span></div>
+            <div class="cal-day today"><b>Thứ 6</b><span>06/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 7</b><span>07/11/2026</span></div>
+            <div class="cal-day"><b>Chủ nhật</b><span>08/11/2026</span></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Sáng</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Chiều</div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>43.H2</dd><dt>GV</dt><dd>Hoàng Thu Thủy</dd></dl>
+            </div></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>23.H2</dd><dt>GV</dt><dd>Đào Việt Cường</dd></dl>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell"><div class="ses ses--b ses--now">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>H3.12</dd><dt>GV</dt><dd>Đào Việt Cường</dd></dl>
+            </div></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>24.H2</dd><dt>GV</dt><dd>Hoàng Thu Thủy</dd></dl>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Tối</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Sinh viên không chọn học kỳ ở màn lịch.</strong> Lịch và ca thi tự hiện theo
+      đúng những môn đã đăng ký ACTIVE của kỳ đang học, nên không có gì để chọn — chưa đăng ký
+      thì lịch trống. Đăng ký xong học phần kỳ 2 thì lịch tự chuyển sang kỳ 2 theo ngày bắt đầu
+      của kỳ đó, không cần bấm gì.
+    </p>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Khi chưa đăng ký học phần nào</h3>
+        <span class="where">trạng thái rỗng</span>
+      </div>
+      <div class="card-body">
+        <div class="empty">
+          <h4>Chưa có lịch học kỳ này</h4>
+          <p>
+            Bạn chưa đăng ký học phần nào trong Học kỳ 2, 2026–2027. Sau khi đăng ký thành công,
+            lịch học sẽ xuất hiện ở đây.
+          </p>
+          <p style="margin-top:14px"><span class="btn btn--primary btn--sm">Đăng ký học phần</span></p>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Lịch sinh viên đọc từ <span class="mono">GET /api/schedules</span> với quyền của chính họ:
+      chỉ trả buổi của lớp có đăng ký ACTIVE. Không có nút sửa, không có nút điểm danh.
+      Buổi đã hủy hiện mờ kèm lý do; buổi đã dạy vẫn hiện để đối chiếu chuyên cần.
+    </p>
+
+    <h3 style="margin:26px 0 10px">Ba vai trò khác nhau ở đâu</h3>
+    <div class="card">
+      <div class="table-x">
+        <table class="matrix">
+          <thead>
+            <tr><th></th><th>Quản trị</th><th>Giảng viên</th><th>Sinh viên</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Thấy buổi nào</td>
+              <td>Toàn bộ lớp của học kỳ đang chọn</td>
+              <td>Chỉ lớp mình phụ trách</td>
+              <td>Chỉ lớp mình đăng ký ACTIVE</td>
+            </tr>
+            <tr>
+              <td>Thấy ca thi nào</td>
+              <td>Toàn bộ ca thi của học kỳ</td>
+              <td>Ca thi của môn mình dạy</td>
+              <td>Ca thi của môn mình đã đăng ký</td>
+            </tr>
+            <tr>
+              <td>Chọn học kỳ</td>
+              <td>Tất cả học kỳ</td>
+              <td>Các kỳ có lớp mình dạy</td>
+              <td>Chỉ kỳ đã có đăng ký</td>
+            </tr>
+            <tr>
+              <td>Lọc</td>
+              <td>Giảng viên, phòng, khoảng ngày</td>
+              <td>Không cần</td>
+              <td>Không cần</td>
+            </tr>
+            <tr>
+              <td>Ghi lịch</td>
+              <td>Mở lớp, sinh lịch, sửa/hủy buổi</td>
+              <td>Hủy, dời, dạy bù buổi của lớp mình</td>
+              <td>Không</td>
+            </tr>
+            <tr>
+              <td>Từ lịch đi tới đâu</td>
+              <td>Trang lớp, sửa buổi</td>
+              <td>Điểm danh buổi đó</td>
+              <td>Chi tiết lớp, chuyên cần</td>
+            </tr>
+            <tr>
+              <td>Màu khối</td>
+              <td>Theo lớp học phần</td>
+              <td>Theo lớp học phần</td>
+              <td>Theo lớp học phần</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ĐIỂM DANH ============ -->
+  <section id="diem-danh">
+    <div class="role-head">
+      <span class="role-tag">ADMIN</span>
+      <span class="role-tag role-tag--gv">GIẢNG VIÊN</span>
+      <span class="role-tag role-tag--sv">SINH VIÊN</span>
+      <h2 style="margin:0">Điểm danh, luôn bắt đầu bằng học kỳ</h2>
+    </div>
+    <p class="sub">
+      Màn điểm danh hiện tại chỉ có ô lớp và ô ngày, nên giảng viên dạy nhiều kỳ phải tự nhớ
+      lớp nào thuộc kỳ nào. Thêm một bước chọn học kỳ ở đầu, rồi mới tới lớp và buổi.
+    </p>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 8 · Giảng viên chọn kỳ rồi mới chọn lớp</h3>
+        <span class="where">/diem-danh · GIANG_VIEN, ADMIN</span>
+      </div>
+      <div class="toolbar">
+        <span class="control" style="min-height:34px;padding:6px 10px;font-size:12.5px">Học kỳ 1 · 2026–2027 <span class="caret">▾</span></span>
+        <span class="control" style="min-height:34px;padding:6px 10px;font-size:12.5px">68PM2 · Học máy <span class="caret">▾</span></span>
+        <span class="control" style="min-height:34px;padding:6px 10px;font-size:12.5px">Ngày: tất cả <span class="caret">▾</span></span>
+        <span class="tool-right"><span class="btn btn--ghost btn--sm">Chỉ buổi chưa điểm danh</span></span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr><th>Ngày</th><th>Tiết</th><th>Giờ</th><th>Phòng</th><th>Trạng thái buổi</th><th>Đã điểm danh</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">02/11/2026</td><td>7–9</td><td class="mono">12:30–15:10</td><td>43.H2</td><td><span class="pill pill--off">Đã dạy</span></td><td>42/45</td></tr>
+              <tr><td class="mono">04/11/2026</td><td>10–12</td><td class="mono">15:20–18:00</td><td>24.H2</td><td><span class="pill pill--warn">Đã hủy</span></td><td>—</td></tr>
+              <tr><td class="mono">07/11/2026</td><td>10–12</td><td class="mono">15:20–18:00</td><td>24.H2</td><td><span class="pill pill--ok">Sắp dạy · buổi bù</span></td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Ô “Học kỳ” lọc sẵn danh sách lớp, và danh sách lớp đã tự giới hạn theo vai trò:
+      <span class="mono">LopHocPhanController.php:59-60</span> thêm
+      <span class="mono">where('giang_vien_id', người dùng)</span> cho giảng viên. Không cần
+      thêm bộ lọc phụ — giảng viên không thấy lớp của người khác.
+    </p>
+
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 9 · Sinh viên xem chuyên cần của mình</h3>
+        <span class="where">/diem-danh · SINH_VIEN · màn mới</span>
+      </div>
+      <div class="toolbar">
+        <span class="control" style="min-height:34px;padding:6px 10px;font-size:12.5px">Học kỳ 1 · 2026–2027 <span class="caret">▾</span></span>
+        <span class="tool-right" style="color:var(--ink-3);font-size:12px">
+          Tỉ lệ = (có mặt + đi muộn) / (tổng buổi đã điểm danh − vắng có phép)
+        </span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr><th>Môn học</th><th>Lớp</th><th>Đã học</th><th>Có mặt</th><th>Đi muộn</th><th>Vắng có phép</th><th>Vắng không phép</th><th>Tỉ lệ</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Lý thuyết tối ưu và đồ thị</td><td class="mono">68PM1-40770103</td>
+                <td>9</td><td>8</td><td>0</td><td>1</td><td>0</td><td><b>89%</b></td>
+              </tr>
+              <tr>
+                <td>Học máy</td><td class="mono">68PM2-60880704</td>
+                <td>8</td><td>7</td><td>1</td><td>0</td><td>0</td><td><b>100%</b></td>
+              </tr>
+              <tr>
+                <td>Cơ sở dữ liệu</td><td class="mono">68PM2-60770112</td>
+                <td>9</td><td>5</td><td>1</td><td>1</td><td>2</td><td><b>71%</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Sinh viên <b>không</b> điểm danh thay ai và không sửa được gì. Đếm theo <b>buổi</b>, kèm
+      số tiết của buổi để đọc nhanh (buổi 3 tiết vắng = vắng 3 tiết). Công thức đang dùng là
+      FR-11.05, vốn định nghĩa trên buổi — đổi sang đếm tiết là đổi cả đặc tả.
+      <span class="mono">GET /api/me/attendance-summary</span> đã có sẵn, chỉ thiếu màn hình.
+    </p>
+  </section>
+
+  <!-- ============ HỦY BUỔI & DẠY BÙ ============ -->
+  <section id="huy-buoi">
+    <div class="role-head">
+      <span class="role-tag">ADMIN</span>
+      <span class="role-tag role-tag--gv">GIẢNG VIÊN</span>
+      <h2 style="margin:0">Hủy buổi và dạy bù</h2>
+    </div>
+    <p class="sub">
+      Giảng viên nghỉ ốm, phòng hỏng, trường nghỉ lễ — buổi đó không dạy được. Không cần thêm
+      trạng thái mới: đây là ba thao tác trên dữ liệu đã có, và buổi đã hủy tự động không chặn
+      lịch của buổi bù.
+    </p>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="ops">
+          <div class="op">
+            <span class="k">Thao tác 1</span>
+            <b>Hủy buổi</b>
+            <span>Chuyển buổi sang <span class="mono">CANCELLED</span>, ghi lý do. Sinh viên thấy buổi mờ trên lịch.</span>
+          </div>
+          <div class="op">
+            <span class="k">Thao tác 2</span>
+            <b>Dời buổi</b>
+            <span>Đổi ngày, giờ hoặc phòng của chính buổi đó. Giữ nguyên ID, giữ nguyên thứ tự lớp.</span>
+          </div>
+          <div class="op">
+            <span class="k">Thao tác 3</span>
+            <b>Dạy bù</b>
+            <span>Tạo buổi mới trỏ về buổi đã hủy qua <span class="mono">buoi_goc_id</span>. Kiểm tra trùng như buổi thường.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Vì sao không có trạng thái “tạm ngưng”.</strong> “Tạm ngưng” và “hủy” nhìn từ dữ
+      liệu là một: buổi đó không dạy. Khác nhau chỉ ở ý định dạy bù, mà ý định thì lưu ở
+      buổi bù, không lưu ở buổi gốc. Thêm trạng thái thứ tư sẽ bắt mọi query lịch, chuyên cần,
+      thống kê phải xử lý thêm một nhánh — đổi lấy không gì cả.
+    </p>
+
+    <!-- dialogs -->
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 5 · Hộp thoại hủy buổi và tạo buổi bù</h3>
+        <span class="where">mở từ khối buổi học trên lịch</span>
+      </div>
+      <div class="card-body">
+        <div class="mock-pair">
+
+          <div class="modal">
+            <div class="modal-head">
+              <h4>Hủy buổi 04/11/2026</h4>
+              <p>Học máy · 68PM2-60880704 · Tiết 10–12 · 24.H2</p>
+            </div>
+            <div class="modal-body">
+              <div class="field">
+                <label for="ly-do-huy">Lý do</label>
+                <div class="control" id="ly-do-huy">Trường nghỉ lễ <span class="caret">▾</span></div>
+              </div>
+              <div class="field">
+                <label for="ghi-chu-huy">Ghi chú cho sinh viên</label>
+                <div class="control is-empty" id="ghi-chu-huy">Nghỉ lễ Quốc khánh, học bù thứ 7</div>
+              </div>
+              <div class="check">
+                <span class="box on">✓</span>
+                <span>Sẽ dạy bù. Buổi bù hiện trên lịch của sinh viên và gắn nhãn “bù cho buổi 04/11”.</span>
+              </div>
+            </div>
+            <div class="modal-foot">
+              <span class="btn btn--ghost">Giữ buổi</span>
+              <span class="btn btn--primary">Hủy buổi</span>
+            </div>
+          </div>
+
+          <div class="modal">
+            <div class="modal-head">
+              <h4>Tạo buổi bù cho buổi 04/11/2026</h4>
+              <p>Học máy · 68PM2-60880704 · Giảng viên Đào Việt Cường</p>
+            </div>
+            <div class="modal-body">
+              <div class="field">
+                <label for="bu-ngay">Ngày dạy bù</label>
+                <div class="control" id="bu-ngay">07/11/2026</div>
+              </div>
+              <div class="sched-row" style="grid-template-columns:1fr 1fr">
+                <div class="field">
+                  <label for="bu-tu">Từ tiết</label>
+                  <div class="control" id="bu-tu">10</div>
+                </div>
+                <div class="field">
+                  <label for="bu-den">Đến tiết</label>
+                  <div class="control" id="bu-den">12</div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="bu-phong">Phòng</label>
+                <div class="control" id="bu-phong">24.H2 — 60 chỗ <span class="caret">▾</span></div>
+              </div>
+              <div class="verify">
+                Không trùng lịch
+                <small>Phòng 24.H2 trống, giảng viên rảnh, 45 sinh viên của lớp đều không vướng buổi khác.</small>
+              </div>
+            </div>
+            <div class="modal-foot">
+              <span class="btn btn--ghost">Hủy</span>
+              <span class="btn btn--primary">Tạo buổi bù</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Khi có xung đột, ô kiểm tra đổi sang trạng thái đỏ và nêu đúng buổi vướng —
+      <b>ngày, khung tiết, phòng hoặc giảng viên bị trùng</b>. Người dùng đổi ngày rồi bấm lại;
+      hệ thống không tạo buổi nào cho tới khi sạch xung đột.
+    </p>
+
+    <!-- grid with cancelled + makeup -->
+    <div class="card">
+      <div class="card-bar">
+        <h3>Màn 6 · Buổi đã hủy và buổi bù trên lịch tuần</h3>
+        <span class="where">ADMIN · GIANG_VIEN · SINH_VIEN thấy giống nhau</span>
+      </div>
+      <div class="scroll-x">
+        <div class="cal">
+          <div class="cal-head">
+            <div class="cal-corner">Ca học</div>
+            <div class="cal-day"><b>Thứ 2</b><span>02/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 3</b><span>03/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 4</b><span>04/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 5</b><span>05/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 6</b><span>06/11/2026</span></div>
+            <div class="cal-day"><b>Thứ 7</b><span>07/11/2026</span></div>
+            <div class="cal-day"><b>Chủ nhật</b><span>08/11/2026</span></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Sáng</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Chiều</div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>7–9</dd><dt>Giờ</dt><dd>12:30–15:10</dd><dt>Phòng</dt><dd>43.H2</dd><dt>GV</dt><dd>Hoàng Thu Thủy</dd></dl>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell"><div class="ses ses--off">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>24.H2</dd><dt>GV</dt><dd>Đào Việt Cường</dd></dl>
+              <span class="ses-tag">ĐÃ HỦY</span>
+            </div></div>
+            <div class="cell empty"></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Lý thuyết tối ưu và đồ thị</p><p class="ses-code">68PM1 · 40770103</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>24.H2</dd><dt>GV</dt><dd>Hoàng Thu Thủy</dd></dl>
+            </div></div>
+            <div class="cell"><div class="ses">
+              <p class="ses-name">Học máy</p><p class="ses-code">68PM2 · 60880704</p>
+              <dl class="ses-meta"><dt>Tiết</dt><dd>10–12</dd><dt>Giờ</dt><dd>15:20–18:00</dd><dt>Phòng</dt><dd>24.H2</dd><dt>GV</dt><dd>Đào Việt Cường</dd></dl>
+              <span class="ses-tag ses-tag--ok">BÙ CHO BUỔI 04/11</span>
+            </div></div>
+            <div class="cell empty"></div>
+          </div>
+          <div class="cal-row">
+            <div class="cal-ca">Tối</div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+            <div class="cell empty"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Buổi đã hủy <b>không bị xóa</b>. Nó nằm lại trên lịch để sinh viên và giảng viên đối chiếu,
+      và để chuyên cần không tính nhầm thành buổi vắng. Buổi bù là buổi bình thường, đủ điều kiện
+      điểm danh, chỉ khác ở nhãn. Lý do hủy vẫn được lưu để tra cứu, nhưng <b>không hiện trên
+      lịch</b> — lịch chỉ hiện trạng thái Đã hủy.
+    </p>
+
+    <h3 style="margin:26px 0 10px">Ai được làm gì</h3>
+    <div class="card">
+      <div class="table-x">
+        <table class="matrix">
+          <thead>
+            <tr><th>Thao tác</th><th>Quản trị</th><th>Giảng viên</th><th>Sinh viên</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hủy buổi</td>
+              <td>Mọi buổi</td>
+              <td>Lớp mình, buổi chưa dạy, phải ghi lý do</td>
+              <td>Không</td>
+            </tr>
+            <tr>
+              <td>Dời buổi</td>
+              <td>Mọi buổi</td>
+              <td>Lớp mình, trong hạn 7 ngày như sửa điểm danh</td>
+              <td>Không</td>
+            </tr>
+            <tr>
+              <td>Dạy bù</td>
+              <td>Mọi lớp</td>
+              <td>Lớp mình</td>
+              <td>Không</td>
+            </tr>
+            <tr>
+              <td>Xem buổi đã hủy</td>
+              <td>Có</td>
+              <td>Có</td>
+              <td>Có, hiện mờ kèm lý do</td>
+            </tr>
+            <tr>
+              <td>Điểm danh buổi đã hủy</td>
+              <td>Bị chặn</td>
+              <td>Bị chặn</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Hai chỗ code phải vá trước khi bật tính năng.</strong>
+      <span class="mono">QuanLyDiemDanhService.php</span> hiện không chặn điểm danh trên buổi đã
+      hủy — phải trả 409. Và <span class="mono">QuanLyLopHocPhanService.php:446</span> đang đếm
+      cả buổi hủy vào <span class="mono">tong_buoi</span>, nên lớp 17 buổi hủy 2 vẫn báo 17.
+      Tỷ lệ phần trăm thì không sai, vì buổi hủy không sinh bản ghi điểm danh.
+    </p>
+  </section>
+
+  <!-- ============ DỮ LIỆU ============ -->
+  <section id="du-lieu">
+    <h2>Dữ liệu và API phải đổi</h2>
+    <p class="sub">
+      Thay đổi nhỏ nhất để làm được những màn trên. Phần kiểm tra trùng lịch đã có sẵn trong
+      <span class="mono">ScheduleService</span>, chỉ cần gọi đúng chỗ.
+    </p>
+
+    <div class="card">
+      <div class="card-bar"><h3>Bảng mới và cột thêm</h3></div>
+      <div class="card-body">
+        <ol class="steps">
+          <li>
+            <span class="n">1</span>
+            <div>
+              <b>Bảng <span class="mono">tiet_hoc</span> — 15 dòng seed sẵn</b>
+              <span><span class="mono">so_tiet, ca, gio_bat_dau, gio_ket_thuc</span>. Không gắn theo năm học: trường đổi biểu tiết thì sửa 15 dòng này.</span>
+            </div>
+          </li>
+          <li>
+            <span class="n">2</span>
+            <div>
+              <b><span class="mono">buoi_hoc</span> thêm <span class="mono">tiet_bat_dau</span>, <span class="mono">tiet_ket_thuc</span> (nullable)</b>
+              <span>Giờ vẫn là nguồn sự thật để kiểm tra trùng, nên 2.040 buổi seed sẵn không phải migrate. Cột nullable vì buổi cũ không có tiết.</span>
+            </div>
+          </li>
+          <li>
+            <span class="n">3</span>
+            <div>
+              <b>Không có bảng “mẫu lịch”</b>
+              <span>Dòng lịch chỉ là cách nhập. Lưu xong thì dữ liệu thật là danh sách buổi; muốn xem mẫu thì nhóm buổi theo thứ + giờ + phòng.</span>
+            </div>
+          </li>
+          <li>
+            <span class="n">4</span>
+            <div>
+              <b><span class="mono">buoi_hoc</span> thêm <span class="mono">buoi_goc_id</span> (nullable)</b>
+              <span>Tự tham chiếu, trỏ về buổi bị hủy mà buổi này dạy bù. Đủ để hiện nhãn “bù cho buổi 04/11” và đếm đã dạy đủ số buổi chưa. Không thêm trạng thái <span class="mono">TAM_NGUNG</span>.</span>
+            </div>
+          </li>
+          <li>
+            <span class="n">5</span>
+            <div>
+              <b>Bảng mới <span class="mono">lich_thi</span> — 6 cột</b>
+              <span><span class="mono">hoc_ky_id, mon_hoc_id, ngay_thi, tiet_bat_dau, tiet_ket_thuc, phong_hoc_id</span>, cộng <span class="mono">dot_thi</span> là nhãn tự do. Không có hình thức thi, không có trạng thái. Thi theo môn, không theo lớp học phần.</span>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-bar"><h3>Endpoint</h3></div>
+      <div class="table-x">
+        <table>
+          <thead>
+            <tr><th>Endpoint</th><th>Quyền</th><th>Việc</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">GET /api/options/periods</td><td>mọi vai trò</td><td>15 tiết + ca + giờ. Mới.</td></tr>
+            <tr><td class="mono">GET /api/options/subjects?q=</td><td>mọi vai trò</td><td>Thêm <span class="mono">ma_mon</span>, nhận <span class="mono">q</span> và <span class="mono">limit</span>.</td></tr>
+            <tr><td class="mono">GET /api/options/teachers?q=</td><td>mọi vai trò</td><td>Thêm <span class="mono">ma_gv</span>, nhận <span class="mono">q</span>.</td></tr>
+            <tr><td class="mono">GET /api/teachers/{id}</td><td>thêm SINH_VIEN</td><td>Nguồn cho popup: tên, mã, email, điện thoại.</td></tr>
+            <tr><td class="mono">GET /api/exams</td><td>theo vai trò</td><td>Mới. Ca thi theo học kỳ; sinh viên chỉ thấy môn đã đăng ký.</td></tr>
+            <tr><td class="mono">POST /api/exams</td><td>ADMIN</td><td>Mới. Kiểm tra trùng phòng và giờ như buổi học.</td></tr>
+            <tr><td class="mono">PUT /api/exams/{id}</td><td>ADMIN</td><td>Mới.</td></tr>
+            <tr><td class="mono">DELETE /api/exams/{id}</td><td>ADMIN</td><td>Mới.</td></tr>
+            <tr><td class="mono">POST /api/sections/{id}/sessions/generate</td><td>ADMIN</td><td>Sinh buổi hàng loạt, transaction, kiểm tra trùng cả lô.</td></tr>
+            <tr><td class="mono">GET /api/sections/{id}/sessions</td><td>theo vai trò</td><td>Danh sách buổi của lớp.</td></tr>
+            <tr><td class="mono">POST /api/sections/{id}/sessions</td><td>ADMIN</td><td>Thêm một buổi lẻ.</td></tr>
+            <tr><td class="mono">PUT /api/sessions/{id}</td><td>ADMIN</td><td>Sửa; cần <span class="mono">xac_nhan: true</span> nếu đã có điểm danh.</td></tr>
+            <tr><td class="mono">DELETE /api/sessions/{id}</td><td>ADMIN</td><td>Hủy; cùng điều kiện xác nhận.</td></tr>
+            <tr><td class="mono">GET /api/schedules</td><td>theo vai trò</td><td>Đã có. Nuôi cả ba lưới tuần ở trên.</td></tr>
+            <tr><td class="mono">GET /api/me/attendance-summary</td><td>SINH_VIEN</td><td>Đã có. Chỉ thiếu màn hình điểm danh của sinh viên.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Bẫy phải tránh:</strong> kiểm tra trùng và ghi buổi phải nằm trong cùng một
+      transaction, khóa phòng và giảng viên liên quan — nếu không, hai người mở lớp cùng lúc
+      sẽ tạo ra hai lớp trùng phòng. Giới hạn 500 buổi mỗi lô là đủ cho một học kỳ.
+    </p>
+
+    <h3 style="margin:26px 0 10px">Thứ tự làm</h3>
+    <div class="card">
+      <div class="card-body">
+        <ol class="steps">
+          <li><span class="n">1</span><div><b>Bảng tiết + endpoint periods</b><span>Nền cho mọi thứ còn lại. Nhỏ, làm trước.</span></div></li>
+          <li><span class="n">2</span><div><b>Sinh lịch + CRUD buổi học</b><span>Gọi <span class="mono">ScheduleService</span>, viết PHPUnit cho trùng phòng/GV/SV và trùng trong lô.</span></div></li>
+          <li><span class="n">3</span><div><b>Form mở lớp: trạng thái + khối lịch</b><span>Đủ để “thêm lịch vào lớp dễ dàng” — mục tiêu ban đầu.</span></div></li>
+          <li><span class="n">4</span><div><b>Lịch thi</b><span>Bảng <span class="mono">lich_thi</span>, bốn endpoint, một form. Dùng lại khung tiết và kiểm tra trùng.</span></div></li>
+          <li><span class="n">5</span><div><b>Ô tìm kiếm môn/giảng viên + popup giảng viên</b><span>Component dùng chung, debounce, tìm không dấu. Mở quyền đọc hồ sơ GV cho sinh viên.</span></div></li>
+          <li><span class="n">6</span><div><b>Lưới tuần ba vai trò + menu sinh viên</b><span>Một component, ba cấu hình quyền và bộ lọc. Bỏ “Lớp học phần” khỏi menu sinh viên.</span></div></li>
+          <li><span class="n">7</span><div><b>Điểm danh theo học kỳ + màn của sinh viên</b><span>Thêm ô chọn kỳ cho giảng viên; màn mới cho sinh viên dùng API có sẵn.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Dữ liệu lịch trong các lưới lấy từ ảnh lịch tuần bạn gửi. Khung tiết lấy từ thông báo
+    điều chỉnh giờ học 50 phút của nhà trường.
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.roles a'));
+    var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+
+    function mark() {
+      var y = window.scrollY + 90;
+      var best = 0;
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i] && sections[i].offsetTop <= y) best = i;
+      }
+      links.forEach(function (a, i) { a.setAttribute('aria-current', i === best ? 'true' : 'false'); });
+    }
+    window.addEventListener('scroll', mark, { passive: true });
+    mark();
+  })();
+</script>

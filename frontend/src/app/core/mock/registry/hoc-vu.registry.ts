@@ -216,8 +216,11 @@ export class HocVuRegistry {
     }
     const sessionAttendance = path.match(/^\/sessions\/(\d+)\/attendance$/);
     if (sessionAttendance && method === 'GET') {
-      const rows = this.dongDiemDanh(Number(sessionAttendance[1]));
-      return rows ? ok(rows) : loi('NOT_FOUND', 'Không tìm thấy buổi học.');
+      const id = Number(sessionAttendance[1]);
+      const rows = this.dongDiemDanh(id);
+      return rows
+        ? ok({ buoi_hoc: this.buoiHocTomTat(id), danh_sach: rows })
+        : loi('NOT_FOUND', 'Không tìm thấy buổi học.');
     }
     if (sessionAttendance && method === 'PUT') {
       const id = Number(sessionAttendance[1]);
@@ -256,7 +259,7 @@ export class HocVuRegistry {
         }
       });
       this.diemDanh.set(id, rows);
-      return ok(rows);
+      return ok({ buoi_hoc_id: id, so_luong: values.length, trang_thai_buoi_hoc: 'DONE' });
     }
     const grades = path.match(/^\/sections\/(\d+)\/grades$/);
     if (grades && method === 'GET') {
@@ -332,21 +335,39 @@ export class HocVuRegistry {
     if (!lop) return [];
 
     const dates = ['2026-10-28', '2026-11-03', '2026-11-10'];
-    const rows = dates.map((ngay_hoc, index) => ({
+    const rows: BuoiHocDiemDanh[] = dates.map((ngay_hoc, index) => ({
       id: id * 10 + index + 1,
       ngay_hoc,
       gio_bat_dau: '08:00',
       gio_ket_thuc: '10:00',
       trang_thai: (index < 2 ? 'DONE' : 'SCHEDULED') as BuoiHocDiemDanh['trang_thai'],
-      lop_hoc_phan: { id: lop.id, ma_lop_hp: lop.ma_lop_hp },
-      mon_hoc: {
-        id: lop.mon_hoc.id,
-        ma_mon: lop.mon_hoc.ma_mon,
-        ten_mon: lop.mon_hoc.ten_mon,
-      },
+      da_diem_danh: index < 2,
+      so_diem_danh: index < 2 ? 3 : 0,
     }));
     this.buoiHoc.set(id, rows);
     return rows;
+  }
+
+  private buoiHocTomTat(buoiHocId: number) {
+    const lopId = Math.floor(buoiHocId / 10);
+    const lop = this.tim(lopId);
+    const buoi = this.buoiHocCuaLop(lopId).find((row) => row.id === buoiHocId);
+    return {
+      id: buoiHocId,
+      ngay_hoc: buoi?.ngay_hoc ?? '',
+      gio_bat_dau: buoi?.gio_bat_dau ?? '',
+      gio_ket_thuc: buoi?.gio_ket_thuc ?? '',
+      trang_thai: buoi?.trang_thai ?? 'SCHEDULED',
+      ly_do_huy: null,
+      phong_hoc: null,
+      lop_hoc_phan: {
+        id: lopId,
+        ma_lop_hp: lop?.ma_lop_hp ?? '',
+        ten_mon_hoc: lop?.mon_hoc.ten_mon ?? null,
+        hoc_ky: null,
+      },
+      co_the_sua: true,
+    };
   }
 
   private dongDiemDanh(buoiHocId: number): DongDiemDanh[] | null {

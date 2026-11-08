@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '@env/environment';
@@ -63,9 +63,11 @@ export class DiemService {
   private readonly http = inject(HttpClient);
   private readonly goc = environment.apiBaseUrl;
 
-  layDiemCuaToi(): Observable<BangDiemHocKy> {
+  layDiemCuaToi(hocKyId?: number): Observable<BangDiemHocKy> {
+    let params = new HttpParams();
+    if (hocKyId) params = params.set('hoc_ky_id', hocKyId);
     return this.http
-      .get<{ data: BangDiemHocKy }>(`${this.goc}/me/grades`)
+      .get<{ data: BangDiemHocKy }>(`${this.goc}/me/grades`, { params })
       .pipe(map((response) => response.data));
   }
 

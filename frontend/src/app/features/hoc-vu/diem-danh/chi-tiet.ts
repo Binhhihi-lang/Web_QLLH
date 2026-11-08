@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { chuanHoaTimKiem } from '@core/utils/chuan-hoa-tim-kiem';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
+import { AppToastService } from '@shared/ui/app-toast.service';
 import { LoadingState } from '@shared/ui/loading';
 import { PageHeader } from '@shared/ui/page-header';
 import { SearchInput } from '@shared/ui/search-input';
@@ -37,11 +38,8 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
       </a>
     </app-page-header>
 
-    @if (loi()) {
+    @if (loi() && !rows().length) {
       <app-alert muc="danger">{{ loi() }}</app-alert>
-    }
-    @if (thongBao()) {
-      <app-alert muc="success">{{ thongBao() }}</app-alert>
     }
 
     @if (dangTai()) {
@@ -315,6 +313,7 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
 })
 export class DiemDanhChiTiet {
   private readonly service = inject(DiemDanhService);
+  private readonly toast = inject(AppToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly buoiHocId = Number(this.route.snapshot.paramMap.get('sessionId'));
   readonly lopHocPhanId = Number(this.route.snapshot.queryParamMap.get('lop_hoc_phan_id'));
@@ -326,7 +325,6 @@ export class DiemDanhChiTiet {
   readonly dangTai = signal(true);
   readonly dangLuu = signal(false);
   readonly loi = signal('');
-  readonly thongBao = signal('');
   readonly rowsHienThi = computed(() => {
     const tuKhoa = chuanHoaTimKiem(this.tuKhoa());
     if (!tuKhoa) return this.rows();
@@ -371,7 +369,6 @@ export class DiemDanhChiTiet {
   tai(): void {
     this.dangTai.set(true);
     this.loi.set('');
-    this.thongBao.set('');
     this.service.layDiemDanh(this.buoiHocId).subscribe({
       next: (rows) => {
         this.rows.set(rows);
@@ -387,7 +384,6 @@ export class DiemDanhChiTiet {
   doiTrangThai(row: DongDiemDanh, trangThai: TrangThaiDiemDanh): void {
     row.trang_thai = trangThai;
     this.rows.update((rows) => [...rows]);
-    this.thongBao.set('');
   }
 
   doiGhiChu(row: DongDiemDanh, ghiChu: string): void {
@@ -413,15 +409,18 @@ export class DiemDanhChiTiet {
 
     this.dangLuu.set(true);
     this.loi.set('');
-    this.thongBao.set('');
     this.service.luuDiemDanh(this.buoiHocId, input).subscribe({
-      next: (rows) => {
-        this.rows.set(rows);
-        this.thongBao.set('Đã lưu điểm danh cho buổi học.');
+      // PUT chỉ trả tóm tắt — nạp lại danh sách để lấy trạng thái mới nhất.
+      next: () => {
         this.dangLuu.set(false);
+        this.toast.hien('Đã lưu điểm danh cho buổi học.', 'success');
+        this.tai();
       },
       error: (error: { error?: { message?: string } }) => {
-        this.loi.set(error.error?.message ?? 'Không lưu được điểm danh. Vui lòng thử lại.');
+        this.toast.hien(
+          error.error?.message ?? 'Không lưu được điểm danh. Vui lòng thử lại.',
+          'danger',
+        );
         this.dangLuu.set(false);
       },
     });

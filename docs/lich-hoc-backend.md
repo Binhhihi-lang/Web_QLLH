@@ -59,7 +59,7 @@ cd backend
 php artisan test --filter=LichHocTest
 ```
 
-Postman: folder **17 — Lịch học (luồng thành công)**, 14 request, chỉ đăng nhập
+Postman: folder **18 — Lịch học (luồng thành công)**, 14 request, chỉ đăng nhập
 và GET hợp lệ. Chạy riêng folder theo thứ tự. ID và ngày lọc lấy từ lịch sẵn có;
 không có dữ liệu thì các bước lọc cần ID tự bỏ qua. Các tình huống xung đột,
 query sai và phân quyền được kiểm tra bằng PHPUnit, không tạo request cố ý

@@ -132,10 +132,10 @@ describe('HocVuRegistry — bảng điểm theo cấu hình', () => {
         null,
         'GIANG_VIEN',
       ) as {
-        data: Array<{ dang_ky_hoc_phan_id: number; trang_thai: string | null }>;
+        data: { danh_sach: Array<{ dang_ky_hoc_phan_id: number; trang_thai: string | null }> };
       };
       const payload = {
-        diem_danh: attendance.data.map((row) => ({
+        diem_danh: attendance.data.danh_sach.map((row) => ({
           dang_ky_hoc_phan_id: row.dang_ky_hoc_phan_id,
           trang_thai: 'PRESENT',
           ghi_chu: null,
@@ -147,7 +147,7 @@ describe('HocVuRegistry — bảng điểm theo cấu hình', () => {
         new HttpParams(),
         payload,
         'GIANG_VIEN',
-      ) as { data: Array<{ trang_thai: string | null }> };
+      ) as { data: { buoi_hoc_id: number; so_luong: number; trang_thai_buoi_hoc: string } };
       const summary = registry.resolve(
         'GET',
         `/sections/${section.id}/attendance-summary`,
@@ -158,8 +158,17 @@ describe('HocVuRegistry — bảng điểm theo cấu hình', () => {
         data: { tong_buoi: number; sinh_vien: Array<{ co_mat: number; ty_le: number | null }> };
       };
 
+      const savedLai = registry.resolve(
+        'GET',
+        `/sessions/${sessionId}/attendance`,
+        new HttpParams(),
+        null,
+        'GIANG_VIEN',
+      ) as { data: { danh_sach: Array<{ trang_thai: string | null }> } };
+
       expect(sessions.data).toHaveLength(3);
-      expect(saved.data.every((row) => row.trang_thai === 'PRESENT')).toBe(true);
+      expect(saved.data.so_luong).toBe(payload.diem_danh.length);
+      expect(savedLai.data.danh_sach.every((row) => row.trang_thai === 'PRESENT')).toBe(true);
       expect(summary.data.tong_buoi).toBe(3);
       expect(summary.data.sinh_vien[0].co_mat).toBe(2);
       expect(summary.data.sinh_vien[0].ty_le).toBe(1);

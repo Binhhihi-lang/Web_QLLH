@@ -1,6 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { LopHocPhanService, TuyChon } from '@core/services/lop-hoc-phan.service';
 import { BangDiemHocKy, DiemService, TongQuanGpa } from './diem.service';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
@@ -9,12 +11,23 @@ import { PageHeader } from '@shared/ui/page-header';
 @Component({
   selector: 'app-diem-cua-toi',
   standalone: true,
-  imports: [AppAlert, AppButton, PageHeader],
+  imports: [FormsModule, AppAlert, AppButton, PageHeader],
   template: `
     <app-page-header
       title="Điểm của tôi"
       description="Xem điểm thành phần, kết quả học tập và GPA tích lũy."
     />
+
+    <section class="bo-loc">
+      <label>
+        <span>Học kỳ</span>
+        <select [ngModel]="hocKyId()" (ngModelChange)="chonHocKy($event)">
+          @for (k of hocKy(); track k.id) {
+            <option [ngValue]="k.id">{{ k.label }}</option>
+          }
+        </select>
+      </label>
+    </section>
 
     @if (loi()) {
       <app-alert muc="danger" title="Không tải được kết quả học tập">
@@ -125,6 +138,28 @@ import { PageHeader } from '@shared/ui/page-header';
       display: block;
     }
 
+    .bo-loc {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .bo-loc label {
+      display: grid;
+      gap: 6px;
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: var(--color-ink-muted);
+    }
+    .bo-loc select {
+      padding: 9px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-size: var(--text-small);
+      background: var(--color-surface);
+      color: var(--color-ink);
+      min-width: 240px;
+    }
     .thong-ke {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -344,12 +379,33 @@ import { PageHeader } from '@shared/ui/page-header';
 })
 export class DiemCuaToi {
   private readonly service = inject(DiemService);
+  private readonly lopHocPhan = inject(LopHocPhanService);
 
   readonly dangTai = signal(true);
   readonly loi = signal('');
   readonly bangDiem = signal<BangDiemHocKy | null>(null);
   readonly gpa = signal<TongQuanGpa | null>(null);
+  readonly hocKy = signal<TuyChon[]>([]);
+  readonly hocKyId = signal(0);
+
   constructor() {
+    this.lopHocPhan.layTuyChon('semesters').subscribe({
+      next: (rows) => {
+        this.hocKy.set(rows);
+        // Chọn kỳ đang diễn ra thay vì kỳ mới nhất: danh sách sắp giảm dần nên
+        // rows[0] hay là kỳ tương lai chưa có điểm, mở trang là thấy bảng rỗng.
+        const macDinh =
+          rows.find((k) => (k as TuyChon & { trang_thai?: string }).trang_thai === 'ONGOING') ??
+          rows[0];
+        if (macDinh) this.hocKyId.set(macDinh.id);
+        this.tai();
+      },
+      error: () => this.tai(),
+    });
+  }
+
+  chonHocKy(id: number): void {
+    this.hocKyId.set(id);
     this.tai();
   }
 
@@ -357,7 +413,7 @@ export class DiemCuaToi {
     this.dangTai.set(true);
     this.loi.set('');
     forkJoin({
-      bangDiem: this.service.layDiemCuaToi(),
+      bangDiem: this.service.layDiemCuaToi(this.hocKyId() || undefined),
       gpa: this.service.layGpa(),
     }).subscribe({
       next: ({ bangDiem, gpa }) => {

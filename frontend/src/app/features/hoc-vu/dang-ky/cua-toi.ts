@@ -1,13 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PageMeta } from '@core/mock/mock-response';
 import { LopHocPhanService } from '@core/services/lop-hoc-phan.service';
-import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
+import { AppToastService } from '@shared/ui/app-toast.service';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import { CotBang, DataTable, OTuyChinh } from '@shared/ui/data-table';
 import { PageHeader } from '@shared/ui/page-header';
-import { Pagination } from '@shared/ui/pagination';
 import { StatusBadge } from '@shared/ui/status-badge';
 import { DangKyHocPhan, DangKyService, TrangThaiDangKy } from './dang-ky.service';
 
@@ -16,7 +14,7 @@ type HocKyLuaChon = { id: number; label: string };
 @Component({
   selector: 'app-dang-ky-cua-toi',
   standalone: true,
-  imports: [AppAlert, AppButton, ConfirmDialog, DataTable, OTuyChinh, PageHeader, Pagination, RouterLink, StatusBadge],
+  imports: [AppButton, ConfirmDialog, DataTable, OTuyChinh, PageHeader, RouterLink, StatusBadge],
   template: `
     <app-page-header
       title="Đăng ký của tôi"
@@ -24,10 +22,6 @@ type HocKyLuaChon = { id: number; label: string };
     >
       <a class="link" routerLink="/lop-hoc-phan">Tìm lớp học phần</a>
     </app-page-header>
-
-    @if (thongBao()) {
-      <app-alert [muc]="thongBaoMuc()" [title]="thongBaoTieuDe()">{{ thongBao() }}</app-alert>
-    }
 
     <section class="bo-loc" aria-label="Lọc đăng ký của tôi">
       <label>
@@ -90,23 +84,13 @@ type HocKyLuaChon = { id: number; label: string };
         }
       </ng-template>
     </app-data-table>
-    @if (meta(); as page) {
-      <app-pagination
-        [currentPage]="page.current_page"
-        [perPage]="page.per_page"
-        [total]="page.total"
-        [lastPage]="page.last_page"
-        (pageChange)="doiTrang($event)"
-        (perPageChange)="doiCoTrang($event)"
-      />
-    }
     @if (dangKyCanHuy(); as enrollment) {
       <app-confirm-dialog
         tieuDe="Hủy đăng ký học phần"
         [moTa]="'Bạn có chắc muốn hủy lớp ' + enrollment.lop_hoc_phan.ma_lop_hp + ' — ' + enrollment.lop_hoc_phan.mon_hoc + '? Thao tác chỉ thực hiện được trong đợt đăng ký và trước khi có điểm/điểm danh.'"
         nhanDongY="Hủy đăng ký"
         [dangXuLy]="dangHuyId() === enrollment.id"
-        [lyDoChan]="thongBaoMuc() === 'danger' ? (thongBao() ?? '') : ''"
+        [lyDoChan]="loiHuy()"
         (dongY)="xacNhanHuy()"
         (huy)="dongXacNhan()"
       />
@@ -119,9 +103,9 @@ type HocKyLuaChon = { id: number; label: string };
 export class DangKyCuaToi {
   private readonly service = inject(DangKyService);
   private readonly lopHocPhanService = inject(LopHocPhanService);
+  private readonly toast = inject(AppToastService);
 
   readonly rows = signal<DangKyHocPhan[]>([]);
-  readonly meta = signal<PageMeta | null>(null);
   readonly hocKy = signal<HocKyLuaChon[]>([]);
   readonly hocKyId = signal('');
   readonly trangThai = signal('');
@@ -129,13 +113,8 @@ export class DangKyCuaToi {
   readonly loiTai = signal<string | null>(null);
   readonly dangKyCanHuy = signal<DangKyHocPhan | null>(null);
   readonly dangHuyId = signal<number | null>(null);
-  readonly thongBao = signal<string | null>(null);
-  readonly thongBaoMuc = signal<'success' | 'danger'>('success');
-  readonly thongBaoTieuDe = computed(() =>
-    this.thongBaoMuc() === 'success' ? 'Thành công' : 'Không thể thực hiện',
-  );
-  private trang = 1;
-  private coTrang = 10;
+  /** Lỗi hủy hiện trong hộp xác nhận — người dùng còn đang ở đó để thử lại. */
+  readonly loiHuy = signal('');
 
   readonly cot = computed<CotBang<DangKyHocPhan>[]>(() => [
     { khoa: 'lop_hoc_phan', nhan: 'Lớp học phần', rong: '250px' },
@@ -163,33 +142,17 @@ export class DangKyCuaToi {
 
   doiHocKy(value: string): void {
     this.hocKyId.set(value);
-    this.trang = 1;
     this.tai();
   }
 
   doiTrangThai(value: string): void {
     this.trangThai.set(value);
-    this.trang = 1;
     this.tai();
   }
-
-
 
   xoaLoc(): void {
     this.hocKyId.set('');
     this.trangThai.set('');
-    this.trang = 1;
-    this.tai();
-  }
-
-  doiTrang(page: number): void {
-    this.trang = page;
-    this.tai();
-  }
-
-  doiCoTrang(value: number): void {
-    this.coTrang = value;
-    this.trang = 1;
     this.tai();
   }
 
@@ -198,19 +161,20 @@ export class DangKyCuaToi {
     this.loiTai.set(null);
     const filter: {
       page: number;
-      per_page: 10 | 25 | 50 | 100;
+      per_page: 100;
       hoc_ky_id?: number;
       trang_thai?: TrangThaiDangKy;
     } = {
-      page: this.trang,
-      per_page: this.coTrang as 10 | 25 | 50 | 100,
+      // Đăng ký của một sinh viên thường chỉ vài dòng — lấy hết một trang,
+      // không phân trang để bảng không bị cắt vụn.
+      page: 1,
+      per_page: 100,
       ...(this.hocKyId() ? { hoc_ky_id: Number(this.hocKyId()) } : {}),
       ...(this.trangThai() ? { trang_thai: this.trangThai() as TrangThaiDangKy } : {}),
     };
     this.service.layCuaToi(filter).subscribe({
       next: (response) => {
         this.rows.set(response.data);
-        this.meta.set(response.meta);
         this.dangTai.set(false);
       },
       error: (error: { error?: { message?: string } }) => {
@@ -222,32 +186,33 @@ export class DangKyCuaToi {
 
   moXacNhan(row: DangKyHocPhan, event: Event): void {
     event.stopPropagation();
-    this.thongBao.set(null);
+    this.loiHuy.set('');
     this.dangKyCanHuy.set(row);
   }
 
   dongXacNhan(): void {
-    if (this.dangHuyId() === null) this.dangKyCanHuy.set(null);
+    if (this.dangHuyId() === null) {
+      this.loiHuy.set('');
+      this.dangKyCanHuy.set(null);
+    }
   }
 
   xacNhanHuy(): void {
     const row = this.dangKyCanHuy();
     if (!row || this.dangHuyId() !== null) return;
     this.dangHuyId.set(row.id);
+    this.loiHuy.set('');
     this.service.huyDangKyCuaToi(row.id).subscribe({
       next: () => {
         this.dangKyCanHuy.set(null);
         this.dangHuyId.set(null);
-        this.thongBaoMuc.set('success');
-        this.thongBao.set('Đã hủy đăng ký học phần.');
+        this.toast.hien('Đã hủy đăng ký học phần.', 'success');
         this.tai();
       },
       error: (error: { error?: { message?: string } }) => {
         this.dangHuyId.set(null);
-        this.thongBaoMuc.set('danger');
-        this.thongBao.set(error.error?.message ?? 'Không thể hủy đăng ký học phần.');
+        this.loiHuy.set(error.error?.message ?? 'Không thể hủy đăng ký học phần.');
       },
     });
   }
-
 }

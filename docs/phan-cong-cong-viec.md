@@ -50,7 +50,7 @@ hình gọi dữ liệu giả. Các route quản trị được gom vào `routes
 - Đã triển khai 6 endpoint `/api/semesters`: danh sách, tạo, chi tiết, sửa,
   xóa mềm và chuyển trạng thái; kiểm tra BR-24/25, phân quyền và ghi nhật ký.
 - `/api/options/semesters` bổ sung `nam_hoc`, `ky_thu` đúng hợp đồng.
-- Bổ sung `HocKyTest` và folder Postman **16 — Học kỳ (CRUD + vòng đời BR-24/25)**.
+- Bổ sung `HocKyTest` và folder Postman **17 — Học kỳ (CRUD + vòng đời BR-24/25)**.
 - Trạng thái: triển khai trên nhánh feature, chờ Tiến kiểm thử Postman và PM
   review/merge; chưa coi là đã tích hợp vào `develop`.
 
@@ -59,7 +59,7 @@ hình gọi dữ liệu giả. Các route quản trị được gom vào `routes
 - Nhánh `feature/be-schedules`: thêm `GET /api/schedules`, phân quyền theo
   vai trò, lọc/phân trang và `ScheduleService` kiểm tra trùng phòng/GV/SV.
 - Kiểm tra riêng một buổi, cả lô và adapter cho đăng ký; test `LichHocTest`.
-- Postman thêm folder **17 — Lịch học (luồng thành công)**, chỉ request hợp lệ.
+- Postman thêm folder **18 — Lịch học (luồng thành công)**, chỉ request hợp lệ.
 - CRUD/sinh buổi vẫn thuộc PM; interface tích hợp tại `docs/lich-hoc-backend.md`.
   Trạng thái: code trên nhánh feature, chờ Tiến test Postman và PM review/merge.
 

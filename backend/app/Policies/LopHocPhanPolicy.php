@@ -74,6 +74,23 @@ class LopHocPhanPolicy
         return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
     }
 
+    /**
+     * Lịch của lớp: ADMIN, giảng viên phụ trách, và sinh viên đã đăng ký ACTIVE.
+     * Sinh viên chưa đăng ký không xem được lịch của lớp (FR-10.03).
+     */
+    public function xemBuoiHoc(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $nguoiDung->laAdmin()
+            || $this->laGiangVienCuaLop($nguoiDung, $lop)
+            || $this->daDangKy($nguoiDung, $lop);
+    }
+
+    /** Sinh lịch, sửa, hủy, xóa buổi — ADMIN hoặc giảng viên phụ trách lớp. */
+    public function quanLyBuoiHoc(User $nguoiDung, LopHocPhan $lop): bool
+    {
+        return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
+    }
+
     public function nhapDiem(User $nguoiDung, LopHocPhan $lop): bool
     {
         return $this->laGiangVienCuaLop($nguoiDung, $lop);
