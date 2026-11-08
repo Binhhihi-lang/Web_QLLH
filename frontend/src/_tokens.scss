@@ -91,6 +91,40 @@
   --color-sidebar-active-bg: #ffffff;
   --color-sidebar-active-fg: #366ef2;
 
+  // ---------- Khối lịch (lịch tuần, lịch thi) ----------
+  // Năm loại lịch người dùng phân biệt được bằng mắt. Đây là danh mục ĐÓNG
+  // (không phải trạng thái): lịch tuần và lịch thi dùng chung bộ này nên hai
+  // màn không bao giờ lệch màu nhau.
+  //
+  // Mỗi loại cần 3 biến: nền, chữ, viền. Chữ trên nền phải đạt WCAG AA 4.5:1;
+  // các cặp dưới đây lấy từ bảng màu chính (đã đo) nên chỉ cần đổi ở một chỗ.
+  // Trỏ bằng var() chứ không chép giá trị: chế độ tối tự động nhận bản sáng
+  // hơn của cùng cặp màu, không phải khai lại cả bảng.
+  --lich-ly-thuyet-bg: var(--color-surface-alt);
+  --lich-ly-thuyet-fg: var(--color-ink); // 15.9:1 trên #F1F5F9
+  --lich-ly-thuyet-vien: var(--color-border);
+
+  --lich-thuc-hanh-bg: var(--color-success-soft);
+  --lich-thuc-hanh-fg: var(--color-on-success-soft); // 4.53:1
+  --lich-thuc-hanh-vien: var(--color-success);
+
+  --lich-truc-tuyen-bg: var(--color-info-soft);
+  --lich-truc-tuyen-fg: var(--color-on-info-soft); // 4.50:1
+  --lich-truc-tuyen-vien: var(--color-info);
+
+  --lich-thi-bg: var(--color-warning-soft);
+  --lich-thi-fg: var(--color-on-warning-soft); // 4.60:1
+  --lich-thi-vien: var(--color-warning);
+
+  // Tạm ngưng: nền đỏ ĐẶC + chữ trắng (4.52:1 với --color-danger), khác hẳn
+  // bốn loại trên nên nhìn là thấy ngay buổi đã hủy. Dải chéo dùng tông đậm
+  // hơn của chính nền để không phải thêm một màu mới.
+  --lich-tam-ngung-bg: var(--color-danger);
+  --lich-tam-ngung-fg: #ffffff;
+  --lich-tam-ngung-vien: var(--color-danger-hover);
+  --lich-tam-ngung-dai-bg: rgb(0 0 0 / 30%);
+  --lich-tam-ngung-dai-fg: #ffffff;
+
   // ---------- Chữ ----------
   // Be Vietnam Pro cho tiêu đề (thiết kế riêng cho tiếng Việt, dấu cân đối),
   // Inter cho nội dung và số liệu.
@@ -190,4 +224,15 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+
+  // ---------- Khối lịch ----------
+  // Bốn loại đầu trỏ var() sang cặp màu chính nên tự đổi theo chế độ tối —
+  // không khai lại. Riêng "tạm ngưng" phải khai lại: --color-danger ở nền tối
+  // là #EE326A, sáng hơn hẳn, chữ trắng trên nó chỉ đạt 3.96:1 (trượt AA).
+  // Dùng tông đậm của cùng màu đỏ: #A8123F đạt 7.44:1 với chữ trắng.
+  --lich-tam-ngung-bg: #a8123f;
+  --lich-tam-ngung-fg: #ffffff;
+  --lich-tam-ngung-vien: #ee326a; // viền sáng để khối vẫn tách khỏi nền #111827
+  --lich-tam-ngung-dai-bg: rgb(0 0 0 / 35%);
+  --lich-tam-ngung-dai-fg: #ffffff;
 }

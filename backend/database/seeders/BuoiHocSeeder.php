@@ -91,6 +91,10 @@ class BuoiHocSeeder extends Seeder
                     'gio_ket_thuc' => $khung['gio_ket_thuc'],
                     'phong_hoc_id' => $phongId,
                     'trang_thai' => $daDienRa ? BuoiHoc::DONE : BuoiHoc::SCHEDULED,
+                    // Tất định theo số tuần: chạy lại seeder cho ra cùng kết quả.
+                    'hinh_thuc' => $tuan % 10 < 7
+                        ? BuoiHoc::HINH_THUC_LY_THUYET
+                        : ($tuan % 10 < 9 ? BuoiHoc::HINH_THUC_THUC_HANH : BuoiHoc::HINH_THUC_TRUC_TUYEN),
                     'ly_do_huy' => null,
                     'created_at' => $bayGio,
                     'updated_at' => $bayGio,

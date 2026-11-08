@@ -2,24 +2,40 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
-import { BuoiHoc, BuoiHocService } from '@core/services/buoi-hoc.service';
+import { BuoiHoc, BuoiHocService, HinhThucHoc } from '@core/services/buoi-hoc.service';
 import { LopHocPhanService } from '@core/services/lop-hoc-phan.service';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 import { AppToastService } from '@shared/ui/app-toast.service';
+import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import { DateInput } from '@shared/ui/date-input';
+import { EmptyState } from '@shared/ui/empty-state';
 import { LoadingState } from '@shared/ui/loading';
 import { PageHeader } from '@shared/ui/page-header';
 import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
-
+import { XungDotLich, XungDotLichKhoi, docXungDotLich } from '@features/hoc-vu/xung-dot-lich';
 /**
  * Tab Lịch học của một lớp: danh sách buổi, hủy/mở lại, thêm buổi bù.
  * Buổi đã hủy vẫn hiện để đối chiếu; lý do hủy không hiện trên lịch.
+ *
+ * Hủy buổi ĐÃ DẠY là thao tác phá huỷ (xoá luôn điểm danh ở backend), nên chỉ
+ * ADMIN thấy nút và phải xác nhận qua hộp thoại — giảng viên không thấy nút,
+ * backend cũng chặn.
  */
 @Component({
   selector: 'app-lop-hoc-phan-lich-hoc',
   standalone: true,
-  imports: [FormsModule, AppAlert, AppButton, DateInput, LoadingState, NgayVnPipe],
+  imports: [
+    FormsModule,
+    AppAlert,
+    AppButton,
+    ConfirmDialog,
+    DateInput,
+    EmptyState,
+    LoadingState,
+    NgayVnPipe,
+    XungDotLichKhoi,
+  ],
   template: `
     @if (loi()) {
       <app-alert muc="danger">{{ loi() }}</app-alert>
@@ -73,7 +89,20 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
               }
             </select>
           </label>
+          <label>
+            Hình thức học
+            <select name="hinh-thuc" [(ngModel)]="moi.hinh_thuc">
+              @for (h of hinhThucList; track h.value) {
+                <option [ngValue]="h.value">{{ h.label }}</option>
+              }
+            </select>
+          </label>
         </div>
+
+        @if (xungDotThem(); as xd) {
+          <app-xung-dot-lich [duLieu]="xd" />
+        }
+
         <div class="nut-phu">
           <app-button variant="secondary" (click)="dongFormThem()">Hủy</app-button>
           <app-button variant="primary" [disabled]="!themHopLe()" [loading]="dangLuu()" (click)="them()">
@@ -86,7 +115,11 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
     @if (dangTai()) {
       <app-loading-state label="Đang tải lịch học…" />
     } @else if (buoi().length === 0) {
-      <p class="trong">Lớp chưa có buổi học nào. Dùng “Thêm buổi” hoặc sửa lớp để sinh lịch.</p>
+      <app-empty-state
+        icon="event_busy"
+        title="Lớp chưa có buổi học nào"
+        description="Dùng “Thêm buổi” để tạo buổi đầu tiên, hoặc sửa lớp để sinh lịch cả học kỳ."
+      />
     } @else {
       <div class="bang-cuon">
         <table>
@@ -98,6 +131,7 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
               }
               <th>Giờ</th>
               <th>Phòng</th>
+              <th>Hình thức</th>
               <th>Trạng thái</th>
               <th>Điểm danh</th>
               @if (coQuyenGhi()) {
@@ -115,6 +149,11 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
                 <td>{{ b.gio_bat_dau }}–{{ b.gio_ket_thuc }}</td>
                 <td>{{ b.phong_hoc?.ma_phong ?? '—' }}</td>
                 <td>
+                  <span class="nhan" [class]="'nhan-' + (b.hinh_thuc ?? 'LY_THUYET')">
+                    {{ tenHinhThuc(b.hinh_thuc) }}
+                  </span>
+                </td>
+                <td>
                   <span class="nhan" [class.nhan-huy]="b.trang_thai === 'CANCELLED'">
                     {{ nhanTrangThai(b.trang_thai) }}
                   </span>
@@ -126,9 +165,9 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
                 @if (coQuyenGhi()) {
                   <td class="thao-tac">
                     @if (b.trang_thai === 'CANCELLED') {
-                      <button type="button" (click)="moLai(b)">Mở lại</button>
-                    } @else if (b.trang_thai !== 'DONE') {
-                      <button type="button" (click)="huy(b)">Hủy</button>
+                      <button type="button" class="nut-thao-tac" (click)="moLai(b)">Mở lại</button>
+                    } @else if (coTheHuy(b)) {
+                      <button type="button" class="nut-thao-tac nut-huy" (click)="hoiHuy(b)">Hủy</button>
                     }
                   </td>
                 }
@@ -137,6 +176,24 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
           </tbody>
         </table>
       </div>
+    }
+
+    <!-- Một hộp thoại duy nhất cho cả hai trường hợp: buổi thường chỉ hỏi
+         "hủy buổi này?", buổi đã dạy thêm cảnh báo mất điểm danh. -->
+    @if (dangHoiHuy(); as b) {
+      <app-confirm-dialog
+        [tieuDe]="b.trang_thai === 'DONE' ? 'Hủy buổi đã dạy?' : 'Hủy buổi học?'"
+        [moTa]="
+          b.trang_thai === 'DONE'
+            ? 'Buổi học đã dạy có điểm danh. Hủy sẽ xóa toàn bộ điểm danh của buổi này và không khôi phục được.'
+            : 'Buổi ' + (b.ngay_hoc | ngayVn) + ' (' + b.gio_bat_dau + '–' + b.gio_ket_thuc + ') sẽ chuyển sang trạng thái đã hủy.'
+        "
+        nhanDongY="Hủy buổi"
+        [nguyHiem]="true"
+        [dangXuLy]="dangLuu()"
+        (dongY)="xacNhanHuy()"
+        (huy)="dongHoiHuy()"
+      />
     }
   `,
   styles: `
@@ -169,7 +226,7 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
     }
     .luoi {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 12px;
     }
     label {
@@ -244,10 +301,28 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
       background: transparent;
       border: 1px dashed var(--color-border);
     }
+    /* Nhãn hình thức dùng LẠI biến màu của lịch tuần để bảng này và lịch tuần
+       nói cùng một ngôn ngữ màu. */
+    .nhan-LY_THUYET {
+      background: var(--lich-ly-thuyet-bg);
+      color: var(--lich-ly-thuyet-fg);
+      border: 1px solid var(--lich-ly-thuyet-vien);
+    }
+    .nhan-THUC_HANH {
+      background: var(--lich-thuc-hanh-bg);
+      color: var(--lich-thuc-hanh-fg);
+      border: 1px solid var(--lich-thuc-hanh-vien);
+    }
+    .nhan-TRUC_TUYEN {
+      background: var(--lich-truc-tuyen-bg);
+      color: var(--lich-truc-tuyen-fg);
+      border: 1px solid var(--lich-truc-tuyen-vien);
+    }
     .thao-tac {
       text-align: right;
+      white-space: nowrap;
     }
-    .thao-tac button {
+    .nut-thao-tac {
       border: none;
       background: transparent;
       color: var(--color-primary);
@@ -256,17 +331,34 @@ import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
       font-weight: 600;
       cursor: pointer;
       padding: 4px 6px;
+      border-radius: var(--radius-sm);
     }
-    .trong {
-      padding: 24px;
-      text-align: center;
-      color: var(--color-ink-muted);
-      border: 1px dashed var(--color-border);
-      border-radius: var(--radius);
+    .nut-thao-tac:hover {
+      background: var(--color-primary-soft);
     }
-    @media (max-width: 720px) {
+    /* Hủy là thao tác phá huỷ — tô đỏ để không bấm nhầm cạnh "Mở lại". */
+    .nut-huy {
+      color: var(--color-danger);
+    }
+    .nut-huy:hover {
+      background: var(--color-danger-soft);
+    }
+    @media (max-width: 900px) {
       .luoi {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 640px) {
+      .luoi {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 600px) {
+      .luoi {
+        grid-template-columns: 1fr;
+      }
+      .thanh-cong-cu {
+        flex-wrap: wrap;
       }
     }
   `,
@@ -286,6 +378,16 @@ export class LopHocPhanLichHoc {
   readonly dangLuu = signal(false);
   readonly dangThem = signal(false);
   readonly loi = signal('');
+  /** Buổi đang chờ người dùng xác nhận hủy; `null` = không mở hộp thoại. */
+  readonly dangHoiHuy = signal<BuoiHoc | null>(null);
+  /** Xung đột lịch backend trả khi thêm buổi — hiện thành danh sách, không chỉ một câu. */
+  readonly xungDotThem = signal<XungDotLich | null>(null);
+
+  readonly hinhThucList: Array<{ value: HinhThucHoc; label: string }> = [
+    { value: 'LY_THUYET', label: 'Lý thuyết' },
+    { value: 'THUC_HANH', label: 'Thực hành' },
+    { value: 'TRUC_TUYEN', label: 'Trực tuyến' },
+  ];
 
   /** Toàn bộ buổi đều thiếu tiết thì ẩn hẳn cột — cột đầy dấu gạch chỉ gây nhiễu. */
   readonly coTiet = computed(() => this.buoi().some((b) => !!b.tiet_bat_dau && !!b.tiet_ket_thuc));
@@ -295,12 +397,15 @@ export class LopHocPhanLichHoc {
     tiet_bat_dau: number;
     tiet_ket_thuc: number;
     phong_hoc_id: number;
-  } = { ngay_hoc: '', tiet_bat_dau: 1, tiet_ket_thuc: 3, phong_hoc_id: 0 };
+    hinh_thuc: HinhThucHoc;
+  } = { ngay_hoc: '', tiet_bat_dau: 1, tiet_ket_thuc: 3, phong_hoc_id: 0, hinh_thuc: 'LY_THUYET' };
 
   readonly coQuyenGhi = computed(() => {
     const vaiTro = this.auth.nguoiDung()?.vai_tro;
     return vaiTro === 'ADMIN' || vaiTro === 'GIANG_VIEN';
   });
+
+  readonly laAdmin = computed(() => this.auth.nguoiDung()?.vai_tro === 'ADMIN');
 
   constructor() {
     this.lopHocPhan.layTuyChon('rooms').subscribe({ next: (rows) => this.phong.set(rows) });
@@ -323,21 +428,43 @@ export class LopHocPhanLichHoc {
     return trangThai === 'DONE' ? 'Đã dạy' : trangThai === 'CANCELLED' ? 'Đã hủy' : 'Sắp dạy';
   }
 
+  tenHinhThuc(hinhThuc: HinhThucHoc | undefined): string {
+    return hinhThuc === 'THUC_HANH'
+      ? 'Thực hành'
+      : hinhThuc === 'TRUC_TUYEN'
+        ? 'Trực tuyến'
+        : 'Lý thuyết';
+  }
+
+  /**
+   * Buổi đã dạy chỉ ADMIN hủy được. Backend cũng chặn giảng viên ở tầng
+   * quyền — ẩn nút ở đây để họ không bấm rồi ăn 403.
+   */
+  coTheHuy(b: BuoiHoc): boolean {
+    if (b.trang_thai === 'CANCELLED') return false;
+    if (b.trang_thai === 'DONE') return this.laAdmin();
+    return true;
+  }
+
   moFormThem(): void {
     this.dangThem.set(true);
+    this.xungDotThem.set(null);
     this.moi.ngay_hoc = '';
     this.moi.tiet_bat_dau = 1;
     this.moi.tiet_ket_thuc = 3;
     this.moi.phong_hoc_id = this.phong()[0]?.id ?? 0;
+    this.moi.hinh_thuc = 'LY_THUYET';
   }
 
   dongFormThem(): void {
     this.dangThem.set(false);
+    this.xungDotThem.set(null);
   }
 
   them(): void {
     if (!this.themHopLe() || this.dangLuu()) return;
     this.dangLuu.set(true);
+    this.xungDotThem.set(null);
     this.buoiHoc.themBuoi(this.lopId(), this.moi).subscribe({
       next: () => {
         this.dangLuu.set(false);
@@ -345,23 +472,47 @@ export class LopHocPhanLichHoc {
         this.toast.hien('Đã thêm buổi học.', 'success');
         this.tai();
       },
-      error: (error: { error?: { message?: string } }) => {
-        this.toast.hien(error.error?.message ?? 'Không thêm được buổi học.', 'danger');
+      error: (error: unknown) => {
+        // 409 trùng lịch: backend kèm danh sách buổi vướng, hiện đủ để người
+        // dùng biết đổi giờ hay đổi phòng. Lỗi khác thì một câu là đủ.
+        const xungDot = docXungDotLich(error);
+        this.xungDotThem.set(xungDot);
+        if (!xungDot) {
+          this.toast.hien(this.thongDiepLoi(error, 'Không thêm được buổi học.'), 'danger');
+        }
         this.dangLuu.set(false);
       },
     });
   }
 
-  huy(b: BuoiHoc): void {
+  hoiHuy(b: BuoiHoc): void {
+    this.dangHoiHuy.set(b);
+  }
+
+  dongHoiHuy(): void {
+    this.dangHoiHuy.set(null);
+  }
+
+  xacNhanHuy(): void {
+    const b = this.dangHoiHuy();
+    if (!b || this.dangLuu()) return;
+    this.dangLuu.set(true);
+    // `xac_nhan` báo backend rằng người dùng đã đồng ý mất điểm danh — buổi đã
+    // dạy mà thiếu cờ này thì backend từ chối chứ không lặng lẽ xoá.
     this.buoiHoc
-      .doiTrangThai(b.id, 'CANCELLED', { xac_nhan: b.so_diem_danh > 0 })
+      .doiTrangThai(b.id, 'CANCELLED', { xac_nhan: b.trang_thai === 'DONE' || b.so_diem_danh > 0 })
       .subscribe({
         next: () => {
+          this.dangLuu.set(false);
+          this.dangHoiHuy.set(null);
           this.toast.hien('Đã hủy buổi học.', 'success');
           this.tai();
         },
-        error: (error: { error?: { message?: string } }) =>
-          this.toast.hien(error.error?.message ?? 'Không hủy được buổi học.', 'danger'),
+        error: (error: unknown) => {
+          this.dangLuu.set(false);
+          this.dangHoiHuy.set(null);
+          this.toast.hien(this.thongDiepLoi(error, 'Không hủy được buổi học.'), 'danger');
+        },
       });
   }
 
@@ -371,9 +522,14 @@ export class LopHocPhanLichHoc {
         this.toast.hien('Đã mở lại buổi học.', 'success');
         this.tai();
       },
-      error: (error: { error?: { message?: string } }) =>
-        this.toast.hien(error.error?.message ?? 'Không mở lại được buổi học.', 'danger'),
+      error: (error: unknown) =>
+        this.toast.hien(this.thongDiepLoi(error, 'Không mở lại được buổi học.'), 'danger'),
     });
+  }
+
+  private thongDiepLoi(error: unknown, macDinh: string): string {
+    const than = (error as { error?: { message?: string } } | null)?.error;
+    return than?.message ?? macDinh;
   }
 
   private tai(): void {

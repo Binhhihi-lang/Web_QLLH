@@ -129,6 +129,7 @@ Lỗi validation (422):
 | `SEMESTER_CONFIG_LOCKED` | 409 | Chỉ được sửa cấu hình của học kỳ UPCOMING |
 | `SEMESTER_OVERLAP` | 409 | Khoảng ngày học chồng lấn; `errors.hoc_ky_trung` cho biết học kỳ và khoảng ngày bị trùng |
 | `SESSION_OUTSIDE_SEMESTER` | 409 | Ngày buổi học nằm ngoài khoảng ngày của học kỳ |
+| `PAST_DATE` | 409 | Ngày xếp lịch đã trôi qua; `errors` nêu trường vi phạm |
 | `UPLOAD_NOT_CONFIGURED` | 503 | Chưa cấu hình Cloudinary trên máy chủ |
 | `UPLOAD_FAILED` | 502 | Upload ảnh lên Cloudinary thất bại |
 
@@ -569,19 +570,74 @@ Response chi tiết:
 | Method | Endpoint | Quyền | Ghi chú |
 |---|---|---|---|
 | GET | `/api/sections/{id}/sessions` | theo vai trò | ADMIN, giảng viên phụ trách, sinh viên đã đăng ký ACTIVE |
-| POST | `/api/sections/{id}/sessions` | ADMIN, TEACHER (lớp mình) | Buổi lẻ. Gửi `tiet_bat_dau`/`tiet_ket_thuc` thì backend tự tính giờ; hoặc gửi thẳng `gio_bat_dau`/`gio_ket_thuc`. `buoi_goc_id` để đánh dấu buổi bù |
-| POST | `/api/sections/{id}/sessions/generate` | ADMIN, TEACHER (lớp mình) | Sinh lịch hàng tuần |
+| POST | `/api/sections/{id}/sessions` | ADMIN, TEACHER (lớp mình) | Buổi lẻ. Gửi `tiet_bat_dau`/`tiet_ket_thuc` thì backend tự tính giờ; hoặc gửi thẳng `gio_bat_dau`/`gio_ket_thuc`. `buoi_goc_id` để đánh dấu buổi bù. `hinh_thuc` (`LY_THUYET` mặc định, `THUC_HANH`, `TRUC_TUYEN`) |
+| POST | `/api/sections/{id}/sessions/generate` | ADMIN, TEACHER (lớp mình) | Sinh lịch hàng tuần; `hinh_thuc` áp cho cả lô |
 | PUT | `/api/sessions/{id}` | ADMIN, TEACHER (lớp mình) | Sửa; nếu đã có điểm danh cần `xac_nhan: true` |
-| PATCH | `/api/sessions/{id}/status` | ADMIN, TEACHER (lớp mình) | Body `{ "trang_thai": "CANCELLED", "ly_do_huy": "..." }`. Hủy giữ bản ghi trên lịch; `SCHEDULED` để mở lại |
+| PATCH | `/api/sessions/{id}/status` | ADMIN, TEACHER (lớp mình) | Body `{ "trang_thai": "CANCELLED", "ly_do_huy": "..." }`. Hủy giữ bản ghi trên lịch; `SCHEDULED` để mở lại. Buổi `DONE` chỉ ADMIN hủy được, và **toàn bộ điểm danh của buổi bị xóa** trong cùng transaction |
 | DELETE | `/api/sessions/{id}` | ADMIN, TEACHER (lớp mình) | Xóa mềm; nếu đã có điểm danh cần `xac_nhan: true` |
 | GET | `/api/sessions/{id}/attendance` | ADMIN, TEACHER (lớp mình) | Danh sách + trạng thái |
 | PUT | `/api/sessions/{id}/attendance` | TEACHER (lớp mình), ADMIN | Điểm danh hàng loạt |
 | GET | `/api/schedules` | theo vai trò | Lịch tổng hợp, lọc `hoc_ky_id`, `giang_vien_id`, `phong_hoc_id`, `tu_ngay`, `den_ngay` |
 | GET | `/api/options/periods` | mọi vai trò | 15 tiết + ca + giờ, dùng cho ô chọn tiết |
 | GET | `/api/exams` | theo vai trò | Ca thi theo kỳ; sinh viên chỉ thấy môn đã đăng ký ACTIVE. Lọc `hoc_ky_id`, `mon_hoc_id`, `tu_ngay`, `den_ngay` |
-| POST | `/api/exams` | ADMIN | `{ hoc_ky_id, mon_hoc_id, ngay_thi, tiet_bat_dau, tiet_ket_thuc, phong_hoc_id, dot_thi? }`; 409 `SCHEDULE_CONFLICT` khi trùng phòng |
-| PUT | `/api/exams/{id}` | ADMIN | |
+| POST | `/api/exams` | ADMIN | `{ hoc_ky_id, mon_hoc_id, ngay_thi, tiet_bat_dau, tiet_ket_thuc, phong_hoc_id, dot_thi? }`; 409 `SCHEDULE_CONFLICT` — xem mục "Xung đột lịch" |
+| PUT | `/api/exams/{id}` | ADMIN | Cùng kiểm tra xung đột như POST |
 | DELETE | `/api/exams/{id}` | ADMIN | Xóa mềm |
+
+### Hình thức học
+
+`buoi_hoc.hinh_thuc` là thuộc tính của **từng buổi**, không phải của lớp: một lớp
+có thể học lý thuyết buổi này, thực hành buổi khác. Ba giá trị cố định
+`LY_THUYET` / `THUC_HANH` / `TRUC_TUYEN`; mặc định `LY_THUYET`. Response buổi học
+trả `hinh_thuc` để giao diện tô màu khối lịch.
+
+### Ngày đã trôi qua
+
+Không xếp lịch cho ngày đã qua — buổi đó không còn dạy được. Áp cho tạo buổi lẻ,
+tạo ca thi, và dời buổi/ca thi sang ngày khác đã qua. Trả 409 `PAST_DATE`.
+
+- `generate` không báo lỗi khi khoảng ngày bắt đầu ở quá khứ: `tu_ngay` được kẹp
+  lên hôm nay, giống cách FR-10.02 kẹp `den_ngay` vào ngày kết thúc kỳ. Chỉ báo
+  `PAST_DATE` khi **toàn bộ** khoảng nằm trong quá khứ.
+- Sửa một buổi/ca thi đã có mà **giữ nguyên ngày** vẫn hợp lệ (điểm danh bù sau
+  buổi học), kể cả khi ngày đó đã qua.
+
+### Xung đột lịch (`SCHEDULE_CONFLICT`)
+
+Ba loại xung đột, phân biệt bằng `errors.trung_lich[*].loai`:
+
+| `loai` | Khi nào | Trường chi tiết |
+|---|---|---|
+| `phong_hoc` | Phòng đã có ca thi khác cùng ngày, giờ giao nhau | `lich_thi_id`, `mon_hoc`, `ngay_thi`, `gio_bat_dau`, `gio_ket_thuc`, `doi_tuong` (mã phòng) |
+| `buoi_hoc` | Phòng đã có buổi học `SCHEDULED` cùng ngày, giờ giao nhau | `buoi_hoc_id`, `ma_lop_hp`, `ngay_hoc`, `gio_bat_dau`, `gio_ket_thuc` |
+| `lich_thi` | Khung giờ đã có ca thi khác (kiểm từ phía buổi học) | `lich_thi_id`, `ngay_hoc`, `gio_bat_dau`, `gio_ket_thuc`, `doi_tuong` (mã môn) |
+
+Lịch thi và lịch học **nhìn thấy nhau**: xếp ca thi vào phòng đang có lớp học bị
+chặn, và ngược lại. Kiểm tra chạy cả hai chiều trong transaction có khóa phòng.
+
+Ngoài ra, khi xếp ca thi còn phải bảo đảm **mọi sinh viên của môn đều rảnh**: ca
+thi phục vụ tất cả lớp của môn trong kỳ, nên nếu bất kỳ sinh viên nào trong số đó
+đang có buổi học hoặc ca thi khác trùng giờ, ca thi bị chặn. Response liệt kê tối
+đa 20 dòng vi phạm và tổng số:
+
+```json
+{
+  "success": false,
+  "message": "Ca thi trùng lịch của 12 sinh viên. Chọn ngày hoặc khung tiết khác.",
+  "ma_loi": "SCHEDULE_CONFLICT",
+  "errors": {
+    "trung_lich": [
+      { "sinh_vien_id": 2, "ma_sv": "SV000002", "ho_ten": "Nguyễn Văn A",
+        "ma_lop_hp": "INT3306-01", "ngay": "2026-11-20",
+        "gio_bat_dau": "07:30", "gio_ket_thuc": "09:10", "loai": "buoi_hoc" }
+    ],
+    "tong_so_vi_pham": 12
+  }
+}
+```
+
+Vì một môn có thể có trên 160 sinh viên, ràng buộc này khiến ca thi gần như chỉ
+xếp được **sau khi hết lịch dạy** — giống quy trình thi thật.
 
 ### Khung tiết
 

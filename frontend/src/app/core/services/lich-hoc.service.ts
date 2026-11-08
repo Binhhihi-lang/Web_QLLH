@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { PaginatedResponse } from '@core/mock/mock-response';
+import { HinhThucHoc } from '@core/services/buoi-hoc.service';
 import { environment } from '@env/environment';
 
 export interface BuoiLich {
@@ -12,6 +13,8 @@ export interface BuoiLich {
   gio_bat_dau: string;
   gio_ket_thuc: string;
   trang_thai: 'SCHEDULED' | 'DONE' | 'CANCELLED';
+  /** Hình thức học — quyết định màu khối lịch tuần. Xem `HinhThucHoc`. */
+  hinh_thuc?: HinhThucHoc;
   ly_do_huy: string | null;
   buoi_goc_id: number | null;
   lop_hoc_phan: { id: number; ma_lop_hp: string };

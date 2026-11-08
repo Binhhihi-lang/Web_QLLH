@@ -83,7 +83,7 @@ class BuoiHocController extends Controller
         ]);
 
         $buoi = $duLieu['trang_thai'] === BuoiHoc::CANCELLED
-            ? $this->service->huy($buoiHoc, $duLieu['ly_do_huy'] ?? null, $request->boolean('xac_nhan'), $request->user()->id)
+            ? $this->service->huy($buoiHoc, $duLieu['ly_do_huy'] ?? null, $request->boolean('xac_nhan'), $request->user())
             : $this->service->moLai($buoiHoc, $request->user()->id);
 
         return $this->success(new BuoiHocResource($buoi->load('phongHoc')), 'Cập nhật trạng thái buổi học thành công.');

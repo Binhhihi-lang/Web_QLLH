@@ -6,6 +6,7 @@ use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
 use App\Models\DangKyHocPhan;
 use App\Models\GiangVien;
+use App\Models\LichThi;
 use App\Models\LopHocPhan;
 use App\Models\SinhVien;
 use Illuminate\Support\Facades\Validator;
@@ -101,6 +102,50 @@ class ScheduleService
         return $ketQua;
     }
 
+    /**
+     * Phòng đã có ca thi trong khung giờ này chưa. Trước đây ScheduleService chỉ
+     * nhìn bảng buổi học, còn QuanLyLichThiService chỉ nhìn bảng lịch thi, nên
+     * hai bên có thể xếp chồng lên nhau mà không ai báo.
+     *
+     * @param  list<array{ngay_hoc: string, gio_bat_dau: string, gio_ket_thuc: string, phong_hoc_id: int}>  $cacBuoi
+     * @return list<array<string, mixed>>
+     */
+    private function timTrungVoiCaThi(array $cacBuoi): array
+    {
+        // Gom một truy vấn cho cả lô: 25 buổi mà query từng buổi là N+1, đúng
+        // thứ test_kiem_tra_ca_lo_gom_truy_van_khong_lap_theo_so_buoi canh.
+        $cacCaThi = LichThi::query()
+            ->whereIn('phong_hoc_id', array_unique(array_column($cacBuoi, 'phong_hoc_id')))
+            ->whereDate('ngay_thi', '>=', min(array_column($cacBuoi, 'ngay_hoc')))
+            ->whereDate('ngay_thi', '<=', max(array_column($cacBuoi, 'ngay_hoc')))
+            ->whereTime('gio_bat_dau', '<', max(array_column($cacBuoi, 'gio_ket_thuc')))
+            ->whereTime('gio_ket_thuc', '>', min(array_column($cacBuoi, 'gio_bat_dau')))
+            ->with('monHoc:id,ma_mon,ten_mon')
+            ->get();
+
+        $ketQua = [];
+
+        foreach ($cacBuoi as $buoi) {
+            foreach ($cacCaThi as $ca) {
+                if ($ca->phong_hoc_id === $buoi['phong_hoc_id']
+                    && $ca->ngay_thi->format('Y-m-d') === $buoi['ngay_hoc']
+                    && $this->gio($ca->gio_bat_dau) < $this->gio($buoi['gio_ket_thuc'])
+                    && $this->gio($ca->gio_ket_thuc) > $this->gio($buoi['gio_bat_dau'])) {
+                    $ketQua[] = [
+                        'lich_thi_id' => $ca->id,
+                        'ngay_hoc' => $ca->ngay_thi->format('Y-m-d'),
+                        'gio_bat_dau' => substr($ca->gio_bat_dau, 0, 5),
+                        'gio_ket_thuc' => substr($ca->gio_ket_thuc, 0, 5),
+                        'loai' => 'lich_thi',
+                        'doi_tuong' => $ca->monHoc?->ma_mon,
+                    ];
+                }
+            }
+        }
+
+        return $ketQua;
+    }
+
     /** Ném lỗi 409 với errors.trung_lich để các endpoint ghi dùng chung envelope. */
     public function kiemTraTrungLich(
         LopHocPhan $lop,
@@ -108,7 +153,10 @@ class ScheduleService
         ?int $boQuaBuoiId = null,
         ?int $giangVienId = null,
     ): void {
-        $this->baoLoiNeuTrung($this->timTrungLich($lop, $duLieu, $boQuaBuoiId, $giangVienId));
+        $this->baoLoiNeuTrung(array_merge(
+            $this->timTrungLich($lop, $duLieu, $boQuaBuoiId, $giangVienId),
+            $this->timTrungVoiCaThi([$this->chuanHoaBuoi($duLieu)]),
+        ));
     }
 
     /**
@@ -124,7 +172,10 @@ class ScheduleService
             'buoi_hoc.*' => ['required', 'array'],
         ])->validate();
         $cacBuoi = array_map(fn ($buoi) => $this->chuanHoaBuoi($buoi), $cacBuoi);
-        $trungLich = $this->timTrungLichCacBuoi($lop, $cacBuoi);
+        $trungLich = array_merge(
+            $this->timTrungLichCacBuoi($lop, $cacBuoi),
+            $this->timTrungVoiCaThi($cacBuoi),
+        );
         $daKiemTra = [];
 
         foreach ($cacBuoi as $index => $buoi) {

@@ -20,6 +20,7 @@ class BuoiHocResource extends JsonResource
             'gio_bat_dau' => substr($this->gio_bat_dau, 0, 5),
             'gio_ket_thuc' => substr($this->gio_ket_thuc, 0, 5),
             'trang_thai' => $this->trang_thai,
+            'hinh_thuc' => $this->hinh_thuc,
             'ly_do_huy' => $this->ly_do_huy,
             'buoi_goc_id' => $this->buoi_goc_id,
             'phong_hoc' => $this->relationLoaded('phongHoc') && $this->phongHoc !== null

@@ -268,10 +268,10 @@ theo `environment.useMock`, giống luồng sinh viên.
 
 | Mã | Màn hình | Route | Vai trò | Ghi chú |
 |---|---|---|---|---|
-| SCR-35 | Xem lịch tuần | `/lich-hoc` | theo vai trò | Lưới 7 ngày × 3 ca (Sáng/Chiều/Tối). Lọc Tất cả / Lịch học / Lịch thi bằng nút radio, chọn tuần bằng `app-date-input`, điều hướng tuần trước/sau/hôm nay. ADMIN lọc thêm giảng viên và phòng. Bấm khối ca học mở popup liên hệ giảng viên (họ tên, mã GV, email, điện thoại) |
-| SCR-35b | Lịch thi | `/lich-thi` | theo vai trò | Ca thi theo kỳ, dùng chung khung tiết với buổi học. ADMIN thêm/xóa ca; sinh viên chỉ thấy ca của môn đã đăng ký ACTIVE |
-| SCR-36 | Thêm buổi học | `/lop-hoc-phan/:id/lich-hoc` (nút "Thêm buổi") | ADMIN, TEACHER (lớp mình) | Form tại chỗ: ngày, từ tiết, đến tiết, phòng. Backend suy ra giờ từ `tiet_hoc` |
-| SCR-37 | Sinh lịch hàng tuần | `/lop-hoc-phan/them` (khối "Lịch học") | ADMIN | Chọn thứ, tiết, phòng, khoảng ngày; preview số buổi; hiển thị xung đột. Gọi `POST /sections/{id}/sessions/generate` ngay sau khi tạo lớp |
+| SCR-35 | Xem lịch tuần | `/lich-hoc` | theo vai trò | Lưới 7 ngày × 3 ca (Sáng/Chiều/Tối). Lọc Tất cả / Lịch học / Lịch thi bằng nút radio, chọn tuần bằng `app-date-input`, điều hướng tuần trước/sau/hôm nay. ADMIN lọc thêm giảng viên và phòng. Bấm khối ca học mở popup liên hệ giảng viên (họ tên, mã GV, email, điện thoại). Chú giải 5 loại, phân biệt bằng màu: lý thuyết (xám), thực hành (xanh lá), trực tuyến (xanh dương), lịch thi (vàng), tạm ngưng (đỏ đặc + dải chéo). Buổi đã dạy không có màu riêng — tô theo hình thức học |
+| SCR-35b | Lịch thi | `/lich-thi` | theo vai trò | Ca thi theo kỳ, dùng chung khung tiết với buổi học. ADMIN thêm/sửa/xóa ca; sinh viên chỉ thấy ca của môn đã đăng ký ACTIVE. Bấm dòng mở chi tiết; sửa và xóa đều qua hộp thoại. Khi backend trả `SCHEDULE_CONFLICT`, hiện danh sách sinh viên/lớp bị trùng kèm `tong_so_vi_pham` |
+| SCR-36 | Thêm buổi học | `/lop-hoc-phan/:id/lich-hoc` (nút "Thêm buổi") | ADMIN, TEACHER (lớp mình) | Form tại chỗ: ngày, từ tiết, đến tiết, phòng, hình thức học (lý thuyết/thực hành/trực tuyến). Backend suy ra giờ từ `tiet_hoc`. Không tạo được cho ngày đã qua (`PAST_DATE`). Hủy buổi đã dạy chỉ ADMIN, có cảnh báo sẽ xóa điểm danh |
+| SCR-37 | Sinh lịch hàng tuần | `/lop-hoc-phan/them` (khối "Lịch học") | ADMIN | Chọn thứ, tiết, phòng, khoảng ngày, hình thức học; preview số buổi; hiển thị xung đột. Gọi `POST /sections/{id}/sessions/generate` ngay sau khi tạo lớp |
 
 Tab **Lịch học** trong chi tiết lớp (`/lop-hoc-phan/:id/lich-hoc`) là trang riêng, liệt kê
 toàn bộ buổi kèm trạng thái, số sinh viên đã điểm danh, và thao tác hủy / mở lại. Buổi đã

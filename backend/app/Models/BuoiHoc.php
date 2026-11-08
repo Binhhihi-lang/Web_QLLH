@@ -21,6 +21,18 @@ class BuoiHoc extends Model
 
     public const CANCELLED = 'CANCELLED';
 
+    public const HINH_THUC_LY_THUYET = 'LY_THUYET';
+
+    public const HINH_THUC_THUC_HANH = 'THUC_HANH';
+
+    public const HINH_THUC_TRUC_TUYEN = 'TRUC_TUYEN';
+
+    public const HINH_THUC = [
+        self::HINH_THUC_LY_THUYET,
+        self::HINH_THUC_THUC_HANH,
+        self::HINH_THUC_TRUC_TUYEN,
+    ];
+
     protected $fillable = [
         'lop_hoc_phan_id',
         'ngay_hoc',
@@ -31,6 +43,7 @@ class BuoiHoc extends Model
         'phong_hoc_id',
         'buoi_goc_id',
         'trang_thai',
+        'hinh_thuc',
         'ly_do_huy',
     ];
 

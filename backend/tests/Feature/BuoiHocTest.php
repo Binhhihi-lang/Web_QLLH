@@ -4,11 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\BuoiHoc;
 use App\Models\DangKyHocPhan;
+use App\Models\DiemDanh;
 use App\Models\HocKy;
 use App\Models\LopHocPhan;
 use App\Models\PhongHoc;
 use App\Models\SinhVien;
-use App\Models\TietHoc;
 use App\Models\User;
 use Database\Seeders\TietHocSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +27,9 @@ class BuoiHocTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Cố định thời điểm: PAST_DATE chặn ngày đã qua, không cố định thì test
+        // sẽ đỏ dần theo thời gian thực dù code không đổi.
+        $this->travelTo('2026-11-02 08:00:00');
         $this->seed(TietHocSeeder::class);
         $this->actingAs(User::factory()->admin()->create(), 'sanctum');
 
@@ -155,7 +158,7 @@ class BuoiHocTest extends TestCase
             'sinh_vien_id' => $sv->id,
             'lop_hoc_phan_id' => $this->lop->id,
         ]);
-        \App\Models\DiemDanh::factory()->create([
+        DiemDanh::factory()->create([
             'buoi_hoc_id' => $buoi->id,
             'dang_ky_hoc_phan_id' => $dangKy->id,
         ]);
@@ -196,5 +199,108 @@ class BuoiHocTest extends TestCase
         $this->actingAs($sinhVien, 'sanctum');
 
         $this->getJson("/api/sections/{$this->lop->id}/sessions")->assertForbidden();
+    }
+
+    public function test_them_buoi_le_luu_hinh_thuc(): void
+    {
+        $this->postJson("/api/sections/{$this->lop->id}/sessions", [
+            'ngay_hoc' => '2026-11-05',
+            'tiet_bat_dau' => 1,
+            'tiet_ket_thuc' => 3,
+            'phong_hoc_id' => $this->phong->id,
+            'hinh_thuc' => BuoiHoc::HINH_THUC_THUC_HANH,
+        ])->assertCreated()->assertJsonPath('data.hinh_thuc', 'THUC_HANH');
+
+        $this->assertSame(
+            BuoiHoc::HINH_THUC_THUC_HANH,
+            BuoiHoc::query()->firstOrFail()->hinh_thuc,
+        );
+    }
+
+    public function test_sinh_lich_ap_cung_hinh_thuc_cho_ca_lo(): void
+    {
+        $this->sinhLich(['hinh_thuc' => BuoiHoc::HINH_THUC_TRUC_TUYEN])->assertCreated();
+
+        $this->assertSame(
+            0,
+            BuoiHoc::query()->where('hinh_thuc', '!=', BuoiHoc::HINH_THUC_TRUC_TUYEN)->count(),
+        );
+    }
+
+    public function test_hinh_thuc_khong_hop_le_bi_chan(): void
+    {
+        $this->postJson("/api/sections/{$this->lop->id}/sessions", [
+            'ngay_hoc' => '2026-11-05',
+            'tiet_bat_dau' => 1,
+            'tiet_ket_thuc' => 3,
+            'phong_hoc_id' => $this->phong->id,
+            'hinh_thuc' => 'KHONG_CO',
+        ])->assertStatus(422);
+    }
+
+    public function test_khong_tao_duoc_buoi_hoc_cho_ngay_da_qua(): void
+    {
+        // Học kỳ riêng bắt đầu trước mốc thời gian, để ngày quá khứ vẫn nằm
+        // TRONG học kỳ — nếu không sẽ bắt lỗi SESSION_OUTSIDE_SEMESTER thay vì PAST_DATE.
+        $kyCu = HocKy::factory()->create([
+            'ngay_bat_dau' => '2026-10-01',
+            'ngay_ket_thuc' => '2027-01-10',
+            'trang_thai' => HocKy::ONGOING,
+        ]);
+        $lopCu = LopHocPhan::factory()->create(['hoc_ky_id' => $kyCu->id]);
+
+        $this->postJson("/api/sections/{$lopCu->id}/sessions", [
+            'ngay_hoc' => '2026-11-01',
+            'tiet_bat_dau' => 1,
+            'tiet_ket_thuc' => 3,
+            'phong_hoc_id' => $this->phong->id,
+        ])->assertStatus(409)->assertJsonPath('ma_loi', 'PAST_DATE');
+    }
+
+    public function test_admin_huy_duoc_buoi_da_day_va_xoa_diem_danh(): void
+    {
+        $buoi = BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $this->lop->id,
+            'ngay_hoc' => '2026-11-04',
+            'gio_bat_dau' => '07:00',
+            'gio_ket_thuc' => '09:00',
+            'phong_hoc_id' => $this->phong->id,
+            'trang_thai' => BuoiHoc::DONE,
+        ]);
+        $dangKy = DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => SinhVien::factory()->create()->id,
+            'lop_hoc_phan_id' => $this->lop->id,
+        ]);
+        DiemDanh::factory()->create([
+            'buoi_hoc_id' => $buoi->id,
+            'dang_ky_hoc_phan_id' => $dangKy->id,
+        ]);
+
+        $this->patchJson("/api/sessions/{$buoi->id}/status", ['trang_thai' => BuoiHoc::CANCELLED])
+            ->assertOk()
+            ->assertJsonPath('data.trang_thai', 'CANCELLED');
+
+        // Hủy buổi đã dạy phải dọn điểm danh, nếu không buổi đã hủy vẫn được
+        // tính vào tỷ lệ chuyên cần.
+        $this->assertDatabaseCount('diem_danh', 0);
+    }
+
+    public function test_giang_vien_khong_huy_duoc_buoi_da_day(): void
+    {
+        $buoi = BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $this->lop->id,
+            'ngay_hoc' => '2026-11-04',
+            'gio_bat_dau' => '07:00',
+            'gio_ket_thuc' => '09:00',
+            'phong_hoc_id' => $this->phong->id,
+            'trang_thai' => BuoiHoc::DONE,
+        ]);
+
+        $this->actingAs($this->lop->giangVien->user, 'sanctum');
+
+        $this->patchJson("/api/sessions/{$buoi->id}/status", ['trang_thai' => BuoiHoc::CANCELLED])
+            ->assertForbidden();
+
+        $this->assertSame(BuoiHoc::DONE, $buoi->fresh()->trang_thai);
     }
 }

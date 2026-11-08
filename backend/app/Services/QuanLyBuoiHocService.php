@@ -9,7 +9,9 @@ use App\Models\LopHocPhan;
 use App\Models\NhatKy;
 use App\Models\PhongHoc;
 use App\Models\TietHoc;
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -29,7 +31,7 @@ class QuanLyBuoiHocService
     public function __construct(private readonly ScheduleService $scheduleService) {}
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, BuoiHoc>
+     * @return Collection<int, BuoiHoc>
      */
     public function sinhLich(LopHocPhan $lop, array $duLieu, int $nguoiThucHienId)
     {
@@ -41,6 +43,7 @@ class QuanLyBuoiHocService
             'phong_hoc_id' => ['required', 'integer'],
             'tu_ngay' => ['required', 'date_format:Y-m-d'],
             'den_ngay' => ['required', 'date_format:Y-m-d', 'after_or_equal:tu_ngay'],
+            'hinh_thuc' => ['sometimes', 'string', 'in:'.implode(',', BuoiHoc::HINH_THUC)],
         ])->validate();
 
         $this->kiemTraLopChoGhi($lop);
@@ -56,6 +59,18 @@ class QuanLyBuoiHocService
         $denNgay = CarbonImmutable::createFromFormat('Y-m-d', $duLieu['den_ngay'])->startOfDay();
         $this->kiemTraNgayTrongKy($lop, $tuNgay, 'tu_ngay');
 
+        // Chỉ kẹp khi TOÀN BỘ khoảng nằm ở quá khứ. Khoảng trải từ quá khứ sang
+        // tương lai thì kẹp `tu_ngay` lên hôm nay — người dùng chọn khoảng rộng,
+        // bỏ qua ngày đã qua là tự nhiên, giống cách FR-10.02 kẹp `den_ngay`.
+        $homNay = CarbonImmutable::now()->startOfDay();
+        if ($denNgay->lessThan($homNay)) {
+            throw new LoiNghiepVu('PAST_DATE', 'Không thể sinh lịch cho khoảng thời gian đã qua.');
+        }
+
+        if ($tuNgay->lessThan($homNay)) {
+            $tuNgay = $homNay;
+        }
+
         // FR-10.02: vượt quá ngày kết thúc học kỳ thì dừng, không báo lỗi.
         $ketThucHocKy = CarbonImmutable::instance($lop->hocKy->ngay_ket_thuc)->startOfDay();
         if ($denNgay->greaterThan($ketThucHocKy)) {
@@ -65,6 +80,7 @@ class QuanLyBuoiHocService
         // Quy ước Việt Nam: 2..7 là Thứ 2..Thứ 7, 8 là Chủ nhật.
         // Carbon dayOfWeekIso: 1..7 là Thứ 2..Chủ nhật.
         $thu = collect($duLieu['thu'])->map(fn ($t) => $t === 8 ? 7 : (int) $t - 1)->all();
+        $hinhThuc = $duLieu['hinh_thuc'] ?? BuoiHoc::HINH_THUC_LY_THUYET;
         $cacBuoi = [];
         $ngay = $tuNgay;
 
@@ -77,6 +93,7 @@ class QuanLyBuoiHocService
                     'phong_hoc_id' => (int) $duLieu['phong_hoc_id'],
                     'tiet_bat_dau' => (int) $duLieu['tiet_bat_dau'],
                     'tiet_ket_thuc' => (int) $duLieu['tiet_ket_thuc'],
+                    'hinh_thuc' => $hinhThuc,
                 ];
             }
 
@@ -97,7 +114,7 @@ class QuanLyBuoiHocService
 
             $this->scheduleService->kiemTraDanhSach($lop, $cacBuoi);
 
-            $daTao = new EloquentCollection();
+            $daTao = new EloquentCollection;
             foreach ($cacBuoi as $buoi) {
                 $daTao->push(BuoiHoc::query()->create([
                     ...$buoi,
@@ -130,6 +147,7 @@ class QuanLyBuoiHocService
 
         $ngay = CarbonImmutable::createFromFormat('Y-m-d', $duLieu['ngay_hoc'])->startOfDay();
         $this->kiemTraNgayTrongKy($lop, $ngay, 'ngay_hoc');
+        $this->kiemTraNgayChuaQua($ngay, 'ngay_hoc');
 
         if (! empty($duLieu['buoi_goc_id'])) {
             $goc = BuoiHoc::query()
@@ -171,10 +189,17 @@ class QuanLyBuoiHocService
             'gio_bat_dau' => substr($buoi->gio_bat_dau, 0, 5),
             'gio_ket_thuc' => substr($buoi->gio_ket_thuc, 0, 5),
             'phong_hoc_id' => $buoi->phong_hoc_id,
+            'hinh_thuc' => $buoi->hinh_thuc,
         ]);
 
         $ngay = CarbonImmutable::createFromFormat('Y-m-d', $duLieu['ngay_hoc'])->startOfDay();
         $this->kiemTraNgayTrongKy($lop, $ngay, 'ngay_hoc');
+
+        // Sửa một buổi đã có (ví dụ điểm danh bù cho buổi hôm qua) vẫn hợp lệ.
+        // Chỉ chặn khi người dùng DỜI buổi sang một ngày khác đã trôi qua.
+        if ($duLieu['ngay_hoc'] !== $buoi->ngay_hoc->toDateString()) {
+            $this->kiemTraNgayChuaQua($ngay, 'ngay_hoc');
+        }
 
         return DB::transaction(function () use ($buoi, $lop, $duLieu, $nguoiThucHienId) {
             PhongHoc::query()->lockForUpdate()->findOrFail($duLieu['phong_hoc_id']);
@@ -198,23 +223,45 @@ class QuanLyBuoiHocService
 
     /**
      * Hủy buổi: giữ bản ghi trên lịch để đối chiếu, không xóa mềm.
+     *
+     * Buổi đã dạy chỉ ADMIN hủy được — giáo viên quên điểm danh/đi dạy nhầm vẫn
+     * cần đường sửa sai. Điểm danh của buổi bị xóa cùng transaction, vì giữ lại
+     * sẽ khiến buổi đã hủy vẫn được tính vào tỷ lệ chuyên cần.
      */
-    public function huy(BuoiHoc $buoi, ?string $lyDo, bool $xacNhan, int $nguoiThucHienId): BuoiHoc
+    public function huy(BuoiHoc $buoi, ?string $lyDo, bool $xacNhan, User $nguoiThucHien): BuoiHoc
     {
-        $this->kiemTraChuaCoDiemDanh($buoi, $xacNhan);
+        $daDay = $buoi->trang_thai === BuoiHoc::DONE;
 
-        if ($buoi->trang_thai === BuoiHoc::DONE) {
-            throw new LoiNghiepVu('DELETE_BLOCKED', 'Buổi học đã dạy, không hủy được.');
+        if ($daDay && ! $nguoiThucHien->laAdmin()) {
+            throw new LoiNghiepVu('FORBIDDEN', 'Chỉ quản trị viên hủy được buổi đã dạy.', status: 403);
         }
 
-        $buoi->update([
-            'trang_thai' => BuoiHoc::CANCELLED,
-            'ly_do_huy' => $lyDo,
-        ]);
+        $soDiemDanh = $buoi->diemDanh()->count();
 
-        NhatKy::ghi('buoi_hoc', $buoi->id, NhatKy::DOI_TRANG_THAI, nguoiThucHienId: $nguoiThucHienId, ghiChu: 'Hủy buổi');
+        if ($soDiemDanh > 0 && ! $daDay) {
+            $this->kiemTraChuaCoDiemDanh($buoi, $xacNhan);
+        }
 
-        return $buoi->fresh();
+        return DB::transaction(function () use ($buoi, $lyDo, $daDay, $soDiemDanh, $nguoiThucHien) {
+            if ($daDay) {
+                // Buổi đã dạy: xóa điểm danh trước khi đánh dấu hủy, để không
+                // còn dòng nào trỏ tới một buổi không diễn ra.
+                $buoi->diemDanh()->delete();
+            }
+
+            $buoi->update([
+                'trang_thai' => BuoiHoc::CANCELLED,
+                'ly_do_huy' => $lyDo,
+            ]);
+
+            $ghiChu = $daDay
+                ? 'Hủy buổi đã dạy, xóa '.$soDiemDanh.' dòng điểm danh'
+                : 'Hủy buổi';
+
+            NhatKy::ghi('buoi_hoc', $buoi->id, NhatKy::DOI_TRANG_THAI, nguoiThucHienId: $nguoiThucHien->id, ghiChu: $ghiChu);
+
+            return $buoi->fresh();
+        });
     }
 
     public function moLai(BuoiHoc $buoi, int $nguoiThucHienId): BuoiHoc
@@ -265,6 +312,7 @@ class QuanLyBuoiHocService
             'gio_bat_dau' => ['required_without:tiet_bat_dau', 'nullable', 'date_format:H:i,H:i:s'],
             'gio_ket_thuc' => ['required_without:tiet_bat_dau', 'nullable', 'date_format:H:i,H:i:s', 'after:gio_bat_dau'],
             'buoi_goc_id' => ['sometimes', 'nullable', 'integer'],
+            'hinh_thuc' => ['sometimes', 'string', 'in:'.implode(',', BuoiHoc::HINH_THUC)],
         ])->validate();
 
         if (! empty($duLieu['tiet_bat_dau'])) {
@@ -338,6 +386,18 @@ class QuanLyBuoiHocService
                 'SESSION_OUTSIDE_SEMESTER',
                 'Ngày học nằm ngoài khoảng ngày của học kỳ.',
                 errors: [$truong => ['Kỳ học từ '.$batDau->toDateString().' đến '.$ketThuc->toDateString().'.']],
+            );
+        }
+    }
+
+    /** Tạo lịch cho ngày đã qua là vô nghĩa: buổi đó không còn dạy được. */
+    private function kiemTraNgayChuaQua(CarbonImmutable $ngay, string $truong): void
+    {
+        if ($ngay->lessThan(CarbonImmutable::now()->startOfDay())) {
+            throw new LoiNghiepVu(
+                'PAST_DATE',
+                'Không thể xếp lịch cho ngày đã qua.',
+                errors: [$truong => ['Chọn ngày từ hôm nay trở đi.']],
             );
         }
     }

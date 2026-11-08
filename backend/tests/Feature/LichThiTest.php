@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\BuoiHoc;
 use App\Models\DangKyHocPhan;
 use App\Models\HocKy;
 use App\Models\LichThi;
@@ -27,6 +28,9 @@ class LichThiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Cố định thời điểm để ngày thi trong test không bao giờ trôi vào quá khứ
+        // — PAST_DATE sẽ chặn và làm test đỏ theo thời gian thực.
+        $this->travelTo('2026-11-05 08:00:00');
         $this->seed(TietHocSeeder::class);
         $this->actingAs(User::factory()->admin()->create(), 'sanctum');
 
@@ -146,5 +150,112 @@ class LichThiTest extends TestCase
         $this->actingAs(User::factory()->giangVien()->create(), 'sanctum');
 
         $this->taoCa()->assertForbidden();
+    }
+
+    public function test_khong_xep_duoc_ca_thi_cho_ngay_da_qua(): void
+    {
+        // Trong khoảng học kỳ nhưng trước mốc travelTo 2026-11-05.
+        $this->taoCa(['ngay_thi' => '2026-11-02'])
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'PAST_DATE');
+    }
+
+    public function test_ca_thi_khong_duoc_de_len_buoi_hoc_cung_phong(): void
+    {
+        $lop = LopHocPhan::factory()->create(['hoc_ky_id' => $this->ky->id]);
+        BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $lop->id,
+            'ngay_hoc' => '2026-11-10',
+            'gio_bat_dau' => '06:30',
+            'gio_ket_thuc' => '09:10',
+            'phong_hoc_id' => $this->phong->id,
+            'trang_thai' => BuoiHoc::SCHEDULED,
+        ]);
+
+        $this->taoCa(['ngay_thi' => '2026-11-10'])
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'SCHEDULE_CONFLICT')
+            ->assertJsonPath('errors.trung_lich.0.loai', 'buoi_hoc');
+    }
+
+    public function test_buoi_hoc_khong_duoc_de_len_ca_thi_cung_phong(): void
+    {
+        $this->taoCa(['ngay_thi' => '2026-11-10'])->assertCreated();
+
+        $lop = LopHocPhan::factory()->create(['hoc_ky_id' => $this->ky->id]);
+        $this->postJson("/api/sections/{$lop->id}/sessions", [
+            'ngay_hoc' => '2026-11-10',
+            'tiet_bat_dau' => 1,
+            'tiet_ket_thuc' => 3,
+            'phong_hoc_id' => $this->phong->id,
+        ])->assertStatus(409)->assertJsonPath('ma_loi', 'SCHEDULE_CONFLICT');
+    }
+
+    public function test_chan_ca_thi_khi_sinh_vien_cua_mon_dang_hoc_lop_khac(): void
+    {
+        $sinhVien = SinhVien::factory()->create();
+        $lopThi = LopHocPhan::factory()->create([
+            'hoc_ky_id' => $this->ky->id,
+            'mon_hoc_id' => $this->mon->id,
+        ]);
+        DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $sinhVien->id,
+            'lop_hoc_phan_id' => $lopThi->id,
+            'trang_thai' => DangKyHocPhan::ACTIVE,
+        ]);
+
+        // Một lớp KHÁC môn, cùng sinh viên, có buổi học đúng giờ ca thi.
+        $lopKhac = LopHocPhan::factory()->create(['hoc_ky_id' => $this->ky->id]);
+        BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $lopKhac->id,
+            'ngay_hoc' => '2026-11-10',
+            'gio_bat_dau' => '06:30',
+            'gio_ket_thuc' => '09:10',
+            'phong_hoc_id' => PhongHoc::factory()->create()->id,
+            'trang_thai' => BuoiHoc::SCHEDULED,
+        ]);
+        DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $sinhVien->id,
+            'lop_hoc_phan_id' => $lopKhac->id,
+            'trang_thai' => DangKyHocPhan::ACTIVE,
+        ]);
+
+        $this->taoCa(['ngay_thi' => '2026-11-10'])
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'SCHEDULE_CONFLICT')
+            ->assertJsonPath('errors.trung_lich.0.ma_sv', $sinhVien->ma_sv)
+            ->assertJsonPath('errors.tong_so_vi_pham', 1);
+    }
+
+    public function test_ca_thi_khac_gio_voi_lich_hoc_thi_cho_tao(): void
+    {
+        $sinhVien = SinhVien::factory()->create();
+        $lopThi = LopHocPhan::factory()->create([
+            'hoc_ky_id' => $this->ky->id,
+            'mon_hoc_id' => $this->mon->id,
+        ]);
+        DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $sinhVien->id,
+            'lop_hoc_phan_id' => $lopThi->id,
+            'trang_thai' => DangKyHocPhan::ACTIVE,
+        ]);
+
+        $lopKhac = LopHocPhan::factory()->create(['hoc_ky_id' => $this->ky->id]);
+        BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $lopKhac->id,
+            'ngay_hoc' => '2026-11-10',
+            'gio_bat_dau' => '10:15',
+            'gio_ket_thuc' => '12:45',
+            'phong_hoc_id' => PhongHoc::factory()->create()->id,
+            'trang_thai' => BuoiHoc::SCHEDULED,
+        ]);
+        DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $sinhVien->id,
+            'lop_hoc_phan_id' => $lopKhac->id,
+            'trang_thai' => DangKyHocPhan::ACTIVE,
+        ]);
+
+        // Ca thi tiết 1–3 kết thúc 09:10, buổi học bắt đầu 10:15 → không giao.
+        $this->taoCa(['ngay_thi' => '2026-11-10'])->assertCreated();
     }
 }

@@ -297,6 +297,18 @@ class LichHocTest extends TestCase
             ->assertJsonStructure(['data' => [['lop_hoc_phan', 'mon_hoc', 'hoc_ky', 'giang_vien', 'phong_hoc']]]);
     }
 
+    public function test_lich_tong_hop_tra_hinh_thuc_de_to_mau_khoi_lich(): void
+    {
+        $buoi = $this->buoi($this->lop());
+        $buoi->update(['hinh_thuc' => BuoiHoc::HINH_THUC_THUC_HANH]);
+
+        // Màn lịch tuần đọc /api/schedules, không đọc /sections/{id}/sessions.
+        // Thiếu trường này thì mọi khối rơi về màu lý thuyết.
+        $this->getJson('/api/schedules')
+            ->assertOk()
+            ->assertJsonPath('data.0.hinh_thuc', 'THUC_HANH');
+    }
+
     public function test_loc_theo_ky_giang_vien_phong_ngay_va_trang_thai(): void
     {
         $lop = $this->lop();

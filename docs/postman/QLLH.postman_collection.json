@@ -10186,6 +10186,85 @@
           ]
         },
         {
+          "name": "05b. Ngày thi đã trôi qua phải trả 409 PAST_DATE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoc_ky_id\": 2,\n  \"mon_hoc_id\": 1,\n  \"ngay_thi\": \"2025-01-06\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 2,\n  \"phong_hoc_id\": 1,\n  \"dot_thi\": \"Cuối kỳ\"\n}"
+            },
+            "description": "Không xếp được ca thi cho ngày đã trôi qua. Ngày phải nằm trong học kỳ, nên hãy sửa ngay_thi về một ngày quá khứ nhưng vẫn trong kỳ đang xét."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Chặn ngày đã qua', () => pm.response.to.have.status(409));",
+                  "pm.test('Đúng mã lỗi', () => pm.expect(pm.response.json().ma_loi).to.eql('PAST_DATE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05c. Ca thi trùng giờ sinh viên của môn phải trả 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/exams",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoc_ky_id\": 2,\n  \"mon_hoc_id\": 1,\n  \"ngay_thi\": \"2026-11-16\",\n  \"tiet_bat_dau\": 1,\n  \"tiet_ket_thuc\": 2,\n  \"phong_hoc_id\": 1,\n  \"dot_thi\": \"Giữa kỳ\"\n}"
+            },
+            "description": "Ca thi phục vụ mọi lớp của môn trong kỳ, nên chỉ xếp được khi TẤT CẢ sinh viên của môn đều rảnh. Request này cố ý chọn ngày còn lịch dạy để thấy lỗi: response liệt kê tối đa 20 sinh viên vướng kèm mã lớp, ngày và giờ."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Chặn khi sinh viên đang có lớp', () => pm.response.to.have.status(409));",
+                  "pm.test('Đúng mã lỗi', () => pm.expect(pm.response.json().ma_loi).to.eql('SCHEDULE_CONFLICT'));",
+                  "const e = pm.response.json().errors || {};",
+                  "pm.test('Có danh sách sinh viên vi phạm', () => pm.expect(e.trung_lich, JSON.stringify(e)).to.be.an('array').that.is.not.empty);",
+                  "pm.test('Có tổng số vi phạm', () => pm.expect(e.tong_so_vi_pham).to.be.a('number'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "06. Đăng nhập SINH VIÊN",
           "request": {
             "method": "POST",
