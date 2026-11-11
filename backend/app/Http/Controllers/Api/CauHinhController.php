@@ -17,7 +17,21 @@ class CauHinhController extends Controller
     public function index(Request $request): JsonResponse
     {
         $hocKyId = $request->integer('hoc_ky_id') ?: null;
-        return $this->success($this->service->danhSach($hocKyId));
+        $duLieu = $this->service->danhSach($hocKyId);
+
+        // `danhSach()` đọc toàn bộ bảng `cau_hinh`, có thể chứa khoá vận hành chỉ
+        // dành cho ADMIN. Người dùng không phải ADMIN chỉ nhận khoá `diem.*` —
+        // whitelist theo tiền tố, không phải blacklist, để khoá mới thêm sau này
+        // mặc định không lộ.
+        if (! $request->user()->laAdmin()) {
+            $duLieu = array_filter(
+                $duLieu,
+                fn (string $khoa) => str_starts_with($khoa, 'diem.'),
+                ARRAY_FILTER_USE_KEY,
+            );
+        }
+
+        return $this->success($duLieu);
     }
 
     public function semesters(): JsonResponse

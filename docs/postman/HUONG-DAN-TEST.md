@@ -21,7 +21,8 @@ Mặc định chạy ở `http://127.0.0.1:8000`. Nếu đổi cổng thì sửa
 php artisan migrate:fresh --seed
 ```
 
-Mất khoảng 2 phút vì DB ở xa. Kết quả: 555 tài khoản, 120 lớp học phần, 2.040 buổi học.
+Mất khoảng 2 phút vì DB ở xa. Kết quả: 555 tài khoản, 150 lớp học phần, 2.550 buổi học.
+Học kỳ `2026-2` có 30 lớp `OPEN` và đang trong đợt đăng ký — dùng để thử luồng đăng ký học phần.
 
 ### 1.3. Import collection
 

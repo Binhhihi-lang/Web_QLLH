@@ -62,11 +62,17 @@ class LopHocPhanPolicy
     }
 
     /**
-     * ADMIN hoặc TEACHER phụ trách lớp được xem sinh viên / bảng điểm / chuyên cần.
+     * ADMIN, TEACHER phụ trách lớp, hoặc SINH VIÊN đã đăng ký ACTIVE vào lớp
+     * được xem danh sách sinh viên của lớp.
+     *
+     * Sinh viên chỉ thấy roster rút gọn (mã + tên) — lọc ở controller, không
+     * nới quyền xem bảng điểm (`xemDiem` bên dưới vẫn chỉ ADMIN/TEACHER).
      */
     public function xemSinhVien(User $nguoiDung, LopHocPhan $lop): bool
     {
-        return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
+        return $nguoiDung->laAdmin()
+            || $this->laGiangVienCuaLop($nguoiDung, $lop)
+            || $this->daDangKy($nguoiDung, $lop);
     }
 
     public function xemDiem(User $nguoiDung, LopHocPhan $lop): bool

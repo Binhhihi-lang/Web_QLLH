@@ -1,6 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { SinhVien, TuyChonLopHanhChinh } from '@core/models/dao-tao.model';
+import { fromEvent } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { SinhVien, TuyChonLopHanhChinh, TuyChonNganh } from '@core/models/dao-tao.model';
+import { KhoaNganhService } from '@core/services/khoa-nganh.service';
 import { SinhVienService } from '@core/services/sinh-vien.service';
 import { KetQuaHangLoat } from '@core/mock/mock-response';
 import { AppAlert } from '@shared/ui/app-alert';
@@ -79,6 +83,17 @@ import { SinhVienChiTiet } from './chi-tiet';
           <option value="" [selected]="locLop() === ''">Tất cả lớp</option>
           @for (l of dsLopHienThi(); track l.id) {
             <option [value]="l.id" [selected]="l.id.toString() === locLop()">{{ l.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="loc">
+        <span>Ngành</span>
+        <!-- Chọn ngành thì ô lớp chỉ còn lớp thuộc ngành đó, tránh tổ hợp rỗng. -->
+        <select id="loc-nganh" name="nganh_id" (change)="doiLocNganh($event)">
+          <option value="" [selected]="locNganh() === ''">Tất cả ngành</option>
+          @for (n of dsNganhHienThi(); track n.id) {
+            <option [value]="n.id" [selected]="n.id.toString() === locNganh()">{{ n.label }}</option>
           }
         </select>
       </label>
@@ -219,6 +234,22 @@ import { SinhVienChiTiet } from './chi-tiet';
                K65 - Lớp 01" dài gấp ba mã, làm bảng tràn ngang trên máy hẹp.
                Tên đầy đủ vẫn tra được qua tooltip và ở ngăn kéo chi tiết. -->
           <span class="ma-lop" [title]="l.ten_lop">{{ l.ma_lop }}</span>
+        } @else {
+          —
+        }
+      </ng-template>
+
+      <ng-template appOTuyChinh="khoa_hoc" let-row>
+        <!-- Khóa suy từ lớp hành chính; sinh viên chưa xếp lớp thì để trống "—"
+             chứ không hiện "null". -->
+        {{ row.lop_hanh_chinh?.khoa_hoc || '—' }}
+      </ng-template>
+
+      <ng-template appOTuyChinh="nganh" let-row>
+        @if (row.lop_hanh_chinh?.nganh; as nganh) {
+          <!-- Cắt một dòng: tên ngành như "Công nghệ thông tin chất lượng cao"
+               chiếm gần hết bảng. Tên đầy đủ vẫn có ở tooltip. -->
+          <span class="ma-lop nganh-cat" [title]="nganh.ten_nganh">{{ nganh.ten_nganh }}</span>
         } @else {
           —
         }
@@ -503,6 +534,17 @@ import { SinhVienChiTiet } from './chi-tiet';
       white-space: nowrap;
     }
 
+    /* Tên ngành dài — cắt một dòng, tên đầy đủ nằm ở tooltip. Ô bảng không
+       đặt độ rộng cố định nên phải chặn max-width, nếu không bảng nới theo
+       nội dung và không bao giờ cắt. */
+    .nganh-cat {
+      display: block;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .ten {
       font-weight: 600;
     }
@@ -610,7 +652,9 @@ import { SinhVienChiTiet } from './chi-tiet';
 })
 export class SinhVienDanhSach {
   private readonly service = inject(SinhVienService);
+  private readonly khoaNganh = inject(KhoaNganhService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly dangTai = signal(true);
   readonly loi = signal<string | null>(null);
@@ -622,6 +666,7 @@ export class SinhVienDanhSach {
   // ngày đến, áp dụng ngay giữa hai lần chọn sẽ ra kết quả của một nửa bộ lọc.
   readonly tuKhoa = signal('');
   readonly locKhoa = signal('');
+  readonly locNganh = signal('');
   readonly locLop = signal('');
   readonly locGioiTinh = signal('');
   readonly locTrangThai = signal('');
@@ -632,6 +677,7 @@ export class SinhVienDanhSach {
   private readonly daApDung = signal({
     tuKhoa: '',
     khoa: '',
+    nganh: '',
     lop: '',
     gioiTinh: '',
     trangThai: '',
@@ -640,6 +686,7 @@ export class SinhVienDanhSach {
   });
 
   readonly dsLop = signal<TuyChonLopHanhChinh[]>([]);
+  readonly dsNganh = signal<TuyChonNganh[]>([]);
   readonly daChon = signal<Array<string | number>>([]);
   readonly sapXepHienTai = signal<SapXep>({ sort_by: 'ma_sv', sort_dir: 'asc' });
 
@@ -650,16 +697,36 @@ export class SinhVienDanhSach {
     return [...tap].sort((a, b) => a.localeCompare(b, 'vi'));
   });
 
+  /** Chọn ngành thì ô lớp chỉ còn lớp thuộc ngành đó — tránh chọn ra tổ hợp rỗng. */
+  readonly dsNganhHienThi = computed(() => {
+    const nganh = this.locNganh();
+    return nganh ? this.dsNganh().filter((n) => String(n.id) === nganh) : this.dsNganh();
+  });
+
   /** Chọn khóa thì ô lớp chỉ còn lớp thuộc khóa đó — tránh chọn ra tổ hợp rỗng. */
   readonly dsLopHienThi = computed(() => {
     const khoa = this.locKhoa();
-    return khoa ? this.dsLop().filter((l) => l.khoa_hoc === khoa) : this.dsLop();
+    const nganh = this.locNganh();
+    return this.dsLop().filter(
+      (l) =>
+        (!khoa || l.khoa_hoc === khoa) &&
+        (!nganh || (l.nganh_id !== null && String(l.nganh_id) === nganh)),
+    );
   });
 
   /** Có bộ lọc nào đã áp dụng — dùng để hiện nút xoá lọc và đổi câu thông báo rỗng. */
   readonly coLoc = computed(() => {
     const f = this.daApDung();
-    return !!(f.tuKhoa || f.khoa || f.lop || f.gioiTinh || f.trangThai || f.ngayTu || f.ngayDen);
+    return !!(
+      f.tuKhoa ||
+      f.khoa ||
+      f.nganh ||
+      f.lop ||
+      f.gioiTinh ||
+      f.trangThai ||
+      f.ngayTu ||
+      f.ngayDen
+    );
   });
 
   /** Có thay đổi chưa áp dụng — để tô sáng nút Áp dụng khi người dùng quên bấm. */
@@ -668,6 +735,7 @@ export class SinhVienDanhSach {
     return (
       this.tuKhoa() !== f.tuKhoa ||
       this.locKhoa() !== f.khoa ||
+      this.locNganh() !== f.nganh ||
       this.locLop() !== f.lop ||
       this.locGioiTinh() !== f.gioiTinh ||
       this.locTrangThai() !== f.trangThai ||
@@ -697,10 +765,21 @@ export class SinhVienDanhSach {
 
   readonly soDongDaChon = computed(() => this.daChon().length);
 
+  /**
+   * Màn hẹp (< 640px) thì bỏ cột Ngành — tên ngành dài, giữ lại thì bảng phải
+   * cuộn ngang để đọc hai cột chữ. Cột Khóa vẫn giữ vì mã ngắn.
+   *
+   * Dùng `signal` + resize (throttle bằng rAF) thay vì CSS: `DataTable` vẽ cột
+   * từ mảng `cot()` nên ẩn bằng CSS sẽ để lại ô rỗng chiếm chỗ.
+   */
+  readonly laManHep = signal(false);
+
   readonly cot = computed<CotBang<SinhVien>[]>(() => [
     { khoa: 'ma_sv', nhan: 'Mã SV', sap_xep: true, rong: '120px' },
     { khoa: 'ho_ten', nhan: 'Họ tên' },
     { khoa: 'lop_hanh_chinh', nhan: 'Lớp', rong: '130px' },
+    { khoa: 'khoa_hoc', nhan: 'Khóa', rong: '90px' },
+    ...(this.laManHep() ? [] : [{ khoa: 'nganh', nhan: 'Ngành' }]),
     { khoa: 'gioi_tinh', nhan: 'Giới tính', rong: '100px' },
     { khoa: 'ngay_sinh', nhan: 'Ngày sinh', sap_xep: true, rong: '130px' },
     { khoa: 'trang_thai', nhan: 'Trạng thái', rong: '150px' },
@@ -713,6 +792,38 @@ export class SinhVienDanhSach {
   constructor() {
     this.tai();
     this.taiDsLop();
+    this.taiDsNganh();
+    this.theoDoiChieuRong();
+  }
+
+  /**
+   * Theo dõi bề rộng cửa sổ để biết có đang ở màn hẹp không.
+   *
+   * Gộp nhiều sự kiện resize trong một khung hình (`requestAnimationFrame`):
+   * kéo cạnh cửa sổ bắn hàng trăm sự kiện, mỗi sự kiện lại dựng lại mảng cột.
+   * jsdom (môi trường test) không có `matchMedia` nên dùng `innerWidth`.
+   */
+  private theoDoiChieuRong(): void {
+    const capNhat = () => this.laManHep.set(window.innerWidth < 640);
+    capNhat();
+
+    let khungHinh = 0;
+    fromEvent(window, 'resize')
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        tap(() => {
+          if (khungHinh) return;
+          khungHinh = requestAnimationFrame(() => {
+            khungHinh = 0;
+            capNhat();
+          });
+        }),
+      )
+      .subscribe();
+
+    this.destroyRef.onDestroy(() => {
+      if (khungHinh) cancelAnimationFrame(khungHinh);
+    });
   }
 
   tai(): void {
@@ -731,6 +842,7 @@ export class SinhVienDanhSach {
         sort_dir: sx.sort_dir,
         lop_hanh_chinh_id: f.lop ? Number(f.lop) : undefined,
         khoa_hoc: f.khoa || undefined,
+        nganh_id: f.nganh ? Number(f.nganh) : undefined,
         gioi_tinh: f.gioiTinh === '' ? undefined : f.gioiTinh === 'true',
         trang_thai: f.trangThai === '' ? undefined : f.trangThai === 'true',
         ngay_sinh_tu: f.ngayTu || undefined,
@@ -758,6 +870,14 @@ export class SinhVienDanhSach {
     });
   }
 
+  /** Nạp ngành cho ô lọc — cùng lý do với danh sách lớp, lỗi thì để ô rỗng. */
+  private taiDsNganh(): void {
+    this.khoaNganh.layTuyChonNganh().subscribe({
+      next: (ds) => this.dsNganh.set(ds),
+      error: () => this.dsNganh.set([]),
+    });
+  }
+
   /**
    * Tìm kiếm áp dụng NGAY (đã có debounce 300ms trong ô tìm), các ô còn lại chờ
    * bấm Áp dụng. Lý do: khoảng ngày cần hai lần chọn mới đủ ý, áp dụng ngay giữa
@@ -780,6 +900,20 @@ export class SinhVienDanhSach {
     }
   }
 
+  doiLocNganh(suKien: Event): void {
+    this.locNganh.set((suKien.target as HTMLSelectElement).value);
+    // Ngành đổi thì bỏ lớp đang chọn nếu lớp đó không thuộc ngành mới — giữ lại
+    // sẽ ra kết quả rỗng mà người dùng không hiểu vì sao.
+    const lopDangChon = this.dsLop().find((l) => String(l.id) === this.locLop());
+    if (
+      lopDangChon &&
+      this.locNganh() &&
+      (lopDangChon.nganh_id === null || String(lopDangChon.nganh_id) !== this.locNganh())
+    ) {
+      this.locLop.set('');
+    }
+  }
+
   doiLocLop(suKien: Event): void {
     this.locLop.set((suKien.target as HTMLSelectElement).value);
   }
@@ -797,6 +931,7 @@ export class SinhVienDanhSach {
     this.daApDung.set({
       tuKhoa: this.tuKhoa(),
       khoa: this.locKhoa(),
+      nganh: this.locNganh(),
       lop: this.locLop(),
       gioiTinh: this.locGioiTinh(),
       trangThai: this.locTrangThai(),
@@ -810,6 +945,7 @@ export class SinhVienDanhSach {
   xoaLoc(): void {
     this.tuKhoa.set('');
     this.locKhoa.set('');
+    this.locNganh.set('');
     this.locLop.set('');
     this.locGioiTinh.set('');
     this.locTrangThai.set('');
@@ -818,6 +954,7 @@ export class SinhVienDanhSach {
     this.daApDung.set({
       tuKhoa: '',
       khoa: '',
+      nganh: '',
       lop: '',
       gioiTinh: '',
       trangThai: '',

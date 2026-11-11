@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { GiangVien, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
+import { GiangVien, GiangVienHoSo, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { KetQuaHangLoat, PaginatedResponse } from '@core/mock/mock-response';
 import { environment } from '@env/environment';
 
@@ -10,19 +10,38 @@ export class GiangVienService {
   private readonly http = inject(HttpClient);
   private readonly goc = environment.apiBaseUrl;
 
+  /**
+   * Danh sách giảng viên. Sinh viên nhận `GiangVienLienHeResource` (thiếu
+   * `nganh`/`trang_thai`/`da_xoa`) — khai báo kiểu rộng để cả hai vai trò dùng
+   * chung, nơi hiển thị phải chịu được trường vắng mặt.
+   */
   layDanhSach(
     thamSo: ThamSoDanhSach & { chuyen_mon?: string; trang_thai?: boolean },
-  ): Observable<PaginatedResponse<GiangVien>> {
+  ): Observable<PaginatedResponse<GiangVienHoSo>> {
     let params = new HttpParams();
     for (const [k, v] of Object.entries(thamSo)) {
       if (v === null || v === undefined || v === '') continue;
       params = params.set(k, String(v));
     }
-    return this.http.get<PaginatedResponse<GiangVien>>(`${this.goc}/teachers`, { params });
+    return this.http.get<PaginatedResponse<GiangVienHoSo>>(`${this.goc}/teachers`, { params });
   }
 
+  /**
+   * Chi tiết đầy đủ — chỉ ADMIN và giảng viên xem hồ sơ chính mình mới nhận
+   * được. Dùng ở form sửa và màn tài khoản cá nhân.
+   */
   layMot(id: number): Observable<GiangVien> {
     return this.http.get<{ data: GiangVien }>(`${this.goc}/teachers/${id}`).pipe(map((r) => r.data));
+  }
+
+  /**
+   * Khối liên hệ — dùng ở màn chi tiết vì sinh viên cũng vào được và chỉ nhận
+   * `GiangVienLienHeResource`.
+   */
+  layMotLienHe(id: number): Observable<GiangVienHoSo> {
+    return this.http
+      .get<{ data: GiangVienHoSo }>(`${this.goc}/teachers/${id}`)
+      .pipe(map((r) => r.data));
   }
 
   /** Ngành cho ô chọn ở form (ADR-020). */

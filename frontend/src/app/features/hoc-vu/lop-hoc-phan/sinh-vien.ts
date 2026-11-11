@@ -16,7 +16,11 @@ import { SearchInput } from '@shared/ui/search-input';
   template: `
     <app-page-header
       title="Sinh viên lớp học phần"
-      description="Danh sách sinh viên có đăng ký đang hiệu lực."
+      [description]="
+        laSinhVien()
+          ? 'Danh sách sinh viên cùng lớp.'
+          : 'Danh sách sinh viên có đăng ký đang hiệu lực.'
+      "
     >
       <a class="back" [routerLink]="['/lop-hoc-phan', id]">Quay lại lớp học phần</a>
     </app-page-header>
@@ -38,6 +42,7 @@ import { SearchInput } from '@shared/ui/search-input';
     <app-data-table
       [cot]="cot()"
       [rows]="rowsHienThi()"
+      [khoa]="laSinhVien() ? 'ma_sv' : 'id'"
       [dangTai]="dangTai()"
       [loi]="null"
       (thuLai)="tai()"
@@ -94,6 +99,7 @@ export class LopHocPhanSinhVien {
   readonly loi = signal<string | null>(null);
   readonly dangHuy = signal<Set<number>>(new Set());
   readonly laAdmin = computed(() => this.auth.nguoiDung()?.vai_tro === 'ADMIN');
+  readonly laSinhVien = computed(() => this.auth.nguoiDung()?.vai_tro === 'SINH_VIEN');
   /** Chỉ ảnh hưởng phần hiển thị; `rows()` vẫn là dữ liệu đầy đủ để hủy đăng ký. */
   readonly rowsHienThi = computed(() => {
     const tuKhoa = chuanHoaTimKiem(this.tuKhoa());
@@ -103,7 +109,11 @@ export class LopHocPhanSinhVien {
     }
 
     return this.rows().filter((row) =>
-      chuanHoaTimKiem(`${row.ma_sv} ${row.ho_ten} ${row.email} ${row.lop ?? ''}`).includes(tuKhoa),
+      // `email`/`lop` vắng mặt với SINH_VIEN: nối thẳng sẽ sinh chữ "undefined"
+      // trong khoá tìm kiếm, gõ "undef" lại ra cả danh sách.
+      chuanHoaTimKiem(
+        [row.ma_sv, row.ho_ten, row.email, row.lop].filter(Boolean).join(' '),
+      ).includes(tuKhoa),
     );
   });
   readonly dangLoc = computed(() => chuanHoaTimKiem(this.tuKhoa()) !== '');
@@ -115,13 +125,23 @@ export class LopHocPhanSinhVien {
       ? `Không có sinh viên nào khớp "${this.tuKhoa().trim()}".`
       : 'Lớp học phần này chưa có đăng ký hiệu lực.',
   );
-  readonly cot = computed<CotBang<SinhVienLop>[]>(() => [
-    { khoa: 'ma_sv', nhan: 'Mã sinh viên', rong: '150px' },
-    { khoa: 'ho_ten', nhan: 'Họ và tên' },
-    { khoa: 'email', nhan: 'Email' },
-    { khoa: 'lop', nhan: 'Lớp hành chính', rong: '160px' },
-    ...(this.laAdmin() ? [{ khoa: 'thao_tac', nhan: 'Thao tác', rong: '130px' }] : []),
-  ]);
+  readonly cot = computed<CotBang<SinhVienLop>[]>(() => {
+    // SINH_VIEN chỉ nhận `ma_sv` + `ho_ten` từ API, khai thêm cột sẽ ra ô trống.
+    if (this.laSinhVien()) {
+      return [
+        { khoa: 'ma_sv', nhan: 'Mã sinh viên', rong: '150px' },
+        { khoa: 'ho_ten', nhan: 'Họ và tên' },
+      ];
+    }
+
+    return [
+      { khoa: 'ma_sv', nhan: 'Mã sinh viên', rong: '150px' },
+      { khoa: 'ho_ten', nhan: 'Họ và tên' },
+      { khoa: 'email', nhan: 'Email' },
+      { khoa: 'lop', nhan: 'Lớp hành chính', rong: '160px' },
+      ...(this.laAdmin() ? [{ khoa: 'thao_tac', nhan: 'Thao tác', rong: '130px' }] : []),
+    ];
+  });
 
   constructor() {
     this.tai();

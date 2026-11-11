@@ -17,10 +17,6 @@ class DangKyHocPhanSeeder extends Seeder
      */
     public function run(): void
     {
-        if (DangKyHocPhan::query()->exists()) {
-            return;
-        }
-
         $adminId = User::query()->where('email', 'admin@example.com')->value('id');
         $demoSvId = SinhVien::query()->where('ma_sv', 'SV000000')->value('id');
         $demoSvUserId = User::query()->where('email', 'sinhvien@example.com')->value('id');
@@ -31,6 +27,12 @@ class DangKyHocPhanSeeder extends Seeder
         // sớm nhất, nếu không mọi buổi đã qua đều rỗng.
         $mocDangKy = HocKy::query()->min('ngay_bat_dau');
         $dangKyLuc = $mocDangKy === null ? $bayGio : Carbon::parse($mocDangKy)->subDays(14);
+
+        if (DangKyHocPhan::query()->exists()) {
+            $this->boSungDangKyChoSinhVienDemo($demoSvId, $demoSvUserId ?? $adminId, $dangKyLuc, $bayGio);
+
+            return;
+        }
 
         foreach ([['2026-1', 8], ['2025-2', 6]] as [$maHocKy, $soLopMoiSv]) {
             $hocKy = HocKy::query()->where('ma_hoc_ky', $maHocKy)->firstOrFail();
@@ -95,6 +97,70 @@ class DangKyHocPhanSeeder extends Seeder
             // một ca kiểm chứng SECTION_FULL khi demo.
             if ($maHocKy === '2026-1') {
                 $this->lamDayLop($lopTheoMon->first(), $sinhVienIds, $rows, $adminId, $bayGio, $dangKyLuc);
+            }
+        }
+
+        $this->boSungDangKyChoSinhVienDemo($demoSvId, $demoSvUserId ?? $adminId, $dangKyLuc, $bayGio);
+    }
+
+    private function boSungDangKyChoSinhVienDemo(
+        ?int $demoSvId,
+        ?int $nguoiDangKyId,
+        Carbon $dangKyLuc,
+        Carbon $bayGio,
+    ): void {
+        if ($demoSvId === null || $nguoiDangKyId === null) {
+            return;
+        }
+
+        foreach ([['2026-1', 8], ['2025-2', 6]] as [$maHocKy, $soLopCanCo]) {
+            $hocKy = HocKy::query()->where('ma_hoc_ky', $maHocKy)->first();
+            if ($hocKy === null) {
+                continue;
+            }
+
+            $dangKyHienCo = DangKyHocPhan::query()
+                ->join('lop_hoc_phan', 'lop_hoc_phan.id', '=', 'dang_ky_hoc_phan.lop_hoc_phan_id')
+                ->where('dang_ky_hoc_phan.sinh_vien_id', $demoSvId)
+                ->where('dang_ky_hoc_phan.trang_thai', DangKyHocPhan::ACTIVE)
+                ->where('lop_hoc_phan.hoc_ky_id', $hocKy->id)
+                ->get(['lop_hoc_phan.id as lop_id', 'lop_hoc_phan.mon_hoc_id']);
+
+            if ($dangKyHienCo->count() >= $soLopCanCo) {
+                continue;
+            }
+
+            $monDaCo = $dangKyHienCo->pluck('mon_hoc_id')->flip()->all();
+            $lopDaCo = $dangKyHienCo->pluck('lop_id')->flip()->all();
+
+            $dsLop = LopHocPhan::query()
+                ->where('hoc_ky_id', $hocKy->id)
+                ->orderBy('id')
+                ->get(['id', 'mon_hoc_id']);
+
+            foreach ($dsLop as $lop) {
+                if (count($monDaCo) >= $soLopCanCo) {
+                    break;
+                }
+                if (isset($monDaCo[$lop->mon_hoc_id]) || isset($lopDaCo[$lop->id])) {
+                    continue;
+                }
+
+                DangKyHocPhan::query()->updateOrCreate(
+                    [
+                        'sinh_vien_id' => $demoSvId,
+                        'lop_hoc_phan_id' => $lop->id,
+                    ],
+                    [
+                        'trang_thai' => DangKyHocPhan::ACTIVE,
+                        'dang_ky_boi' => $nguoiDangKyId,
+                        'dang_ky_luc' => $dangKyLuc,
+                        'created_at' => $bayGio,
+                        'updated_at' => $bayGio,
+                    ],
+                );
+
+                $monDaCo[$lop->mon_hoc_id] = true;
             }
         }
     }

@@ -34,7 +34,12 @@ class GiangVienController extends Controller
             'trang_thai' => ['sometimes', 'in:true,false,1,0'],
         ]);
 
-        $query = GiangVien::query()->with(['user', 'nganh.khoa'])
+        $laSinhVien = $request->user()->laSinhVien();
+
+        $query = GiangVien::query()
+            // Sinh viên chỉ nhận khối liên hệ (không có `nganh`), nạp `nganh.khoa`
+            // cho họ là hai truy vấn thừa mỗi lần tải trang.
+            ->with($laSinhVien ? ['user'] : ['user', 'nganh.khoa'])
             ->when($request->filled('q'), fn ($q) => $q->where(function ($tim) use ($request) {
                 $tuKhoa = '%'.$request->string('q')->toString().'%';
                 $tim->where('ma_gv', 'like', $tuKhoa)
@@ -50,6 +55,12 @@ class GiangVienController extends Controller
             ))
             ->when($request->has('trang_thai'), fn ($q) => $q->where('trang_thai', $request->boolean('trang_thai')))
             ->orderBy($request->input('sort_by', 'id'), $request->input('sort_dir', 'asc'));
+
+        if ($laSinhVien) {
+            return $this->successPhanTrang(
+                GiangVienLienHeResource::collection($query->paginate($request->integer('per_page', 10))->withQueryString()),
+            );
+        }
 
         return $this->successPhanTrang(
             GiangVienResource::collection($query->paginate($request->integer('per_page', 10))->withQueryString()),

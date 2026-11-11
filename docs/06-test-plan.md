@@ -51,7 +51,7 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | TC-13 | FR-14.01 → .05, BR-18 | Xóa mềm ẩn khỏi danh sách; khôi phục; chặn khôi phục khi cha xóa |
 | TC-14 | FR-08.04 | Hủy lớp: đăng ký → CANCELLED, buổi → CANCELLED, giữ điểm |
 | TC-15 | FR-10.03 | Lịch STUDENT/TEACHER chỉ trong phạm vi |
-| TC-16 | FR-13.01 → .03 | Số liệu dashboard khớp dữ liệu |
+| TC-16 | FR-13.01 → .03 | Số liệu dashboard khớp dữ liệu. **Chi tiết TC-16a/b/c** — xem bảng dưới, 27 case khoá riêng dashboard TEACHER và STUDENT |
 | TC-17 | FR-09.05, BR-23 | Năm thứ: lớp `nam_thu = 4` + sinh viên năm 1 → 409 `WRONG_STUDY_YEAR`; ADMIN đăng ký hộ thành công + có `nhat_ky`; `nam_thu = null` không chặn; thiếu `nam_nhap_hoc` không chặn |
 | TC-18 | FR-06.03, BR-24 | Vòng đời học kỳ: tiến hợp lệ; lùi từ `CLOSED` → 409; bỏ qua `ONGOING` → 409; kỳ ONGOING thứ hai → 409; mỗi lần chuyển có `nhat_ky` |
 | TC-19 | FR-06.01, FR-10.01, BR-25 | Chồng lấn học kỳ → 409 `SEMESTER_OVERLAP`; đợt đăng ký ngoài khoảng ngày kỳ → 422; buổi học ngoài khoảng ngày kỳ → 409 `SESSION_OUTSIDE_SEMESTER` |
@@ -71,6 +71,42 @@ Mỗi test dùng `RefreshDatabase`, `travelTo` khi cần cố định giờ, fac
 | TC-33 | SCR-47 | FE — menu khớp quyền route: ADMIN thấy **mọi** mục (kể cả `/dang-ky`, `/diem-danh`); vai trò không phải ADMIN chỉ thấy mục của mình; mục nào hiển thị thì route phải cho vai trò đó vào, và ngược lại |
 | TC-34 | SCR-47 | BE — `GET /api/menus` (không `quan_ly`): mỗi vai trò chỉ nhận menu có vai trò mình trong mảng `vai_tro` (hoặc `vai_tro = null`); menu `trang_thai = false` bị loại; **không có ngoại lệ ADMIN** — ADMIN không nhận `/dang-ky-cua-toi`, `/diem-cua-toi` |
 | TC-35 | SCR-48 | BE — `POST`/`PUT /api/menus` nhận `vai_tro` là **mảng**: `["ADMIN","GIANG_VIEN"]` lưu đúng; `[]` chuẩn hóa thành `null` (mọi vai trò); vai trò không hợp lệ hoặc gửi chuỗi đơn → 422 |
+
+### TC-16 chi tiết — dashboard TEACHER/STUDENT (SCR-04/05)
+
+27 case tối thiểu, chia ba nhóm. Hợp đồng đầy đủ: `docs/04-api-contract.md` §14.
+| Case | Nhóm | Khoá hành vi |
+|---|---|---|
+| TC-16a.1 | Phân quyền | TEACHER → 200; ADMIN → 403 `FORBIDDEN`; SINH_VIEN → 403 |
+| TC-16a.2 | Phân quyền | STUDENT → 200; ADMIN → 403; GIANG_VIEN → 403 |
+| TC-16a.3 | Rỗng | Giảng viên chưa phân lớp → 200, `hoc_ky = null`, 4 mảng rỗng, không 404/500 |
+| TC-16a.4 | Rỗng | Sinh viên chưa đăng ký → 200, `hoc_ky = null`, `chuyen_can.ty_le = null` (**không** phải `0`) |
+| TC-16a.5 | Dữ liệu hỏng | Tài khoản GIANG_VIEN/SINH_VIEN thiếu hồ sơ → 403 `FORBIDDEN`, không 500 |
+| TC-16a.6 | Nhất quán | `gia_tri` thẻ `buoi_sap_toi` = `count(buoi_sap_toi)`; tương tự cho các thẻ khác |
+| TC-16a.7 | Nhất quán | Thẻ `chuyen_can.gia_tri` = `round(chuyen_can.ty_le × 100, 1)` — không lệch do nhân 100 hai lần |
+| TC-16a.8 | Nhất quán | Khối `gpa` của `/student` **bằng byte-for-byte** payload `GET /api/me/gpa` cùng user |
+| TC-16b.1 | TEACHER | Buổi đã qua **có** điểm danh không vào `buoi_chua_diem_danh`; **không** có thì vào |
+| TC-16b.2 | TEACHER | Buổi `SCHEDULED` ở tương lai không vào `buoi_chua_diem_danh` |
+| TC-16b.3 | TEACHER | Buổi ngoài 14 ngày và buổi `CANCELLED`/`DONE` không vào `buoi_sap_toi` |
+| TC-16b.4 | TEACHER | Ranh giới 14 ngày: buổi đúng ngày `today + 14` **có** mặt; `today + 15` không |
+| TC-16b.5 | TEACHER | `con_sua_duoc = false` khi kỳ `CLOSED`; `false` khi quá `so_ngay_sua_diem_danh`; `true` trong hạn |
+| TC-16b.6 | TEACHER | `so_ngay_tre` = số ngày từ lúc buổi kết thúc tới `now()`, không âm |
+| TC-16b.7 | TEACHER | Chỉ thấy lớp của mình — lớp của giảng viên khác không xuất hiện ở cả 4 khối |
+| TC-16b.8 | TEACHER | `viec_can_lam` chỉ chứa mục `so_luong > 0`; sắp xếp `cao → trung_binh → thap` |
+| TC-16b.9 | TEACHER | `viec_can_lam[chot_diem]` = 0 và bị bỏ khỏi mảng khi kỳ `CLOSED`/`UPCOMING` |
+| TC-16b.10 | TEACHER | Số truy vấn ≤ 9 khi giảng viên có 3 lớp (đếm bằng `DB::queryLog`). Ngân sách 8 → 9 vì thêm truy vấn gộp `diem_tb_lop` §14 |
+| TC-16b.11 | TEACHER | `lop_phu_trach[].diem_tb_lop` = trung bình `diem_tong_ket` của đăng ký `ACTIVE`, làm tròn 2 chữ số; đăng ký `CANCELLED` không tính |
+| TC-16b.12 | TEACHER | `diem_tb_lop = null` khi chưa ai được chấm (không có dòng `diem`, hoặc `diem_tong_ket IS NULL`) — **không phải `0`** |
+| TC-16b.13 | TEACHER | `diem_tb_lop` không N+1: số truy vấn **không đổi** khi số lớp tăng từ 1 lên 10 |
+| TC-16c.1 | STUDENT | Công thức chuyên cần: `mau_so = tong − co_phep`, `ty_le = (co_mat + di_muon) / mau_so`, 4 chữ số |
+| TC-16c.2 | STUDENT | Đăng ký lại giữa kỳ: buổi trước `dang_ky_luc` không vào `mau_so` (BR-27) |
+| TC-16c.3 | STUDENT | `ty_le_chuyen_can` từng môn cộng lại khớp khối `chuyen_can` (không lệch do làm tròn từng môn) |
+| TC-16c.4 | STUDENT | `ty_le_thap_nhat` = môn có tỉ lệ nhỏ nhất; hòa thì lấy `dang_ky_hoc_phan_id` nhỏ hơn |
+| TC-16c.5 | STUDENT | Tuần hiện tại: `tu_ngay` là thứ 2, `den_ngay` là chủ nhật, đúng ngày khi hôm nay là chủ nhật |
+| TC-16c.6 | STUDENT | `thu` của chủ nhật = `8` (không phải `0`, không phải `7`) |
+| TC-16c.7 | STUDENT | Buổi `CANCELLED` trong tuần vẫn có trong `cac_buoi` kèm `ly_do_huy` |
+| TC-16c.8 | STUDENT | Không thấy buổi của lớp mình **không** đăng ký ACTIVE |
+| TC-16c.9 | STUDENT | Số truy vấn ≤ 8 khi sinh viên đăng ký 5 học phần (đếm bằng `DB::listen`) |
 
 ---
 
@@ -156,6 +192,11 @@ Bảng test tự động: với mỗi cặp (vai trò, endpoint), khẳng địn
 | `POST /api/enrollments/bulk` | 200 | 403 | 403 |
 | `GET /api/me/grades` | 403 | 403 | 200 |
 | `GET /api/me/gpa` | 403 | 403 | 200 |
+| `GET /api/settings` | 200 (đủ khoá) | 200 (chỉ `diem.*`) | 200 (chỉ `diem.*`) |
+| `PUT /api/settings` | 200 | 403 | 403 |
+| `GET /api/sections/{id}/students` | 200 | 200 (lớp mình) | 200 nếu đã đăng ký ACTIVE (chỉ `ma_sv` + `ho_ten`), 403 nếu chưa |
+| `GET /api/sections/{id}/grades` | 200 | 200 (lớp mình) | 403 |
+| `GET /api/sections/{id}/attendance-summary` | 200 | 200 (lớp mình) | 403 |
 | `POST /api/me/avatar` | 200 | 200 | 200 |
 | `PATCH /api/users/bulk-status` | 200 | 403 | 403 |
 | `POST /api/students/bulk-delete` | 200 | 403 | 403 |

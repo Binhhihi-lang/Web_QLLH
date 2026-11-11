@@ -1,8 +1,17 @@
 import { of, throwError } from 'rxjs';
 import { provideRouter, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
+import { AuthService } from '@core/auth/auth.service';
 import { GiangVienService } from '@core/services/giang-vien.service';
 import { GiangVienDanhSach } from './danh-sach';
+
+/** Tài khoản giả — chỉ những trường component đọc. */
+function taiKhoan(vai_tro: 'ADMIN' | 'GIANG_VIEN' | 'SINH_VIEN', hoSoId?: number) {
+  return {
+    vai_tro,
+    ho_so: hoSoId === undefined ? null : { loai: 'giang_vien', id: hoSoId },
+  };
+}
 
 describe('GiangVienDanhSach', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<GiangVienDanhSach>>;
@@ -13,6 +22,7 @@ describe('GiangVienDanhSach', () => {
     xoa: ReturnType<typeof vi.fn>;
     layTuyChonNganh: ReturnType<typeof vi.fn>;
   };
+  let authStub: { nguoiDung: ReturnType<typeof vi.fn> };
 
   const giangVien = {
     id: 1,
@@ -46,10 +56,15 @@ describe('GiangVienDanhSach', () => {
       xoa: vi.fn(() => of(undefined)),
       layTuyChonNganh: vi.fn(() => of([])),
     };
+    authStub = { nguoiDung: vi.fn(() => taiKhoan('ADMIN')) };
 
     TestBed.configureTestingModule({
       imports: [GiangVienDanhSach],
-      providers: [provideRouter([]), { provide: GiangVienService, useValue: service }],
+      providers: [
+        provideRouter([]),
+        { provide: GiangVienService, useValue: service },
+        { provide: AuthService, useValue: authStub },
+      ],
     });
     fixture = TestBed.createComponent(GiangVienDanhSach);
     fixture.detectChanges();
@@ -180,5 +195,61 @@ describe('GiangVienDanhSach', () => {
 
     expect(service.xoaHangLoat).toHaveBeenCalledWith([1]);
     expect(fixture.componentInstance.canXoaHangLoat()).toBe(false);
+  });
+
+  describe('chỉ xem với vai trò không phải ADMIN', () => {
+    function dungLai(vai_tro: 'GIANG_VIEN' | 'SINH_VIEN', hoSoId?: number): void {
+      authStub.nguoiDung.mockReturnValue(taiKhoan(vai_tro, hoSoId));
+      fixture = TestBed.createComponent(GiangVienDanhSach);
+      fixture.detectChanges();
+    }
+
+    it('sinh viên không thấy nút Thêm/Sửa/Xóa và không có cột Thao tác', () => {
+      dungLai('SINH_VIEN');
+
+      expect(
+        fixture.nativeElement.querySelector('app-button[routerLink="/giang-vien/them"]'),
+      ).toBeNull();
+      expect(fixture.nativeElement.querySelector('button[aria-label="Sửa giảng viên Nguyễn Minh An"]'))
+        .toBeNull();
+      expect(
+        fixture.nativeElement.querySelector('button[aria-label="Xóa giảng viên Nguyễn Minh An"]'),
+      ).toBeNull();
+      expect(fixture.componentInstance.cot().some((c) => c.khoa === 'thao_tac')).toBe(false);
+      // Khối liên hệ không có ngành/trạng thái nên hai cột đó cũng bỏ.
+      expect(fixture.componentInstance.cot().some((c) => c.khoa === 'nganh')).toBe(false);
+      expect(fixture.componentInstance.cot().some((c) => c.khoa === 'trang_thai')).toBe(false);
+    });
+
+    it('giảng viên xem hồ sơ người khác thì chỉ đọc, không thấy nút Xóa', () => {
+      dungLai('GIANG_VIEN', 99);
+
+      expect(
+        fixture.nativeElement.querySelector('button[aria-label="Sửa giảng viên Nguyễn Minh An"]'),
+      ).toBeNull();
+      expect(
+        fixture.nativeElement.querySelector('button[aria-label="Xóa giảng viên Nguyễn Minh An"]'),
+      ).toBeNull();
+      expect(fixture.componentInstance.cot().some((c) => c.khoa === 'thao_tac')).toBe(false);
+      // Giảng viên vẫn nhận đủ hồ sơ nên giữ cột Ngành/Trạng thái.
+      expect(fixture.componentInstance.cot().some((c) => c.khoa === 'nganh')).toBe(true);
+    });
+
+    it('giảng viên sửa được hồ sơ của chính mình nhưng không xóa', () => {
+      dungLai('GIANG_VIEN', 1);
+
+      expect(
+        fixture.nativeElement.querySelector('button[aria-label="Sửa giảng viên Nguyễn Minh An"]'),
+      ).toBeTruthy();
+      expect(
+        fixture.nativeElement.querySelector('button[aria-label="Xóa giảng viên Nguyễn Minh An"]'),
+      ).toBeNull();
+    });
+
+    it('không cho chọn nhiều dòng khi không phải ADMIN', () => {
+      dungLai('SINH_VIEN');
+
+      expect(fixture.nativeElement.querySelector('app-data-table input[type="checkbox"]')).toBeNull();
+    });
   });
 });

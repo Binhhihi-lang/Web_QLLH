@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { LopHocPhanService, TuyChon } from '@core/services/lop-hoc-phan.service';
 import { BangDiemHocKy, DiemService, TongQuanGpa } from './diem.service';
@@ -46,13 +47,13 @@ import { PageHeader } from '@shared/ui/page-header';
       <section class="thong-ke" aria-label="Tổng quan GPA">
         <article class="the">
           <span class="nhan">GPA học kỳ · hệ 10</span>
-          <strong>{{ hienSo(tongQuan.hoc_ky_hien_tai?.gpa_he_10) }}</strong>
-          <small>{{ tongQuan.hoc_ky_hien_tai?.ten_hoc_ky ?? 'Chưa có học kỳ đang học' }}</small>
+          <strong>{{ hienSo(bangDiem()?.gpa_he_10 ?? tongQuan.hoc_ky_hien_tai?.gpa_he_10) }}</strong>
+          <small>{{ bangDiem()?.hoc_ky?.ten_hoc_ky ?? tongQuan.hoc_ky_hien_tai?.ten_hoc_ky ?? 'Chưa có học kỳ đang học' }}</small>
         </article>
         <article class="the">
           <span class="nhan">GPA học kỳ · hệ 4</span>
-          <strong>{{ hienSo(tongQuan.hoc_ky_hien_tai?.gpa_he_4) }}</strong>
-          <small>{{ tongQuan.hoc_ky_hien_tai?.tong_tin_chi ?? 0 }} tín chỉ trong kỳ</small>
+          <strong>{{ hienSo(bangDiem()?.gpa_he_4 ?? tongQuan.hoc_ky_hien_tai?.gpa_he_4) }}</strong>
+          <small>{{ bangDiem()?.tong_tin_chi ?? tongQuan.hoc_ky_hien_tai?.tong_tin_chi ?? 0 }} tín chỉ trong kỳ</small>
         </article>
         <article class="the the-noi-bat">
           <span class="nhan">GPA tích lũy (CPA) · hệ 10 / hệ 4</span>
@@ -380,6 +381,7 @@ import { PageHeader } from '@shared/ui/page-header';
 export class DiemCuaToi {
   private readonly service = inject(DiemService);
   private readonly lopHocPhan = inject(LopHocPhanService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly dangTai = signal(true);
   readonly loi = signal('');
@@ -398,6 +400,7 @@ export class DiemCuaToi {
           rows.find((k) => (k as TuyChon & { trang_thai?: string }).trang_thai === 'ONGOING') ??
           rows[0];
         if (macDinh) this.hocKyId.set(macDinh.id);
+        this.hocKyTuQuery(rows);
         this.tai();
       },
       error: () => this.tai(),
@@ -407,6 +410,17 @@ export class DiemCuaToi {
   chonHocKy(id: number): void {
     this.hocKyId.set(id);
     this.tai();
+  }
+
+  /**
+   * Mở từ tab của một lớp học phần → `?hoc_ky_id=` chỉ đúng kỳ của lớp đó.
+   * Chỉ nhận id có trong danh sách kỳ vừa tải: query rác mà gán thẳng thì ô chọn
+   * kỳ không khớp option nào và sinh viên thấy bảng rỗng không hiểu vì sao.
+   */
+  private hocKyTuQuery(rows: TuyChon[]): void {
+    const id = Number(this.route.snapshot.queryParamMap.get('hoc_ky_id'));
+    if (!id) return;
+    if (rows.some((k) => k.id === id)) this.hocKyId.set(id);
   }
 
   tai(): void {

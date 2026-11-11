@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { MainLayout } from '@core/layout/main-layout';
 import { authChildGuard, authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
 import { laTrangChuaLamGuard } from '@core/auth/trang-chua-lam.guard';
+import { vaiTroCanMatch } from '@core/auth/vai-tro-can-match.guard';
 import { daoTaoRoutes } from './routes/dao-tao.routes';
 import { heThongRoutes } from './routes/he-thong.routes';
 import { hocVuRoutes } from './routes/hoc-vu.routes';
@@ -59,10 +60,30 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authChildGuard],
     children: [
+      // Dashboard dùng CHUNG đường dẫn `/dashboard` nhưng ba màn khác nhau.
+      // `canMatch` chứ không `canActivate`: guard phải chạy trước khi router
+      // chọn component, và không được redirect (xem vai-tro-can-match.guard.ts).
+      // Thứ tự quan trọng — cái đầu tiên khớp vai trò thắng.
       {
         path: 'dashboard',
+        canMatch: [vaiTroCanMatch('ADMIN')],
+        data: { ma: 'SCR-03', title: 'Dashboard' },
         loadComponent: () =>
           import('@features/dashboard/dashboard-admin').then((m) => m.DashboardAdminPage),
+      },
+      {
+        path: 'dashboard',
+        canMatch: [vaiTroCanMatch('GIANG_VIEN')],
+        data: { ma: 'SCR-04', title: 'Dashboard' },
+        loadComponent: () =>
+          import('@features/dashboard/dashboard-giang-vien').then((m) => m.DashboardGiangVienPage),
+      },
+      {
+        path: 'dashboard',
+        canMatch: [vaiTroCanMatch('SINH_VIEN')],
+        data: { ma: 'SCR-05', title: 'Dashboard' },
+        loadComponent: () =>
+          import('@features/dashboard/dashboard-sinh-vien').then((m) => m.DashboardSinhVienPage),
       },
       {
         path: 'style-guide',

@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Models\BuoiHoc;
 use App\Models\Diem;
+use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\SinhVien;
 use App\Policies\DiemDanhPolicy;
 use App\Policies\DiemPolicy;
+use App\Policies\LopHanhChinhPolicy;
 use App\Policies\LopHocPhanPolicy;
 use App\Policies\SinhVienPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(LopHocPhan::class, LopHocPhanPolicy::class);
         Gate::policy(SinhVien::class, SinhVienPolicy::class);
+        Gate::policy(LopHanhChinh::class, LopHanhChinhPolicy::class);
         Gate::policy(Diem::class, DiemPolicy::class);
         Gate::policy(BuoiHoc::class, DiemDanhPolicy::class);
 

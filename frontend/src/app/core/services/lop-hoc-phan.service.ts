@@ -154,8 +154,19 @@ export interface SinhVienLop {
   id: number;
   ma_sv: string;
   ho_ten: string;
-  email: string;
-  lop: string | null;
+  /**
+   * Hai trường dưới chỉ có khi người gọi là ADMIN/GIANG_VIEN. `GET /sections/{id}/students`
+   * mở cho SINH_VIEN nhưng cắt còn `ma_sv` + `ho_ten`, nên khai optional để màn hình
+   * không đọc `undefined` rồi in ra chuỗi rỗng/"undefined".
+   */
+  email?: string;
+  lop?: string | null;
+  /**
+   * Vẫn khai bắt buộc: mock registry (`core/mock/registry/hoc-vu.registry.ts`) dùng
+   * trường này như khoá số ở nhiều chỗ, đổi sang optional sẽ vỡ build ở file ngoài
+   * phạm vi màn hình này. Với SINH_VIEN BE không trả trường này, nhưng màn hình chỉ
+   * đọc nó bên trong nhánh ADMIN (nút "Hủy đăng ký").
+   */
   dang_ky_hoc_phan_id: number;
 }
 export interface DongDiem {

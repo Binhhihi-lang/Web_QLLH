@@ -1,0 +1,295 @@
+<div class="dash">
+  <app-page-header [title]="loiChao()" [description]="phuDe()">
+    <app-chon-hoc-ky
+      [dsKy]="dsKy()"
+      [dangChon]="hocKyId()"
+      [dangTai]="dangTai() && coDuLieuCu()"
+      (chon)="chonKy($event)"
+    />
+    <app-button variant="secondary" (click)="tai()" [disabled]="dangTai()">
+      <span class="material-icons">refresh</span>
+      Làm mới
+    </app-button>
+  </app-page-header>
+
+  <!-- ============ ĐANG TẢI (lần đầu — chưa có gì để giữ khung) ============ -->
+  @if (dangTai() && !coDuLieuCu()) {
+    <app-loading-state label="Đang tải số liệu dashboard…" padding="0 16px 12px" />
+
+    <!-- Skeleton đúng kích thước nội dung sắp hiện: có dữ liệu về thì layout
+         không nhảy. -->
+    <div class="the-so" aria-hidden="true">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="the">
+          <app-skeleton-block width="60%" height="11px" />
+          <div class="skeleton-so"><app-skeleton-block width="44%" height="26px" /></div>
+          <app-skeleton-block width="80%" height="10px" />
+        </div>
+      }
+    </div>
+
+    <div class="luoi-hai" aria-hidden="true">
+      @for (i of [1, 2]; track i) {
+        <app-card>
+          <div class="skeleton-khoi">
+            <app-skeleton-block width="38%" height="13px" />
+            @for (j of [1, 2, 3]; track j) {
+              <app-skeleton-block height="48px" radius="var(--radius)" />
+            }
+          </div>
+        </app-card>
+      }
+    </div>
+  }
+
+  <!-- ============ LỖI ============ -->
+  @if (loi()) {
+    <app-alert muc="danger" title="Không tải được dữ liệu">{{ loi() }}</app-alert>
+    <div class="thu-lai">
+      <app-button variant="secondary" (click)="tai()">Thử lại</app-button>
+    </div>
+  }
+
+  <!-- ============ RỖNG TOÀN BỘ ============ -->
+  @if (!dangTai() && !loi() && rongToanBo()) {
+    <app-card>
+      <app-empty-state
+        icon="school"
+        title="Chưa có dữ liệu cho học kỳ này"
+        description="Bạn chưa được phân lớp học phần nào. Khi phòng đào tạo phân công, lớp phụ trách và buổi học sẽ hiện ở đây."
+      >
+        <a routerLink="/lop-hoc-phan"><app-button variant="secondary">Xem lớp học phần</app-button></a>
+      </app-empty-state>
+    </app-card>
+  }
+
+  <!-- ============ CÓ DỮ LIỆU ============ -->
+  @if (duLieu() && !loi() && !rongToanBo()) {
+    <!-- Đổi kỳ: giữ nguyên khung, chỉ mờ nhẹ để người dùng biết số đang cũ. -->
+    <div class="noi-dung" [class.dang-mo]="dangTai()" [attr.aria-busy]="dangTai()">
+      <!-- ---- 2. Lưới 4 thẻ số liệu ---- -->
+      @if (theSoLieu().length > 0) {
+        <div class="the-so">
+          @for (t of theSoLieu(); track t.khoa; let i = $index) {
+            <app-the-so-lieu
+              [the]="t"
+              [chiSo]="i"
+              [bamDuoc]="theBamDuoc(t.khoa)"
+              (bam)="bamThe($event.khoa)"
+            />
+          }
+        </div>
+      }
+
+      <div class="luoi-hai">
+        <!-- ---- 3. Lớp phụ trách ---- -->
+        <app-card title="Lớp phụ trách" subtitle="Lớp học phần trong học kỳ này">
+          <a cardActions class="xem-tat-ca" routerLink="/lop-hoc-phan">
+            Xem tất cả
+            <span class="material-icons">arrow_forward</span>
+          </a>
+
+          @if (lopPhuTrach().length === 0) {
+            <app-empty-state
+              icon="class"
+              title="Chưa được phân lớp trong học kỳ này"
+              description="Lớp phụ trách sẽ hiện ở đây sau khi phòng đào tạo phân công."
+            />
+          } @else {
+            <div class="danh-sach-lop">
+              @for (l of lopPhuTrach(); track l.id) {
+                <a class="lop" [routerLink]="['/lop-hoc-phan', l.id]">
+                  <div class="lop-dau">
+                    <div class="lop-ten">
+                      <strong [title]="l.ten_mon">{{ l.ten_mon }}</strong>
+                      <small>{{ l.ma_lop_hp }} · {{ l.so_tin_chi }} tín chỉ</small>
+                    </div>
+                    <!-- Ba trạng thái loại trừ nhau: đã chốt điểm thắng trạng
+                         thái lớp (chốt xong thì "đang mở" hay "đã đóng" không
+                         còn là việc giảng viên cần để ý). -->
+                    @if (l.da_chot_diem) {
+                      <app-status-badge mau="neutral" label="Đã chốt" />
+                    } @else if (l.trang_thai === 'OPEN') {
+                      <app-status-badge mau="success" label="Đang mở" />
+                    } @else {
+                      <app-status-badge mau="neutral" label="Đã đóng" />
+                    }
+                  </div>
+                  <div class="thanh-tien-trinh">
+                    <div class="thanh-nen">
+                      <div
+                        class="thanh-day"
+                        [style.width.%]="l.ty_le"
+                        [class.day]="l.ty_le >= 100"
+                      ></div>
+                    </div>
+                    <span class="si-so">{{ l.si_so }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          }
+        </app-card>
+
+        <!-- ---- Biểu đồ cột điểm TB lớp phụ trách (hoặc việc cần làm nếu chưa có điểm) ---- -->
+        @if (cotDiem().length > 0) {
+          <app-card title="Điểm TB lớp phụ trách" subtitle="Thang 10 · học kỳ đang chọn">
+            <a cardActions class="xem-tat-ca" routerLink="/lop-hoc-phan">
+              Xem chi tiết
+              <span class="material-icons">arrow_forward</span>
+            </a>
+
+            <app-bieu-do-cot-diem [cot]="cotDiem()" />
+
+            <div class="chu-giai-nam">
+              <span class="dong"><span class="cham cham-cot"></span>Điểm TB lớp học phần</span>
+            </div>
+            <p class="ghi-chu-nho">
+              Chỉ lớp đã có ít nhất một dòng điểm mới được tính. Lớp chưa chấm điểm không hiện
+              cột.
+            </p>
+          </app-card>
+        } @else if (viecCanLam().length > 0) {
+          <app-card title="Việc cần làm" subtitle="Ưu tiên việc gấp trước">
+            <div class="danh-sach-viec">
+              @for (v of viecCanLam(); track v.loai) {
+                <button type="button" class="viec" (click)="moViec(v)">
+                  <span class="viec-icon" [class]="'sac-' + sacViec(v.muc_do)" aria-hidden="true">
+                    <span class="material-icons">{{ iconViec(v.muc_do) }}</span>
+                  </span>
+                  <span class="viec-noi-dung">
+                    <strong>{{ v.tieu_de }}</strong>
+                    <small>{{ v.mo_ta }}</small>
+                  </span>
+                  <span class="material-icons viec-mui">chevron_right</span>
+                </button>
+              }
+            </div>
+          </app-card>
+        }
+      </div>
+
+      <div class="luoi-hai">
+        <!-- ---- 4. Buổi học sắp tới ---- -->
+        <app-card title="Buổi học sắp tới" subtitle="Trong 14 ngày tới">
+          <a cardActions class="xem-tat-ca" routerLink="/lich-hoc">
+            Xem lịch
+            <span class="material-icons">arrow_forward</span>
+          </a>
+
+          @if (buoiSapToi().length === 0) {
+            <app-empty-state
+              icon="event_available"
+              title="Không có buổi học trong 14 ngày tới"
+              description="Lịch dạy sẽ hiện ở đây khi lớp có buổi đã lên lịch."
+            />
+          } @else {
+            <table class="bang-buoi">
+              <thead>
+                <tr>
+                  <th scope="col">Ngày</th>
+                  <th scope="col">Tiết</th>
+                  <th scope="col">Môn</th>
+                  <th scope="col">Phòng</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of buoiSapToi(); track b.id) {
+                  <!--
+                    Bảng không có phần tử <a> nào: cả dòng là một đích bấm.
+                    `tabindex` + Enter/Space giữ đường bàn phím, `:focus-visible`
+                    cho thấy đang đứng ở dòng nào. Không gắn `role="link"` lên
+                    <tr> — làm vậy mất ngữ nghĩa hàng của bảng, trình đọc màn
+                    hình không đọc được cột.
+                  -->
+                  <tr
+                    class="hang-bam"
+                    tabindex="0"
+                    (click)="moBuoiSapToi()"
+                    (keydown.enter)="moBuoiSapToi()"
+                    (keydown.space)="moBuoiSapToi(); $event.preventDefault()"
+                  >
+                    <td class="gio">{{ thuNgan(b) }} {{ b.ngay_hoc | ngayVn }}</td>
+                    <td class="ma">
+                      {{ b.tiet_bat_dau }}–{{ b.tiet_ket_thuc }} · {{ b.gio_bat_dau }}
+                    </td>
+                    <td>
+                      <span class="o-mon">
+                        <span class="cat-dong ten-mon-o" [title]="b.ten_mon">{{ b.ten_mon }}</span>
+                        @if (b.hinh_thuc === 'THUC_HANH') {
+                          <!-- Cùng bộ token --lich-thuc-hanh-* với khối ca ở lịch
+                               tuần SCR-35, để "Thực hành" trông giống nhau ở
+                               hai màn. -->
+                          <span class="nhan-hinh-thuc loai-thuc-hanh">Thực hành</span>
+                        }
+                      </span>
+                    </td>
+                    <td class="ma">{{ b.phong_hoc?.ma_phong ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </app-card>
+
+        <!-- ---- 5. Buổi chưa điểm danh ---- -->
+        <app-card title="Buổi chưa điểm danh" subtitle="Buổi đã qua, cũ nhất trước">
+          <a cardActions class="xem-tat-ca" routerLink="/diem-danh">
+            Mở điểm danh
+            <span class="material-icons">arrow_forward</span>
+          </a>
+
+          @if (buoiChuaDiemDanh().length === 0) {
+            <app-empty-state
+              icon="fact_check"
+              title="Đã điểm danh đủ các buổi đã qua"
+              description="Không còn buổi nào chờ điểm danh trong học kỳ này."
+            />
+          } @else {
+            <div class="danh-sach-buoi">
+              @for (b of buoiChuaDiemDanh(); track b.id) {
+                <button type="button" class="buoi buoi-nut" (click)="moBuoiChuaDiemDanh(b)">
+                  <div class="buoi-ngay">
+                    <strong>{{ b.ngay_hoc | ngayVn }}</strong>
+                    <small>{{ thu(b) }}</small>
+                  </div>
+                  <div class="buoi-noi-dung">
+                    <strong [title]="b.ten_mon">{{ b.ten_mon }}</strong>
+                    <small>
+                      {{ b.ma_lop_hp }} · {{ b.si_so_lop }} sinh viên · trễ {{ b.so_ngay_tre }} ngày
+                    </small>
+                  </div>
+                  @if (!b.con_sua_duoc) {
+                    <app-status-badge mau="warning" label="Quá hạn" />
+                  } @else {
+                    <span class="material-icons viec-mui">chevron_right</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </app-card>
+      </div>
+
+      <!-- ---- 6. Việc cần làm (khi có cả biểu đồ điểm và việc cần làm) ---- -->
+      @if (cotDiem().length > 0 && viecCanLam().length > 0) {
+        <app-card title="Việc cần làm" subtitle="Ưu tiên việc gấp trước">
+          <div class="danh-sach-viec">
+            @for (v of viecCanLam(); track v.loai) {
+              <button type="button" class="viec" (click)="moViec(v)">
+                <span class="viec-icon" [class]="'sac-' + sacViec(v.muc_do)" aria-hidden="true">
+                  <span class="material-icons">{{ iconViec(v.muc_do) }}</span>
+                </span>
+                <span class="viec-noi-dung">
+                  <strong>{{ v.tieu_de }}</strong>
+                  <small>{{ v.mo_ta }}</small>
+                </span>
+                <span class="material-icons viec-mui">chevron_right</span>
+              </button>
+            }
+          </div>
+        </app-card>
+      }
+    </div>
+  }
+</div>

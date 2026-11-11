@@ -59,6 +59,40 @@
   --color-info-soft: #d0edfb;
   --color-on-info-soft: #1b7098; // 4.50:1 trên #D0EDFB
 
+  // ---------- Màu dữ liệu biểu đồ ----------
+  // Hai màu dưới đây KHÔNG phải token trạng thái: chúng chỉ dùng để phân biệt
+  // vùng dữ liệu trong biểu đồ (lát quạt, cột, chấm chú giải) và icon thẻ số
+  // liệu. Không dùng làm màu chữ, không dùng làm nền nút.
+  //
+  // Vì sao phải thêm thay vì dùng 5 màu ngữ nghĩa sẵn có: biểu đồ tỷ lệ lấp đầy
+  // cần hai màu CÙNG ĐỘ NỔI (tím/teal) để hai vùng không tranh nhau; dùng
+  // success/danger sẽ vô tình mang nghĩa "đạt/không đạt" vào một tỷ lệ trung tính.
+  //
+  // Cặp giá trị dưới đây chọn bằng số đo, không bằng mắt — mỗi màu lấy mức đậm
+  // nhất mà vẫn qua WCAG AA 4.5:1 với nền bề mặt của chính chế độ đó.
+  --color-chart-1: #7c3aed; // tím — 5.70:1 trên #FFFFFF
+  --color-chart-1-soft: #ede9fe;
+  --color-on-chart-1-soft: #5b21b6; // 7.57:1 trên #EDE9FE
+  --color-chart-2: #0d7d7d; // teal — 4.95:1 trên #FFFFFF
+  --color-chart-2-soft: #ccfbf1;
+  --color-on-chart-2-soft: #115e59; // 6.73:1 trên #CCFBF1
+
+  // ---------- Biểu đồ cột điểm (thang 10) ----------
+  // Cột và đường trung bình KHÔNG dùng chart-1/chart-2: teal trên tím chỉ đạt
+  // 1.15:1 khi đường chồng lên cột, gần như vô hình.
+  //
+  // Đường TB dùng `--color-primary` của chính chế độ đó (xanh thương hiệu) để
+  // tách hẳn khỏi cột cam: navy #0F172A cũ gần như ĐEN, người dùng đọc thành
+  // "cái đường kẻ đen đậm" chứ không phải một chuỗi dữ liệu thứ hai.
+  // Số đo WCAG (2026-11-11, công thức tương phản):
+  //   đường #366EF2 trên nền #FFFFFF = 4.50:1  (đồ hoạ cần ≥ 3:1 — đạt)
+  //   đường #366EF2 trên cột cam #C2410C = 1.15:1 → KHÔNG đủ một mình, nên
+  //   `quang` (quầng trắng) vẽ dưới nét là thứ tách đường khỏi thân cột.
+  // `quang` là quầng vẽ DƯỚI đường để đường không chìm vào cột.
+  --color-diem-cot: #c2410c; // 5.18:1 trên #FFFFFF
+  --color-diem-duong: #366ef2; // 4.50:1 trên #FFFFFF, 1.15:1 trên cột cam (có quầng)
+  --color-diem-quang: #ffffff;
+
   // ---------- Bề mặt & chữ ----------
   // Nền slate lạnh: bảng điểm/điểm danh có hàng trăm ô, nền xám lạnh
   // giảm mỏi mắt hơn nền xanh.
@@ -156,7 +190,11 @@
   // ---------- Chuyển động ----------
   --dur-fast: 130ms;
   --dur: 200ms;
+  --dur-cham: 520ms;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  // Vào trang/khối: bắt đầu nhanh, hãm dần rất mượt. Trùng giá trị với mockup
+  // `docs/design/ban-mau-dashboard.html` để hai bên không lệch cảm giác.
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 // =====================================================================
@@ -192,6 +230,26 @@
   --color-info-hover: #2ba3db;
   --color-info-soft: #103344;
   --color-on-info-soft: #7ec9ec;
+
+  // Màu dữ liệu biểu đồ — bản tối phải SÁNG hơn mới đủ tương phản trên #111827.
+  // #7C3AED ở nền tối chỉ đạt 3.11:1 (trượt AA) nên đổi sang #A78BFA (6.52:1);
+  // teal #0D7D7D chỉ 3.59:1 nên đổi sang #2DD4BF (9.53:1).
+  --color-chart-1: #a78bfa; // 6.52:1 trên #111827
+  --color-chart-1-soft: #2e1065;
+  --color-on-chart-1-soft: #c4b5fd; // 8.25:1 trên #2E1065
+  --color-chart-2: #2dd4bf; // 9.53:1 trên #111827
+  --color-chart-2-soft: #042f2e;
+  --color-on-chart-2-soft: #5eead4; // 9.78:1 trên #042F2E
+
+  // Cột cam sáng hơn ở nền tối (7.84:1 trên #111827). Đường TB lấy màu xanh
+  // thương hiệu của chế độ tối thay cho navy cũ: #0F172A trên nền #111827 chỉ
+  // 1.01:1 — đường gần như vô hình (đo 2026-11-11). #477AF0 đạt 4.49:1 trên
+  // nền (≥ 3:1 cho đồ hoạ) và 1.75:1 trên cột cam, tách khỏi cột nhờ quầng.
+  // Quầng đổi sang nền tối để khoảng hở giữa đường và cột trông như một đường
+  // kẻ, không như vệt trắng.
+  --color-diem-cot: #fb923c;
+  --color-diem-duong: #477af0; // 4.49:1 trên #111827, 1.75:1 trên cột cam (có quầng)
+  --color-diem-quang: #111827;
 
   --color-bg: #0b1120;
   --color-surface: #111827;

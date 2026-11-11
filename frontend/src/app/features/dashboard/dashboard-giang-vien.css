@@ -1,0 +1,426 @@
+/*
+ * Phần CSS riêng của dashboard GIANG_VIEN (SCR-04). Phần dùng chung nằm ở
+ * `dashboard-chung.css`, được nạp qua `styleUrls` cùng file này.
+ */
+
+/* ================= Danh sách lớp phụ trách ================= */
+/*
+ * KHÔNG đặt `max-height` + `overflow-y: auto` ở đây. Bản cũ giới hạn 240px
+ * trong khi nội dung 5 lớp cao 406px → người dùng phải cuộn trong khung con
+ * rồi lại cuộn cả `main.noi-dung`: hai vòng cuộn lồng nhau, đo trên trình
+ * duyệt thật 2026-11-11. Card cao theo nội dung, việc cuộn là của trang.
+ */
+.danh-sach-lop {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lop {
+  display: block;
+  padding: 10px 8px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.lop:hover {
+  background: var(--color-surface-alt);
+}
+
+.lop-dau {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.lop-ten {
+  min-width: 0;
+}
+
+.lop-ten strong {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lop-ten small {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.si-so {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ================= Danh sách buổi học ================= */
+/* Cùng lý do với `.danh-sach-lop`: bỏ khung cuộn lồng 240px. */
+.danh-sach-buoi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.buoi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.buoi:hover {
+  background: var(--color-surface-alt);
+}
+
+.buoi-nut {
+  cursor: pointer;
+}
+
+.buoi-nut:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.buoi-ngay {
+  flex: none;
+  /*
+   * KHÔNG đặt bề rộng cứng cho cột ngày nữa: "10/11/2026" ở cỡ chữ
+   * `--text-small` cần 77px, còn khung 66px cũ làm chữ tràn sang cột tên môn
+   * (đo trên trình duyệt thật, 2026-11-09). `min-width` 88px = 77px chữ +
+   * 10px khoảng đệm + 1px đường kẻ; cột chỉ rộng thêm chứ không cắt chữ.
+   */
+  min-width: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-inline-end: 10px;
+  border-right: 1px solid var(--color-border-soft);
+}
+
+.buoi-ngay strong {
+  font-size: var(--text-small);
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.buoi-ngay small {
+  font-size: var(--text-caption);
+  color: var(--color-ink-muted);
+}
+
+.buoi-noi-dung {
+  flex: 1;
+  min-width: 0;
+}
+
+.buoi-noi-dung strong {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buoi-noi-dung small {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Nhãn hình thức học trong bảng — CÙNG bộ token `--lich-*` với khối ca ở lịch
+ * tuần SCR-35 (`features/hoc-vu/lich-hoc/tuan.ts`, `.khoi-*`): viền 4 cạnh +
+ * nền nhạt + chữ theo cặp đã đo WCAG AA. Chỉ "Thực hành" cần nhãn (mockup
+ * #man-gv) — lý thuyết là mặc định, gắn nhãn cho nó chỉ thêm nhiễu.
+ */
+.nhan-hinh-thuc {
+  flex: none;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.nhan-hinh-thuc.loai-thuc-hanh {
+  background: var(--lich-thuc-hanh-bg);
+  border-color: var(--lich-thuc-hanh-vien);
+  color: var(--lich-thuc-hanh-fg);
+}
+
+/* ================= Bảng "Buổi học sắp tới" ================= */
+/*
+ * Bảng 4 cột theo mockup `docs/design/ban-mau-dashboard.html` (#man-gv).
+ * Không cuộn riêng: chỉ 4 cột ngắn, ở 390px vẫn vừa — cuộn trong khối trên
+ * màn hẹp dễ bị tưởng là bảng bị cắt.
+ */
+.bang-buoi {
+  width: 100%;
+  /* `fixed` để bề rộng cột do ta khai, không do nội dung: cột "Môn" chứa
+     flex `.o-mon` nên đòi đủ bề rộng của cả tên môn + nhãn, đẩy bảng rộng
+     380px trong card 362px ở 390px (đo 2026-11-11). Với `fixed` cột co theo
+     khai bên dưới và tên môn tự ellipsis. */
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+}
+
+/* Ngày và Tiết có bề rộng cố định (đủ cho dd/mm/yyyy và "1–3 · 06:30");
+   Môn nhận phần còn lại; Phòng cũng cố định để tên phòng ngắn không nhảy. */
+.bang-buoi th:nth-child(1),
+.bang-buoi td:nth-child(1) {
+  width: 106px;
+}
+
+.bang-buoi th:nth-child(2),
+.bang-buoi td:nth-child(2) {
+  width: 84px;
+}
+
+.bang-buoi th:nth-child(4),
+.bang-buoi td:nth-child(4) {
+  width: 62px;
+}
+
+.bang-buoi th {
+  text-align: left;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  padding: 0 10px 7px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.bang-buoi td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--color-border-soft);
+  color: var(--color-ink);
+  vertical-align: middle;
+}
+
+.bang-buoi tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Cột số (ngày, tiết, phòng) dùng chữ số đều bề rộng. */
+.bang-buoi td.gio {
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bang-buoi td.ma {
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Môn + nhãn "Thực hành": nhãn nằm CẠNH tên, không xuống dòng riêng. */
+.o-mon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.o-mon .cat-dong {
+  min-width: 0;
+}
+
+/* Tên môn trong ô bảng: cắt 1 dòng khi cột hẹp (bảng fixed-layout ở 390px),
+   tên đầy đủ nằm trong `title`. */
+.o-mon .ten-mon-o {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Cả dòng là một đích bấm (thay cho <a> bao khối của bản danh sách cũ).
+ * `tabindex="0"` + Enter/Space trong template giữ đường bàn phím; `outline`
+ * offset âm để viền focus không bị `border-collapse` cắt mất.
+ */
+.hang-bam {
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.hang-bam:hover {
+  background: var(--color-surface-alt);
+}
+
+.hang-bam:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* ================= Việc cần làm ================= */
+.danh-sach-viec {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viec {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.viec:hover {
+  background: var(--color-surface-alt);
+}
+
+.viec:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* Màu icon theo `muc_do` — chỉ để tô màu, không hiện chữ "cao/trung bình". */
+.viec-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  flex: none;
+}
+
+.viec-icon .material-icons {
+  font-size: 17px;
+}
+
+.viec-icon.sac-danger {
+  background: var(--color-danger-soft);
+  color: var(--color-on-danger-soft);
+}
+
+.viec-icon.sac-info {
+  background: var(--color-info-soft);
+  color: var(--color-on-info-soft);
+}
+
+.viec-icon.sac-neutral {
+  background: var(--color-surface-alt);
+  color: var(--color-ink-muted);
+}
+
+.viec-noi-dung {
+  flex: 1;
+  min-width: 0;
+}
+
+.viec-noi-dung strong {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.viec-noi-dung small {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 640px) {
+  /*
+   * Bảng 4 cột ở 390px không vừa khung 330px khi để `auto` layout: cột Môn
+   * giãn theo tên dài nhất ("Phân tích thiết kế hệ thống") và đẩy bảng rộng
+   * 380px > 330px -> tràn khỏi thẻ (đo 2026-11-11). `table-layout: fixed` +
+   * bề rộng cột khai tường minh khoá tổng bề rộng; tên môn dài thì cắt 1
+   * dòng bằng ellipsis (tên đầy đủ đã có trong `title`).
+   */
+  .bang-buoi {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .bang-buoi th:nth-child(1),
+  .bang-buoi td:nth-child(1) {
+    width: 40%;
+  }
+
+  .bang-buoi th:nth-child(2),
+  .bang-buoi td:nth-child(2) {
+    width: 28%;
+  }
+
+  .bang-buoi th:nth-child(3),
+  .bang-buoi td:nth-child(3) {
+    width: 32%;
+  }
+
+  /*
+   * Cột ngày giữ nguyên bề rộng đủ chỗ dd/mm/yyyy — co xuống 58px như trước
+   * là tràn chữ. Thay vào đó nới khoảng đệm ô để 4 cột vẫn vừa 390px:
+   * 88 (ngày) + ~78 (tiết) + môn co giãn + ~50 (phòng) + đệm.
+   */
+  .bang-buoi th,
+  .bang-buoi td {
+    padding: 8px 6px;
+  }
+
+  .bang-buoi th {
+    padding-top: 0;
+  }
+
+  /* Ẩn cột phòng trên màn hẹp: phòng đã có trong chi tiết buổi ở màn lịch,
+     còn ở đây cột ngày + tiết + môn là thứ cần đọc trong 14 ngày tới. */
+  .bang-buoi th:last-child,
+  .bang-buoi td:last-child {
+    display: none;
+  }
+}

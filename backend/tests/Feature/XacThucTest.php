@@ -170,6 +170,42 @@ class XacThucTest extends TestCase
             ->assertJsonPath('data.ho_so.ma_gv', $giangVien->ma_gv);
     }
 
+    /**
+     * FE dùng `ho_so` ngay sau đăng nhập (nút Sửa hồ sơ, route
+     * `ownTeacherProfile`). Nếu login không trả, `authGuard` thấy người dùng đã
+     * có trong signal nên không gọi lại `/auth/me` — `ho_so` null cả phiên.
+     */
+    public function test_dang_nhap_tra_kem_ho_so_giang_vien(): void
+    {
+        $giangVien = GiangVien::factory()->create(['trang_thai' => true]);
+        // Đăng nhập bằng email của TÀI KHOẢN, không phải email trên hồ sơ.
+        $email = $giangVien->user->email;
+        $giangVien->user->update(['must_change_password' => false]);
+
+        $this->postJson('/api/auth/login', [
+            'email' => $email,
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.nguoi_dung.ho_so.loai', 'giang_vien')
+            ->assertJsonPath('data.nguoi_dung.ho_so.id', $giangVien->id)
+            ->assertJsonPath('data.nguoi_dung.ho_so.ma_gv', $giangVien->ma_gv);
+    }
+
+    public function test_dang_nhap_tra_kem_ho_so_sinh_vien(): void
+    {
+        $sinhVien = SinhVien::factory()->create(['trang_thai' => true]);
+        $sinhVien->user->update(['must_change_password' => false]);
+
+        $this->postJson('/api/auth/login', [
+            'ma_sv' => $sinhVien->ma_sv,
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.nguoi_dung.ho_so.loai', 'sinh_vien')
+            ->assertJsonPath('data.nguoi_dung.ho_so.id', $sinhVien->id);
+    }
+
     public function test_admin_khong_co_ho_so(): void
     {
         $admin = $this->taoNguoiDung();

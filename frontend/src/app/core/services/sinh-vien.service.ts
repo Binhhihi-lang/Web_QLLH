@@ -42,6 +42,7 @@ export class SinhVienService {
     thamSo: ThamSoDanhSach & {
       lop_hanh_chinh_id?: number;
       khoa_hoc?: string;
+      nganh_id?: number;
       gioi_tinh?: boolean;
       trang_thai?: boolean;
       ngay_sinh_tu?: string;

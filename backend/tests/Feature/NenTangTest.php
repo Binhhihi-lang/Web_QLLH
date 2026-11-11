@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Exceptions\LoiNghiepVu;
+use App\Models\BuoiHoc;
 use App\Models\CauHinh;
 use App\Models\GiangVien;
 use App\Models\HocKy;
+use App\Models\LichThi;
 use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\Menu;
@@ -15,6 +17,10 @@ use App\Models\SinhVien;
 use App\Models\User;
 use Database\Seeders\CauHinhSeeder;
 use Database\Seeders\DanhMucSeeder;
+use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\GiangVienSeeder;
+use Database\Seeders\KhoaNganhSeeder;
+use Database\Seeders\LopHocPhanSeeder;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Database\QueryException;
@@ -146,6 +152,138 @@ class NenTangTest extends TestCase
         $this->assertTrue(HocKy::where('ma_hoc_ky', '2025-2')->first()->trang_thai === HocKy::CLOSED);
         $this->assertTrue(HocKy::where('ma_hoc_ky', '2026-1')->first()->trang_thai === HocKy::ONGOING);
         $this->assertTrue(HocKy::where('ma_hoc_ky', '2026-2')->first()->trang_thai === HocKy::UPCOMING);
+    }
+
+    /**
+     * Kỳ 2026-2 phải có lớp để màn đăng ký học phần có dữ liệu, và đợt đăng ký
+     * của kỳ đó phải đang mở (docs/03-data-model.md §7).
+     */
+    public function test_hoc_ky_2026_2_co_lop_va_dang_mo_dot_dang_ky(): void
+    {
+        $this->seed(UserSeeder::class);
+        $this->seed(KhoaNganhSeeder::class);
+        $this->seed(DanhMucSeeder::class);
+        $this->seed(GiangVienSeeder::class);
+        $this->seed(LopHocPhanSeeder::class);
+
+        $hocKy = HocKy::query()->where('ma_hoc_ky', '2026-2')->firstOrFail();
+
+        // 30 lớp, tất cả OPEN để nhận đăng ký.
+        $this->assertSame(30, LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->count());
+        $this->assertSame(0, LopHocPhan::query()
+            ->where('hoc_ky_id', $hocKy->id)
+            ->where('trang_thai', '!=', LopHocPhan::OPEN)
+            ->count());
+
+        // Mã lớp sinh tiếp từ LHP0121, không đụng 120 dòng cũ của 2026-1 và 2025-2.
+        $maLop = LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->orderBy('id')->pluck('ma_lop_hp')->all();
+        $this->assertSame('LHP0121', $maLop[0]);
+        $this->assertSame('LHP0150', $maLop[29]);
+        $this->assertSame(150, LopHocPhan::query()->count());
+
+        // Đợt đăng ký đang mở tại thời điểm 2026-11-09 (ngày chốt của brief).
+        $this->assertTrue($hocKy->dangMoDangKy(), 'Kỳ 2026-2 phải đang trong đợt đăng ký để demo.');
+        $this->assertSame('2026-11-01 08:00:00', $hocKy->mo_dang_ky_luc->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-12-31 17:00:00', $hocKy->dong_dang_ky_luc->format('Y-m-d H:i:s'));
+
+        // Vẫn thoả quy tắc BR-25 mà `HocKyController::duLieuHopLe()` áp cho thao tác
+        // sửa qua API: đợt đăng ký ĐÓNG trước hoặc đúng ngày bắt đầu kỳ. Nếu không,
+        // dữ liệu seed sẽ là trạng thái mà chính API từ chối ghi ra.
+        $this->assertLessThanOrEqual(
+            $hocKy->ngay_bat_dau->toDateString(),
+            $hocKy->dong_dang_ky_luc->toDateString(),
+            'Đợt đăng ký phải đóng trước hoặc đúng ngày bắt đầu học kỳ (BR-25).',
+        );
+    }
+
+    /**
+     * Mục đích cuối cùng của Việc 2 + 3: sinh viên đăng ký được lớp 2026-2
+     * bằng dữ liệu seed, không phải chỉ "có bản ghi lớp trong DB".
+     */
+    public function test_sinh_vien_dang_ky_duoc_lop_cua_hoc_ky_2026_2(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $user = User::query()->where('email', 'sinhvien@example.com')->firstOrFail();
+        $hocKy = HocKy::query()->where('ma_hoc_ky', '2026-2')->firstOrFail();
+
+        // Lớp `nam_thu = null` để không vướng BR-23 (sai năm thứ) khi kiểm luồng đăng ký.
+        $lop = LopHocPhan::query()
+            ->where('hoc_ky_id', $hocKy->id)
+            ->whereNull('nam_thu')
+            ->where('trang_thai', LopHocPhan::OPEN)
+            ->orderBy('id')
+            ->firstOrFail();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/me/enrollments', ['lop_hoc_phan_id' => $lop->id])
+            ->assertCreated()
+            ->assertJsonPath('data.lop_hoc_phan.ma_lop_hp', $lop->ma_lop_hp)
+            ->assertJsonPath('data.lop_hoc_phan.hoc_ky.id', $hocKy->id);
+    }
+
+    /**
+     * Phụ thuộc chéo của khối seed: `BuoiHocSeeder` sinh 17 buổi cho MỌI lớp, kể cả
+     * lớp của kỳ UPCOMING — nên thêm 30 lớp 2026-2 làm số buổi tăng từ 2.040 lên
+     * 2.550. `LichThiSeeder` đã xử lý sẵn 3 kỳ (`CAC_HOC_KY`). Khoá lại để lần sau
+     * ai thêm kỳ/lớp biết ngay chỗ nào phải cập nhật.
+     */
+    public function test_them_lop_2026_2_khong_lam_hong_buoi_hoc_va_lich_thi(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $soLop = LopHocPhan::query()->count();
+        $this->assertSame(150, $soLop);
+        $this->assertSame($soLop * 17, BuoiHoc::query()->count());
+
+        $hocKy2026_2 = HocKy::query()->where('ma_hoc_ky', '2026-2')->firstOrFail();
+        $this->assertGreaterThan(0, BuoiHoc::query()
+            ->whereHas('lopHocPhan', fn ($query) => $query->where('hoc_ky_id', $hocKy2026_2->id))
+            ->count());
+
+        // 2026-2 vẫn có ca thi dù trước đây chưa có lớp nào (LichThiSeeder lấy toàn
+        // bộ môn đang hoạt động khi kỳ chưa có lớp) — giờ có lớp thì lấy môn của lớp.
+        $this->assertGreaterThan(0, LichThi::query()->where('hoc_ky_id', $hocKy2026_2->id)->count());
+    }
+
+    /**
+     * Dashboard giảng viên vẽ biểu đồ từ `lop_phu_trach[].diem_tb_lop`. Nếu
+     * `DiemSeeder` chỉ sinh điểm cho kỳ đã đóng thì kỳ đang chạy không có cột
+     * nào — biểu đồ trống khi demo dù code đúng.
+     */
+    public function test_diem_seeder_sinh_diem_cho_ky_dang_chay_de_bieu_do_giang_vien_co_du_lieu(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hocKyDangChay = HocKy::query()->where('ma_hoc_ky', '2026-1')->firstOrFail();
+
+        $soLopCoDiem = LopHocPhan::query()
+            ->where('hoc_ky_id', $hocKyDangChay->id)
+            ->whereHas('dangKyHocPhan.diem', fn ($query) => $query->whereNotNull('diem_tong_ket'))
+            ->count();
+
+        $this->assertGreaterThan(
+            0,
+            $soLopCoDiem,
+            'Phải có ít nhất một lớp của kỳ đang chạy đã có điểm, nếu không biểu đồ "Điểm TB lớp phụ trách" trống.',
+        );
+
+        $tongSoLopDangChay = LopHocPhan::query()->where('hoc_ky_id', $hocKyDangChay->id)->count();
+        $soLopDaChotDangChay = LopHocPhan::query()
+            ->where('hoc_ky_id', $hocKyDangChay->id)
+            ->whereNotNull('chot_diem_luc')
+            ->count();
+
+        // Kỳ đang chạy chỉ chốt điểm một số lớp đã học xong, các lớp còn lại chưa chốt.
+        $this->assertSame($soLopCoDiem, $soLopDaChotDangChay);
+        $this->assertLessThan($tongSoLopDangChay, $soLopDaChotDangChay);
+
+        // Kỳ đã đóng chốt điểm toàn bộ lớp.
+        $hocKyDaDong = HocKy::query()->where('ma_hoc_ky', '2025-2')->firstOrFail();
+        $this->assertSame(
+            LopHocPhan::query()->where('hoc_ky_id', $hocKyDaDong->id)->count(),
+            LopHocPhan::query()->where('hoc_ky_id', $hocKyDaDong->id)->whereNotNull('chot_diem_luc')->count(),
+        );
     }
 
     public function test_seeder_menu_loc_theo_vai_tro(): void

@@ -2230,8 +2230,12 @@ paths:
   /settings:
     get:
       tags: [Cấu hình]
-      summary: Đọc cấu hình hệ thống (ADMIN)
-      description: Trả cấu hình riêng của học kỳ; giá trị mặc định được dùng nếu học kỳ chưa lưu cấu hình. Metadata nằm trong `diem.cau_hinh_hoc_ky`.
+      summary: Đọc cấu hình hệ thống (ADMIN, GIANG_VIEN, SINH_VIEN)
+      description: >-
+        Trả cấu hình riêng của học kỳ; giá trị mặc định được dùng nếu học kỳ chưa
+        lưu cấu hình. Metadata nằm trong `diem.cau_hinh_hoc_ky`. Người gọi không
+        phải ADMIN chỉ nhận các khoá bắt đầu bằng `diem.`; khoá vận hành khác
+        trong bảng `cau_hinh` không lộ ra.
       parameters:
         - in: query
           name: hoc_ky_id
@@ -2303,6 +2307,54 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/DashboardAdmin"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+
+  /dashboard/teacher:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard của giảng viên (SCR-04, FR-13.02)
+      description: >
+        Chỉ vai trò GIANG_VIEN. Số liệu tính trong học kỳ ONGOING mà giảng viên có lớp,
+        không có thì lấy học kỳ mới nhất có lớp. Hợp đồng đầy đủ docs/04-api-contract.md §14.
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/DashboardTeacher"
+        "401":
+          $ref: "#/components/responses/Loi401"
+        "403":
+          $ref: "#/components/responses/Loi403"
+
+  /dashboard/student:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard của sinh viên (SCR-05, FR-13.03)
+      description: >
+        Chỉ vai trò SINH_VIEN. gpa dùng lại đúng payload của GET /api/me/gpa để hai màn
+        không lệch số. Hợp đồng đầy đủ docs/04-api-contract.md §14.
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ThanhCong"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/DashboardStudent"
         "401":
           $ref: "#/components/responses/Loi401"
         "403":
@@ -2925,8 +2977,11 @@ paths:
       - $ref: "#/components/parameters/IdPath"
     get:
       tags: [Lớp học phần]
-      summary: Sinh viên của lớp (ADMIN, TEACHER chủ lớp)
-      description: Chỉ trả đăng ký ACTIVE (BR-21).
+      summary: Sinh viên của lớp (ADMIN, TEACHER chủ lớp, STUDENT đã đăng ký ACTIVE)
+      description: >-
+        Chỉ trả đăng ký ACTIVE (BR-21). STUDENT gọi được khi đã đăng ký ACTIVE vào
+        lớp, nhưng mỗi phần tử chỉ còn `ma_sv` và `ho_ten` — không `email`, `lop`,
+        `dang_ky_hoc_phan_id`.
       responses:
         "200":
           description: Thành công
@@ -4218,11 +4273,17 @@ components:
       properties:
         khoa:
           type: string
-          enum: [sinh_vien, lop_hoc_phan, dang_ky, cho_dang_ky]
+          description: >
+            Khoá định danh để FE gắn icon. ADMIN: sinh_vien, lop_hoc_phan, dang_ky,
+            cho_dang_ky. TEACHER: lop_phu_trach, sinh_vien_phu_trach, buoi_sap_toi,
+            buoi_chua_diem_danh. STUDENT: hoc_phan, tin_chi, gpa_he_4, chuyen_can.
         label:
           type: string
         gia_tri:
-          type: integer
+          type: number
+          description: >
+            Số hiển thị. Là number chứ không phải integer vì GPA (2.74) và phần trăm
+            (90.7) là số thực.
         don_vi:
           type: string
           nullable: true
@@ -4231,6 +4292,389 @@ components:
         xu_huong:
           type: string
           enum: [len, xuong, bang]
+
+    HocKyTomTat:
+      type: object
+      required: [id, ma_hoc_ky, ten_hoc_ky, trang_thai]
+      properties:
+        id:
+          type: integer
+        ma_hoc_ky:
+          type: string
+        ten_hoc_ky:
+          type: string
+        trang_thai:
+          type: string
+          enum: [UPCOMING, ONGOING, CLOSED]
+
+    DashboardTeacher:
+      type: object
+      required: [hoc_ky, the_so_lieu, lop_phu_trach, buoi_sap_toi, buoi_chua_diem_danh, viec_can_lam]
+      properties:
+        hoc_ky:
+          allOf:
+            - $ref: "#/components/schemas/HocKyTomTat"
+          nullable: true
+        the_so_lieu:
+          type: array
+          items:
+            $ref: "#/components/schemas/TheSoLieu"
+        lop_phu_trach:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardLopPhuTrach"
+        buoi_sap_toi:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardBuoiSapToi"
+        buoi_chua_diem_danh:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardBuoiChuaDiemDanh"
+        viec_can_lam:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardViecCanLam"
+
+    DashboardLopPhuTrach:
+      type: object
+      required: [id, ma_lop_hp, ma_mon, ten_mon, so_tin_chi, si_so, ty_le, trang_thai, da_chot_diem, diem_tb_lop]
+      properties:
+        id:
+          type: integer
+        ma_lop_hp:
+          type: string
+        ma_mon:
+          type: string
+        ten_mon:
+          type: string
+        so_tin_chi:
+          type: integer
+        si_so:
+          type: string
+          description: Dạng "38/45", hiển thị trực tiếp
+        ty_le:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Độ dài thanh tiến trình, không phải phần trăm nghiệp vụ
+        nam_thu:
+          type: integer
+          nullable: true
+          description: null = lớp phục vụ mọi năm (BR-23)
+        trang_thai:
+          type: string
+          enum: [OPEN, CLOSED, CANCELLED]
+        da_chot_diem:
+          type: boolean
+        diem_tb_lop:
+          type: number
+          nullable: true
+          description: >-
+            Trung bình `diem_tong_ket` của mọi đăng ký ACTIVE trong lớp, thang 10,
+            làm tròn 2 chữ số. null = chưa ai được chấm điểm (không phải 0).
+
+    DashboardBuoiSapToi:
+      type: object
+      required: [id, ngay_hoc, thu, gio_bat_dau, gio_ket_thuc, hinh_thuc, trang_thai, ma_lop_hp]
+      properties:
+        id:
+          type: integer
+        ngay_hoc:
+          type: string
+          format: date
+        thu:
+          type: integer
+          minimum: 2
+          maximum: 8
+          description: 2 = Thứ 2 … 7 = Thứ 7, 8 = Chủ nhật
+        tiet_bat_dau:
+          type: integer
+          nullable: true
+        tiet_ket_thuc:
+          type: integer
+          nullable: true
+        gio_bat_dau:
+          type: string
+        gio_ket_thuc:
+          type: string
+        hinh_thuc:
+          type: string
+          enum: [LY_THUYET, THUC_HANH, TRUC_TUYEN]
+        trang_thai:
+          type: string
+          enum: [SCHEDULED, DONE, CANCELLED]
+        ma_lop_hp:
+          type: string
+        ma_mon:
+          type: string
+        ten_mon:
+          type: string
+        phong_hoc:
+          allOf:
+            - $ref: "#/components/schemas/PhongHocTomTat"
+          nullable: true
+
+    DashboardBuoiChuaDiemDanh:
+      type: object
+      required: [id, ngay_hoc, thu, gio_ket_thuc, ma_lop_hp, si_so_lop, so_ngay_tre, con_sua_duoc]
+      properties:
+        id:
+          type: integer
+        ngay_hoc:
+          type: string
+          format: date
+        thu:
+          type: integer
+          minimum: 2
+          maximum: 8
+        tiet_bat_dau:
+          type: integer
+          nullable: true
+        tiet_ket_thuc:
+          type: integer
+          nullable: true
+        gio_ket_thuc:
+          type: string
+        ma_lop_hp:
+          type: string
+        ma_mon:
+          type: string
+        ten_mon:
+          type: string
+        si_so_lop:
+          type: integer
+          description: Số đăng ký ACTIVE của lớp
+        so_ngay_tre:
+          type: integer
+          minimum: 0
+        con_sua_duoc:
+          type: boolean
+          description: false = quá hạn sửa điểm danh (ATTENDANCE_EDIT_EXPIRED)
+
+    DashboardViecCanLam:
+      type: object
+      required: [loai, tieu_de, mo_ta, so_luong, muc_do, url]
+      properties:
+        loai:
+          type: string
+          enum: [cham_diem_danh, chot_diem, buoi_sap_toi]
+        tieu_de:
+          type: string
+        mo_ta:
+          type: string
+        so_luong:
+          type: integer
+        muc_do:
+          type: string
+          enum: [cao, trung_binh, thap]
+        url:
+          type: string
+          description: Đường dẫn FE, không kèm query
+
+    DashboardStudent:
+      type: object
+      required: [hoc_ky, the_so_lieu, hoc_phan_da_dang_ky, thoi_khoa_bieu_tuan, gpa, chuyen_can]
+      properties:
+        hoc_ky:
+          allOf:
+            - $ref: "#/components/schemas/HocKyTomTat"
+          nullable: true
+        the_so_lieu:
+          type: array
+          items:
+            $ref: "#/components/schemas/TheSoLieu"
+        hoc_phan_da_dang_ky:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardHocPhanDaDangKy"
+        thoi_khoa_bieu_tuan:
+          $ref: "#/components/schemas/DashboardThoiKhoaBieuTuan"
+        gpa:
+          $ref: "#/components/schemas/GpaCuaToi"
+        chuyen_can:
+          $ref: "#/components/schemas/DashboardChuyenCan"
+
+    DashboardHocPhanDaDangKy:
+      type: object
+      required: [dang_ky_hoc_phan_id, lop_hoc_phan_id, ma_lop_hp, ma_mon, ten_mon, so_tin_chi, ty_le_chuyen_can]
+      properties:
+        dang_ky_hoc_phan_id:
+          type: integer
+        lop_hoc_phan_id:
+          type: integer
+        ma_lop_hp:
+          type: string
+        ma_mon:
+          type: string
+        ten_mon:
+          type: string
+        so_tin_chi:
+          type: integer
+        giang_vien:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            ma_gv:
+              type: string
+            ho_ten:
+              type: string
+        ty_le_chuyen_can:
+          type: number
+          nullable: true
+          description: Phân số 0–1, 4 chữ số. null = chưa điểm danh buổi nào
+        diem_tong_ket:
+          type: number
+          nullable: true
+        diem_chu:
+          type: string
+          nullable: true
+        ket_qua:
+          type: string
+          nullable: true
+          enum: [DAT, KHONG_DAT, null]
+
+    DashboardThoiKhoaBieuTuan:
+      type: object
+      required: [tu_ngay, den_ngay, cac_buoi]
+      properties:
+        tu_ngay:
+          type: string
+          format: date
+        den_ngay:
+          type: string
+          format: date
+        cac_buoi:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardBuoiTrongTuan"
+
+    DashboardBuoiTrongTuan:
+      type: object
+      required: [id, ngay_hoc, thu, gio_bat_dau, gio_ket_thuc, trang_thai, hinh_thuc, ma_lop_hp]
+      properties:
+        id:
+          type: integer
+        ngay_hoc:
+          type: string
+          format: date
+        thu:
+          type: integer
+          minimum: 2
+          maximum: 8
+        tiet_bat_dau:
+          type: integer
+          nullable: true
+        tiet_ket_thuc:
+          type: integer
+          nullable: true
+        gio_bat_dau:
+          type: string
+        gio_ket_thuc:
+          type: string
+        trang_thai:
+          type: string
+          enum: [SCHEDULED, DONE, CANCELLED]
+        hinh_thuc:
+          type: string
+          enum: [LY_THUYET, THUC_HANH, TRUC_TUYEN]
+        ly_do_huy:
+          type: string
+          nullable: true
+        ma_lop_hp:
+          type: string
+        ma_mon:
+          type: string
+        ten_mon:
+          type: string
+        ma_phong:
+          type: string
+        ten_phong:
+          type: string
+
+    DashboardChuyenCan:
+      type: object
+      required: [ty_le, tong_buoi_da_diem_danh, mau_so, co_mat, di_muon, vang, co_phep]
+      properties:
+        ty_le:
+          type: number
+          nullable: true
+          description: Phân số 0–1, 4 chữ số. null khi mẫu số = 0
+        tong_buoi_da_diem_danh:
+          type: integer
+        mau_so:
+          type: integer
+        co_mat:
+          type: integer
+        di_muon:
+          type: integer
+        vang:
+          type: integer
+        co_phep:
+          type: integer
+        ty_le_thap_nhat:
+          type: object
+          nullable: true
+          properties:
+            ma_mon:
+              type: string
+            ten_mon:
+              type: string
+            ty_le:
+              type: number
+
+    PhongHocTomTat:
+      type: object
+      required: [id, ma_phong, ten_phong]
+      properties:
+        id:
+          type: integer
+        ma_phong:
+          type: string
+        ten_phong:
+          type: string
+
+    GpaCuaToi:
+      type: object
+      description: >
+        Payload của GET /api/me/gpa (docs/04-api-contract.md §13). Dashboard STUDENT dùng
+        lại nguyên payload này để hai màn không lệch số.
+      required: [hoc_ky_hien_tai, tich_luy]
+      properties:
+        hoc_ky_hien_tai:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            ma_hoc_ky:
+              type: string
+            ten_hoc_ky:
+              type: string
+            gpa_he_10:
+              type: number
+              nullable: true
+            gpa_he_4:
+              type: number
+              nullable: true
+            tong_tin_chi:
+              type: integer
+        tich_luy:
+          type: object
+          required: [gpa_he_10, gpa_he_4, tong_tin_chi, tin_chi_dat, so_hoc_ky_da_tinh]
+          properties:
+            gpa_he_10:
+              type: number
+            gpa_he_4:
+              type: number
+            tong_tin_chi:
+              type: integer
+            tin_chi_dat:
+              type: integer
+            so_hoc_ky_da_tinh:
+              type: integer
 
     TyLeLapDay:
       type: object

@@ -79,4 +79,19 @@ describe('Header', () => {
     expect(menuService.layMenuHeader).toHaveBeenCalledTimes(2);
     expect(fixture.nativeElement.textContent).toContain('Thông báo');
   });
+
+  /**
+   * Ở 390px header từng rộng 482px rồi bị `.khung` cắt mất avatar và tên người
+   * dùng. Nguyên nhân: `.tim` là flex item nhưng không có `min-width: 0`, nên
+   * `min-width: auto` giữ hộp tìm kiếm ở bề rộng nội dung (placeholder dài).
+   * Test khoá hai khai báo đã chữa. Đọc metadata component thay vì layout thật
+   * vì jsdom không tính được bố cục flex.
+   */
+  it('hộp tìm kiếm co được để header không tràn ở màn hẹp', () => {
+    const metadata = (Header as unknown as { ɵcmp: { styles: string[] } }).ɵcmp;
+    const css = (metadata.styles ?? []).join('\n');
+
+    expect(css).toContain('min-width: 0');
+    expect(css).toMatch(/@media \(max-width: 480px\)/);
+  });
 });

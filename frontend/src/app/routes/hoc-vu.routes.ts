@@ -43,9 +43,11 @@ export const hocVuRoutes: Routes = [
       import('@features/hoc-vu/lop-hoc-phan/lich-hoc').then((m) => m.LopHocPhanLichHocPage),
   },
   {
+    // Sinh viên xem được danh sách bạn cùng lớp; BE chỉ trả `ma_sv` và `ho_ten`
+    // cho vai trò này nên màn hình ẩn các cột còn lại (xem `sinh-vien.ts`).
     path: 'lop-hoc-phan/:id/sinh-vien',
     canActivate: [roleGuard],
-    data: { roles: ['ADMIN', 'GIANG_VIEN'] },
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'] },
     loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/sinh-vien').then((m) => m.LopHocPhanSinhVien),
   },
   {

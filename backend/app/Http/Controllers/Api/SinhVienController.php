@@ -32,13 +32,17 @@ class SinhVienController extends Controller
             'sort_dir' => ['sometimes', 'in:asc,desc'],
             'lop_hanh_chinh_id' => ['sometimes', 'integer'],
             'khoa_hoc' => ['sometimes', 'string', 'max:20'],
+            'nganh_id' => ['sometimes', 'integer'],
             'gioi_tinh' => ['sometimes', 'in:true,false,1,0'],
             'trang_thai' => ['sometimes', 'in:true,false,1,0'],
             'ngay_sinh_tu' => ['sometimes', 'date_format:Y-m-d'],
             'ngay_sinh_den' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:ngay_sinh_tu'],
         ]);
 
-        $query = SinhVien::query()->with(['lopHanhChinh', 'user']);
+        // `lopHanhChinh.nganh` eager-load cùng lượt: `SinhVienResource` đọc
+        // `khoa_hoc`/`nam_nhap_hoc`/`nganh` của lớp, thiếu eager-load thì mỗi
+        // dòng sinh ra thêm truy vấn ngành.
+        $query = SinhVien::query()->with(['lopHanhChinh.nganh', 'user']);
 
         if ($request->user()->laGiangVien()) {
             $giangVienId = $request->user()->giangVien?->id;
@@ -57,6 +61,7 @@ class SinhVienController extends Controller
             }))
             ->when($request->filled('lop_hanh_chinh_id'), fn ($q) => $q->where('lop_hanh_chinh_id', $request->integer('lop_hanh_chinh_id')))
             ->when($request->filled('khoa_hoc'), fn ($q) => $q->whereHas('lopHanhChinh', fn ($lop) => $lop->where('khoa_hoc', $request->string('khoa_hoc'))))
+            ->when($request->filled('nganh_id'), fn ($q) => $q->whereHas('lopHanhChinh', fn ($lop) => $lop->where('nganh_id', $request->integer('nganh_id'))))
             ->when($request->has('gioi_tinh'), fn ($q) => $q->where('gioi_tinh', $request->boolean('gioi_tinh')))
             ->when($request->has('trang_thai'), fn ($q) => $q->where('trang_thai', $request->boolean('trang_thai')))
             ->when($request->filled('ngay_sinh_tu'), fn ($q) => $q->whereDate('ngay_sinh', '>=', $request->string('ngay_sinh_tu')))
@@ -81,7 +86,7 @@ class SinhVienController extends Controller
     {
         Gate::authorize('xem', $sinhVien);
 
-        return $this->success(new SinhVienResource($sinhVien->load(['lopHanhChinh', 'user'])));
+        return $this->success(new SinhVienResource($sinhVien->load(['lopHanhChinh.nganh', 'user'])));
     }
 
     public function update(SinhVienRequest $request, SinhVien $sinhVien): JsonResponse

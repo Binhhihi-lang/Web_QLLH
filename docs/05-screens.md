@@ -182,11 +182,168 @@ tin thử nghiệm không hiển thị.
 
 ### 3.2. Dashboard
 
+Ba màn cùng đường dẫn `/dashboard`, chọn bằng `vaiTroCanMatch` (`app.routes.ts`) — thứ tự
+khai báo quyết định, cái đầu tiên khớp vai trò thắng.
+
 | Mã | Màn hình | Route | Vai trò | Nội dung |
 |---|---|---|---|---|
-| SCR-03 | Dashboard ADMIN | `/dashboard` | ADMIN | 4 thẻ số liệu, tỷ lệ lấp đầy, danh sách lớp sắp mở, đăng ký gần đây |
-| SCR-04 | Dashboard TEACHER | `/dashboard` | TEACHER | Lớp phụ trách, buổi sắp tới, buổi chưa điểm danh, việc cần làm |
-| SCR-05 | Dashboard STUDENT | `/dashboard` | STUDENT | Học phần đã đăng ký, thời khóa biểu tuần, GPA, tỷ lệ chuyên cần |
+| SCR-03 | Dashboard ADMIN | `/dashboard` | ADMIN | 4 thẻ số liệu, tỷ lệ lấp đầy, danh sách lớp sắp mở, đăng ký gần đây. Đã làm (`features/dashboard/dashboard-admin.ts`) |
+| SCR-04 | Dashboard TEACHER | `/dashboard` | GIANG_VIEN | 4 thẻ số liệu, lớp phụ trách, buổi sắp tới, buổi chưa điểm danh, việc cần làm |
+| SCR-05 | Dashboard STUDENT | `/dashboard` | SINH_VIEN | 4 thẻ số liệu, học phần đã đăng ký, thời khoá biểu tuần, GPA, tỷ lệ chuyên cần |
+
+Cả ba gọi một endpoint riêng, **không** gọi chéo endpoint của vai trò khác:
+`GET /api/dashboard/admin` · `/teacher` · `/student` (hợp đồng đầy đủ: `04-api-contract.md` §14).
+Endpoint của vai trò khác trả `403 FORBIDDEN` — FE không được gọi "cho chắc rồi bỏ qua lỗi".
+
+#### Quy ước dùng chung cho SCR-03/04/05
+
+| Quy ước | Lý do |
+|---|---|
+| **Ô chọn học kỳ đặt ở đầu trang, một ô duy nhất cho cả màn** | Mọi con số trong dashboard thuộc một kỳ: GPA, tín chỉ, chuyên cần, điểm từng môn, thời khoá biểu, lớp phụ trách. Cho mỗi khối một ô chọn riêng thì người dùng sẽ so GPA kỳ này với chuyên cần kỳ khác mà không nhận ra, và mỗi khối thành một request (vượt ngân sách < 500 ms của UC-16 AC-3). Đổi kỳ → tải lại toàn bộ màn |
+| Mặc định mở kỳ `ONGOING`; không có thì kỳ mới nhất người dùng có dữ liệu | Người dùng vào xem kỳ đang học, không phải kỳ cũ nhất |
+| Không nhớ lựa chọn kỳ giữa các lần vào | Tránh trạng thái ẩn: người dùng không biết vì sao lần sau mở ra lại thấy kỳ cũ |
+| Bốn thẻ số liệu dùng **cùng** shape `the_so_lieu[]` (`khoa`, `label`, `gia_tri`, `don_vi`, `phu_chu`, `xu_huong`) và cùng component | Ba dashboard phải trông như một hệ thống, không phải ba sản phẩm khác nhau. Icon lấy theo `khoa` bằng một map trong component, không phải một field mới từ API
+| `gia_tri` hiển thị `number`, **không** ép `int` | GPA `2.74` và phần trăm `90.7` là số thực; cắt thành int sẽ ra "2 điểm" và "90 %" sai |
+| Gọi API **một lần** khi vào màn, không tự ghép nhiều endpoint rồi cộng ở client | UC-16 AC-3 đặt ngưỡng < 500 ms; tự ghép ở client sẽ lặp lại N+1 và số liệu lệch nhau giữa các lần tải |
+| Trạng thái rỗng **khác** trạng thái lỗi | Trang mới chưa có dữ liệu (giảng viên chưa phân lớp, sinh viên chưa đăng ký) là bình thường, không phải sự cố |
+| Nút "Thử lại" chỉ ở trạng thái lỗi | Rỗng mà hiện "Thử lại" khiến người dùng bấm mãi |
+| Không vẽ chart khi mảng nguồn có < 2 phần tử | Một cột duy nhất trông như lỗi render; hiện `empty-state` hoặc số liệu dạng chữ |
+
+#### SCR-04 — Dashboard TEACHER
+
+**Dữ liệu:** `GET /api/dashboard/teacher`, một lần gọi, không tham số.
+
+**Thành phần, theo thứ tự trên trang:**
+
+| # | Thành phần | Nguồn | Trạng thái rỗng | Hành vi bấm |
+|---|---|---|---|---|
+| 1 | `page-header` — "Xin chào, {tên}" + dòng phụ tên học kỳ | `hoc_ky.ten_hoc_ky` | `hoc_ky = null` → phụ đề "Chưa được phân lớp trong học kỳ nào" | — |
+| 2 | Lưới 4 thẻ số liệu | `the_so_lieu[]` | mảng rỗng → ẩn cả lưới, không hiện 4 thẻ trống | Thẻ `buoi_chua_diem_danh` → `/diem-danh`; thẻ `lop_phu_trach` → `/lop-hoc-phan`. Thẻ `sinh_vien_phu_trach` và `buoi_sap_toi` không bấm |
+| 3 | "Lớp phụ trách" | `lop_phu_trach[]` | `empty-state`: "Chưa được phân lớp trong học kỳ này" | Bấm dòng → `/lop-hoc-phan/{id}`. Cột sĩ số hiện chuỗi `"38/45"` nguyên văn + thanh tiến trình theo `ty_le`. Badge trạng thái: `da_chot_diem = true` → "Đã chốt" màu trung tính; ngược lại `trang_thai = 'OPEN'` → "Đang mở" màu thành công; còn lại → "Đã đóng" màu trung tính |
+| 3b | "Điểm TB lớp phụ trách" — biểu đồ cột, thang 10, một chuỗi | `lop_phu_trach[].diem_tb_lop` | Không lớp nào có `diem_tb_lop` là số → ẩn cả khối | Cột không bấm. Nút "Xem chi tiết" → `/lop-hoc-phan`. Ghi chú dưới biểu đồ: "Chỉ lớp đã có ít nhất một dòng điểm mới được tính. Lớp chưa chấm điểm không hiện cột." |
+| 4 | "Buổi học sắp tới" — **bảng** 4 cột Ngày / Tiết / Môn / Phòng | `buoi_sap_toi[]` | `empty-state`: "Không có buổi học trong 14 ngày tới" | Bấm dòng → `/lich-hoc` (không mở form sửa — SCR-36 quản lý buổi ở trang lớp). Cột Ngày hiện `T{thu} {ngay_hoc}`; cột Tiết hiện `{tiet_bat_dau}–{tiet_ket_thuc} · {gio_bat_dau}`; dòng `hinh_thuc = THUC_HANH` gắn badge "Thực hành" cạnh tên môn; cột Phòng hiện `phong_hoc.ma_phong`, `null` → "—" |
+| 5 | "Buổi chưa điểm danh" | `buoi_chua_diem_danh[]` | `empty-state`: "Đã điểm danh đủ các buổi đã qua" | Bấm dòng → `/diem-danh/{id}` nếu `con_sua_duoc = true`; nếu `false` → chỉ mở `/diem-danh` kèm thông báo "Quá hạn sửa điểm danh, chỉ quản trị viên sửa được" và **không** điều hướng vào form. Dòng `con_sua_duoc = false` hiện badge "Quá hạn" màu cảnh báo |
+| 6 | "Việc cần làm" | `viec_can_lam[]` | mảng rỗng → **ẩn cả khối**, không hiện khung trống "Không có việc" | Bấm mục → `url` trong mục đó. FE **không** tự dựng URL từ `loai` — URL do backend trả để sau này thêm loại việc mới mà không sửa FE |
+
+`muc_do` chỉ dùng để chọn màu icon/badge: `cao` → `warn`, `trung_binh` → `info`, `thap` →
+`neutral`. **Không** hiển thị chữ "cao/trung bình/thấp" — người dùng không cần đọc nhãn nội bộ.
+
+**Chuyển động (chốt 2026-11-09, cập nhật 2026-11-11):** dùng chung bộ animation của ba
+dashboard, đặt ở `dashboard-chung.css` và token `--ease-out` trong `_tokens.scss`. Thẻ KPI
+trượt lên so le 60/120/180ms; thanh tiến trình sĩ số chạy từ `width: 0`; cột biểu đồ mọc từ
+dưới. Tất cả tắt hẳn khi `prefers-reduced-motion: reduce`.
+
+**Bố cục (chốt 2026-11-11, sau khi đo trên trình duyệt thật):**
+
+- **`.khung` của `MainLayout` phải có `position: relative`.** Thiếu nó, `main.noi-dung`
+  (`overflow-y: auto`, nội dung 2423px trong khung 485px) không có containing block gần
+  nhất nên vùng cuộn của nó bị tính vào **document**: đo được `scrollHeight` **1372px**
+  trong khi viewport 582px → cuộn trang xuống thấy 790px trắng trơn, header và sidebar
+  trôi mất khỏi màn hình. `overflow: hidden` trên `.khung` không chặn được. Đặt `relative`
+  thì document về đúng bằng viewport, cuộn nội bộ trong `main` vẫn chạy. Khoá bằng
+  `frontend/src/app/core/layout/main-layout.spec.ts`.
+- `.luoi-hai` dùng `align-items: start` — mỗi thẻ tự cao theo nội dung. Bản `stretch`
+  (hai thẻ cùng hàng cao bằng nhau) để lại khoảng trắng trơ trong thẻ ngắn: đo được thẻ
+  "Kết quả học tập" của SCR-05 trống **462px** ở 390px (389px thật so với 851px của thẻ
+  bên cạnh), và 107/113px trên SCR-04. SCR-03 cũng dùng `start`.
+- **Lịch tuần SCR-05** chia cột theo bề rộng đọc được, không cố định 7 cột: ≤900px dùng
+  `repeat(auto-fit, minmax(140px, 1fr))` (768px ra 4 cột, ô buổi 151px), ≤640px về 1 cột
+  và ẩn ngày trống. Giữ 7 cột ở 768px làm ô buổi chỉ còn 78px trong khi nội dung cần 77px
+  — chữ bị cắt và ô phình lên 145px (đo 2026-11-11).
+- **Không đặt `max-height` + `overflow-y: auto` cho khối danh sách trong thẻ.** Bản cũ giới
+  hạn 240px trong khi nội dung 406px, sinh vòng cuộn lồng bên trong `main.noi-dung` — người
+  dùng phải cuộn hai lần. Cuộn là việc của trang; khối nào cần cuộn ngang thì khai
+  `overflow-x: auto` + `overflow-y: clip` (khai `visible` sẽ bị trình duyệt ép thành `auto`).
+- **Đường TB trên biểu đồ không dùng màu tối.** `--color-diem-duong` là `#366ef2` (light) /
+  `#477af0` (dark), đạt 4.50:1 và 4.49:1 trên nền bề mặt. Giá trị cũ `#0f172a` chỉ đạt
+  **1.01:1** trên nền tối `#111827` — đường gần như vô hình (đo 2026-11-11).
+- **Tooltip biểu đồ** phải nằm trọn trong khung cuộn: chặn toạ độ dọc bằng
+  `bottom: min(calc(var(--cao-nhan) + 24px), calc(100% - var(--tt-cao)))`, và cột sát mép
+  (đầu, thứ 2, áp chót, cuối) dán tooltip vào mép thay vì căn giữa — căn giữa đẩy nửa khối
+  ra ngoài viewport ở 390px.
+
+**Tab chi tiết lớp học phần theo vai trò (chốt 2026-11-11):** SCR-04/05 không liên quan,
+nhưng SCR-27 dùng chung đường dẫn cho ba vai trò nên ghi ở đây. ADMIN và GIANG_VIEN thấy 6
+tab (Thông tin / Sinh viên / Lịch học / Điểm danh / Chuyên cần / Điểm). SINH_VIEN thấy 4 tab
+(Thông tin / Sinh viên / Lịch học + hai lối sang trang cá nhân "Điểm danh của tôi" và "Điểm
+của tôi", kèm `?hoc_ky_id=` của lớp). Lý do: `GET /sections/{id}/grades` và
+`/attendance-summary` chỉ mở cho ADMIN/GIANG_VIEN; sinh viên đọc điểm qua `/api/me/grades`.
+
+**Không có trên màn này:** thông báo (chưa có bảng `notifications`), nút điểm danh nhanh,
+danh sách sinh viên. Giữ màn gọn — mọi thao tác ghi nằm ở màn chuyên trách.
+
+#### SCR-05 — Dashboard STUDENT
+
+**Dữ liệu:** `GET /api/dashboard/student`, một lần gọi, không tham số. Tuần hiển thị là
+**tuần chứa hôm nay**, backend tính — FE không gửi `tu_ngay`.
+
+**Thành phần, theo thứ tự trên trang:**
+
+| # | Thành phần | Nguồn | Trạng thái rỗng | Hành vi bấm |
+|---|---|---|---|---|
+| 1 | `page-header` — "Xin chào, {tên}" + dòng phụ tên học kỳ | `hoc_ky.ten_hoc_ky` | `hoc_ky = null` → phụ đề "Chưa đăng ký học phần nào" | — |
+| 1b | **Ô chọn học kỳ** (góc phải page-header) | `GET /api/options/semesters` | Không có kỳ nào → ẩn ô chọn | Đổi kỳ → gọi lại `GET /api/dashboard/student?hoc_ky_id=` và cập nhật cả màn. Trong lúc tải: giữ nguyên khung, chỉ mờ nhẹ phần số liệu (không xoá trắng gây nhảy layout) |
+| 2 | Lưới 4 thẻ số liệu | `the_so_lieu[]` | mảng rỗng → ẩn lưới | `tin_chi` và `hoc_phan` → `/dang-ky-cua-toi`; `gpa_he_4` → `/diem-cua-toi`; `chuyen_can` → `/diem-danh-cua-toi` |
+| 3 | "Thời khoá biểu tuần" | `thoi_khoa_bieu_tuan.cac_buoi[]` | `empty-state`: "Tuần này không có buổi học" | Bấm khối buổi → `/lich-hoc` (không mở popup liên hệ ở dashboard; popup thuộc SCR-35) |
+| 4 | "Học phần đã đăng ký" | `hoc_phan_da_dang_ky[]` | `empty-state`: "Chưa đăng ký học phần nào trong học kỳ này" + nút "Đăng ký ngay" → `/dang-ky-hoc-phan` | Bấm dòng → `/lop-hoc-phan/{lop_hoc_phan_id}` |
+| 5 | "Kết quả học tập" — **biểu đồ cột điểm tổng kết từng môn, thang 10** | `GET /api/me/grades?hoc_ky_id=` → `mon_hoc[].diem_tong_ket` và `mon_hoc[].diem_tb_lop` | Ít hơn 1 môn có `diem_tong_ket ≠ null` → `empty-state` "Học kỳ này chưa có điểm tổng kết". Môn chưa chấm (`null`) → cột không vẽ, nhãn trên cột hiện "—" | Cột không bấm. Nút "Xem chi tiết" ở đầu khối → `/diem-cua-toi` (lọc theo kỳ đang chọn) |
+| 5b | "Chuyên cần & GPA" | `gpa`, `chuyen_can` | `gpa` luôn có; `chuyen_can.ty_le = null` → hiện "—" kèm phụ chú "Chưa có buổi nào được điểm danh" | Bấm khối GPA → `/diem-cua-toi`; bấm khối chuyên cần → `/diem-danh-cua-toi` |
+| 6 | Dòng cảnh báo "Môn cần chú ý" | `chuyen_can.ty_le_thap_nhat` | `null` → ẩn | Bấm → `/diem-danh-cua-toi` (lọc theo học kỳ) |
+
+**Hiển thị tỉ lệ — hai thang, không lẫn:**
+
+- `the_so_lieu[khoa=chuyen_can].gia_tri` là **phần trăm 0–100** (đã có `don_vi: "%"`) → hiện
+  `90,7 %`. FE **không** nhân 100 thêm lần nữa.
+- `chuyen_can.ty_le` và `hoc_phan_da_dang_ky[].ty_le_chuyen_can` là **phân số 0–1** → nhân 100
+  và làm tròn 1 chữ số khi cần hiện phần trăm; hoặc dùng trực tiếp để vẽ thanh tiến trình
+  (thanh nhận 0–1 sẵn).
+- Cả hai dùng `null` để nói "chưa có dữ liệu", khác `0` (đã điểm danh và vắng hết). `0` hiện
+  `0 %`, `null` hiện `—`. Nhầm hai giá trị này là hiển thị sai nghiêm trọng.
+
+**Màu tỉ lệ chuyên cần** — ngưỡng chỉ để tô màu, **không** phải quy tắc nghiệp vụ (hệ thống
+không có BR nào cấm thi khi vắng): `< 80 %` → `warn`, `80–89,9 %` → `info`, `≥ 90 %` →
+`success`. *Chờ user chốt* ngưỡng, vì đây là quyết định thẩm mỹ. Nếu user muốn bỏ hẳn màu thì
+chỉ hiện số.
+
+**Biểu đồ cột điểm (khối 5) — quy ước vẽ:**
+
+- Trục dọc cố định **0–10**, vạch mỗi 2 điểm. **Không** co giãn theo dữ liệu: trục tự co
+  khiến 7,5 và 8,0 trông chênh như 5 và 9, người đọc hiểu sai.
+- Mỗi môn một cột cao `diem_tong_ket / 10`, cùng một màu (`--color-chart-1`). Không tô màu
+  theo mức điểm — màu đó đã mang nghĩa "đạt/không đạt" ở chỗ khác.
+- Đường nối các `diem_tb_lop` vẽ bằng `--color-chart-2`, có chấm tròn rỗng tại từng môn,
+  **cùng một trục 0–10** với cột. Chú giải nằm dưới biểu đồ, hai mục: "Điểm của bạn" (chấm
+  đặc) và "Điểm TB lớp học phần" (chấm rỗng).
+- Chỉ có **một** đường trung bình, không có đường cao nhất/thấp nhất (xem `docs/04` §14c về
+  ranh giới quyền).
+- Tên môn dưới cột tối đa 2 dòng rồi ellipsis, tên đầy đủ trong `title`. Quá 8 môn thì cuộn
+  ngang trong khối, không bóp cột xuống dưới 56 px.
+- Số trên đầu cột dùng `1.234,56` (dấu phẩy thập phân theo tiếng Việt), không `1,234.56`.
+
+**Tên môn dài:** cột/hàng tên môn cắt 1 dòng bằng ellipsis, đưa tên đầy đủ vào `title` —
+cùng quy ước với cột "Lớp" ở §3.3.
+
+#### Trạng thái loading / lỗi / rỗng của SCR-04, SCR-05
+
+| Trạng thái | Hiển thị |
+|---|---|
+| Đang tải | Skeleton cho thẻ số liệu và cho từng khối danh sách; **không** dựng layout nhảy giật sau khi có dữ liệu |
+| Lỗi mạng / 5xx | `app-alert` loại lỗi ở đầu trang + nút "Thử lại" gọi lại endpoint; các khối bên dưới ẩn hẳn, không hiện khung rỗng |
+| `403 FORBIDDEN` | Không xảy ra với vai trò đúng. Nếu xảy ra (token còn hạn nhưng vai trò đã đổi) → đăng xuất và về trang đăng nhập, giống xử lý 401 ở `auth.interceptor` |
+| `401` | `auth.interceptor` xử lý: xoá phiên, về `/dang-nhap` |
+| Rỗng toàn bộ (200 + mọi mảng rỗng) | Vẫn hiện lưới thẻ (giá trị 0) + một `empty-state` chung "Chưa có dữ liệu cho học kỳ này", kèm liên kết tới màn nghiệp vụ tương ứng |
+
+#### Chế độ xem theo vai trò (ADMIN)
+
+Hiện `app.routes.ts` chọn dashboard theo **vai trò tài khoản** (`vaiTroCanMatch` đọc
+`auth.nguoiDung().vai_tro`), **không** theo vai trò đang xem. Vì vậy bảng "Hành vi chi tiết"
+ở §3.13 dòng **Dashboard** ("Hiển thị dashboard của vai trò đang xem") **chưa đúng với code**:
+chưa có component `role-view-switcher`/`role-view-banner` trong `shared/ui/`, nên tính năng
+SCR-52/53 chưa tồn tại. Ghi nhận để không ai giả định nó đang chạy; khi làm SCR-52/53 thì
+`vaiTroCanMatch` phải đọc vai trò **đang xem**, và dashboard TEACHER/STUDENT gọi endpoint
+`/dashboard/teacher|student` sẽ nhận `403` dưới token ADMIN — lúc đó cần một nhánh riêng
+(ví dụ backend cho ADMIN gọi `teacher`/`student` với `giang_vien_id`/`sinh_vien_id` chỉ định).
+*Chờ user chốt hướng khi làm SCR-52/53.*
 
 ### 3.3. Sinh viên (ADMIN, TEACHER)
 
@@ -252,7 +409,7 @@ theo `environment.useMock`, giống luồng sinh viên.
 | SCR-25 | Danh sách lớp học phần | `/lop-hoc-phan` | theo vai trò | Cột: mã, môn, học kỳ, giảng viên, năm thứ, sĩ số `x/y`, trạng thái. Lọc: học kỳ, môn, giảng viên, năm thứ, trạng thái, còn chỗ |
 | SCR-26 | Thêm/Sửa lớp học phần | `/lop-hoc-phan/them`, `/:id/sua` | ADMIN | Trường: mã, môn, học kỳ, giảng viên, sĩ số tối đa, **năm thứ** (để trống = mọi năm) | |
 | SCR-27 | Chi tiết lớp học phần | `/lop-hoc-phan/:id` | theo vai trò | Tab: thông tin, sinh viên, lịch học, điểm danh, điểm |
-| SCR-28 | Danh sách sinh viên của lớp | `/lop-hoc-phan/:id/sinh-vien` | ADMIN, TEACHER | Nút hủy đăng ký (ADMIN) |
+| SCR-28 | Danh sách sinh viên của lớp | `/lop-hoc-phan/:id/sinh-vien` | ADMIN, TEACHER, STUDENT (lớp đã đăng ký) | Nút hủy đăng ký (ADMIN). STUDENT chỉ thấy 2 cột mã + tên của bạn cùng lớp |
 | SCR-29 | Bảng điểm lớp | `/lop-hoc-phan/:id/diem` | ADMIN, TEACHER | Nhập inline, tổng kết và quy đổi điểm chữ/xếp loại theo cấu hình, nút chốt điểm, badge đã chốt |
 
 ### 3.8. Đăng ký học phần
@@ -325,7 +482,7 @@ hủy vẫn hiện để đối chiếu, không hiện lý do hủy trên lịch
 | Ẩn/hiện nút | Các nút thêm/sửa/xóa ẩn theo vai trò đang xem |
 | Dữ liệu | Vẫn là phạm vi ADMIN (xem mọi lớp, mọi sinh viên) |
 | Thao tác ghi | Vẫn dùng quyền ADMIN thật; không bị 403 |
-| Dashboard | Hiển thị dashboard của vai trò đang xem nhưng số liệu toàn hệ thống |
+| Dashboard | Hiển thị dashboard của vai trò đang xem nhưng số liệu toàn hệ thống — **chưa làm**: `vaiTroCanMatch` đang đọc vai trò thật của tài khoản, xem ghi chú cuối §3.2 |
 | Đăng xuất | Về ADMIN, xóa khóa `localStorage` |
 | Chuyển route | Nếu đang ở route không thuộc vai trò xem (ví dụ `/menu` khi xem như STUDENT) → chuyển về `/dashboard` kèm thông báo |
 

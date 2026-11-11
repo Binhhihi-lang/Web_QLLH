@@ -42,9 +42,23 @@ import { StatusBadge } from '@shared/ui/status-badge';
         <a class="active" [routerLink]="['/lop-hoc-phan', x.id]">Thông tin</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'sinh-vien']">Sinh viên</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'lich-hoc']">Lịch học</a>
-        <a [routerLink]="['/diem-danh']" [queryParams]="{ lop_hoc_phan_id: x.id }">Điểm danh</a>
-        <a [routerLink]="['/lop-hoc-phan', x.id, 'chuyen-can']">Chuyên cần</a>
-        <a [routerLink]="['/lop-hoc-phan', x.id, 'diem']">Điểm</a>
+        @if (laSinhVien()) {
+          <!--
+            Sinh viên không được vào màn quản lý của lớp: chuyen-can, diem,
+            diem-danh cần dữ liệu cả lớp nên BE trả 403. Hai link dưới đưa sang
+            trang cá nhân, kèm kỳ của lớp để mở đúng học kỳ.
+          -->
+          <a [routerLink]="['/diem-danh-cua-toi']" [queryParams]="{ hoc_ky_id: x.hoc_ky.id }"
+            >Điểm danh của tôi</a
+          >
+          <a [routerLink]="['/diem-cua-toi']" [queryParams]="{ hoc_ky_id: x.hoc_ky.id }"
+            >Điểm của tôi</a
+          >
+        } @else {
+          <a [routerLink]="['/diem-danh']" [queryParams]="{ lop_hoc_phan_id: x.id }">Điểm danh</a>
+          <a [routerLink]="['/lop-hoc-phan', x.id, 'chuyen-can']">Chuyên cần</a>
+          <a [routerLink]="['/lop-hoc-phan', x.id, 'diem']">Điểm</a>
+        }
       </nav>
 
       <section class="card" aria-label="Thông tin lớp học phần">
@@ -154,6 +168,7 @@ export class LopHocPhanChiTiet {
   readonly loi = signal('');
   readonly thongBao = signal('');
   readonly laAdmin = computed(() => this.auth.nguoiDung()?.vai_tro === 'ADMIN');
+  readonly laSinhVien = computed(() => this.auth.nguoiDung()?.vai_tro === 'SINH_VIEN');
 
   constructor() {
     this.tai();

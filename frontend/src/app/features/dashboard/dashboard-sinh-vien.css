@@ -1,0 +1,417 @@
+/*
+ * Phần CSS riêng của dashboard SINH_VIEN (SCR-05). Phần dùng chung nằm ở
+ * `dashboard-chung.css`, được nạp qua `styleUrls` cùng file này.
+ */
+
+/* ================= Thời khoá biểu tuần ================= */
+.tuan {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cot-ngay {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 5px;
+  border-radius: var(--radius);
+  background: var(--color-surface-alt);
+}
+
+.cot-ngay.co-buoi {
+  background: transparent;
+  border: 1px solid var(--color-border-soft);
+}
+
+.cot-ngay-dau {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-ink-muted);
+  text-align: center;
+  padding-bottom: 2px;
+}
+
+.khong-buoi {
+  text-align: center;
+  color: var(--color-ink-subtle);
+  font-size: var(--text-caption);
+  padding: 10px 0;
+}
+
+.o-buoi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 10px;
+  /* Viền 4 cạnh + màu nền theo loại ca học: CÙNG quy ước với khối ca ở
+     lịch tuần SCR-35 (`lich-hoc/tuan.ts`, `.khoi-*`). Không dùng
+     `border-left` để nhấn — lịch tuần không làm vậy, và hai màn phải
+     trông như một hệ thống. Màu mặc định là lý thuyết; lớp `loai-*` bên
+     dưới ghi đè theo `hinh_thuc` backend trả. */
+  border: 1px solid var(--lich-ly-thuyet-vien);
+  border-radius: var(--radius-sm);
+  background: var(--lich-ly-thuyet-bg);
+  color: var(--lich-ly-thuyet-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: filter var(--dur-fast) var(--ease);
+}
+
+.o-buoi.loai-ly-thuyet {
+  border-color: var(--lich-ly-thuyet-vien);
+  background: var(--lich-ly-thuyet-bg);
+  color: var(--lich-ly-thuyet-fg);
+}
+
+.o-buoi.loai-thuc-hanh {
+  border-color: var(--lich-thuc-hanh-vien);
+  background: var(--lich-thuc-hanh-bg);
+  color: var(--lich-thuc-hanh-fg);
+}
+
+.o-buoi.loai-truc-tuyen {
+  border-color: var(--lich-truc-tuyen-vien);
+  background: var(--lich-truc-tuyen-bg);
+  color: var(--lich-truc-tuyen-fg);
+}
+
+/* Buổi đã huỷ: nền đỏ ĐẶC + dải chéo, cùng quy ước với lịch tuần SCR-35 —
+   không chỉ đổi màu chữ, vì người mù màu không phân biệt được sắc đỏ. */
+.o-buoi.loai-tam-ngung {
+  border-color: var(--lich-tam-ngung-vien);
+  background: var(--lich-tam-ngung-bg);
+  color: var(--lich-tam-ngung-fg);
+}
+
+.o-buoi.loai-tam-ngung strong,
+.o-buoi.loai-tam-ngung small,
+.o-buoi.loai-tam-ngung .o-buoi-gio {
+  color: inherit;
+}
+
+.o-buoi:hover {
+  filter: brightness(0.97);
+}
+
+.o-buoi:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.o-buoi-gio {
+  font-size: 10px;
+  font-weight: 700;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.o-buoi strong {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: inherit;
+}
+
+.o-buoi small {
+  font-size: 10px;
+  color: inherit;
+  opacity: 0.86;
+}
+
+.o-buoi app-status-badge {
+  margin-top: 3px;
+}
+
+/* ================= Bảng học phần ================= */
+/*
+ * Chỉ cuộn NGANG khi bảng rộng hơn khung (màn hẹp). Không còn `max-height:
+ * 250px` + `overflow-y: auto`: khung đó cao 235px trong khi bảng 713px, tạo
+ * vòng cuộn lồng bên trong `main.noi-dung` (đo 2026-11-11). Chiều dọc để card
+ * tự cao, cuộn là việc của trang.
+ *
+ * `overflow-y: clip` là BẮT BUỘC: khi trục x là `auto`, trình duyệt ép trục y
+ * từ `visible` thành `auto` — khai `clip` để nó không sinh khung cuộn dọc thứ
+ * hai (bảng không bị cắt vì không còn giới hạn chiều cao).
+ */
+.bang-cuon {
+  overflow-x: auto;
+  overflow-y: clip;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-alt);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-border-soft);
+  font-size: var(--text-small);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--color-primary-soft);
+}
+
+td.ma {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr.hang-bam {
+  cursor: pointer;
+}
+
+td.cat-dong {
+  max-width: 220px;
+}
+
+.ten-mon {
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  max-width: 190px;
+}
+
+/* Thanh chuyên cần trong ô bảng — nhận phân số 0–1 trực tiếp. */
+.o-chuyen-can {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 130px;
+}
+
+.thanh-nen.nho {
+  height: 5px;
+  flex: 1;
+}
+
+.thanh-day.sac-warning {
+  background: var(--color-warning);
+}
+
+.thanh-day.sac-info {
+  background: var(--color-info);
+}
+
+.thanh-day.sac-success {
+  background: var(--color-success);
+}
+
+.thanh-day.sac-neutral {
+  background: var(--color-border);
+}
+
+.so-nho {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ================= Kết quả học tập ================= */
+.ket-qua {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.o-ket-qua {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.o-ket-qua:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-alt);
+}
+
+.o-ket-qua:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.o-kq-nhan {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.o-kq-nhan .material-icons {
+  font-size: 16px;
+}
+
+.o-kq-so {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.o-kq-so small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-subtle);
+}
+
+.o-kq-phu,
+.o-kq-them {
+  font-size: var(--text-caption);
+  color: var(--color-ink-muted);
+}
+
+.kq-tron {
+  margin: 4px 0 8px;
+}
+
+/* Màu số chuyên cần theo ngưỡng — ngưỡng CHỈ để tô màu (§3.2). */
+.o-kq-so.mau-warning {
+  color: var(--color-on-warning-soft);
+}
+
+.o-kq-so.mau-info {
+  color: var(--color-on-info-soft);
+}
+
+.o-kq-so.mau-success {
+  color: var(--color-on-success-soft);
+}
+
+.o-kq-so.mau-neutral {
+  color: var(--color-ink-subtle);
+}
+
+/* ================= Dòng cảnh báo "Môn cần chú ý" ================= */
+.canh-bao-wrap {
+  margin-top: 12px;
+}
+
+.canh-bao {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--color-warning);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--color-warning-soft);
+  font: inherit;
+  text-align: left;
+  color: var(--color-on-warning-soft);
+  cursor: pointer;
+}
+
+.canh-bao:focus-visible {
+  outline: 2px solid var(--color-warning);
+  outline-offset: 2px;
+}
+
+.canh-bao-icon {
+  font-size: 20px;
+  flex: none;
+}
+
+.canh-bao-noi-dung {
+  flex: 1;
+  min-width: 0;
+}
+
+.canh-bao-noi-dung strong {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.canh-bao-noi-dung small {
+  display: block;
+  font-size: var(--text-caption);
+  opacity: 0.92;
+}
+
+.canh-bao .viec-mui {
+  color: inherit;
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 900px) {
+  /*
+   * Bảy cột ở 768px còn ~90px mỗi ô: ô buổi chỉ rộng 78px trong khi nội dung
+   * cần 77px, nên nhãn "Sắp diễn ra" và tên môn bị cắt, và mỗi ô phình lên
+   * 145px chiều cao do chữ xuống dòng (đo 2026-11-11). Đổi sang lưới tự chia
+   * theo bề rộng tối thiểu của MỘT ô đọc được (140px = 10px đệm ×2 + 120px
+   * nội dung) — 768px ra 4 cột, 641px ra 4 cột.
+   */
+  .tuan {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  thead th,
+  tbody td {
+    padding: 8px 10px;
+  }
+
+  /* Điện thoại: mỗi ngày một khối dọc. Bỏ ngày trống để không phải cuộn qua
+     bảy dòng rỗng. */
+  .tuan {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .cot-ngay:not(.co-buoi) {
+    display: none;
+  }
+
+  .cot-ngay-dau {
+    text-align: left;
+    padding: 0 0 4px;
+  }
+}

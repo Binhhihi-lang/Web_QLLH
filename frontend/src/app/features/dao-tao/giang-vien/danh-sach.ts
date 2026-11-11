@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { GiangVien, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
+import { AuthService } from '@core/auth/auth.service';
+import { GiangVienHoSo, ThamSoDanhSach, TuyChonNganh } from '@core/models/dao-tao.model';
 import { GiangVienService } from '@core/services/giang-vien.service';
 import { KetQuaHangLoat, PageMeta } from '@core/mock/mock-response';
 import { AppAlert } from '@shared/ui/app-alert';
@@ -30,9 +31,15 @@ import { StatusBadge } from '@shared/ui/status-badge';
   template: `
     <app-page-header
       title="Giảng viên"
-      description="Tìm kiếm và quản lý trạng thái tài khoản giảng viên toàn trường."
+      [description]="
+        laAdmin()
+          ? 'Tìm kiếm và quản lý trạng thái tài khoản giảng viên toàn trường.'
+          : 'Tra cứu thông tin liên hệ của giảng viên.'
+      "
     >
-      <app-button variant="primary" routerLink="/giang-vien/them">Thêm giảng viên</app-button>
+      @if (laAdmin()) {
+        <app-button variant="primary" routerLink="/giang-vien/them">Thêm giảng viên</app-button>
+      }
     </app-page-header>
 
     <div class="thanh-loc">
@@ -125,7 +132,7 @@ import { StatusBadge } from '@shared/ui/status-badge';
       [rows]="rows()"
       [dangTai]="dangTai()"
       [loi]="loi()"
-      [chonNhieu]="true"
+      [chonNhieu]="laAdmin()"
       [daChon]="daChon()"
       [sortBy]="sapXepHienTai().sort_by"
       [sortDir]="sapXepHienTai().sort_dir"
@@ -146,27 +153,35 @@ import { StatusBadge } from '@shared/ui/status-badge';
           [label]="row.trang_thai ? 'Đang hoạt động' : 'Đã khóa'"
         />
       </ng-template>
+      <!--
+        Thao tác chỉ dành cho ADMIN. Giảng viên sửa được hồ sơ của chính mình
+        (BR: xem/sửa hồ sơ cá nhân), còn lại chỉ đọc. Sinh viên không thao tác.
+      -->
       <ng-template appOTuyChinh="thao_tac" let-row>
-        <div class="nhom-thao-tac">
-          <button
-            type="button"
-            class="nut-sua"
-            [attr.aria-label]="'Sửa giảng viên ' + row.ho_ten"
-            (click)="sua(row)"
-          >
-            <span class="material-icons" aria-hidden="true">edit</span>
-            Sửa
-          </button>
-          <button
-            type="button"
-            class="nut-sua nut-xoa"
-            [attr.aria-label]="'Xóa giảng viên ' + row.ho_ten"
-            (click)="hoiXoa(row)"
-          >
-            <span class="material-icons" aria-hidden="true">delete</span>
-            Xóa
-          </button>
-        </div>
+        @if (coTheSua(row)) {
+          <div class="nhom-thao-tac">
+            <button
+              type="button"
+              class="nut-sua"
+              [attr.aria-label]="'Sửa giảng viên ' + row.ho_ten"
+              (click)="sua(row)"
+            >
+              <span class="material-icons" aria-hidden="true">edit</span>
+              Sửa
+            </button>
+            @if (laAdmin()) {
+              <button
+                type="button"
+                class="nut-sua nut-xoa"
+                [attr.aria-label]="'Xóa giảng viên ' + row.ho_ten"
+                (click)="hoiXoa(row)"
+              >
+                <span class="material-icons" aria-hidden="true">delete</span>
+                Xóa
+              </button>
+            }
+          </div>
+        }
       </ng-template>
     </app-data-table>
 
@@ -374,10 +389,23 @@ import { StatusBadge } from '@shared/ui/status-badge';
 export class GiangVienDanhSach {
   private readonly service = inject(GiangVienService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+
+  readonly laAdmin = computed(() => this.auth.nguoiDung()?.vai_tro === 'ADMIN');
+
+  /**
+   * Sửa được khi là ADMIN, hoặc là giảng viên đang xem đúng hồ sơ của mình.
+   * Sinh viên và giảng viên xem hồ sơ người khác chỉ đọc.
+   */
+  readonly coTheSua = (gv: GiangVienHoSo): boolean => {
+    const toi = this.auth.nguoiDung();
+    if (toi?.vai_tro === 'ADMIN') return true;
+    return toi?.vai_tro === 'GIANG_VIEN' && toi.ho_so?.loai === 'giang_vien' && toi.ho_so.id === gv.id;
+  };
 
   readonly dangTai = signal(true);
   readonly loi = signal<string | null>(null);
-  readonly rows = signal<GiangVien[]>([]);
+  readonly rows = signal<GiangVienHoSo[]>([]);
   readonly meta = signal<PageMeta | null>(null);
   readonly tuKhoa = signal('');
   readonly locNganhId = signal('');
@@ -387,7 +415,7 @@ export class GiangVienDanhSach {
   readonly dangHangLoat = signal(false);
   readonly canXoaHangLoat = signal(false);
   readonly ketQuaHangLoat = signal<KetQuaHangLoat | null>(null);
-  readonly canXoa = signal<GiangVien | null>(null);
+  readonly canXoa = signal<GiangVienHoSo | null>(null);
   readonly dangXoa = signal(false);
   readonly lyDoChanXoa = signal('');
   readonly sapXepHienTai = signal<SapXep>({ sort_by: 'ma_gv', sort_dir: 'asc' });
@@ -396,15 +424,31 @@ export class GiangVienDanhSach {
   private trang = 1;
   private coTrang = 10;
 
-  readonly cot = computed<CotBang<GiangVien>[]>(() => [
+  readonly cot = computed<CotBang<GiangVienHoSo>[]>(() => [
     { khoa: 'ma_gv', nhan: 'Mã giảng viên', sap_xep: true, rong: '150px' },
     { khoa: 'ho_ten', nhan: 'Họ tên', sap_xep: true },
     { khoa: 'email', nhan: 'Email' },
     { khoa: 'so_dien_thoai', nhan: 'Số điện thoại', rong: '150px' },
-    { khoa: 'nganh', nhan: 'Ngành' },
-    { khoa: 'trang_thai', nhan: 'Trạng thái', rong: '150px' },
-    { khoa: 'thao_tac', nhan: 'Thao tác', rong: '220px' },
+    // Cột Ngành và Trạng thái lấy từ khối nội bộ — sinh viên không nhận được
+    // hai trường này nên bỏ hẳn cột thay vì hiện một cột toàn "—".
+    ...(this.laAdmin() || this.auth.nguoiDung()?.vai_tro === 'GIANG_VIEN'
+      ? [
+          { khoa: 'nganh', nhan: 'Ngành' },
+          { khoa: 'trang_thai', nhan: 'Trạng thái', rong: '150px' },
+        ]
+      : []),
+    ...(this.coTheSuaBatKy()
+      ? [{ khoa: 'thao_tac', nhan: 'Thao tác', rong: '220px' }]
+      : []),
   ]);
+
+  /** Có dòng nào người dùng được sửa không — quyết định có hiện cột Thao tác. */
+  private readonly coTheSuaBatKy = computed(() => {
+    const toi = this.auth.nguoiDung();
+    if (toi?.vai_tro === 'ADMIN') return true;
+    if (toi?.vai_tro !== 'GIANG_VIEN') return false;
+    return this.rows().some((gv) => this.coTheSua(gv));
+  });
 
   readonly coLoc = computed(() => {
     const f = this.boLoc();
@@ -502,15 +546,15 @@ export class GiangVienDanhSach {
     this.tai();
   }
 
-  moChiTiet(gv: GiangVien): void {
+  moChiTiet(gv: GiangVienHoSo): void {
     this.router.navigate(['/giang-vien', gv.id]);
   }
 
-  sua(gv: GiangVien): void {
+  sua(gv: GiangVienHoSo): void {
     this.router.navigate(['/giang-vien', gv.id, 'sua']);
   }
 
-  hoiXoa(gv: GiangVien): void {
+  hoiXoa(gv: GiangVienHoSo): void {
     this.lyDoChanXoa.set('');
     this.canXoa.set(gv);
   }

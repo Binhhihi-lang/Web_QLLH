@@ -130,8 +130,10 @@ class DanhMucSeeder extends Seeder
                 'ky_thu' => 2,
                 'ngay_bat_dau' => '2027-01-25',
                 'ngay_ket_thuc' => '2027-05-28',
-                'mo_dang_ky_luc' => '2027-01-04 08:00:00',
-                'dong_dang_ky_luc' => '2027-01-22 17:00:00',
+                // Đợt đăng ký mở sẵn để demo luồng đăng ký (học kỳ vẫn UPCOMING):
+                // chỉ có lớp mới nhận đăng ký thật, và chỉ trong khung này.
+                'mo_dang_ky_luc' => '2026-11-01 08:00:00',
+                'dong_dang_ky_luc' => '2026-12-31 17:00:00',
                 'trang_thai' => HocKy::UPCOMING,
                 'created_at' => now(),
                 'updated_at' => now(),

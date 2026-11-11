@@ -58,7 +58,10 @@ describe('LopHocPhanSinhVien — tìm kiếm trong danh sách lớp', () => {
     fixture.detectChanges();
   }
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    TestBed.resetTestingModule();
+  });
 
   it('tải được danh sách và mặc định hiện đủ', async () => {
     await taoTrang([
@@ -140,5 +143,59 @@ describe('LopHocPhanSinhVien — tìm kiếm trong danh sách lớp', () => {
 
     const than = fixture.nativeElement as HTMLElement;
     expect(than.querySelector('app-search-input')).toBeNull();
+  });
+
+  it('SINH_VIEN chỉ thấy 2 cột, không có cột email/lớp và không có nút hủy', async () => {
+    await taoTrang(
+      [
+        {
+          id: 1,
+          ma_sv: 'SV000001',
+          ho_ten: 'Nguyễn Văn An',
+          dang_ky_hoc_phan_id: 1,
+        } as SinhVienLop,
+      ],
+      'SINH_VIEN',
+    );
+
+    const nhan = component.cot().map((c) => c.nhan);
+    expect(nhan).toEqual(['Mã sinh viên', 'Họ và tên']);
+
+    const than = fixture.nativeElement as HTMLElement;
+    expect(than.textContent).toContain('SV000001');
+    expect(than.textContent).toContain('Nguyễn Văn An');
+    expect(than.textContent).toContain('Danh sách sinh viên cùng lớp');
+    expect(than.textContent).not.toContain('Hủy đăng ký');
+  });
+
+  it('ADMIN thấy 4 cột và nút hủy trên từng dòng', async () => {
+    await taoTrang([sinhVien(1, 'SV000001', 'Nguyễn Văn An')], 'ADMIN');
+
+    const nhan = component.cot().map((c) => c.nhan);
+    // ADMIN có thêm cột thao tác chứa nút Hủy đăng ký.
+    expect(nhan).toEqual(['Mã sinh viên', 'Họ và tên', 'Email', 'Lớp hành chính', 'Thao tác']);
+
+    const than = fixture.nativeElement as HTMLElement;
+    expect(than.textContent).toContain('Hủy đăng ký');
+    expect(than.textContent).toContain('Danh sách sinh viên có đăng ký đang hiệu lực');
+  });
+
+  it('ô tìm kiếm không sinh chuỗi "undefined" khi thiếu email và lớp', async () => {
+    await taoTrang(
+      [
+        { id: 1, ma_sv: 'SV000001', ho_ten: 'Nguyễn Văn An', dang_ky_hoc_phan_id: 1 },
+        { id: 2, ma_sv: 'SV000002', ho_ten: 'Trần Thị B', dang_ky_hoc_phan_id: 2 },
+      ],
+      'SINH_VIEN',
+    );
+
+    // Nếu khoá tìm kiếm nối thẳng `undefined`, gõ "undef" sẽ khớp cả hai dòng.
+    component.tuKhoa.set('undefined');
+    expect(component.rowsHienThi().length).toBe(0);
+
+    // Tìm theo mã và tên vẫn chạy bình thường.
+    component.tuKhoa.set('tran thi b');
+    expect(component.rowsHienThi().length).toBe(1);
+    expect(component.rowsHienThi()[0].ma_sv).toBe('SV000002');
   });
 });

@@ -10,6 +10,7 @@ use App\Models\LichSuDiem;
 use App\Models\LopHocPhan;
 use App\Models\SinhVien;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -171,18 +172,27 @@ class QuanLyDiemService
 
     /**
      * Điểm cá nhân của sinh viên theo học kỳ (SCR-42).
+     *
+     * `$dangKyDaTai` cho phép dashboard truyền collection đã nạp sẵn (để không
+     * nạp lại cùng dữ liệu hai lần); bỏ trống thì tự truy vấn.
+     *
+     * @param  Collection<int, DangKyHocPhan>|null  $dangKyDaTai
      */
-    public function diemCuaToi(User $nguoiThucHien, ?int $hocKyId = null): array
-    {
+    public function diemCuaToi(
+        User $nguoiThucHien,
+        ?int $hocKyId = null,
+        ?Collection $dangKyDaTai = null,
+        ?HocKy $hocKyDaBiet = null,
+    ): array {
         $sinhVien = $this->laySinhVien($nguoiThucHien);
 
-        $hocKy = null;
-        if ($hocKyId !== null) {
+        $hocKy = $hocKyDaBiet;
+        if ($hocKy === null && $hocKyId !== null) {
             $hocKy = HocKy::query()->find($hocKyId);
             if (! $hocKy) {
                 throw new LoiNghiepVu('NOT_FOUND', 'Không tìm thấy học kỳ yêu cầu.', 404);
             }
-        } else {
+        } elseif ($hocKy === null) {
             // Lấy học kỳ mới nhất mà sinh viên có đăng ký, hoặc học kỳ ONGOING
             $hocKy = HocKy::query()
                 ->whereHas('lopHocPhan.dangKyHocPhan', fn ($q) => $q->where('sinh_vien_id', $sinhVien->id)->where('trang_thai', DangKyHocPhan::ACTIVE))
@@ -205,7 +215,7 @@ class QuanLyDiemService
             ];
         }
 
-        $dangKys = DangKyHocPhan::query()
+        $dangKys = $dangKyDaTai ?? DangKyHocPhan::query()
             ->where('sinh_vien_id', $sinhVien->id)
             ->where('trang_thai', DangKyHocPhan::ACTIVE)
             ->whereHas('lopHocPhan', fn ($q) => $q->where('hoc_ky_id', $hocKy->id))
@@ -214,6 +224,20 @@ class QuanLyDiemService
 
         // Nhóm theo môn học để xử lý học lại (BR-28, ADR-018: lấy điểm cao nhất)
         $monHocGrouped = $dangKys->groupBy(fn ($dk) => $dk->lopHocPhan->mon_hoc_id);
+
+        // §14c — trung bình `diem_tong_ket` của MỌI đăng ký ACTIVE trong lớp học phần.
+        // Một truy vấn gộp cho mọi lớp của kỳ, không truy vấn trong vòng lặp.
+        // Collection đã nạp sẵn (`$dangKyDaTai`) thì bỏ qua: dashboard cần con số
+        // này nhưng không muốn trả giá thêm một truy vấn nữa.
+        // `diem_tb_lop` là trường của màn `/me/grades` (docs/04 §14c). Khi người
+        // gọi đã truyền collection (`$dangKyDaTai`) — tức là một màn tổng hợp
+        // như dashboard — thì bỏ qua: họ không hiển thị nó, và truy vấn AVG này
+        // là một trong những cái đẩy dashboard vượt ngân sách 8.
+        $diemTbLop = $dangKyDaTai !== null
+            ? []
+            : $this->diemTrungBinhLop(
+                $dangKys->pluck('lopHocPhan')->filter()->pluck('id')->unique()->values()->all()
+            );
 
         $monHocList = [];
         $tongTinChi = 0;
@@ -247,6 +271,7 @@ class QuanLyDiemService
                 'diem_chu' => $diem?->diem_chu,
                 'diem_he_4' => $this->soHoacNull($diem?->diem_he_4),
                 'ket_qua' => $diem?->ket_qua,
+                'diem_tb_lop' => $diemTbLop[$best->lop_hoc_phan_id] ?? null,
             ];
         }
 
@@ -269,26 +294,32 @@ class QuanLyDiemService
     /**
      * GPA học kỳ hiện tại và CPA tích lũy (FR-12.08).
      */
-    public function gpaCuaToi(User $nguoiThucHien): array
-    {
+    /**
+     * GPA học kỳ hiện tại + CPA tích lũy (FR-12.08).
+     *
+     * `$kyDaLoc` / `$dangKyCuaKy` cho phép người gọi đã nạp sẵn dữ liệu của kỳ
+     * truyền vào, tránh chạy lại nhóm truy vấn điểm. Dashboard cần số này MỖI
+     * lần tải trang; tính lại từ đầu tốn thêm 6 truy vấn mỗi lần.
+     *
+     * @param  array<string, mixed>|null  $kyDaLoc
+     * @param  Collection<int, DangKyHocPhan>|null  $dangKyCuaKy
+     */
+    public function gpaCuaToi(
+        User $nguoiThucHien,
+        ?array $kyDaLoc = null,
+        ?Collection $dangKyCuaKy = null,
+        ?HocKy $hocKyDaBiet = null,
+    ): array {
         $sinhVien = $this->laySinhVien($nguoiThucHien);
 
-        // 1. Học kỳ hiện tại (ONGOING hoặc gần nhất có đăng ký)
-        $hocKyHienTai = HocKy::query()
-            ->where('trang_thai', HocKy::ONGOING)
-            ->whereHas('lopHocPhan.dangKyHocPhan', fn ($q) => $q->where('sinh_vien_id', $sinhVien->id)->where('trang_thai', DangKyHocPhan::ACTIVE))
-            ->first();
-
-        if (! $hocKyHienTai) {
-            $hocKyHienTai = HocKy::query()
-                ->whereHas('lopHocPhan.dangKyHocPhan', fn ($q) => $q->where('sinh_vien_id', $sinhVien->id)->where('trang_thai', DangKyHocPhan::ACTIVE))
-                ->orderByDesc('ngay_bat_dau')
-                ->first();
-        }
+        // 1. Học kỳ hiện tại. Người gọi đã biết kỳ thì dùng luôn — dashboard
+        //    vừa xác định kỳ ở bước trước, dò lại là 2 truy vấn thừa.
+        $hocKyHienTai = $hocKyDaBiet ?? $this->hocKyHienTaiCuaSinhVien($sinhVien->id);
 
         $hocKyHienTaiData = null;
         if ($hocKyHienTai) {
-            $kyData = $this->diemCuaToi($nguoiThucHien, $hocKyHienTai->id);
+            $kyData = $kyDaLoc
+                ?? $this->diemCuaToi($nguoiThucHien, $hocKyHienTai->id, $dangKyCuaKy, $hocKyHienTai);
             $hocKyHienTaiData = [
                 'id' => $hocKyHienTai->id,
                 'ma_hoc_ky' => $hocKyHienTai->ma_hoc_ky,
@@ -350,6 +381,25 @@ class QuanLyDiemService
                 'so_hoc_ky_da_tinh' => count($cacHocKyDaTinh),
             ],
         ];
+    }
+
+    /**
+     * Kỳ hiện tại của sinh viên: ONGOING có đăng ký → kỳ mới nhất có đăng ký.
+     */
+    private function hocKyHienTaiCuaSinhVien(int $sinhVienId): ?HocKy
+    {
+        $coDangKy = fn ($query) => $query
+            ->where('sinh_vien_id', $sinhVienId)
+            ->where('trang_thai', DangKyHocPhan::ACTIVE);
+
+        return HocKy::query()
+            ->where('trang_thai', HocKy::ONGOING)
+            ->whereHas('lopHocPhan.dangKyHocPhan', $coDangKy)
+            ->first()
+            ?? HocKy::query()
+                ->whereHas('lopHocPhan.dangKyHocPhan', $coDangKy)
+                ->orderByDesc('ngay_bat_dau')
+                ->first();
     }
 
     /**
@@ -416,6 +466,35 @@ class QuanLyDiemService
         ];
     }
 
+    /**
+     * Trung bình `diem_tong_ket` của mọi đăng ký ACTIVE trong từng lớp học phần
+     * (§14c). Chỉ trả MỘT con số mỗi lớp — không lộ điểm của từng sinh viên khác.
+     *
+     * Hai người gọi, CÙNG một định nghĩa: `diemCuaToi()` (`/api/me/grades`) và
+     * `DashboardService::layThongKeGiangVien()` (`lop_phu_trach[].diem_tb_lop`).
+     * Sửa công thức ở đây là sửa cho cả hai màn.
+     *
+     * @param  array<int, int>  $lopHocPhanIds
+     * @return array<int, float> khoá = lop_hoc_phan_id
+     */
+    public function diemTrungBinhLop(array $lopHocPhanIds): array
+    {
+        if ($lopHocPhanIds === []) {
+            return [];
+        }
+
+        return DangKyHocPhan::query()
+            ->join('diem', 'diem.dang_ky_hoc_phan_id', '=', 'dang_ky_hoc_phan.id')
+            ->whereIn('dang_ky_hoc_phan.lop_hoc_phan_id', $lopHocPhanIds)
+            ->where('dang_ky_hoc_phan.trang_thai', DangKyHocPhan::ACTIVE)
+            ->whereNotNull('diem.diem_tong_ket')
+            ->groupBy('dang_ky_hoc_phan.lop_hoc_phan_id')
+            ->selectRaw('dang_ky_hoc_phan.lop_hoc_phan_id as lop_id, AVG(diem.diem_tong_ket) as diem_tb')
+            ->pluck('diem_tb', 'lop_id')
+            ->map(fn ($giaTri) => round((float) $giaTri, 2))
+            ->all();
+    }
+
     private function laySinhVien(User $nguoiDung): SinhVien
     {
         if (! $nguoiDung->laSinhVien() || ! $nguoiDung->sinhVien) {
@@ -470,4 +549,3 @@ class QuanLyDiemService
         return (string) $giaTri;
     }
 }
-

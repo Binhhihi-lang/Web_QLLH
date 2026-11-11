@@ -173,6 +173,11 @@ import { vaiTroDuocThayMenu } from '@core/utils/menu-vai-tro';
       align-items: center;
       gap: 8px;
       flex: 1;
+      /* Không có dòng này thì min-width auto của flex item giữ hộp tìm kiếm ở
+         bề rộng nội dung (input có placeholder dài) → header rộng 482px trong
+         khung 390px và .khung cắt mất avatar + tên người dùng ở mép phải. Đo
+         trên trình duyệt thật 2026-11-11: 482px → 390px sau khi thêm. */
+      min-width: 0;
       max-width: 420px;
       background: var(--color-surface-alt);
       border: 1.5px solid var(--color-border);
@@ -287,6 +292,7 @@ import { vaiTroDuocThayMenu } from '@core/utils/menu-vai-tro';
       background: transparent;
       cursor: pointer;
       font-family: var(--font-body);
+      min-width: 0;
     }
 
     .nut-nguoi-dung:hover {
@@ -411,6 +417,29 @@ import { vaiTroDuocThayMenu } from '@core/utils/menu-vai-tro';
 
       .tim {
         max-width: none;
+      }
+    }
+
+    /* 390px: hộp tìm kiếm và cụm nút không còn đủ chỗ cùng lúc — thu khoảng
+       cách và bỏ caret để avatar + chuông không bị đẩy ra ngoài khung. Đo thật:
+       header 482px trong khung 390px trước khi sửa (2026-11-11). */
+    @media (max-width: 480px) {
+      header {
+        gap: 8px;
+        padding: 0 12px;
+      }
+
+      .phai {
+        gap: 4px;
+      }
+
+      .nut-nguoi-dung {
+        padding: 4px;
+        gap: 0;
+      }
+
+      .caret {
+        display: none;
       }
     }
   `,

@@ -13,12 +13,14 @@ Phiên bản tài liệu: **v0.4** — cập nhật ngày 2026-10-26
 | [02-use-cases.md](02-use-cases.md) | Use case + tiêu chí chấp nhận | ✅ Đã chốt | Luồng nghiệp vụ, điều kiện biên |
 | [03-data-model.md](03-data-model.md) | ERD, bảng, cột, kiểu, index, ràng buộc | ✅ Đã chốt | Schema database, quy tắc xóa mềm |
 | [04-api-contract.md](04-api-contract.md) | Quy ước API + danh sách endpoint | ✅ Đã chốt | Hợp đồng FE ↔ BE |
-| [openapi.yaml](openapi.yaml) | OpenAPI 3.1 — **64 path, 100 operation** đã đặc tả trong hợp đồng 125 endpoint | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
+| [openapi.yaml](openapi.yaml) | OpenAPI 3.1 — **68 path / 105 operation** (đo 2026-11-08; thêm `/dashboard/teacher`, `/dashboard/student`), máy đọc của 132 operation đặc tả | 🚧 Đang bổ sung | Máy đọc hợp đồng API |
 | [postman/](postman/) | Collection **74 request** + hướng dẫn test API độc lập | ✅ Dùng được | Test backend không cần FE |
 | [05-screens.md](05-screens.md) | Danh sách màn hình + điều hướng Angular | ✅ Đã chốt | Cấu trúc frontend |
 | [06-test-plan.md](06-test-plan.md) | Ma trận FR/BR → test case | ✅ Đã chốt | Kiểm thử |
 | [07-decisions.md](07-decisions.md) | Nhật ký quyết định kiến trúc (ADR) | ✅ Đã chốt | Lý do các lựa chọn |
 | [08-roadmap.md](08-roadmap.md) | Kế hoạch triển khai 10 tuần | ✅ Đã chốt | Thứ tự công việc |
+| [09-kien-truc-he-thong.md](09-kien-truc-he-thong.md) | Kiến trúc hệ thống: sơ đồ tổng thể, backend, frontend, ERD, chỉ số sức khoẻ, phát hiện (3 chặn deploy / 15 nên sửa / 5 ghi nhận) — đo 2026-11-09 | ✅ Dùng được | Bức tranh kỹ thuật để review, bàn giao, thuyết trình |
+| [09-kien-truc-he-thong.html](09-kien-truc-he-thong.html) | Bản trực quan của `09` (mở bằng trình duyệt, tự chứa, có dark mode) | ✅ Dùng được | Trình bày, đọc nhanh |
 | [phan-cong-cong-viec.md](phan-cong-cong-viec.md) | Phân công nhóm 4 người + quy trình Git | ✅ Dùng được | Ai làm gì, ai sở hữu file nào |
 | [tong-quan-kien-truc.html](tong-quan-kien-truc.html) | Sơ đồ kiến trúc trực quan (mở bằng trình duyệt) | ✅ Dùng được | Thuyết trình, giới thiệu dự án |
 
@@ -97,6 +99,6 @@ Rà soát nghiệp vụ toàn bộ tài liệu, sửa mâu thuẫn nội bộ v�
 ## Cập nhật triển khai và phân công (2026-10-26)
 
 - Phân công màn hình đã thống nhất: Đức Anh phụ trách đào tạo SCR-10–24; Đạt phụ trách học vụ SCR-25–43 và dashboard/quản trị SCR-03–05, SCR-47–51; PM phụ trách xác thực, màn toàn cục và thùng rác. Chi tiết tại [phan-cong-cong-viec.md](phan-cong-cong-viec.md).
-- Backend hiện có 94/125 endpoint theo hợp đồng và 1 route tiện ích (CRUD môn học/phòng học đã merge; `menus` 5 + `settings` 2 endpoint đang ở nhánh `pm-menu-cau-hinh`, chưa merge).
-- Postman có 74 request. OpenAPI có 41 path, tương ứng 65 operation; không so sánh số path trực tiếp với tổng endpoint trong hợp đồng.
+- Backend hiện có **136 route** (`php artisan route:list`, 2026-11-09) — đã có đủ `dashboard/teacher` + `dashboard/student`. Lệch còn lại: 5 route chưa đặc tả (`logs` 3, `audit-logs` 1, `user` 1) và 1 operation đặc tả chưa code (`me/schedule`, không tồn tại — dùng `/api/schedules`). Chi tiết từng nhóm: [04-api-contract.md](04-api-contract.md) §18; phân tích đầy đủ: [09-kien-truc-he-thong.md](09-kien-truc-he-thong.md).
+- Postman có 74 request (đo 2026-10-26, chưa cập nhật lại sau đợt lịch học/lịch thi). OpenAPI có **68 path / 105 operation** — vẫn thiếu so với 132 operation đặc tả; không so sánh số path trực tiếp với tổng endpoint trong hợp đồng.
 - Nhánh `pm-menu-cau-hinh`: FE đã xong SCR-47 (quản lý menu) và SCR-48 (sửa menu; thêm menu bằng form tại chỗ ở `/menu`). Đường dẫn không khớp route nay tách hai kết cục — URL có trong menu ra trang "chưa làm" trong layout, URL không ai khai ra 404 đứng riêng ngoài layout (xem [05-screens.md](05-screens.md) §2).

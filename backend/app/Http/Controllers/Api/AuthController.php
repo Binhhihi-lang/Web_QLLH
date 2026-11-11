@@ -46,6 +46,12 @@ class AuthController extends Controller
         $token = $nguoiDung->createToken('spa')->plainTextToken;
         $hanPhut = (int) config('sanctum.expiration');
 
+        // Nạp hồ sơ ngay: FE dùng `ho_so` để biết giảng viên nào là chính mình
+        // (nút Sửa hồ sơ, route `ownTeacherProfile`). Thiếu nó thì cả phiên chỉ
+        // có `ho_so: null` vì `authGuard` thấy người dùng đã có nên không gọi
+        // lại `/auth/me`.
+        $nguoiDung->load(['sinhVien', 'giangVien']);
+
         return $this->success([
             'token' => $token,
             'het_han_luc' => now()->addMinutes($hanPhut)->format('Y-m-d H:i:s'),

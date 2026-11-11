@@ -55,10 +55,23 @@ export interface SinhVien {
   da_xoa: boolean;
 }
 
+/**
+ * Lớp hành chính lồng trong hồ sơ sinh viên — chỉ đủ để hiển thị, không phải
+ * bản ghi lớp đầy đủ.
+ *
+ * `khoa_hoc` / `nam_nhap_hoc` / `nganh` là optional vì resource chưa phải lúc
+ * nào cũng trả (backend bổ sung dần); thiếu thì màn hình hiện "—" chứ không lỗi.
+ */
 export interface LopHanhChinhRutGon {
   id: number;
   ma_lop: string;
   ten_lop: string;
+  /** Khóa (cohort), dạng "K68" — KHÔNG phải khoa/faculty (ADR-016). */
+  khoa_hoc?: string | null;
+  /** Năm nhập học, dạng 2023. */
+  nam_nhap_hoc?: number | null;
+  /** Ngành của lớp — khối rút gọn, không kèm `khoa_id`. */
+  nganh?: { id: number; ma_nganh: string; ten_nganh: string } | null;
 }
 
 /** Khoa — đơn vị quản lý cấp trên của ngành và của môn học (ADR-020). */
@@ -176,19 +189,37 @@ export interface HocKy {
   dang_mo_dang_ky: boolean;
 }
 
-export interface GiangVien {
+/**
+ * Khối liên hệ giảng viên — đúng những gì `GiangVienLienHeResource` trả cho
+ * sinh viên. Không có `nganh` / `trang_thai` / `da_xoa` vì đó là dữ liệu nội bộ.
+ */
+export interface GiangVienLienHe {
   id: number;
   ma_gv: string;
   ho_ten: string;
   email: string;
   so_dien_thoai: string | null;
+  avatar_url: string | null;
+}
+
+export interface GiangVien extends GiangVienLienHe {
   /** ADR-020: thay cho cột chuỗi `chuyen_mon` cũ. */
   nganh_id: number | null;
   nganh: NganhRutGon | null;
   trang_thai: boolean;
-  avatar_url: string | null;
   da_xoa: boolean;
 }
+
+/**
+ * Hồ sơ giảng viên ở màn chi tiết. Sinh viên chỉ nhận khối liên hệ nên các
+ * trường công tác là optional — `GiangVien` vẫn gán được vào đây.
+ */
+export type GiangVienHoSo = GiangVienLienHe & {
+  nganh_id?: number | null;
+  nganh?: NganhRutGon | null;
+  trang_thai?: boolean;
+  da_xoa?: boolean;
+};
 
 export interface MonHoc {
   id: number;

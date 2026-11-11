@@ -57,12 +57,28 @@ describe('DanhSachLopNhapDiem', () => {
   });
 
   it('loads the maximum supported page size for the class chooser', () => {
-    const service = { layDanhSach: vi.fn(() => of({ data: [], meta: {}, links: {} })) };
+    const service = {
+      layDanhSach: vi.fn(() => of({ data: [section], meta: {}, links: {} })),
+      layTuyChon: vi.fn(() =>
+        of([
+          { id: 2, label: '2026-1 - Học kỳ 1 năm học 2026-2027' },
+          { id: 1, label: '2025-2 - Học kỳ 2 năm học 2025-2026' },
+        ]),
+      ),
+    };
     TestBed.configureTestingModule({
       imports: [DanhSachLopNhapDiem],
       providers: [provideRouter([]), { provide: LopHocPhanService, useValue: service }],
     });
-    TestBed.createComponent(DanhSachLopNhapDiem).detectChanges();
+    const fixture = TestBed.createComponent(DanhSachLopNhapDiem);
+    fixture.detectChanges();
     expect(service.layDanhSach).toHaveBeenCalledWith({ page: 1, per_page: 100 });
+
+    fixture.componentInstance.chonHocKy(2);
+    expect(service.layDanhSach).toHaveBeenLastCalledWith({
+      page: 1,
+      per_page: 100,
+      hoc_ky_id: 2,
+    });
   });
 });

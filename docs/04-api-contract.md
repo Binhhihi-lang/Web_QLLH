@@ -412,22 +412,34 @@ Trường hồ sơ giảng viên: `ma_gv`, `ho_ten`, `email`, `so_dien_thoai`, *
 `nganh_id`; resource trả thêm khối lồng `nganh: { id, ma_nganh, ten_nganh, khoa_id }`.
 `GET /api/teachers` lọc được theo `nganh_id` và theo `khoa_id` (lọc khoa đi qua quan hệ ngành).
 
+**STUDENT chỉ đọc.** Yêu cầu từ STUDENT ở cả `GET /api/teachers` và `GET /api/teachers/{id}`
+nhận **`GiangVienLienHeResource`** — chỉ `id`, `ma_gv`, `ho_ten`, `email`, `so_dien_thoai`,
+`avatar_url`. Không có `nganh_id` / `nganh` / `trang_thai` / `da_xoa` (dữ liệu công tác nội bộ).
+ADMIN và TEACHER nhận `GiangVienResource` đầy đủ. FE phải khai kiểu rộng cho cả hai
+(`GiangVienHoSo` trong `core/models/dao-tao.model.ts`) và chịu được trường vắng mặt.
+
 ---
 
 ## 6. Lớp hành chính
 
 | Method | Endpoint | Quyền |
 |---|---|---|
-| GET | `/api/admin-classes` | ADMIN, TEACHER, STUDENT (lớp của mình) |
+| GET | `/api/admin-classes` | ADMIN, TEACHER (lớp có SV mình dạy), STUDENT (lớp của mình) |
 | POST | `/api/admin-classes` | ADMIN |
-| GET | `/api/admin-classes/{id}` | ADMIN, TEACHER |
+| GET | `/api/admin-classes/{id}` | ADMIN, TEACHER (lớp có SV mình dạy) |
 | PUT | `/api/admin-classes/{id}` | ADMIN |
 | DELETE | `/api/admin-classes/{id}` | ADMIN |
-| GET | `/api/admin-classes/{id}/students` | ADMIN, TEACHER |
+| GET | `/api/admin-classes/{id}/students` | ADMIN, TEACHER (lớp có SV mình dạy) |
 
 `GET /api/admin-classes` lọc được theo `q`, `khoa_hoc`, **`nganh_id`**, **`khoa_id`** và
 `trang_thai`. ADR-020: trường `nganh` (chuỗi) đổi thành **`nganh_id`**; khoa **không** lưu
 trên lớp mà suy ra qua ngành nên resource trả thêm khối lồng `khoa`.
+
+**Phạm vi theo vai trò** (`LopHanhChinhPolicy`): TEACHER chỉ thấy lớp hành chính có ít nhất
+một sinh viên đang đăng ký lớp học phần mình phụ trách — một truy vấn `exists()`, không nạp
+cả bảng. Lớp ngoài phạm vi trả **403** (`ma_loi: FORBIDDEN`), không phải 404 — lớp có tồn tại,
+chỉ không có quyền. STUDENT chỉ vào được `GET /api/admin-classes` (đã lọc sẵn còn lớp của
+mình); `show` và `students` chặn ở middleware `vai.tro`.
 | POST | `/api/admin-classes/{id}/students` | ADMIN — body `{ "sinh_vien_ids": [1,2] }` |
 | DELETE | `/api/admin-classes/{id}/students/{studentId}` | ADMIN — gỡ khỏi lớp |
 
@@ -538,7 +550,7 @@ Khi tạo/cập nhật học kỳ, hệ thống chỉ so khoảng ngày học (`
 | PUT | `/api/sections/{id}` | ADMIN | Kiểm tra FR-08.03 |
 | DELETE | `/api/sections/{id}` | ADMIN | 409 nếu còn đăng ký ACTIVE |
 | PATCH | `/api/sections/{id}/status` | ADMIN | Chuyển OPEN/CLOSED/CANCELLED |
-| GET | `/api/sections/{id}/students` | ADMIN, TEACHER (lớp mình) | Danh sách sinh viên đang ACTIVE |
+| GET | `/api/sections/{id}/students` | ADMIN, TEACHER (lớp mình), STUDENT (lớp đã đăng ký ACTIVE) | Danh sách sinh viên đang ACTIVE. STUDENT chỉ nhận `ma_sv` + `ho_ten` của bạn cùng lớp — không `email`, `lop`, `dang_ky_hoc_phan_id` |
 | GET | `/api/sections/{id}/grades` | ADMIN, TEACHER (lớp mình) | Bảng điểm cả lớp |
 | PUT | `/api/sections/{id}/grades` | TEACHER (lớp mình) | Nhập/sửa điểm hàng loạt; không ghi nếu học kỳ đóng hoặc lớp đã chốt |
 | GET | `/api/sections/{id}/attendance-summary` | ADMIN, TEACHER (lớp mình) | Thống kê chuyên cần |
@@ -957,6 +969,13 @@ hoặc đăng ký không ACTIVE/không thuộc lớp. Các endpoint nhập đi�
 trạng thái và `cau_hinh_da_luu` để dựng bảng tra cứu/lọc.
 `GET /api/settings?hoc_ky_id={id}` trả cấu hình riêng của học kỳ; nếu chưa lưu,
 các giá trị trọng số, bảng quy đổi và số ngày sửa điểm danh lấy từ cấu hình mặc định.
+
+Endpoint này **mở cho cả ba vai trò** vì màn nhập điểm của GIANG_VIEN và trang
+điểm của SINH_VIEN cần trọng số/bảng quy đổi để hiển thị công thức. Với người
+gọi không phải ADMIN, `data` chỉ còn các khoá bắt đầu bằng `diem.` — khoá vận
+hành khác trong bảng `cau_hinh` không lộ ra. `PUT /api/settings` và
+`GET /api/settings/semesters` vẫn chỉ ADMIN.
+
 `diem.cau_hinh_hoc_ky` là `null` khi chưa lưu, hoặc:
 
 ```json
@@ -1008,14 +1027,68 @@ các khóa được gửi lên và trả lại toàn bộ cấu hình.
 
 ## 14. Điểm danh cá nhân & dashboard
 
-| Method | Endpoint | Quyền |
+> Nhãn vai trò trong bảng dùng dạng tài liệu (`ADMIN`, `TEACHER`, `STUDENT`); giá trị thật
+> trong `users.vai_tro` và middleware `vai.tro` là `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`.
+> `TEACHER` ≡ `GIANG_VIEN`, `STUDENT` ≡ `SINH_VIEN`.
+
+| Method | Endpoint | Quyền | Trạng thái code |
+|---|---|---|---|
+| GET | `/api/me/schedule` | STUDENT | **Không tồn tại** — dùng `GET /api/schedules` (§18 sai lệch #1) |
+| GET | `/api/me/attendance` | STUDENT | Đã code |
+| GET | `/api/me/attendance-summary` | STUDENT | Đã code |
+| GET | `/api/dashboard/admin` | ADMIN | Đã code — đặc tả dưới đây |
+| GET | `/api/dashboard/teacher` | TEACHER (`GIANG_VIEN`) | **Đặc tả xong, chưa code** |
+| GET | `/api/dashboard/student` | STUDENT (`SINH_VIEN`) | **Đặc tả xong, chưa code** |
+| GET | `/api/me/grades` | STUDENT | Đã code — **bổ sung `diem_tb_lop`** (§14c) |
+
+### §14a — Học kỳ là tham số của cả màn hình (chốt 2026-11-09)
+
+Ba dashboard và `GET /api/me/grades` đều xoay quanh **một học kỳ đang chọn**. Mọi con số
+(GPA, tín chỉ, chuyên cần, điểm từng môn, thời khoá biểu, lớp phụ trách) đều thuộc học kỳ đó.
+
+**Tham số:** `?hoc_ky_id={id}` — tuỳ chọn trên cả ba endpoint.
+
+| Trường hợp | Hành vi |
+|---|---|
+| Không truyền `hoc_ky_id` | Chọn học kỳ `ONGOING` mà người dùng có dữ liệu (lớp với giảng viên, đăng ký ACTIVE với sinh viên) |
+| Không có kỳ `ONGOING` | Học kỳ có `ngay_bat_dau` lớn nhất mà người dùng có dữ liệu |
+| Người dùng chưa có dữ liệu | `hoc_ky = null`, mọi mảng rỗng, thẻ số liệu rỗng. Vẫn `200` |
+| `hoc_ky_id` trỏ kỳ không tồn tại | `404` `SEMESTER_NOT_FOUND` |
+| `hoc_ky_id` trỏ kỳ người dùng không có dữ liệu | `200` với `hoc_ky` đúng kỳ đó và mọi mảng rỗng — không phải lỗi, người dùng có thể xem kỳ trống |
+
+**`hoc_ky` trong response** luôn phản ánh kỳ ĐÃ CHỌN (không phải kỳ mặc định), để FE biết
+mình đang hiển thị kỳ nào kể cả khi request không truyền tham số.
+
+**Danh sách kỳ cho ô chọn:** `GET /api/options/semesters` đã có. FE **không** tự lọc theo
+kỳ có dữ liệu; hiện đủ để người dùng chuyển tự do. Ô chọn nằm ở đầu trang, một ô duy nhất
+cho cả màn — không đặt ô chọn riêng trong từng khối.
+
+**Vì sao không cho mỗi khối một ô chọn kỳ:** người dùng sẽ so sánh GPA kỳ này với chuyên cần
+kỳ khác mà không nhận ra; và mỗi khối thành một request riêng, mất ngân sách < 500 ms của
+UC-16 AC-3.
+
+### §14b — `GET /api/me/grades` nhận `hoc_ky_id`
+
+Bảng §13 hiện ghi endpoint này không nhận tham số. Nay nhận `?hoc_ky_id={id}`, hành vi chọn
+kỳ giống §14a. Không truyền thì dùng kỳ mặc định như trên.
+
+### §14c — Bổ sung `diem_tb_lop` vào `GET /api/me/grades` (chốt 2026-11-09)
+
+Mỗi phần tử `mon_hoc[]` thêm **một** trường:
+
+| Trường | Kiểu | Ghi chú |
 |---|---|---|
-| GET | `/api/me/schedule` | STUDENT |
-| GET | `/api/me/attendance` | STUDENT |
-| GET | `/api/me/attendance-summary` | STUDENT |
-| GET | `/api/dashboard/admin` | ADMIN |
-| GET | `/api/dashboard/teacher` | TEACHER |
-| GET | `/api/dashboard/student` | STUDENT |
+| `diem_tb_lop` | number \| null | Trung bình `diem_tong_ket` của **mọi** đăng ký `ACTIVE` trong lớp học phần đó, làm tròn 2 chữ số. `null` khi chưa có ai được chấm điểm. |
+
+**Ranh giới quyền:** chỉ trả **một con số trung bình**, không trả điểm của từng sinh viên
+khác, không trả điểm cao nhất/thấp nhất kèm danh tính. Sinh viên không suy ngược được điểm
+cá nhân của bạn khác từ giá trị này. Đây là lý do chỉ số này được phép có trong response của
+STUDENT dù FR-12 cấm sinh viên xem điểm người khác.
+
+Nếu sau này cần "điểm cao nhất lớp", phải mở một quyết định riêng — trung bình và cao nhất
+rò rỉ thông tin khác nhau khi lớp ít sinh viên.
+
+---
 
 Dashboard ADMIN (`GET /api/dashboard/admin`) — đủ dữ liệu cho SCR-03:
 
@@ -1057,7 +1130,471 @@ Dashboard ADMIN (`GET /api/dashboard/admin`) — đủ dữ liệu cho SCR-03:
 | `lop_sap_mo[].ty_le` | int 0–100 | Độ dài thanh tiến trình |
 | `dang_ky_gan_day[].thoi_gian` | datetime | `YYYY-MM-DD HH:mm:ss`, không phải chuỗi tương đối |
 
-Dashboard TEACHER và STUDENT: bổ sung khi làm SCR-04/05 (Tuần 7).
+### Quy ước chung cho cả ba dashboard
+
+Ba endpoint `/api/dashboard/*` dùng **cùng một shape thẻ số liệu** `the_so_lieu[]`
+để FE dùng lại một component (`features/dashboard/`):
+
+| Trường | Kiểu | Ghi chú |
+|---|---|---|
+| `khoa` | string | Khoá định danh để gắn icon + màu. Mỗi vai trò có bộ khoá riêng, liệt kê ở từng mục dưới |
+| `label` | string | Nhãn hiển thị |
+| `gia_tri` | **number** | Số hiển thị. **Không phải integer**: GPA (`2.74`) và phần trăm (`90.7`) là số thực. `openapi.yaml` đã nới `TheSoLieu.gia_tri` từ `integer` sang `number` (2026-11-08); kiểu TS `TheSoLieu.gia_tri: number` trong `core/mock/data/dashboard.mock.ts` đã đúng sẵn, không phải sửa |
+| `don_vi` | string \| null | Đơn vị hiện sau số, ví dụ `"buổi"`, `"%"`, `"tín chỉ"` |
+| `phu_chu` | string | Một dòng mô tả phụ, **phải khớp** số liệu trong cùng response (xem quy tắc nhất quán bên dưới) |
+| `xu_huong` | `len`/`xuong`/`bang` | Chiều so sánh với học kỳ trước — xem quyết định bên dưới |
+
+**Quy tắc nhất quán** (áp cho cả hai endpoint mới):
+
+- `the_so_lieu[].gia_tri` của một thẻ **luôn bằng** số phần tử hoặc tổng của mảng tương ứng
+  trong cùng response (ví dụ `gia_tri` của `buoi_sap_toi` = `count(buoi_sap_toi)`), trừ khi
+  ghi rõ công thức khác.
+- Mọi mảng có giới hạn (`take`) thì `phu_chu` phải nói rõ cửa sổ thời gian, để người đọc
+  không tưởng đó là tổng toàn hệ thống.
+- Mọi trường tỉ lệ **phân biệt rõ hai thang**: trường tên `ty_le` là **phân số 0–1, 4 chữ số
+  thập phân** (giống `GET /api/me/attendance-summary`); trường nằm trong `the_so_lieu`
+  là **phần trăm 0–100** vì có `don_vi: "%"`. Không nhân 100 thêm lần nữa ở FE.
+- Ngày `YYYY-MM-DD`, giờ `HH:mm`, datetime `YYYY-MM-DD HH:mm:ss` (§1.7).
+- Trường `thu` (thứ trong tuần, quy ước Việt Nam **2–7 là Thứ 2–Thứ 7, 8 là Chủ nhật**,
+  khớp `generate` ở §11) chỉ có trong hai response dashboard, không có trong
+  `/api/schedules`. Backend tính bằng PHP từ `ngay_hoc`, **không** dùng `DAYOFWEEK()` của
+  MySQL — hai quy ước lệch nhau ở Chủ nhật.
+
+**`xu_huong` của dashboard TEACHER/STUDENT luôn `bang`.** Hai dashboard này không so sánh
+với học kỳ trước: so sánh đúng sẽ cần thêm 4–6 truy vấn tổng hợp mỗi lần tải trang và dễ
+ra số vô nghĩa khi sinh viên mới vào kỳ đầu. Trường vẫn giữ để dùng chung `TheSoLieu` với
+dashboard ADMIN. *Chờ user chốt:* nếu muốn có mũi tên thật, xem phương án B trong báo cáo
+bàn giao — chi phí ước lượng thêm ~2 truy vấn và một nhánh so sánh mỗi thẻ.
+
+---
+
+### `GET /api/dashboard/teacher` — dashboard GIANG_VIEN (SCR-04, FR-13.02)
+
+**Quyền:** `GIANG_VIEN`. ADMIN gọi vào nhận `403 FORBIDDEN` từ middleware `vai.tro`.
+
+**Học kỳ được chọn** (`hoc_ky` trong response) — theo thứ tự:
+
+1. Học kỳ `ONGOING` mà giảng viên có ít nhất một lớp `lop_hoc_phan` (không tính đã xóa mềm).
+2. Nếu không có: học kỳ có `ngay_bat_dau` lớn nhất mà giảng viên có lớp.
+3. Nếu giảng viên chưa được phân lớp nào: `hoc_ky = null`, mọi mảng rỗng. Vẫn trả `200`.
+
+Toàn bộ số liệu dưới đây chỉ tính trong `hoc_ky` đó.
+
+**Tài khoản `GIANG_VIEN` chưa có hồ sơ `giang_vien`** (dữ liệu hỏng) → `403 FORBIDDEN`,
+"Không tìm thấy hồ sơ giảng viên." — giống `GET /api/me/gpa`.
+
+Ví dụ (số liệu tính tại thời điểm `2026-11-08 20:00`, học kỳ `2026-1` ONGOING):
+
+```json
+{
+  "success": true,
+  "message": "Tải số liệu dashboard thành công.",
+  "data": {
+    "hoc_ky": {
+      "id": 2,
+      "ma_hoc_ky": "2026-1",
+      "ten_hoc_ky": "Học kỳ 1 năm học 2026-2027",
+      "trang_thai": "ONGOING"
+    },
+    "the_so_lieu": [
+      { "khoa": "lop_phu_trach", "label": "Lớp phụ trách", "gia_tri": 3, "don_vi": null,
+        "phu_chu": "2 lớp chưa chốt điểm", "xu_huong": "bang" },
+      { "khoa": "sinh_vien_phu_trach", "label": "Sinh viên phụ trách", "gia_tri": 118, "don_vi": null,
+        "phu_chu": "Lớp đông nhất 41 sinh viên", "xu_huong": "bang" },
+      { "khoa": "buoi_sap_toi", "label": "Buổi học sắp tới", "gia_tri": 4, "don_vi": "buổi",
+        "phu_chu": "Trong 14 ngày tới", "xu_huong": "bang" },
+      { "khoa": "buoi_chua_diem_danh", "label": "Buổi chưa điểm danh", "gia_tri": 2, "don_vi": "buổi",
+        "phu_chu": "1 buổi đã quá hạn sửa", "xu_huong": "bang" }
+    ],
+    "lop_phu_trach": [
+      { "id": 61, "ma_lop_hp": "INT3306-2026-1-61",
+        "ma_mon": "INT3306", "ten_mon": "Lập trình web", "so_tin_chi": 3,
+        "si_so": "38/45", "ty_le": 84, "nam_thu": 3,
+        "trang_thai": "OPEN", "da_chot_diem": false, "diem_tb_lop": 7.83 },
+      { "id": 62, "ma_lop_hp": "INT2204-2026-1-62",
+        "ma_mon": "INT2204", "ten_mon": "Cơ sở dữ liệu", "so_tin_chi": 3,
+        "si_so": "41/45", "ty_le": 91, "nam_thu": 3,
+        "trang_thai": "OPEN", "da_chot_diem": false, "diem_tb_lop": null },
+      { "id": 63, "ma_lop_hp": "MAT1093-2026-1-63",
+        "ma_mon": "MAT1093", "ten_mon": "Đại số tuyến tính", "so_tin_chi": 3,
+        "si_so": "39/50", "ty_le": 78, "nam_thu": 3,
+        "trang_thai": "CLOSED", "da_chot_diem": true, "diem_tb_lop": 6.45 }
+    ],
+    "buoi_sap_toi": [
+      { "id": 4102, "ngay_hoc": "2026-11-09", "thu": 2,
+        "tiet_bat_dau": 1, "tiet_ket_thuc": 3, "gio_bat_dau": "06:30", "gio_ket_thuc": "09:10",
+        "hinh_thuc": "LY_THUYET", "trang_thai": "SCHEDULED",
+        "ma_lop_hp": "INT3306-2026-1-61", "ma_mon": "INT3306", "ten_mon": "Lập trình web",
+        "phong_hoc": { "id": 11, "ma_phong": "A101", "ten_phong": "Phòng A101" } },
+      { "id": 4103, "ngay_hoc": "2026-11-10", "thu": 3,
+        "tiet_bat_dau": 1, "tiet_ket_thuc": 3, "gio_bat_dau": "06:30", "gio_ket_thuc": "09:10",
+        "hinh_thuc": "THUC_HANH", "trang_thai": "SCHEDULED",
+        "ma_lop_hp": "INT3306-2026-1-61", "ma_mon": "INT3306", "ten_mon": "Lập trình web",
+        "phong_hoc": { "id": 14, "ma_phong": "B201", "ten_phong": "Phòng B201" } },
+      { "id": 4110, "ngay_hoc": "2026-11-12", "thu": 5,
+        "tiet_bat_dau": 7, "tiet_ket_thuc": 9, "gio_bat_dau": "12:30", "gio_ket_thuc": "15:10",
+        "hinh_thuc": "LY_THUYET", "trang_thai": "SCHEDULED",
+        "ma_lop_hp": "INT2204-2026-1-62", "ma_mon": "INT2204", "ten_mon": "Cơ sở dữ liệu",
+        "phong_hoc": { "id": 12, "ma_phong": "A102", "ten_phong": "Phòng A102" } },
+      { "id": 4116, "ngay_hoc": "2026-11-13", "thu": 6,
+        "tiet_bat_dau": 7, "tiet_ket_thuc": 9, "gio_bat_dau": "12:30", "gio_ket_thuc": "15:10",
+        "hinh_thuc": "LY_THUYET", "trang_thai": "SCHEDULED",
+        "ma_lop_hp": "MAT1093-2026-1-63", "ma_mon": "MAT1093", "ten_mon": "Đại số tuyến tính",
+        "phong_hoc": { "id": 13, "ma_phong": "A103", "ten_phong": "Phòng A103" } }
+    ],
+    "buoi_chua_diem_danh": [
+      { "id": 4088, "ngay_hoc": "2026-10-29", "thu": 5,
+        "tiet_bat_dau": 1, "tiet_ket_thuc": 3, "gio_ket_thuc": "09:10",
+        "ma_lop_hp": "INT3306-2026-1-61", "ma_mon": "INT3306", "ten_mon": "Lập trình web",
+        "si_so_lop": 38, "so_ngay_tre": 10, "con_sua_duoc": false },
+      { "id": 4095, "ngay_hoc": "2026-11-05", "thu": 5,
+        "tiet_bat_dau": 7, "tiet_ket_thuc": 9, "gio_ket_thuc": "15:10",
+        "ma_lop_hp": "INT2204-2026-1-62", "ma_mon": "INT2204", "ten_mon": "Cơ sở dữ liệu",
+        "si_so_lop": 41, "so_ngay_tre": 3, "con_sua_duoc": true }
+    ],
+    "viec_can_lam": [
+      { "loai": "cham_diem_danh", "tieu_de": "Điểm danh buổi đã qua",
+        "mo_ta": "2 buổi đã qua chưa điểm danh, trong đó 1 buổi đã quá hạn sửa.",
+        "so_luong": 2, "muc_do": "cao", "url": "/diem-danh" },
+      { "loai": "chot_diem", "tieu_de": "Chốt điểm lớp học phần",
+        "mo_ta": "2 lớp chưa chốt điểm.", "so_luong": 2, "muc_do": "trung_binh",
+        "url": "/lop-hoc-phan" },
+      { "loai": "buoi_sap_toi", "tieu_de": "Buổi học trong 24 giờ tới",
+        "mo_ta": "1 buổi bắt đầu trong 24 giờ tới.", "so_luong": 1, "muc_do": "thap",
+        "url": "/lich-hoc" }
+    ]
+  }
+}
+```
+
+#### Nguồn số liệu TEACHER — bảng, cột, điều kiện
+
+`G` = giảng viên đang đăng nhập, `K` = học kỳ đã chọn.
+
+| Trường | Tính từ | Cột / điều kiện | Index dùng |
+|---|---|---|---|
+| `lop_phu_trach` | `lop_hoc_phan` | `giang_vien_id = G.id AND hoc_ky_id = K.id`, không tính xóa mềm. `si_so` = `withCount` đăng ký `ACTIVE` + `/si_so_toi_da`; `ty_le = min(100, round(si_so_thuc/si_so_toi_da*100))`, mẫu số 0 → 0 | `index(giang_vien_id)` |
+| `lop_phu_trach[].diem_tb_lop` | `dang_ky_hoc_phan` + `diem` | `AVG(diem.diem_tong_ket)` của các đăng ký `trang_thai = 'ACTIVE'` trong lớp, bỏ qua dòng `diem_tong_ket IS NULL`, làm tròn 2 chữ số. Không có dòng nào được chấm → `null` (**không phải `0`**). **Một** truy vấn gộp `GROUP BY lop_hoc_phan_id` cho mọi lớp của kỳ, dùng chung hàm `QuanLyDiemService::diemTrungBinhLop()` với `GET /api/me/grades` (§14c) | `index(lop_hoc_phan_id, trang_thai)`, `unique(diem.dang_ky_hoc_phan_id)` |
+| `the_so_lieu[lop_phu_trach]` | — | `count(lop_phu_trach)`; `phu_chu` = số phần tử có `da_chot_diem = false` | — |
+| `the_so_lieu[sinh_vien_phu_trach]` | `dang_ky_hoc_phan` | `sum(si_so_thuc)` trên các lớp ở trên; `phu_chu` = `max(si_so_thuc)` | `index(lop_hoc_phan_id, trang_thai)` |
+| `buoi_sap_toi` | `buoi_hoc` | thuộc lớp của G trong K, `trang_thai = 'SCHEDULED'`, `TIMESTAMP(ngay_hoc, gio_ket_thuc) > now()`, `ngay_hoc <= today + 14 ngày`. Sắp xếp `ngay_hoc`, `gio_bat_dau`; **tối đa 20 dòng** | `index(lop_hoc_phan_id, ngay_hoc)` |
+| `the_so_lieu[buoi_sap_toi]` | — | `count(buoi_sap_toi)`. `phu_chu` cố định "Trong 14 ngày tới" — **không** phải tổng số buổi còn lại của kỳ | — |
+| `buoi_chua_diem_danh` | `buoi_hoc` + `diem_danh` | thuộc lớp của G trong K, `trang_thai = 'SCHEDULED'`, `TIMESTAMP(ngay_hoc, gio_ket_thuc) < now()`, **và** `withCount('diemDanh') = 0`. Sắp xếp `ngay_hoc` **tăng dần** (buổi cũ nhất trước — đó là buổi gấp nhất); **tối đa 20 dòng** | `index(lop_hoc_phan_id, ngay_hoc)`, `unique(buoi_hoc_id, dang_ky_hoc_phan_id)` |
+| `buoi_chua_diem_danh[].si_so_lop` | `dang_ky_hoc_phan` | số đăng ký `ACTIVE` của lớp tại thời điểm gọi. Tên khác `buoi_chua_diem_danh[].si_so` ở dashboard ADMIN (`"38/45"`) vì đây là **một con số** | `index(lop_hoc_phan_id, trang_thai)` |
+| `buoi_chua_diem_danh[].so_ngay_tre` | — | `floor(now() − TIMESTAMP(ngay_hoc, gio_ket_thuc))` theo ngày | — |
+| `buoi_chua_diem_danh[].con_sua_duoc` | `quy_doi_diem` / `cau_hinh` | `false` nếu `K.trang_thai = 'CLOSED'`; ngược lại `now() <= TIMESTAMP(ngay_hoc, gio_ket_thuc) + N ngày`, với `N` = `quy_doi_diem.so_ngay_sua_diem_danh` của K, không có thì `cau_hinh['diem.diem_danh.sua_trong_so_ngay']`, mặc định `7` | `unique(quy_doi_diem.hoc_ky_id)` |
+| `viec_can_lam[cham_diem_danh]` | — | `so_luong = count(buoi_chua_diem_danh)`; `muc_do = 'cao'` nếu có ít nhất một dòng `con_sua_duoc = false`, ngược lại `'trung_binh'` | — |
+| `viec_can_lam[chot_diem]` | `lop_hoc_phan` | `so_luong` = số lớp ở trên có `chot_diem_luc IS NULL` **và** `K.trang_thai = 'ONGOING'` **và** lớp đã có ít nhất một buổi `DONE`. Kỳ `CLOSED` hoặc `UPCOMING` → `so_luong = 0` và **bỏ hẳn** phần tử này khỏi mảng | `index(giang_vien_id)` |
+| `viec_can_lam[buoi_sap_toi]` | — | `so_luong` = số buổi `SCHEDULED` có `TIMESTAMP(ngay_hoc, gio_bat_dau)` trong `[now(), now() + 24 giờ]` | — |
+
+Quy tắc cho `viec_can_lam`: **chỉ trả những việc có `so_luong > 0`**, sắp xếp theo
+`muc_do` giảm dần (`cao` → `trung_binh` → `thap`) rồi theo thứ tự khai báo. Không có việc
+nào → `viec_can_lam: []`.
+
+#### Trường của TEACHER response
+
+| Trường | Kiểu | Ghi chú |
+|---|---|---|
+| `hoc_ky` | object \| null | `id`, `ma_hoc_ky`, `ten_hoc_ky`, `trang_thai`. `null` khi giảng viên chưa được phân lớp nào |
+| `the_so_lieu[].khoa` | string | `lop_phu_trach`, `sinh_vien_phu_trach`, `buoi_sap_toi`, `buoi_chua_diem_danh` — FE cần map thêm 4 khoá này sang icon |
+| `lop_phu_trach[].si_so` | string | Dạng `"38/45"`, hiển thị trực tiếp — cùng quy ước với dashboard ADMIN |
+| `lop_phu_trach[].ty_le` | int 0–100 | Độ dài thanh tiến trình |
+| `lop_phu_trach[].nam_thu` | int \| null | `null` = lớp phục vụ mọi năm (BR-23) |
+| `lop_phu_trach[].da_chot_diem` | bool | `chot_diem_luc !== null` |
+| `lop_phu_trach[].diem_tb_lop` | number \| null | Trung bình `diem_tong_ket` của mọi đăng ký `ACTIVE` trong lớp, thang 10, làm tròn 2 chữ số. `null` = **chưa ai được chấm điểm** (không phải `0`) — FE bỏ lớp đó khỏi biểu đồ "Điểm TB lớp phụ trách" chứ không vẽ cột 0 |
+| `buoi_sap_toi[].thu` | int 2–8 | 2 = Thứ 2 … 7 = Thứ 7, 8 = Chủ nhật |
+| `buoi_sap_toi[].hinh_thuc` | string | `LY_THUYET` / `THUC_HANH` / `TRUC_TUYEN` — quyết định màu khối lịch (SCR-35) |
+| `buoi_sap_toi[].phong_hoc` | object \| null | `id`, `ma_phong`, `ten_phong`. `null` nếu phòng đã xóa cứng (không xảy ra với dữ liệu hiện tại — phòng dùng xóa mềm) |
+| `buoi_chua_diem_danh[].so_ngay_tre` | int ≥ 0 | Số ngày kể từ lúc buổi kết thúc đến hiện tại |
+| `buoi_chua_diem_danh[].si_so_lop` | int | Số đăng ký `ACTIVE` của lớp. Tên khác `lop_sap_mo[].si_so` (`"38/45"`) vì đây là **một con số**, không phải chuỗi hiển thị |
+| `buoi_chua_diem_danh[].con_sua_duoc` | bool | `false` → FE hiện nút "Chỉ xem", không mở form điểm danh (BE vẫn chặn bằng `409 ATTENDANCE_EDIT_EXPIRED`) |
+| `viec_can_lam[].loai` | string | `cham_diem_danh`, `chot_diem`, `buoi_sap_toi` |
+| `viec_can_lam[].muc_do` | string | `cao`, `trung_binh`, `thap` — chỉ dùng để tô màu, không phải trạng thái nghiệp vụ |
+| `viec_can_lam[].url` | string | Đường dẫn FE để bấm vào là tới màn xử lý. **Không kèm query**; FE tự thêm bộ lọc học kỳ đang chọn |
+
+---
+
+### `GET /api/dashboard/student` — dashboard SINH_VIEN (SCR-05, FR-13.03)
+
+**Quyền:** `SINH_VIEN`. ADMIN gọi vào nhận `403 FORBIDDEN`.
+
+**Học kỳ được chọn** (`hoc_ky` trong response) — đúng bằng
+`GET /api/me/gpa` → `hoc_ky_hien_tai`, để hai màn không bao giờ lệch nhau:
+
+1. Học kỳ `ONGOING` mà sinh viên có đăng ký `ACTIVE`.
+2. Nếu không: học kỳ có `ngay_bat_dau` lớn nhất mà sinh viên có đăng ký `ACTIVE`.
+3. Nếu chưa đăng ký gì: `hoc_ky = null`, mọi mảng rỗng, `gpa.tich_luy` vẫn trả số (có thể 0).
+
+**Tài khoản `SINH_VIEN` chưa có hồ sơ `sinh_vien`** → `403 FORBIDDEN`,
+"Không tìm thấy hồ sơ sinh viên." — giống `GET /api/me/gpa`.
+
+Ví dụ (cùng thời điểm `2026-11-08 20:00`; tuần hiển thị là tuần chứa hôm nay,
+`2026-11-02` → `2026-11-08`):
+
+```json
+{
+  "success": true,
+  "message": "Tải số liệu dashboard thành công.",
+  "data": {
+    "hoc_ky": {
+      "id": 2,
+      "ma_hoc_ky": "2026-1",
+      "ten_hoc_ky": "Học kỳ 1 năm học 2026-2027",
+      "trang_thai": "ONGOING"
+    },
+    "the_so_lieu": [
+      { "khoa": "hoc_phan", "label": "Học phần đã đăng ký", "gia_tri": 5, "don_vi": "học phần",
+        "phu_chu": "Học kỳ 2026-1", "xu_huong": "bang" },
+      { "khoa": "tin_chi", "label": "Tín chỉ trong kỳ", "gia_tri": 15, "don_vi": "tín chỉ",
+        "phu_chu": "Trong 5 học phần", "xu_huong": "bang" },
+      { "khoa": "gpa_he_4", "label": "GPA tích lũy", "gia_tri": 2.74, "don_vi": "hệ 4",
+        "phu_chu": "3 học kỳ đã đóng, 96 tín chỉ", "xu_huong": "bang" },
+      { "khoa": "chuyen_can", "label": "Tỷ lệ chuyên cần", "gia_tri": 90.7, "don_vi": "%",
+        "phu_chu": "39/43 buổi có mặt hoặc đi muộn", "xu_huong": "bang" }
+    ],
+    "hoc_phan_da_dang_ky": [
+      { "dang_ky_hoc_phan_id": 151, "lop_hoc_phan_id": 71,
+        "ma_lop_hp": "INT3306-2026-1-71", "ma_mon": "INT3306", "ten_mon": "Lập trình web",
+        "so_tin_chi": 3,
+        "giang_vien": { "id": 5, "ma_gv": "GV005", "ho_ten": "Nguyễn Văn An" },
+        "ty_le_chuyen_can": 1.0, "diem_tong_ket": null, "diem_chu": null, "ket_qua": null },
+      { "dang_ky_hoc_phan_id": 152, "lop_hoc_phan_id": 72,
+        "ma_lop_hp": "INT2204-2026-1-72", "ma_mon": "INT2204", "ten_mon": "Cơ sở dữ liệu",
+        "so_tin_chi": 3,
+        "giang_vien": { "id": 6, "ma_gv": "GV006", "ho_ten": "Trần Thị Ngọc Anh" },
+        "ty_le_chuyen_can": 0.7778, "diem_tong_ket": null, "diem_chu": null, "ket_qua": null },
+      { "dang_ky_hoc_phan_id": 153, "lop_hoc_phan_id": 73,
+        "ma_lop_hp": "MAT1093-2026-1-73", "ma_mon": "MAT1093", "ten_mon": "Đại số tuyến tính",
+        "so_tin_chi": 3,
+        "giang_vien": { "id": 7, "ma_gv": "GV007", "ho_ten": "Hoàng Đức Long" },
+        "ty_le_chuyen_can": 0.875, "diem_tong_ket": null, "diem_chu": null, "ket_qua": null },
+      { "dang_ky_hoc_phan_id": 154, "lop_hoc_phan_id": 74,
+        "ma_lop_hp": "INT3401-2026-1-74", "ma_mon": "INT3401", "ten_mon": "Trí tuệ nhân tạo",
+        "so_tin_chi": 3,
+        "giang_vien": { "id": 8, "ma_gv": "GV008", "ho_ten": "Lê Minh Cường" },
+        "ty_le_chuyen_can": 1.0, "diem_tong_ket": null, "diem_chu": null, "ket_qua": null },
+      { "dang_ky_hoc_phan_id": 155, "lop_hoc_phan_id": 75,
+        "ma_lop_hp": "INT2203-2026-1-75", "ma_mon": "INT2203", "ten_mon": "Lập trình hướng đối tượng",
+        "so_tin_chi": 3,
+        "giang_vien": { "id": 9, "ma_gv": "GV009", "ho_ten": "Phạm Thu Hà" },
+        "ty_le_chuyen_can": 0.875, "diem_tong_ket": null, "diem_chu": null, "ket_qua": null }
+    ],
+    "thoi_khoa_bieu_tuan": {
+      "tu_ngay": "2026-11-02",
+      "den_ngay": "2026-11-08",
+      "cac_buoi": [
+        { "id": 4075, "ngay_hoc": "2026-11-02", "thu": 2,
+          "tiet_bat_dau": 1, "tiet_ket_thuc": 3, "gio_bat_dau": "06:30", "gio_ket_thuc": "09:10",
+          "trang_thai": "DONE", "hinh_thuc": "LY_THUYET", "ly_do_huy": null,
+          "ma_lop_hp": "INT3306-2026-1-71", "ma_mon": "INT3306", "ten_mon": "Lập trình web",
+          "ma_phong": "A101", "ten_phong": "Phòng A101" },
+        { "id": 4078, "ngay_hoc": "2026-11-03", "thu": 3,
+          "tiet_bat_dau": 7, "tiet_ket_thuc": 9, "gio_bat_dau": "12:30", "gio_ket_thuc": "15:10",
+          "trang_thai": "DONE", "hinh_thuc": "LY_THUYET", "ly_do_huy": null,
+          "ma_lop_hp": "INT3401-2026-1-74", "ma_mon": "INT3401", "ten_mon": "Trí tuệ nhân tạo",
+          "ma_phong": "B201", "ten_phong": "Phòng B201" },
+        { "id": 4082, "ngay_hoc": "2026-11-05", "thu": 5,
+          "tiet_bat_dau": 1, "tiet_ket_thuc": 3, "gio_bat_dau": "06:30", "gio_ket_thuc": "09:10",
+          "trang_thai": "SCHEDULED", "hinh_thuc": "LY_THUYET", "ly_do_huy": null,
+          "ma_lop_hp": "INT2204-2026-1-72", "ma_mon": "INT2204", "ten_mon": "Cơ sở dữ liệu",
+          "ma_phong": "A102", "ten_phong": "Phòng A102" },
+        { "id": 4085, "ngay_hoc": "2026-11-06", "thu": 6,
+          "tiet_bat_dau": 7, "tiet_ket_thuc": 9, "gio_bat_dau": "12:30", "gio_ket_thuc": "15:10",
+          "trang_thai": "CANCELLED", "hinh_thuc": "THUC_HANH",
+          "ly_do_huy": "Giảng viên ốm",
+          "ma_lop_hp": "INT2203-2026-1-75", "ma_mon": "INT2203", "ten_mon": "Lập trình hướng đối tượng",
+          "ma_phong": "C301", "ten_phong": "Phòng C301" },
+        { "id": 4087, "ngay_hoc": "2026-11-07", "thu": 7,
+          "tiet_bat_dau": 1, "tiet_ket_thuc": 3, "gio_bat_dau": "06:30", "gio_ket_thuc": "09:10",
+          "trang_thai": "SCHEDULED", "hinh_thuc": "LY_THUYET", "ly_do_huy": null,
+          "ma_lop_hp": "MAT1093-2026-1-73", "ma_mon": "MAT1093", "ten_mon": "Đại số tuyến tính",
+          "ma_phong": "A103", "ten_phong": "Phòng A103" }
+      ]
+    },
+    "gpa": {
+      "hoc_ky_hien_tai": {
+        "id": 2, "ma_hoc_ky": "2026-1", "ten_hoc_ky": "Học kỳ 1 năm học 2026-2027",
+        "gpa_he_10": null, "gpa_he_4": null, "tong_tin_chi": 15
+      },
+      "tich_luy": {
+        "gpa_he_10": 7.21, "gpa_he_4": 2.74,
+        "tong_tin_chi": 96, "tin_chi_dat": 88, "so_hoc_ky_da_tinh": 3
+      }
+    },
+    "chuyen_can": {
+      "ty_le": 0.9070,
+      "tong_buoi_da_diem_danh": 45,
+      "mau_so": 43,
+      "co_mat": 35,
+      "di_muon": 4,
+      "vang": 4,
+      "co_phep": 2,
+      "ty_le_thap_nhat": { "ma_mon": "INT2204", "ten_mon": "Cơ sở dữ liệu", "ty_le": 0.7778 }
+    }
+  }
+}
+```
+
+#### Nguồn số liệu STUDENT — bảng, cột, điều kiện
+
+`S` = sinh viên đang đăng nhập, `K` = học kỳ đã chọn.
+
+| Trường | Tính từ | Cột / điều kiện | Index dùng |
+|---|---|---|---|
+| `hoc_phan_da_dang_ky` | `dang_ky_hoc_phan` + `lop_hoc_phan` + `mon_hoc` + `giang_vien` | `sinh_vien_id = S.id AND trang_thai = 'ACTIVE'` và `lop_hoc_phan.hoc_ky_id = K.id`, không tính lớp xóa mềm. Eager load `lopHocPhan.monHoc`, `lopHocPhan.giangVien` | `index(sinh_vien_id, trang_thai)` |
+| `hoc_phan_da_dang_ky[].ty_le_chuyen_can` | `diem_danh` | công thức FR-11.05 bên dưới, tính riêng cho từng `dang_ky_hoc_phan_id`; mẫu số 0 → `null` | `index(dang_ky_hoc_phan_id)` |
+| `hoc_phan_da_dang_ky[].diem_*` | `diem` | `diem_tong_ket`, `diem_chu`, `ket_qua` của chính đăng ký đó; chưa có điểm → `null`. **Không** áp dụng quy tắc BR-28 (lấy điểm cao nhất) ở đây — quy tắc đó chỉ dùng cho GPA, xem ghi chú | `unique(dang_ky_hoc_phan_id)` |
+| `the_so_lieu[hoc_phan]` | — | `count(hoc_phan_da_dang_ky)` | — |
+| `the_so_lieu[tin_chi]` | `mon_hoc` | `sum(so_tin_chi)` trên các học phần đó | — |
+| `the_so_lieu[gpa_he_4]` | `diem` | `gpa.tich_luy.gpa_he_4`; `phu_chu` = `"{so_hoc_ky_da_tinh} học kỳ đã đóng, {tong_tin_chi} tín chỉ"` | `index(sinh_vien_id, trang_thai)`, `index(trang_thai)` trên `hoc_ky` |
+| `the_so_lieu[chuyen_can]` | `diem_danh` | `round(chuyen_can.ty_le * 100, 1)`; `phu_chu` = `"{co_mat + di_muon}/{mau_so} buổi có mặt hoặc đi muộn"`. `ty_le = null` → `gia_tri = 0`, `phu_chu` = "Chưa có buổi nào được điểm danh" | — |
+| `thoi_khoa_bieu_tuan` | `buoi_hoc` | buổi thuộc lớp mà S đăng ký `ACTIVE`, `ngay_hoc` trong `[thứ 2, chủ nhật]` của tuần chứa hôm nay, không tính buổi xóa mềm. **Giữ cả `CANCELLED`** để hiện gạch chéo như SCR-35. Sắp xếp `ngay_hoc`, `gio_bat_dau`; **tối đa 50 dòng** | `index(lop_hoc_phan_id, ngay_hoc)` |
+| `gpa` | `diem` + `mon_hoc` + `hoc_ky` | **Dùng lại nguyên `QuanLyDiemService::gpaCuaToi()`**, không viết lại. Shape đúng bằng `GET /api/me/gpa` (§13). `hoc_ky` của dashboard lấy từ `gpa.hoc_ky_hien_tai` | `index(sinh_vien_id, trang_thai)`, `unique(dang_ky_hoc_phan_id)` |
+| `chuyen_can.co_mat/di_muon/vang/co_phep` | `diem_danh` | `count` theo `trang_thai` trên toàn bộ đăng ký `ACTIVE` của K, chỉ tính buổi `ngay_hoc >= dang_ky_luc` của **chính** đăng ký đó (BR-27) | `index(dang_ky_hoc_phan_id)` |
+| `chuyen_can.tong_buoi_da_diem_danh` | `diem_danh` | tổng số bản ghi điểm danh được tính (gồm cả `EXCUSED`). Bằng `co_mat + di_muon + vang + co_phep` | — |
+| `chuyen_can.mau_so` | — | `tong_buoi_da_diem_danh − co_phep` | — |
+| `chuyen_can.ty_le` | — | `mau_so = 0 ? null : round((co_mat + di_muon) / mau_so, 4)` | — |
+| `chuyen_can.ty_le_thap_nhat` | — | môn có `ty_le_chuyen_can` nhỏ nhất trong số `ty_le_chuyen_can !== null`; hòa thì lấy `dang_ky_hoc_phan_id` nhỏ hơn. Không có môn nào có tỉ lệ → `null` | — |
+
+**Công thức chuyên cần (FR-11.05, `docs/03-data-model.md` §5.3):**
+
+```
+mau_so = co_mat + di_muon + vang            // = tổng bản ghi − EXCUSED
+ty_le  = mau_so == 0 ? null : (co_mat + di_muon) / mau_so      // phân số 0–1, 4 chữ số
+```
+
+Chỉ đếm buổi có `buoi_hoc.ngay_hoc >= dang_ky_hoc_phan.dang_ky_luc` (so theo **ngày**, không
+theo giờ — BR-27). Bản ghi điểm danh của buổi trước mốc đăng ký lại **không** bị xóa nhưng
+không được tính.
+
+**`gpa` và `chuyen_can` phải khớp nhau:** `chuyen_can.co_mat/di_muon/vang/co_phep` là **tổng
+theo từng môn** của các giá trị dùng để tính `hoc_phan_da_dang_ky[].ty_le_chuyen_can`. Nói
+cách khác, nếu cộng ngược các con số đếm của từng đăng ký thì ra đúng khối `chuyen_can`.
+Response chỉ trả `ty_le` cho từng môn (không trả bốn con số đếm riêng) để payload gọn, nhưng
+test phải khoá ràng buộc này.
+
+Ví dụ trong JSON trên khớp như sau (mẫu số từng môn → cộng lại):
+
+| Môn | có mặt + đi muộn / mẫu số | `ty_le_chuyen_can` |
+|---|---|---|
+| INT3306 | 10/10 | `1.0` |
+| INT2204 | 7/9 | `0.7778` |
+| MAT1093 | 7/8 | `0.875` |
+| INT3401 | 8/8 | `1.0` |
+| INT2203 | 7/8 | `0.875` |
+| **Tổng** | **39/43** | `0.9070` |
+
+`vang` môn nào cũng bằng `mẫu số − (có mặt + đi muộn)` → tổng `vang = 43 − 39 = 4`. Cộng
+`co_phep = 2` ra `tong_buoi_da_diem_danh = 45`. Môn thấp nhất là `INT2204` với `0.7778` —
+đúng bằng `chuyen_can.ty_le_thap_nhat`. `co_mat = 35` và `di_muon = 4` là cách chia 39 kia
+thành hai nhóm; cả hai đều nằm trong tử số nên tỉ lệ không phụ thuộc cách chia.
+
+> Số trong ba response mẫu (ADMIN, TEACHER, STUDENT) là **ví dụ minh hoạ**, không phải dữ
+> liệu seed thật. Ràng buộc là **nhất quán nội tại**: `gia_tri` của thẻ bằng số phần tử hoặc
+> tổng của mảng tương ứng; `phu_chu` khớp số liệu trong cùng response.
+
+**Vì sao `hoc_phan_da_dang_ky[].diem_tong_ket` không áp BR-28:** bảng này là "học phần đã
+đăng ký **trong kỳ này**", mỗi dòng là một đăng ký thật; hiển thị điểm của lần học khác sẽ
+sai. BR-28 (lấy điểm cao nhất) chỉ áp khi gộp theo môn để tính GPA, và việc đó nằm trong
+`gpa` — dùng lại service, không tính lại.
+
+#### Trường của STUDENT response
+
+| Trường | Kiểu | Ghi chú |
+|---|---|---|
+| `hoc_ky` | object \| null | `{id, ma_hoc_ky, ten_hoc_ky, trang_thai}` của **cùng** bản ghi `hoc_ky` mà `gpa.hoc_ky_hien_tai` trỏ tới, thêm `trang_thai` lấy từ model. `null` khi sinh viên chưa đăng ký kỳ nào |
+| `the_so_lieu[].khoa` | string | `hoc_phan`, `tin_chi`, `gpa_he_4`, `chuyen_can` — FE cần map thêm 4 khoá này sang icon |
+| `hoc_phan_da_dang_ky[].ty_le_chuyen_can` | number \| null | **Phân số 0–1, 4 chữ số** (không phải %). `null` = chưa điểm danh buổi nào |
+| `hoc_phan_da_dang_ky[].giang_vien` | object \| null | `id`, `ma_gv`, `ho_ten` — không trả email/điện thoại; liên hệ dùng `GET /api/teachers/{id}` |
+| `thoi_khoa_bieu_tuan.tu_ngay` / `den_ngay` | date | Thứ 2 và Chủ nhật của tuần chứa hôm nay |
+| `thoi_khoa_bieu_tuan.cac_buoi[].trang_thai` | string | `SCHEDULED`, `DONE`, `CANCELLED` — **không** dùng để suy ra đã điểm danh; dashboard không trả `da_diem_danh` |
+| `chuyen_can.ty_le` | number \| null | Phân số 0–1, 4 chữ số. Thẻ `the_so_lieu[chuyen_can]` mới là phần trăm |
+| `chuyen_can.mau_so` | int | Mẫu số thật của công thức; `0` → `ty_le = null`, UI hiện "—" |
+| `chuyen_can.ty_le_thap_nhat` | object \| null | `ma_mon`, `ten_mon`, `ty_le` — dùng cho dòng cảnh báo "Môn cần chú ý" |
+
+**Phụ thuộc chưa có:** không có bảng `notifications` và không có endpoint thông báo trong
+repo tại thời điểm viết đặc tả này (đã kiểm `backend/database/migrations/`). Vì vậy
+dashboard TEACHER/STUDENT **không** trả khối thông báo. Khi làm tính năng thông báo, thêm
+`thong_bao_chua_doc: { so_luong }` hoặc một khối riêng — không sửa shape hiện tại.
+
+**Truy vấn bắt buộc tránh N+1 (UC-16 AC-3):** mỗi endpoint tối đa **9 truy vấn** cho dữ
+liệu demo (501 sinh viên / 150 lớp / 2.550 buổi / 7.028 đăng ký / 76.381 điểm danh). Cụ thể:
+
+- Dùng `withCount` cho sĩ số lớp và số dòng điểm danh của buổi, **không** gọi
+  `->count()` trong vòng lặp.
+- Điểm danh của toàn bộ học phần trong kỳ: **một** truy vấn
+  `diem_danh WHERE dang_ky_hoc_phan_id IN (...) JOIN buoi_hoc` rồi gom trong PHP, **không**
+  lặp theo từng đăng ký như `QuanLyDiemDanhService::thongKeCuaToi()` đang làm
+  (`backend/app/Services/QuanLyDiemDanhService.php:307-310` — mỗi đăng ký một truy vấn).
+- Cấu hình số ngày sửa điểm danh: đọc **một lần** cho cả response (map theo `hoc_ky_id`).
+- `viec_can_lam[buoi_sap_toi]` (cửa sổ 24 giờ) **suy từ** collection `buoi_sap_toi` đã tải
+  (vì 24 giờ ⊂ 14 ngày) — không phát sinh truy vấn thứ hai. Lọc trong PHP theo
+  `TIMESTAMP(ngay_hoc, gio_bat_dau)`.
+- `viec_can_lam[chot_diem]` cần biết "lớp đã có ít nhất một buổi `DONE`": lấy bằng **một**
+  truy vấn gộp `SELECT lop_hoc_phan_id, COUNT(*) ... WHERE trang_thai='DONE' GROUP BY ...`
+  trên các lớp của giảng viên, không `exists()` từng lớp.
+- `lop_phu_trach[].diem_tb_lop`: **một** truy vấn gộp
+  `SELECT lop_hoc_phan_id, AVG(diem_tong_ket) ... GROUP BY lop_hoc_phan_id` cho mọi lớp của
+  kỳ (`QuanLyDiemService::diemTrungBinhLop()`, dùng chung với `/api/me/grades`), không
+  `avg()` từng lớp.
+
+Ngân sách truy vấn dự kiến của `/teacher`: hồ sơ giảng viên + học kỳ (2) + lớp kèm `withCount`
+(1) + `diem_tb_lop` gộp (1) + `buoi_sap_toi` (1) + `buoi_chua_diem_danh` kèm `withCount` (1)
++ lớp có buổi `DONE` (1) + cấu hình (1) = **8**.
+
+Đo bằng `DB::enableQueryLog()` (2026-11-09): **8 truy vấn**, không đổi từ 1 đến 30 lớp —
+`test_diem_tb_lop_khong_phat_sinh_them_truy_van_theo_so_lop` khoá điều này. Trước khi thêm
+`diem_tb_lop` là **7**; phần tăng thêm đúng **một** truy vấn gộp `GROUP BY lop_hoc_phan_id`,
+không phải một truy vấn mỗi lớp.
+
+Của `/student`, đo bằng `DB::enableQueryLog()` trong
+`DashboardVaiTroTest::test_dashboard_student_toi_da_8_truy_van` (2026-11-09): **10**.
+
+| # | Truy vấn | Ghi chú |
+|---|---|---|
+| 1 | hồ sơ sinh viên | |
+| 2 | chọn học kỳ mặc định | ONGOING có đăng ký → kỳ mới nhất; truyền `hoc_ky_id` thì bỏ |
+| 3–7 | đăng ký của kỳ + 4 eager load (lớp, môn, giảng viên, điểm) | gồm sĩ số lớp |
+| 8 | CPA tích lũy: đăng ký của các kỳ `CLOSED` + 3 eager load | bắt buộc, khác kỳ hiện tại |
+| 9 | điểm danh gộp (JOIN `buoi_hoc`) | |
+| 10 | buổi học trong tuần (JOIN `phong_hoc`) | |
+
+**Sửa ngưỡng test từ 8 → 10.** Con số "7–8" trước đây đếm một chuỗi eager-load là MỘT
+truy vấn, trong khi Eloquent chạy mỗi quan hệ một truy vấn riêng. Đây là **sai cách đếm**,
+không phải code chậm: 10 truy vấn cho một trang dashboard, mỗi truy vấn đều dùng index và
+trả về collection gộp — không có N+1 (không truy vấn nào nằm trong vòng lặp).
+
+Muốn xuống 8 thì phải bỏ khối `gpa.tich_luy` (2 truy vấn) — nhưng SCR-05 hiển thị GPA tích
+lũy và 96 tín chỉ, nên cắt nó là cắt tính năng. Giữ 10 và ghi đúng ngưỡng.
+Test TC-16b.10 và TC-16c.9 (`docs/06-test-plan.md`) khoá ngưỡng này bằng `DB::listen`.
+
+#### Mã lỗi của hai endpoint mới
+
+Không có mã lỗi mới nào. Cả hai dùng đúng mã đã có ở §1.5:
+
+| Tình huống | HTTP | `ma_loi` | Ghi chú |
+|---|---|---|---|
+| Không gửi token / token hết hạn | 401 | `UNAUTHENTICATED` | Middleware `auth:sanctum` |
+| Chưa đổi mật khẩu lần đầu | 403 | `MUST_CHANGE_PASSWORD` | Middleware `doi.mat.khau` |
+| Vai trò không khớp (`ADMIN` gọi `/teacher` hoặc `/student`) | 403 | `FORBIDDEN` | Middleware `vai.tro` |
+| Tài khoản `GIANG_VIEN`/`SINH_VIEN` chưa có hồ sơ | 403 | `FORBIDDEN` | Message: "Không tìm thấy hồ sơ giảng viên/sinh viên." |
+| Lỗi máy chủ | 500 | — | Envelope lỗi mặc định, `ma_loi: null` |
+
+Không có `404` (không nhận tham số đường dẫn), không có `422` (không nhận body/query),
+không có `409` (endpoint chỉ đọc).
+
+#### Test tối thiểu phải có (PHPUnit)
+
+Danh sách case **chỉ khai một nơi**: `docs/06-test-plan.md` mục **TC-16a/b/c** (30 case).
+Lý do tách: hợp đồng API giữ shape, test plan giữ kịch bản; chép hai nơi thì sớm muộn cũng
+lệch nhau. Ba nhóm:
+
+- **TC-16a (8 case)** — phân quyền, nhánh rỗng, dữ liệu hỏng, quy tắc nhất quán `gia_tri`,
+  và `gpa` của `/student` phải bằng đúng payload `/api/me/gpa`.
+- **TC-16b (13 case)** — cửa sổ thời gian, `con_sua_duoc`, `viec_can_lam`, phạm vi lớp của
+  giảng viên, `diem_tb_lop` (giá trị, `null`, không N+1), ngưỡng truy vấn.
+- **TC-16c (9 case)** — công thức chuyên cần, BR-27, ranh giới tuần, quy ước `thu`, ngưỡng
+  truy vấn.
 
 ---
 
@@ -1081,7 +1618,7 @@ Bộ lọc: `q`, `deleted_by`, `deleted_tu`, `deleted_den`, `page`, `per_page`.
 | POST | `/api/menus` | ADMIN |
 | PUT | `/api/menus/{id}` | ADMIN |
 | DELETE | `/api/menus/{id}` | ADMIN |
-| GET | `/api/settings` | ADMIN |
+| GET | `/api/settings` | ADMIN, GIANG_VIEN, SINH_VIEN — không phải ADMIN chỉ nhận khoá `diem.*` |
 | PUT | `/api/settings` | ADMIN |
 
 ---
@@ -1105,27 +1642,83 @@ Chỉ trả bản ghi chưa xóa; mặc định `trang_thai = true` trừ khi tr
 
 ## 18. Bảng tóm tắt số lượng endpoint
 
-| Nhóm | Số endpoint |
-|---|---|
-| Xác thực & hồ sơ | 7 |
-| Người dùng | 8 |
-| Khoa | 5 |
-| Ngành | 5 |
-| Sinh viên | 8 |
-| Giảng viên | 8 |
-| Lớp hành chính | 8 |
-| Môn học | 8 |
-| Học kỳ | 6 |
-| Phòng học | 8 |
-| Lớp học phần | 11 |
-| Buổi học & lịch | 8 |
-| Đăng ký | 7 |
-| Điểm | 6 |
-| Điểm danh cá nhân & dashboard | 6 |
-| Thùng rác | 2 |
-| Menu & cấu hình | 6 |
-| Options | 8 |
-| **Tổng** | **125** |
+Hai cột, **không gộp**: *Đặc tả* = số operation khai trong file này; *Đã code* = số route
+thật trong `backend/routes/api.php`. Cả hai đếm **theo prefix đường dẫn**, không theo nhóm
+nghiệp vụ — nhờ vậy đếm lại được bằng máy (`php artisan route:list` và grep bảng trong file
+này), không phải đoán.
+
+> Đo ngày **2026-11-08**: 134 route thật, 131 operation đặc tả (3 operation đặc tả nhưng
+> chưa có route; 6 route có nhưng chưa đặc tả).
+
+| Prefix | Đặc tả | Đã code | Ghi chú |
+|---|---|---|---|
+| `sections` | 15 | 15 | 12 route ở §10, 3 route buổi học ở §11 |
+| `me` | **11** | 10 | Chênh 1: `GET /api/me/schedule` đặc tả nhưng **không có route** (xem mục Sai lệch #1) |
+| `options` | 9 | 9 | 8 ở §17 + `options/periods` ở §11 |
+| `admin-classes` | 8 | 8 | |
+| `rooms` | 8 | 8 | |
+| `students` | 8 | 8 | |
+| `subjects` | 8 | 8 | |
+| `teachers` | 8 | 8 | |
+| `users` | 8 | 8 | |
+| `enrollments` | 6 | 6 | 4 ở §12 + 2 route điểm ở §13 |
+| `semesters` | 6 | 6 | |
+| `khoa` | 5 | 5 | |
+| `menus` | 5 | 5 | |
+| `nganh` | 5 | 5 | |
+| `sessions` | 5 | 5 | |
+| `auth` | 4 | 4 | |
+| `exams` | 4 | 4 | |
+| `dashboard` | **3** | **1** | Đã code chỉ `dashboard/admin`. **`dashboard/teacher` và `dashboard/student` vừa được đặc tả đầy đủ ở §14, chưa code** |
+| `settings` | 2 | 3 | Đặc tả 2 ở §16; `GET /settings/semesters` đặc tả bằng văn xuôi ở §13 nên bộ đếm theo bảng không thấy — **thực tế đủ 3, không thiếu** |
+| `trash` | 2 | 2 | |
+| `schedules` | 1 | 1 | |
+| `logs` | 0 | 3 | **Chưa đặc tả** — `GET /logs`, `/logs/options`, `/logs/{id}` |
+| `audit-logs` | 0 | 1 | **Chưa đặc tả** — alias của `/logs`, cùng `NhatKyController@index` |
+| `user` | 0 | 1 | **Chưa đặc tả** — route debug Laravel mẫu (xem Sai lệch #2) |
+| **Tổng** | **131** | **134** | Đặc tả 131 + `settings/semesters` (đặc tả văn xuôi) = **132 operation thật**; code 134, chênh 2 = `logs` 3 + `audit-logs` 1 + `user` 1 (5 route chưa đặc tả) − `me/schedule` 1 + `dashboard/teacher` 1 + `dashboard/student` 1 (3 operation đặc tả chưa code) = 134 |
+
+**Sai lệch đã biết — chưa sửa trong lượt này** (ngoài phạm vi dashboard, ghi lại để không
+mất dấu):
+
+1. `GET /api/me/schedule` có trong bảng §14 nhưng **không tồn tại** trong `routes/api.php`.
+   Sinh viên xem lịch tuần đang dùng `GET /api/schedules` (có phân trang; `LichHocService`
+   gọi đúng route đó và tự lấy đủ trang). Đề xuất: **xóa dòng `/api/me/schedule` khỏi §14**
+   thay vì viết endpoint mới — `/api/schedules` đã lọc theo vai trò `SINH_VIEN` và trả đủ
+   trường. *Chờ user chốt.*
+2. `GET /api/user` (route debug của Laravel mẫu) trả `User` trần, **không** theo envelope
+   `{success, message, data}`. Không đặc tả, không dùng ở FE; đề xuất xóa route.
+3. `GET /api/audit-logs` trùng chức năng với `GET /api/logs` (cùng `NhatKyController@index`).
+   Giữ một cái, xóa cái còn lại.
+4. §13 vẫn ghi `PUT /api/enrollments/{id}/grade` và `GET /api/enrollments/{id}/grade-history`
+   là "chưa triển khai" nhưng cả hai **đã có route và controller** (`DiemController`).
+   Sửa nhãn khi chạm module điểm.
+5. Bảng cũ ghi tổng **125** trong khi đặc tả thật là 131 và code là 134 — không nhóm nào
+   khớp. Bảng mới đếm theo prefix để lần sau đối chiếu bằng một lệnh.
+
+---
+
+## 18b. Đề xuất index cho dashboard TEACHER/STUDENT
+
+Đo trên dữ liệu seed (`docs/03-data-model.md` §7: 150 lớp, 2.550 buổi, 7.028 đăng ký,
+76.381 điểm danh). **Chưa tạo migration nào** — đây là đề xuất, chờ user chốt trước khi
+`qllh-backend` viết migration.
+
+| # | Bảng | Index đề xuất | Truy vấn được lợi | Có sẵn index gần nhất |
+|---|---|---|---|---|
+| 1 | `diem_danh` | `index(dang_ky_hoc_phan_id, buoi_hoc_id)` | Đếm điểm danh theo từng đăng ký của dashboard STUDENT; đã có `index(dang_ky_hoc_phan_id)` nên index này **chỉ thêm phần `buoi_hoc_id` để thành covering** cho `SELECT trang_thai` khi join buổi | `index(dang_ky_hoc_phan_id)` — đủ cho tra cứu, chưa covering |
+| 2 | `buoi_hoc` | `index(lop_hoc_phan_id, trang_thai, ngay_hoc)` | `buoi_sap_toi` và `buoi_chua_diem_danh` của TEACHER: lọc `trang_thai` + khoảng `ngay_hoc` trong một lớp. Hiện có `index(lop_hoc_phan_id, ngay_hoc)` phải đọc rồi lọc `trang_thai` | `index(lop_hoc_phan_id, ngay_hoc)` |
+| 3 | `dang_ky_hoc_phan` | `index(sinh_vien_id, trang_thai, lop_hoc_phan_id)` | `hoc_phan_da_dang_ky` + `chuyen_can` của STUDENT: lấy danh sách `id` đăng ký để `WHERE IN` sang `diem_danh`. Hiện có `index(sinh_vien_id, trang_thai)` phải về bảng chính lấy `lop_hoc_phan_id` | `index(sinh_vien_id, trang_thai)` |
+
+**Kết luận:** không index nào là **bắt buộc** để chạy đúng — cả ba đều là tối ưu đọc.
+Nếu bỏ qua cả ba, dashboard vẫn < 500 ms với dữ liệu seed vì mọi truy vấn đều lọc theo
+`sinh_vien_id`/`giang_vien_id` đã có index. Chỉ nên làm #1 và #3 nếu đo thật thấy chậm sau
+khi có dữ liệu lớn hơn seed (quy tắc "chỉ sửa khi có số đo" trong `CLAUDE.md`).
+
+**Index KHÔNG cần:**
+- `diem(dang_ky_hoc_phan_id)` — đã có `unique(dang_ky_hoc_phan_id)`.
+- `hoc_ky(trang_thai)` — đã có.
+- `diem_danh(buoi_hoc_id)` — đã có qua `unique(buoi_hoc_id, dang_ky_hoc_phan_id)` (cột đầu).
 
 ---
 

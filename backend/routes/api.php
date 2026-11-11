@@ -88,12 +88,16 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         ->middleware('vai.tro:ADMIN');
 
     Route::get('/menus', [MenuController::class, 'index'])->name('api/menus');
+    // Cả 3 vai trò đọc cấu hình điểm (trọng số, bảng quy đổi) — màn nhập điểm của
+    // giảng viên và màn điểm của sinh viên cần. Controller lọc còn khoá `diem.*`
+    // khi người gọi không phải ADMIN. Ghi cấu hình vẫn chỉ ADMIN (dưới đây).
+    Route::get('/settings', [CauHinhController::class, 'index'])
+        ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->name('api/settings');
     Route::middleware('vai.tro:ADMIN')->group(function () {
         Route::post('/menus', [MenuController::class, 'store'])->name('api/menus/tao');
         Route::get('/menus/{menu}', [MenuController::class, 'show'])->name('api/menus/chi-tiet');
         Route::put('/menus/{menu}', [MenuController::class, 'update'])->name('api/menus/cap-nhat');
         Route::delete('/menus/{menu}', [MenuController::class, 'destroy'])->name('api/menus/xoa');
-        Route::get('/settings', [CauHinhController::class, 'index'])->name('api/settings');
         Route::put('/settings', [CauHinhController::class, 'update'])->name('api/settings/cap-nhat');
         Route::get('/settings/semesters', [CauHinhController::class, 'semesters'])
             ->name('api/settings/semesters');
@@ -105,6 +109,12 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::get('/logs/{nhatKy}', [NhatKyController::class, 'show'])->name('api/logs/chi-tiet');
         Route::get('/audit-logs', [NhatKyController::class, 'index'])->name('api/audit-logs');
     });
+
+    // Dashboard theo vai trò (04-api-contract.md §14) — mỗi route khoá đúng một vai trò.
+    Route::get('/dashboard/teacher', [DashboardController::class, 'teacher'])
+        ->middleware('vai.tro:GIANG_VIEN')->name('api/dashboard/teacher');
+    Route::get('/dashboard/student', [DashboardController::class, 'student'])
+        ->middleware('vai.tro:SINH_VIEN')->name('api/dashboard/student');
 
     Route::prefix('semesters')->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN')->group(function () {
         Route::get('/', [HocKyController::class, 'index']);
@@ -242,7 +252,9 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::post('/', [LopHocPhanController::class, 'store'])->middleware('vai.tro:ADMIN');
         Route::post('{lopHocPhan}/finalize', [LopHocPhanController::class, 'chotDiem'])->middleware('vai.tro:GIANG_VIEN');
         Route::post('{lopHocPhan}/unlock', [LopHocPhanController::class, 'moKhoaDiem'])->middleware('vai.tro:ADMIN');
-        Route::get('{lopHocPhan}/students', [LopHocPhanController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        // Sinh viên xem roster lớp mình đã đăng ký (chỉ mã + tên, lọc ở controller);
+        // Policy chặn sinh viên chưa đăng ký ACTIVE.
+        Route::get('{lopHocPhan}/students', [LopHocPhanController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::get('{lopHocPhan}/sessions', [BuoiHocController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::post('{lopHocPhan}/sessions/generate', [BuoiHocController::class, 'generate'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::post('{lopHocPhan}/sessions', [BuoiHocController::class, 'store'])->middleware('vai.tro:ADMIN,GIANG_VIEN');

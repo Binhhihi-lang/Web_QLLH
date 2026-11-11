@@ -7,12 +7,14 @@ use App\Http\Requests\QuanLy\GanSinhVienRequest;
 use App\Http\Requests\QuanLy\LopHanhChinhRequest;
 use App\Http\Resources\LopHanhChinhResource;
 use App\Http\Resources\SinhVienResource;
+use App\Models\DangKyHocPhan;
 use App\Models\LopHanhChinh;
 use App\Models\SinhVien;
 use App\Services\QuanLyHoSoService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class LopHanhChinhController extends Controller
 {
@@ -38,6 +40,12 @@ class LopHanhChinhController extends Controller
 
         if ($request->user()->laSinhVien()) {
             $query->whereKey($request->user()->sinhVien?->lop_hanh_chinh_id ?? 0);
+        } elseif ($request->user()->laGiangVien()) {
+            // BR-03: giảng viên chỉ thấy lớp hành chính có sinh viên mình đang dạy.
+            $giangVienId = $request->user()->giangVien?->id;
+            $query->whereHas('sinhVien.dangKyHocPhan', fn ($dangKy) => $dangKy
+                ->where('trang_thai', DangKyHocPhan::ACTIVE)
+                ->whereHas('lopHocPhan', fn ($lop) => $lop->where('giang_vien_id', $giangVienId)));
         }
 
         $query
@@ -70,6 +78,8 @@ class LopHanhChinhController extends Controller
 
     public function show(LopHanhChinh $lopHanhChinh): JsonResponse
     {
+        Gate::authorize('xem', $lopHanhChinh);
+
         return $this->success(new LopHanhChinhResource(
             $lopHanhChinh->load(['nganh.khoa'])->loadCount('sinhVien'),
         ));
@@ -94,13 +104,15 @@ class LopHanhChinhController extends Controller
 
     public function danhSachSinhVien(Request $request, LopHanhChinh $lopHanhChinh): JsonResponse
     {
+        Gate::authorize('xemSinhVien', $lopHanhChinh);
+
         $request->validate([
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'in:10,25,50,100'],
             'q' => ['sometimes', 'string', 'max:255'],
         ]);
 
-        $query = $lopHanhChinh->sinhVien()->with(['lopHanhChinh', 'user'])
+        $query = $lopHanhChinh->sinhVien()->with(['lopHanhChinh.nganh', 'user'])
             ->when($request->filled('q'), fn ($q) => $q->where(function ($tim) use ($request) {
                 $tuKhoa = '%'.$request->string('q')->toString().'%';
                 $tim->where('ma_sv', 'like', $tuKhoa)->orWhere('ho_ten', 'like', $tuKhoa)->orWhere('email', 'like', $tuKhoa);

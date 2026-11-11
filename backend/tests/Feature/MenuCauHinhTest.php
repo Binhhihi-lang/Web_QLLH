@@ -204,15 +204,50 @@ class MenuCauHinhTest extends TestCase
         );
     }
 
-    public function test_cau_hinh_chi_danh_cho_admin(): void
+    /**
+     * Đọc cấu hình điểm mở cho cả ba vai trò (màn nhập điểm của giảng viên và
+     * màn điểm của sinh viên cần trọng số + bảng quy đổi); người không phải
+     * ADMIN chỉ nhận khoá `diem.*`. Ghi cấu hình vẫn chỉ ADMIN.
+     */
+    public function test_cau_hinh_doc_mo_cho_ba_vai_tro_ghi_chi_admin(): void
     {
-        $giangVien = User::factory()->giangVien()->create(['must_change_password' => false]);
+        $this->seed(CauHinhSeeder::class);
+        // Khoá ngoài nhóm điểm để chứng minh bộ lọc tiền tố có chạy thật.
+        CauHinh::dat('he_thong.ten_truong', 'Trường thử nghiệm', 'Tên trường');
 
-        $this->actingAs($giangVien, 'sanctum')
+        $giangVien = User::factory()->giangVien()->create(['must_change_password' => false]);
+        $sinhVien = User::factory()->sinhVien()->create(['must_change_password' => false]);
+
+        foreach ([$giangVien, $sinhVien] as $nguoiDung) {
+            $duLieu = $this->actingAs($nguoiDung, 'sanctum')
+                ->getJson('/api/settings')
+                ->assertOk()
+                ->json('data');
+
+            $this->assertArrayHasKey('diem.trong_so', $duLieu);
+            $this->assertArrayNotHasKey('he_thong.ten_truong', $duLieu);
+            $this->assertSame(
+                [],
+                array_values(array_filter(
+                    array_keys($duLieu),
+                    fn (string $khoa) => ! str_starts_with($khoa, 'diem.'),
+                )),
+                'Người không phải ADMIN chỉ được nhận khoá diem.*',
+            );
+
+            $this->putJson('/api/settings', ['diem.trong_so' => []])
+                ->assertForbidden();
+        }
+
+        // ADMIN vẫn đọc được khoá ngoài nhóm điểm. Dùng `json()` chứ không
+        // `assertJsonPath`: khoá có dấu chấm nên JsonPath sẽ hiểu thành đường
+        // dẫn lồng nhau.
+        $duLieuAdmin = $this->actingAs($this->admin, 'sanctum')
             ->getJson('/api/settings')
-            ->assertForbidden();
-        $this->putJson('/api/settings', ['diem.trong_so' => []])
-            ->assertForbidden();
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('Trường thử nghiệm', $duLieuAdmin['he_thong.ten_truong']);
     }
 
     public function test_bang_quy_doi_tu_choi_khoang_chong_lan_khong_phu_kin_va_chu_khong_hop_le(): void

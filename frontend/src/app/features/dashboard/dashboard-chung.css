@@ -1,0 +1,329 @@
+/*
+ * Phần CSS DÙNG CHUNG cho dashboard GIANG_VIEN (SCR-04) và SINH_VIEN (SCR-05).
+ *
+ * Mỗi màn có thêm một file riêng cho khối đặc thù (`.dashboard-giang-vien.css`,
+ * `.dashboard-sinh-vien.css`). Chia ba file thay vì một khối lớn vì ngân sách
+ * `anyComponentStyle` của Angular là 6 kB/file — gộp hết vào một là vượt ngay,
+ * và cũng khó thấy phần nào thuộc màn nào.
+ *
+ * Phần thẻ số liệu KHÔNG còn ở đây: nó đã thành component `app-the-so-lieu` để
+ * ba dashboard dùng chung. CSS thẻ nằm trong component đó.
+ *
+ * Màu và khoảng cách đều lấy từ `_tokens.scss`, không có mã màu viết tay.
+ */
+
+:host {
+  display: block;
+}
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.material-icons {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.thu-lai {
+  display: flex;
+}
+
+/*
+ * Đổi học kỳ: giữ nguyên khung, chỉ mờ nhẹ phần số liệu. Xoá trắng rồi dựng
+ * lại làm cả trang nhảy và mất vị trí cuộn (đặc tả §3.2, dòng 1b).
+ * `pointer-events: none` để không bấm vào số cũ trong lúc đang tải số mới.
+ */
+.noi-dung {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.noi-dung.dang-mo {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.xem-tat-ca {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.xem-tat-ca .material-icons {
+  font-size: 15px;
+}
+
+.xem-tat-ca:hover {
+  text-decoration: underline;
+}
+
+/* ================= Lưới thẻ số liệu ================= */
+/*
+ * Thẻ giờ là component `app-the-so-lieu` (ba dashboard dùng chung), lưới vẫn
+ * khai ở đây vì bề rộng lưới là quyết định của từng màn: admin và sinh viên
+ * cùng 4 thẻ, nhưng chỗ đặt lưới trong trang khác nhau.
+ */
+.the-so {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* ================= Lưới hai cột ================= */
+/*
+ * `align-items: start` — mỗi thẻ tự cao theo nội dung, KHÔNG kéo cho bằng nhau.
+ *
+ * Đã thử `stretch` (hai thẻ cùng hàng cao bằng nhau) và nó gây đúng lỗi người
+ * dùng báo: thẻ ngắn bị ép cao bằng thẻ dài rồi để lại khoảng trắng trơ ở đáy.
+ * Đo trên trình duyệt thật 2026-11-11, SCR-04: thẻ "Điểm TB lớp phụ trách"
+ * trống 107px, thẻ "Buổi chưa điểm danh" trống 113px; SCR-05: thẻ "Kết quả học
+ * tập" trống 462px (389px thật so với 851px của thẻ bên cạnh).
+ *
+ * Dashboard admin cũng dùng `start` cho `.luoi-hai` riêng của nó và không có
+ * lỗi này — đây là cùng một cách làm.
+ */
+.luoi-hai {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.luoi-hai > app-card {
+  min-width: 0;
+}
+
+/* ================= Thanh tiến trình ================= */
+.thanh-tien-trinh {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.thanh-nen {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.thanh-day {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width var(--dur) var(--ease);
+}
+
+/* Lớp đầy sĩ số đổi màu — thông tin người dùng cần thấy ngay. */
+.thanh-day.day {
+  background: var(--color-success);
+}
+
+/* Tên dài cắt 1 dòng; tên đầy đủ nằm ở `title` (quy ước §3.2). */
+.cat-dong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viec-mui {
+  flex: none;
+  font-size: 18px;
+  color: var(--color-ink-subtle);
+}
+
+/* ================= Chú giải biểu đồ điểm ================= */
+.chu-giai-nam {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  margin-top: 10px;
+  font-size: var(--text-caption);
+  color: var(--color-ink-muted);
+}
+
+.chu-giai-nam .dong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chu-giai-nam .cham {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* "Điểm của bạn" — chấm đặc màu cột. */
+.chu-giai-nam .cham-cot {
+  background: var(--color-diem-cot);
+}
+
+/* "Điểm TB lớp học phần" — chấm màu đường, VIỀN quầng để khớp chấm trên đường
+   (chấm trên đường có viền quầng, chú giải không có thì trông như hai màu khác). */
+.chu-giai-nam .cham-duong {
+  background: var(--color-diem-duong);
+  border: 2px solid var(--color-diem-quang);
+  box-sizing: content-box;
+}
+
+.ghi-chu-nho {
+  margin: 8px 0 0;
+  font-size: var(--text-caption);
+  color: var(--color-ink-subtle);
+  line-height: 1.5;
+}
+
+/* ================= Skeleton ================= */
+.skeleton-so {
+  margin: 9px 0 8px;
+}
+
+.skeleton-khoi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ================= Chuyển động vào trang ================= */
+/*
+ * Ba keyframe lấy đúng thông số mockup `docs/design/ban-mau-dashboard.html`
+ * (#man-gv, dòng 338/411/563/688). Đặt ở đây vì cả ba dashboard cùng dùng:
+ * admin nạp thêm file này vào `styleUrls` (xem `dashboard-admin.ts`).
+ *
+ * Chỉ animate `opacity` + `transform` (trừ thanh tiến trình phải đổi `width`):
+ * hai thuộc tính đầu chạy trên compositor, không gây layout mỗi khung hình.
+ */
+
+/* Thẻ KPI + khối nội dung trượt lên. */
+@keyframes the-vao {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Thanh tiến trình sĩ số lớn dần từ trái. Chỉ khai `from` để đích vẫn là
+   bề rộng thật trong `style` — đổi số liệu (đổi học kỳ) vẫn chạy transition
+   sẵn có, không bị animation cũ giữ cứng giá trị. */
+@keyframes day-ra {
+  from {
+    width: 0;
+  }
+}
+
+/* Cột biểu đồ mọc từ đáy lên. */
+@keyframes cot-moc {
+  from {
+    height: 0;
+  }
+}
+
+/*
+ * `backwards` chứ KHÔNG phải `both`: hết animation thì phần tử trả lại
+ * `transform: none`, không giữ containing block vĩnh viễn cho mọi con
+ * `position: fixed/absolute`. Trong lúc chờ delay vẫn ở trạng thái `from`.
+ */
+.the-so > * {
+  animation: the-vao 520ms var(--ease-out) backwards;
+}
+
+.the-so > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.the-so > :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.the-so > :nth-child(4) {
+  animation-delay: 180ms;
+}
+
+.dash app-card {
+  animation: the-vao 520ms var(--ease-out) 200ms backwards;
+}
+
+/* Thanh tiến trình: 750ms, so le 90ms mỗi dòng như mockup. `backwards` giữ
+   thanh ở 0 trong lúc chờ, không nháy đầy rồi tụt. */
+.thanh-day {
+  animation: day-ra 750ms var(--ease-out) backwards;
+}
+
+.danh-sach-lop > :nth-child(2) .thanh-day {
+  animation-delay: 90ms;
+}
+
+.danh-sach-lop > :nth-child(3) .thanh-day {
+  animation-delay: 180ms;
+}
+
+.danh-sach-lop > :nth-child(4) .thanh-day {
+  animation-delay: 270ms;
+}
+
+/* Cột biểu đồ (admin vẽ bằng div, hai dashboard kia bằng component riêng). */
+.cot-than {
+  animation: cot-moc 900ms var(--ease-out) backwards;
+}
+
+/*
+ * Người bị rối loạn tiền đình đã tắt chuyển động ở cài đặt hệ điều hành —
+ * tôn trọng, hiện thẳng trạng thái cuối. Cùng quy ước với `the-so-lieu.ts` và
+ * `bieu-do-cot-diem.ts`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .the-so > *,
+  .dash app-card,
+  .thanh-day,
+  .cot-than {
+    animation: none;
+  }
+}
+
+/* ================= Responsive ================= */
+/* 900px: bốn thẻ thành hai cột — số 4 chữ số cạnh đơn vị bắt đầu chật. */
+@media (max-width: 900px) {
+  .the-so {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .luoi-hai {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dash,
+  .noi-dung {
+    gap: 12px;
+  }
+}
+
+/* 600px: một cột thẻ — `app-the-so-lieu` tự xuống dòng theo lưới cha. */
+@media (max-width: 600px) {
+  .the-so {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -141,11 +141,23 @@ class LopHocPhanController extends Controller
         return $this->success(new LopHocPhanResource($lop), 'Cập nhật trạng thái lớp thành công.');
     }
 
-    public function danhSachSinhVien(LopHocPhan $lopHocPhan): JsonResponse
+    public function danhSachSinhVien(Request $request, LopHocPhan $lopHocPhan): JsonResponse
     {
         Gate::authorize('xemSinhVien', $lopHocPhan);
 
-        return $this->success($this->service->danhSachSinhVien($lopHocPhan));
+        $danhSach = $this->service->danhSachSinhVien($lopHocPhan);
+
+        // Sinh viên chỉ nhận mã + tên bạn học. Email và lớp hành chính là dữ liệu
+        // cá nhân không cần cho màn "bạn cùng lớp"; ADMIN/GIANG_VIEN giữ nguyên
+        // payload vì màn quản lý lớp cần những cột đó.
+        if ($request->user()->laSinhVien()) {
+            $danhSach = array_map(
+                fn (array $dong) => ['ma_sv' => $dong['ma_sv'], 'ho_ten' => $dong['ho_ten']],
+                $danhSach,
+            );
+        }
+
+        return $this->success($danhSach);
     }
 
     public function bangDiem(LopHocPhan $lopHocPhan): JsonResponse

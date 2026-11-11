@@ -57,6 +57,18 @@ import { AppAlert } from '@shared/ui/app-alert';
       height: 100vh;
       overflow: hidden;
       background: var(--color-bg);
+      /*
+       * position: relative là BẮT BUỘC, không phải trang trí.
+       *
+       * Thiếu nó, main.noi-dung (overflow-y auto, cao 485px, nội dung 2423px)
+       * không có containing block gần nhất nên vùng cuộn của nó được tính vào
+       * document: đo được document cao 1372px trong khi viewport 582px → cuộn
+       * trang xuống thấy 790px trắng trơn dưới footer, header và sidebar trôi
+       * mất khỏi màn hình (ảnh chụp 2026-11-11 của người dùng). Đặt relative
+       * thì document về đúng 582px, overflow hidden của khung mới thực sự
+       * chặn được phần dư; cuộn nội bộ trong main vẫn chạy bình thường.
+       */
+      position: relative;
     }
 
     .sidebar-wrap {

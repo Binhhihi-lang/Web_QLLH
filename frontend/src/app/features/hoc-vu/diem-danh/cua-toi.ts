@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import { LopHocPhanService, TuyChon } from '@core/services/lop-hoc-phan.service';
 import { environment } from '@env/environment';
@@ -184,6 +185,7 @@ interface DongChuyenCan {
 export class DiemDanhCuaToi {
   private readonly http = inject(HttpClient);
   private readonly lopHocPhan = inject(LopHocPhanService);
+  private readonly route = inject(ActivatedRoute);
   private readonly goc = environment.apiBaseUrl;
 
   readonly hocKy = signal<TuyChon[]>([]);
@@ -202,8 +204,9 @@ export class DiemDanhCuaToi {
         const macDinh =
           rows.find((k) => (k as TuyChon & { trang_thai?: string }).trang_thai === 'ONGOING') ??
           rows[0];
-        if (macDinh) {
-          this.hocKyId.set(macDinh.id);
+        if (macDinh) this.hocKyId.set(macDinh.id);
+        this.hocKyTuQuery(rows);
+        if (this.hocKyId()) {
           this.tai();
         } else {
           this.dangTai.set(false);
@@ -219,6 +222,17 @@ export class DiemDanhCuaToi {
   chonHocKy(id: number): void {
     this.hocKyId.set(id);
     this.tai();
+  }
+
+  /**
+   * Mở từ tab của một lớp học phần → `?hoc_ky_id=` chỉ đúng kỳ của lớp đó.
+   * Chỉ nhận id có trong danh sách kỳ vừa tải: query rác mà gán thẳng thì ô chọn
+   * kỳ không khớp option nào và sinh viên thấy bảng rỗng không hiểu vì sao.
+   */
+  private hocKyTuQuery(rows: TuyChon[]): void {
+    const id = Number(this.route.snapshot.queryParamMap.get('hoc_ky_id'));
+    if (!id) return;
+    if (rows.some((k) => k.id === id)) this.hocKyId.set(id);
   }
 
   private tai(): void {

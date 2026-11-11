@@ -14,6 +14,15 @@ export interface DiemMonHoc {
   diem_chu: string | null;
   diem_he_4: number | null;
   ket_qua: 'DAT' | 'KHONG_DAT' | null;
+  /**
+   * Trung bình `diem_tong_ket` của mọi đăng ký ACTIVE trong lớp học phần, làm
+   * tròn 2 chữ số (hợp đồng §14c). `null` = chưa ai được chấm.
+   *
+   * FE hiện chưa nhận được trường này từ backend — khai `?` để màn hình chạy
+   * cả khi vắng (đường TB tự ẩn), và màn điểm của tôi không phải sửa gì khi
+   * backend bổ sung.
+   */
+  diem_tb_lop?: number | null;
 }
 
 export interface BangDiemHocKy {

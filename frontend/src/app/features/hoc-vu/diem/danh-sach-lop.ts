@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LopHocPhan } from '@core/models/dao-tao.model';
-import { LopHocPhanService } from '@core/services/lop-hoc-phan.service';
+import { LopHocPhanService, TuyChon } from '@core/services/lop-hoc-phan.service';
 import { chuanHoaTimKiem } from '@core/utils/chuan-hoa-tim-kiem';
 import { AppAlert } from '@shared/ui/app-alert';
 import { LoadingState } from '@shared/ui/loading';
@@ -13,7 +14,7 @@ import { StatusBadge } from '@shared/ui/status-badge';
 @Component({
   selector: 'app-diem-danh-sach-lop',
   standalone: true,
-  imports: [AppAlert, LoadingState, PageHeader, RouterLink, SearchInput, StatusBadge],
+  imports: [AppAlert, FormsModule, LoadingState, PageHeader, RouterLink, SearchInput, StatusBadge],
   template: `
     <app-page-header
       title="Nhập điểm"
@@ -35,11 +36,26 @@ import { StatusBadge } from '@shared/ui/status-badge';
           <h2>Các lớp học phần</h2>
           <p>{{ lopHienThi().length }} lớp phù hợp</p>
         </div>
-        <app-search-input
-          placeholder="Tìm mã lớp, môn học hoặc giảng viên…"
-          [value]="tuKhoa()"
-          (valueChange)="tuKhoa.set($event)"
-        />
+        <div class="bo-loc-phai">
+          <label class="loc-hoc-ky">
+            <span>Học kỳ</span>
+            <select
+              [ngModel]="hocKyId()"
+              (ngModelChange)="chonHocKy($event)"
+              aria-label="Lọc theo học kỳ"
+            >
+              <option [ngValue]="0">Tất cả học kỳ</option>
+              @for (k of danhSachHocKy(); track k.id) {
+                <option [ngValue]="k.id">{{ k.label }}</option>
+              }
+            </select>
+          </label>
+          <app-search-input
+            placeholder="Tìm mã lớp, môn học hoặc giảng viên…"
+            [value]="tuKhoa()"
+            (valueChange)="tuKhoa.set($event)"
+          />
+        </div>
       </section>
 
       @if (lopHienThi().length) {
@@ -128,8 +144,40 @@ import { StatusBadge } from '@shared/ui/status-badge';
       font-size: var(--text-caption);
     }
 
+    .bo-loc-phai {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .loc-hoc-ky {
+      display: grid;
+      gap: 5px;
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: var(--color-ink-muted);
+    }
+
+    .loc-hoc-ky select {
+      min-width: 220px;
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+      color: var(--color-ink);
+      font: 500 var(--text-small) var(--font-body);
+      cursor: pointer;
+    }
+
+    .loc-hoc-ky select:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+
     app-search-input {
-      width: min(100%, 380px);
+      width: min(100%, 340px);
     }
 
     .danh-sach {
@@ -266,6 +314,12 @@ import { StatusBadge } from '@shared/ui/status-badge';
         flex-direction: column;
       }
 
+      .bo-loc-phai {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .loc-hoc-ky select,
       app-search-input {
         width: 100%;
       }
@@ -294,27 +348,65 @@ export class DanhSachLopNhapDiem {
   private readonly service = inject(LopHocPhanService);
 
   readonly lop = signal<LopHocPhan[]>([]);
+  readonly hocKy = signal<TuyChon[]>([]);
+  readonly hocKyId = signal<number>(0);
   readonly dangTai = signal(true);
   readonly loi = signal('');
   readonly tuKhoa = signal('');
+
+  readonly danhSachHocKy = computed<TuyChon[]>(() => {
+    const tuApi = this.hocKy();
+    if (tuApi.length > 0) return tuApi;
+    const map = new Map<number, TuyChon>();
+    for (const l of this.lop()) {
+      if (l.hoc_ky && !map.has(l.hoc_ky.id)) {
+        map.set(l.hoc_ky.id, { id: l.hoc_ky.id, label: l.hoc_ky.ten_hoc_ky });
+      }
+    }
+    return Array.from(map.values());
+  });
+
   readonly lopHienThi = computed(() => {
     const tuKhoa = chuanHoaTimKiem(this.tuKhoa());
-    if (!tuKhoa) return this.lop();
-    return this.lop().filter((lop) =>
-      chuanHoaTimKiem(
+    const kyId = this.hocKyId();
+    return this.lop().filter((lop) => {
+      if (kyId && lop.hoc_ky?.id !== kyId) return false;
+      if (!tuKhoa) return true;
+      return chuanHoaTimKiem(
         `${lop.ma_lop_hp} ${lop.mon_hoc.ma_mon} ${lop.mon_hoc.ten_mon} ${lop.giang_vien.ho_ten}`,
-      ).includes(tuKhoa),
-    );
+      ).includes(tuKhoa);
+    });
   });
 
   constructor() {
+    this.taiHocKy();
+    this.tai();
+  }
+
+  private taiHocKy(): void {
+    if (typeof this.service.layTuyChon !== 'function') return;
+    this.service.layTuyChon('semesters').subscribe({
+      next: (rows) => this.hocKy.set(rows),
+      error: () => this.hocKy.set([]),
+    });
+  }
+
+  chonHocKy(id: number): void {
+    const kyId = Number(id) || 0;
+    if (kyId === this.hocKyId()) return;
+    this.hocKyId.set(kyId);
     this.tai();
   }
 
   tai(): void {
     this.dangTai.set(true);
     this.loi.set('');
-    this.service.layDanhSach({ page: 1, per_page: 100 }).subscribe({
+    const kyId = this.hocKyId();
+    const boLoc =
+      kyId > 0
+        ? { page: 1, per_page: 100 as const, hoc_ky_id: kyId }
+        : { page: 1, per_page: 100 as const };
+    this.service.layDanhSach(boLoc).subscribe({
       next: (response) => {
         this.lop.set(response.data);
         this.dangTai.set(false);

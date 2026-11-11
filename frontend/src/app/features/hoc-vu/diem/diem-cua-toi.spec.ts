@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { LopHocPhanService } from '@core/services/lop-hoc-phan.service';
 import { BangDiemHocKy, DiemService, TongQuanGpa } from './diem.service';
@@ -57,6 +58,8 @@ describe('DiemCuaToi', () => {
   function taoFixture(
     layDiemCuaToi = vi.fn(() => of(grades)),
     layGpa = vi.fn(() => of(gpa)),
+    hocKyQuery: string | null = null,
+    dsHocKy = [{ id: 2, label: 'Học kỳ 1 năm học 2026-2027' }],
   ) {
     TestBed.configureTestingModule({
       imports: [DiemCuaToi],
@@ -64,7 +67,11 @@ describe('DiemCuaToi', () => {
         { provide: DiemService, useValue: { layDiemCuaToi, layGpa } },
         {
           provide: LopHocPhanService,
-          useValue: { layTuyChon: vi.fn(() => of([{ id: 2, label: 'Học kỳ 1 năm học 2026-2027' }])) },
+          useValue: { layTuyChon: vi.fn(() => of(dsHocKy)) },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: () => hocKyQuery } } },
         },
       ],
     });
@@ -101,5 +108,43 @@ describe('DiemCuaToi', () => {
     expect(fixture.nativeElement.textContent).toContain('Dịch vụ điểm chưa sẵn sàng.');
     fixture.nativeElement.querySelector('button').click();
     expect(layDiemCuaToi).toHaveBeenCalledTimes(2);
+  });
+
+  it('mở từ lớp học phần thì dùng hoc_ky_id trên query để chọn đúng kỳ', () => {
+    const dsHocKy = [
+      { id: 3, label: 'Học kỳ 2 năm học 2026-2027' },
+      { id: 2, label: 'Học kỳ 1 năm học 2026-2027', trang_thai: 'ONGOING' },
+    ];
+    const layDiemCuaToi = vi.fn(() => of(grades));
+    const { fixture } = taoFixture(layDiemCuaToi, vi.fn(() => of(gpa)), '3', dsHocKy);
+
+    // Mặc định theo kỳ ONGOING là 2; query của lớp là 3 nên phải thắng.
+    expect(fixture.componentInstance.hocKyId()).toBe(3);
+    expect(layDiemCuaToi).toHaveBeenCalledOnce();
+    expect(layDiemCuaToi).toHaveBeenCalledWith(3);
+  });
+
+  it('hoc_ky_id không có trong danh sách kỳ thì bỏ qua, giữ kỳ mặc định', () => {
+    const dsHocKy = [
+      { id: 2, label: 'Học kỳ 1 năm học 2026-2027' },
+      { id: 1, label: 'Học kỳ 2 năm học 2025-2026' },
+    ];
+    const layDiemCuaToi = vi.fn(() => of(grades));
+    const { fixture } = taoFixture(layDiemCuaToi, vi.fn(() => of(gpa)), '999', dsHocKy);
+
+    expect(fixture.componentInstance.hocKyId()).toBe(2);
+    expect(layDiemCuaToi).toHaveBeenCalledWith(2);
+  });
+
+  it('không có query thì giữ nguyên hành vi cũ: chọn kỳ ONGOING', () => {
+    const dsHocKy = [
+      { id: 9, label: 'Học kỳ 3 năm học 2026-2027 (tương lai)' },
+      { id: 8, label: 'Học kỳ 2 năm học 2026-2027', trang_thai: 'ONGOING' },
+    ];
+    const layDiemCuaToi = vi.fn(() => of(grades));
+    const { fixture } = taoFixture(layDiemCuaToi, vi.fn(() => of(gpa)), null, dsHocKy);
+
+    expect(fixture.componentInstance.hocKyId()).toBe(8);
+    expect(layDiemCuaToi).toHaveBeenCalledWith(8);
   });
 });

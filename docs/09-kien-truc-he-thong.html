@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QLLH — Kiến trúc hệ thống</title>
+<style>
+/* =====================================================================
+   Bảng màu lấy nguyên từ frontend/src/_tokens.scss (nguồn chân lý token).
+   Không nạp font từ CDN: dùng stack hệ thống để mở offline vẫn đúng.
+   ===================================================================== */
+:root{
+  --primary:#366ef2; --primary-hover:#0f51eb; --primary-soft:#d0ddfb; --on-primary-soft:#2558d0;
+  --danger:#e90f50; --danger-soft:#fbd0dd; --on-danger-soft:#b8214e;
+  --success:#2e8609; --success-soft:#ddfbd0; --on-success-soft:#357e16;
+  --warning:#a36b0a; --warning-soft:#fbebd0; --on-warning-soft:#8d6219;
+  --info:#0b7eb4; --info-soft:#d0edfb; --on-info-soft:#1b7098;
+  --chart-1:#7c3aed; --chart-1-soft:#ede9fe; --on-chart-1-soft:#5b21b6;
+  --chart-2:#0d7d7d; --chart-2-soft:#ccfbf1; --on-chart-2-soft:#115e59;
+
+  --bg:#f8fafc; --surface:#ffffff; --surface-alt:#f1f5f9;
+  --ink:#0f172a; --ink-muted:#475569; --ink-subtle:#64748b;
+  --border:#e2e8f0; --border-soft:#f1f5f9;
+  --dark:#1e293b; --on-dark:#ffffff;
+  --shadow-sm:0 1px 3px rgba(15,23,42,.06);
+  --shadow:0 2px 8px rgba(15,23,42,.07);
+  --radius:8px; --radius-lg:12px; --radius-xl:16px;
+  --font-heading:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,'Cascadia Mono','Consolas',monospace;
+}
+[data-theme='dark']{
+  --primary:#477af0; --primary-hover:#6690f5; --primary-soft:#1e3a6b; --on-primary-soft:#b3cafc;
+  --danger:#ee326a; --danger-soft:#4a1a29; --on-danger-soft:#fca3bb;
+  --success:#43bd0f; --success-soft:#1e3a12; --on-success-soft:#9ae87a;
+  --warning:#bd7d0f; --warning-soft:#3d3015; --on-warning-soft:#e8bd6a;
+  --info:#1089c1; --info-soft:#103344; --on-info-soft:#7ec9ec;
+  --chart-1:#a78bfa; --chart-1-soft:#2e1065; --on-chart-1-soft:#c4b5fd;
+  --chart-2:#2dd4bf; --chart-2-soft:#042f2e; --on-chart-2-soft:#5eead4;
+
+  --bg:#0b1120; --surface:#111827; --surface-alt:#1a2334;
+  --ink:#e2e8f0; --ink-muted:#94a3b8; --ink-subtle:#7c8ba1;
+  --border:#273449; --border-soft:#1e293b;
+  --dark:#0b1120; --on-dark:#e2e8f0;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow:0 2px 8px rgba(0,0,0,.45);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme='light']){
+    --primary:#477af0; --primary-hover:#6690f5; --primary-soft:#1e3a6b; --on-primary-soft:#b3cafc;
+    --danger:#ee326a; --danger-soft:#4a1a29; --on-danger-soft:#fca3bb;
+    --success:#43bd0f; --success-soft:#1e3a12; --on-success-soft:#9ae87a;
+    --warning:#bd7d0f; --warning-soft:#3d3015; --on-warning-soft:#e8bd6a;
+    --info:#1089c1; --info-soft:#103344; --on-info-soft:#7ec9ec;
+    --chart-1:#a78bfa; --chart-1-soft:#2e1065; --on-chart-1-soft:#c4b5fd;
+    --chart-2:#2dd4bf; --chart-2-soft:#042f2e; --on-chart-2-soft:#5eead4;
+
+    --bg:#0b1120; --surface:#111827; --surface-alt:#1a2334;
+    --ink:#e2e8f0; --ink-muted:#94a3b8; --ink-subtle:#7c8ba1;
+    --border:#273449; --border-soft:#1e293b;
+    --dark:#0b1120; --on-dark:#e2e8f0;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+    --shadow:0 2px 8px rgba(0,0,0,.45);
+  }
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-body);
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  overflow-wrap:anywhere;
+}
+h1,h2,h3,h4{font-family:var(--font-heading); line-height:1.25; margin:0 0 .5em}
+h1{font-size:1.6rem}
+h2{font-size:1.3rem}
+h3{font-size:1.06rem}
+h4{font-size:.95rem}
+p{margin:0 0 .85em}
+a{color:var(--primary)}
+code,kbd,samp{font-family:var(--font-mono); font-size:.875rem}
+code{background:var(--surface-alt); border:1px solid var(--border-soft); border-radius:4px; padding:.05em .35em}
+
+/* ---------------- Khung trang ---------------- */
+.wrap{max-width:1240px; margin:0 auto; padding:0 16px 64px; min-width:0}
+.grid{display:grid; grid-template-columns:250px minmax(0,1fr); gap:32px; align-items:start}
+@media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr); gap:16px} }
+
+/* Mục lục dính */
+.toc{position:sticky; top:16px; align-self:start; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:14px; box-shadow:var(--shadow-sm); max-height:calc(100vh - 32px); overflow:auto}
+.toc h2{font-size:.875rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-subtle); margin-bottom:10px}
+.toc ol{list-style:none; margin:0; padding:0; counter-reset:toc}
+.toc li{counter-increment:toc; margin:0}
+.toc a{display:block; padding:6px 8px 6px 30px; position:relative; border-radius:6px; color:var(--ink-muted);
+  text-decoration:none; font-size:.875rem; line-height:1.35}
+.toc a::before{content:counter(toc); position:absolute; left:8px; top:6px; font-family:var(--font-mono);
+  font-size:.875rem; color:var(--ink-subtle)}
+.toc a:hover,.toc a:focus{background:var(--primary-soft); color:var(--on-primary-soft); outline:none}
+@media (max-width:900px){
+  .toc{position:static; max-height:none}
+  .toc ol{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:2px}
+}
+
+/* ---------------- Đầu trang ---------------- */
+header.hero{padding:36px 0 20px; border-bottom:1px solid var(--border); margin-bottom:28px; min-width:0}
+.hero-badge{display:inline-block; font-family:var(--font-mono); font-size:.875rem; letter-spacing:.06em;
+  text-transform:uppercase; background:var(--primary-soft); color:var(--on-primary-soft);
+  padding:4px 10px; border-radius:999px; margin-bottom:12px}
+.hero h1{margin-bottom:8px}
+.hero .lede{color:var(--ink-muted); max-width:70ch; margin-bottom:14px}
+.hero-meta{display:flex; flex-wrap:wrap; gap:8px}
+.chip{font-family:var(--font-mono); font-size:.875rem; background:var(--surface); border:1px solid var(--border);
+  color:var(--ink-muted); padding:3px 9px; border-radius:999px}
+
+/* Nút đổi chế độ */
+.toolbar{display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px}
+.btn{font-family:var(--font-body); font-size:.875rem; font-weight:600; background:var(--surface);
+  color:var(--ink-muted); border:1px solid var(--border); border-radius:999px;
+  padding:6px 14px; cursor:pointer}
+.btn:hover{border-color:var(--primary); color:var(--primary)}
+.btn:focus-visible{outline:2px solid var(--primary); outline-offset:2px}
+
+/* ---------------- 4 thẻ chỉ số ---------------- */
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin:0 0 28px}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:16px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:4px; min-width:0}
+.card .lbl{font-size:.875rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-subtle)}
+.card .val{font-family:var(--font-heading); font-size:1.7rem; font-weight:700; line-height:1.1; color:var(--ink)}
+.card .val small{font-size:.95rem; font-weight:600; color:var(--ink-muted)}
+.card .sub{font-size:.875rem; color:var(--ink-muted)}
+.card.is-primary .val{color:var(--primary)}
+.card.is-chart1 .val{color:var(--chart-1)}
+.card.is-chart2 .val{color:var(--chart-2)}
+.card.is-danger .val{color:var(--danger)}
+
+/* ---------------- Khối nội dung ---------------- */
+section{margin:0 0 44px; min-width:0}
+section>h2{padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:18px}
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:18px; box-shadow:var(--shadow-sm); min-width:0}
+.panel+.panel{margin-top:14px}
+.note{border-left:3px solid var(--info); background:var(--info-soft); color:var(--on-info-soft);
+  border-radius:0 var(--radius) var(--radius) 0; padding:10px 14px; margin:14px 0; font-size:.95rem}
+.note.warn{border-left-color:var(--warning); background:var(--warning-soft); color:var(--on-warning-soft)}
+.note.danger{border-left-color:var(--danger); background:var(--danger-soft); color:var(--on-danger-soft)}
+.note.ok{border-left-color:var(--success); background:var(--success-soft); color:var(--on-success-soft)}
+.note strong{color:inherit}
+
+/* Bảng cuộn trong khung, không đẩy trang ngang */
+.table-wrap{width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--border);
+  border-radius:var(--radius); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.875rem; min-width:520px}
+th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border-soft); vertical-align:top}
+thead th{background:var(--surface-alt); font-size:.875rem; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--ink-subtle); position:sticky; top:0}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right; font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+td.mono{font-family:var(--font-mono); font-size:.875rem}
+
+/* ---------------- Sơ đồ: khung tầng bằng CSS grid ---------------- */
+.diagram{display:flex; flex-direction:column; align-items:stretch; gap:0; min-width:0}
+.tier{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); min-width:0}
+.node{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--primary);
+  border-radius:var(--radius); padding:11px 13px; font-size:.95rem; line-height:1.4; min-width:0;
+  box-shadow:var(--shadow-sm)}
+.node b{display:block; font-family:var(--font-heading); font-size:.95rem; margin-bottom:2px}
+.node span{color:var(--ink-muted); font-size:.875rem}
+.node.mono b,.node.mono span{font-family:var(--font-mono); font-size:.875rem}
+.node.chart1{border-left-color:var(--chart-1)}
+.node.chart2{border-left-color:var(--chart-2)}
+.node.success{border-left-color:var(--success)}
+.node.warning{border-left-color:var(--warning)}
+.node.danger{border-left-color:var(--danger)}
+.node.info{border-left-color:var(--info)}
+.node.plain{border-left-color:var(--border)}
+
+/* Mũi tên dọc giữa hai tầng */
+.arrow{position:relative; height:34px; margin:0 auto; width:2px; background:var(--primary); opacity:.55}
+.arrow::after{content:''; position:absolute; left:50%; bottom:-1px; transform:translateX(-50%);
+  border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid var(--primary);
+  opacity:.9}
+.arrow.plain{background:var(--ink-subtle)}
+.arrow.plain::after{border-top-color:var(--ink-subtle)}
+.arrow-label{align-self:center; font-family:var(--font-mono); font-size:.875rem; color:var(--ink-subtle);
+  background:var(--bg); padding:1px 8px; border-radius:999px; border:1px solid var(--border); margin:2px 0
+}
+
+/* Nhánh ngang */
+.branch{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-top:12px}
+.branch .node{border-left-color:var(--chart-2); background:var(--surface-alt)}
+
+/* ---------------- Sơ đồ lớp: thẻ theo miền ---------------- */
+.domain{margin-bottom:20px; min-width:0}
+.domain>h4{display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:.95rem}
+.domain>h4 .dot{width:10px;height:10px;border-radius:3px;background:var(--primary); flex:0 0 auto}
+.domain.d2>h4 .dot{background:var(--chart-1)}
+.domain.d3>h4 .dot{background:var(--chart-2)}
+.domain.d4>h4 .dot{background:var(--warning)}
+.classes{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px}
+.cls{background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--primary);
+  border-radius:var(--radius); padding:10px 12px; font-size:.875rem; min-width:0}
+.domain.d2 .cls{border-top-color:var(--chart-1)}
+.domain.d3 .cls{border-top-color:var(--chart-2)}
+.domain.d4 .cls{border-top-color:var(--warning)}
+.cls b{display:block; font-family:var(--font-mono); font-size:.875rem; margin-bottom:4px}
+.cls ul{list-style:none; margin:0; padding:0; font-family:var(--font-mono); font-size:.875rem;
+  color:var(--ink-muted); line-height:1.6}
+.cls li::before{content:'· '; color:var(--ink-subtle)}
+.cls .pk{color:var(--primary); font-weight:700}
+.domain.d2 .cls .pk{color:var(--chart-1)}
+.domain.d3 .cls .pk{color:var(--chart-2)}
+
+/* ---------------- Bảng quan hệ / luồng dạng bước ---------------- */
+.rel-list{display:grid; gap:6px; font-size:.875rem}
+.rel{display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:8px; align-items:center;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:7px 10px}
+.rel .from,.rel .to{font-family:var(--font-mono); font-size:.875rem; min-width:0}
+.rel .card{font-family:var(--font-mono); font-size:.875rem; color:var(--on-primary-soft); background:var(--primary-soft);
+  padding:1px 7px; border-radius:999px; white-space:nowrap; text-align:center}
+@media (max-width:520px){
+  .rel{grid-template-columns:minmax(0,1fr); text-align:left; gap:3px}
+  .rel .card{justify-self:start}
+}
+
+/* Luồng tuần tự: mỗi bước là một thẻ có nhãn from → to */
+.steps{display:grid; gap:8px; counter-reset:step}
+.step{display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; align-items:start;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:9px 12px}
+.step::before{counter-increment:step; content:counter(step); font-family:var(--font-mono); font-size:.875rem;
+  font-weight:700; color:var(--on-primary-soft); background:var(--primary-soft); border-radius:999px;
+  width:22px; height:22px; display:grid; place-items:center; margin-top:1px}
+.step .flow{font-family:var(--font-mono); font-size:.875rem; color:var(--ink-subtle); display:block; margin-bottom:2px}
+.step .txt{font-size:.95rem}
+.step.alt{border-left:3px solid var(--danger)}
+.step.alt::before{color:var(--on-danger-soft); background:var(--danger-soft)}
+.step.ok{border-left:3px solid var(--success)}
+.step.ok::before{color:var(--on-success-soft); background:var(--success-soft)}
+.step.note-step{border-left:3px solid var(--info); background:var(--info-soft); color:var(--on-info-soft)}
+.step.note-step::before{display:none}
+.step.note-step{padding-left:12px}
+
+/* Ma trận quyền */
+.perm{display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.perm .p{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:11px 13px}
+.perm .p b{display:block; font-family:var(--font-mono); font-size:.875rem; margin-bottom:4px}
+.perm .p span{font-size:.875rem; color:var(--ink-muted)}
+
+/* Huy hiệu mức */
+.tag{display:inline-block; font-family:var(--font-mono); font-size:.875rem; font-weight:700;
+  padding:1px 7px; border-radius:999px; white-space:nowrap}
+.tag.p{background:var(--danger-soft); color:var(--on-danger-soft)}
+.tag.s{background:var(--warning-soft); color:var(--on-warning-soft)}
+.tag.g{background:var(--info-soft); color:var(--on-info-soft)}
+
+/* Danh sách ưu tiên */
+ol.prio{list-style:none; counter-reset:prio; margin:0; padding:0; display:grid; gap:10px}
+ol.prio li{counter-increment:prio; display:grid; grid-template-columns:36px minmax(0,1fr); gap:12px;
+  background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--chart-1);
+  border-radius:var(--radius); padding:11px 14px}
+ol.prio li::before{content:counter(prio); font-family:var(--font-heading); font-size:1.15rem; font-weight:700;
+  color:var(--chart-1); line-height:1.2}
+ol.prio b{display:block; margin-bottom:2px}
+ol.prio span{font-size:.875rem; color:var(--ink-muted)}
+
+footer{border-top:1px solid var(--border); padding-top:16px; color:var(--ink-subtle); font-size:.875rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="toolbar">
+    <button class="btn" id="themeBtn" type="button" aria-live="polite">Đổi chế độ sáng / tối</button>
+  </div>
+
+  <header class="hero">
+    <span class="hero-badge">Báo cáo kiến trúc · v1.0</span>
+    <h1>QLLH — Kiến trúc hệ thống</h1>
+    <p class="lede">Sơ đồ và số đo của hệ thống quản lý lớp học đang chạy thật: Laravel REST API, Angular SPA và MySQL trên Aiven. Mọi con số trong trang này đo ngày <strong>09/11/2026</strong> trên nhánh <code>feature/dashboard-ba-vai-tro</code>, không ước lượng.</p>
+    <div class="hero-meta">
+      <span class="chip">Laravel 13 · PHP 8.3</span>
+      <span class="chip">Angular 22 standalone</span>
+      <span class="chip">MySQL 8.4.11</span>
+      <span class="chip">Bản đầy đủ: docs/09-kien-truc-he-thong.md</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <nav class="toc" aria-label="Mục lục">
+      <h2>Mục lục</h2>
+      <ol>
+        <li><a href="#tom-tat">Tóm tắt</a></li>
+        <li><a href="#tong-the">Sơ đồ tổng thể</a></li>
+        <li><a href="#backend">Kiến trúc backend</a></li>
+        <li><a href="#frontend">Kiến trúc frontend</a></li>
+        <li><a href="#luong">Luồng nghiệp vụ</a></li>
+        <li><a href="#du-lieu">Sơ đồ dữ liệu</a></li>
+        <li><a href="#suc-khoe">Chỉ số sức khoẻ</a></li>
+        <li><a href="#phat-hien">Phát hiện kiến trúc</a></li>
+        <li><a href="#uu-tien">Đề xuất ưu tiên</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <!-- ============ 1. TÓM TẮT ============ -->
+      <section id="tom-tat">
+        <h2>1. Tóm tắt</h2>
+
+        <div class="cards">
+          <div class="card is-primary">
+            <span class="lbl">Mã nguồn</span>
+            <span class="val">73.691 <small>dòng</small></span>
+            <span class="sub">BE 23.884 · FE 49.807 · tài liệu 6.319 (chưa tính file này)</span>
+          </div>
+          <div class="card is-chart1">
+            <span class="lbl">Endpoint API</span>
+            <span class="val">136</span>
+            <span class="sub">GET 58 · POST 30 · PUT 18 · DELETE 17 · PATCH 13</span>
+          </div>
+          <div class="card is-chart2">
+            <span class="lbl">Kiểm thử</span>
+            <span class="val">717</span>
+            <span class="sub">PHPUnit 302 · Vitest 415 · <strong>5 đang đỏ</strong></span>
+          </div>
+          <div class="card is-danger">
+            <span class="lbl">Chặn deploy</span>
+            <span class="val">3</span>
+            <span class="sub">15 nên sửa · 5 ghi nhận</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <p><strong>QLLH</strong> là hệ thống quản lý lớp học một trường: quản trị danh mục đào tạo, mở lớp học phần, đăng ký học phần, điểm danh, nhập và chốt điểm, lịch học – lịch thi, cùng ba dashboard theo vai trò <code>ADMIN</code> / <code>GIANG_VIEN</code> / <code>SINH_VIEN</code>.</p>
+          <div class="note ok">
+            <strong>Điểm mạnh:</strong> kiến trúc nhất quán — route → middleware → controller mỏng → service → model; envelope <code>{success, message, data}</code> áp cho mọi endpoint; phân quyền hai lớp (vai trò ở route, sở hữu đối tượng ở Policy); nghiệp vụ ghi đều nằm trong transaction có khoá dòng.
+          </div>
+          <div class="note danger">
+            <strong>Chưa đủ điều kiện deploy:</strong> bản build production vẫn trỏ <code>http://localhost:8000/api</code> (thiếu <code>fileReplacements</code>), 4 test backend đang đỏ, và dashboard sinh viên chạy 18 truy vấn trong khi ngân sách là 8.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 2. SƠ ĐỒ TỔNG THỂ ============ -->
+      <section id="tong-the">
+        <h2>2. Sơ đồ tổng thể</h2>
+        <div class="panel">
+          <div class="diagram">
+
+            <div class="tier">
+              <div class="node">
+                <b>Trình duyệt</b>
+                <span>Chrome · Edge · Safari<br>390 / 768 / 1440 px</span>
+              </div>
+            </div>
+
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="arrow-label">HTTPS · tải SPA một lần · cổng 443</div>
+
+            <div class="tier">
+              <div class="node chart2">
+                <b>Nginx</b>
+                <span>Phục vụ SPA tĩnh: index.html + các JS chunk · gzip bật · <code>try_files</code> về index.html</span>
+              </div>
+              <div class="node chart2">
+                <b>Reverse proxy</b>
+                <span><code>location /api/</code> → <code>proxy_pass http://backend:8000</code></span>
+              </div>
+            </div>
+
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="arrow-label">HTTPS 443 · JSON · Authorization: Bearer Sanctum</div>
+
+            <div class="tier">
+              <div class="node">
+                <b>Laravel 13 API</b>
+                <span>PHP 8.3 · php-fpm · cổng 8000<br>REST only — không render view (ADR-001)</span>
+              </div>
+            </div>
+
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="arrow-label">PDO over TLS · cổng 26257</div>
+
+            <div class="tier">
+              <div class="node success">
+                <b>MySQL 8.4.11 — Aiven</b>
+                <span>DB <code>QLLopHoc</code> · 30 bảng (21 nghiệp vụ) · toàn bộ InnoDB</span>
+              </div>
+              <div class="node plain">
+                <b>Cloudinary</b>
+                <span>Ảnh đại diện · HTTPS · DB chỉ giữ <code>avatar_url</code> + <code>avatar_public_id</code></span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="table-wrap" style="margin-top:16px">
+            <table>
+              <thead>
+                <tr><th>Chặng</th><th>Giao thức</th><th>Cổng</th><th>Xác thực</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Trình duyệt → Nginx</td><td class="mono">HTTPS</td><td class="num">443</td><td>Không — tài nguyên tĩnh công khai</td></tr>
+                <tr><td>Nginx → Laravel</td><td class="mono">HTTP nội bộ Docker</td><td class="num">8000</td><td>Không — tin cậy trong mạng compose</td></tr>
+                <tr><td>Trình duyệt → Laravel</td><td class="mono">HTTPS /api/*</td><td class="num">443</td><td>Bearer token Sanctum, hạn 7 ngày</td></tr>
+                <tr><td>Laravel → MySQL</td><td class="mono">MySQL over TLS</td><td class="num">26257</td><td><code>avnadmin</code> + mật khẩu trong <code>.env</code></td></tr>
+                <tr><td>Laravel → Cloudinary</td><td class="mono">HTTPS</td><td class="num">443</td><td>API key trong <code>config/cloudinary.php</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="note warn">
+            <strong>Chặng "trình duyệt → Laravel" chưa nối được ở production.</strong> <code>angular.json</code> không khai <code>fileReplacements</code>, nên bản build vẫn biên dịch <code>environment.ts</code> và nhúng <code>http://localhost:8000/api</code> vào bundle. Sơ đồ trên là kiến trúc <em>đúng thiết kế</em>; bản build hiện tại chưa đạt.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 3. BACKEND ============ -->
+      <section id="backend">
+        <h2>3. Kiến trúc backend</h2>
+
+        <h3>3.1. Luồng xử lý một request</h3>
+        <div class="panel">
+          <div class="diagram">
+            <div class="tier">
+              <div class="node mono">
+                <b>routes/api.php</b>
+                <span>136 route · 24 nhóm prefix</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node plain mono"><b>Nhóm api</b><span>SetApiLocale</span></div>
+              <div class="node info mono"><b>auth:sanctum</b><span>Bearer, hạn 7 ngày</span></div>
+              <div class="node info mono"><b>doi.mat.khau</b><span>YeuCauDoiMatKhau</span></div>
+              <div class="node info mono"><b>vai.tro</b><span>CheckVaiTro — ADMIN / GIANG_VIEN / SINH_VIEN</span></div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node">
+                <b>Controller — 24 file</b>
+                <span>Mỏng: validate request, gọi service, trả Resource<br>Trung bình 109 dòng/controller</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node chart1">
+                <b>Policy — 5 lớp</b>
+                <span><code>Gate.authorize</code> kiểm sở hữu đối tượng<br>ADMIN bỏ qua qua <code>Gate.before</code></span>
+              </div>
+              <div class="node chart2">
+                <b>Service — 18 lớp</b>
+                <span>Nghiệp vụ + <code>DB.transaction</code> + khoá dòng</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node mono">
+                <b>Eloquent Model — 21</b>
+                <span>Quan hệ + scope + hàm nghiệp vụ nhỏ</span>
+              </div>
+              <div class="node success mono">
+                <b>MySQL</b>
+                <span>21 bảng nghiệp vụ</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node danger">
+                <b>LoiNghiepVu</b>
+                <span><code>ma_loi</code> + HTTP status + <code>errors</code><br>Mặc định 409, tự render ở bootstrap</span>
+              </div>
+              <div class="node warning">
+                <b>Resource — 17</b>
+                <span>Định hình JSON đầu ra</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node success">
+                <b>Envelope</b>
+                <span><code>{success, message, data}</code> · lỗi thêm <code>ma_loi</code>, <code>errors</code></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="branch">
+            <div class="node chart2"><b>Nhánh lỗi 422</b><span>ValidationException → VALIDATION_ERROR</span></div>
+            <div class="node chart2"><b>Nhánh 401</b><span>AuthenticationException → UNAUTHENTICATED</span></div>
+            <div class="node chart2"><b>Nhánh 403</b><span>AuthorizationException → FORBIDDEN</span></div>
+            <div class="node chart2"><b>Nhánh 404</b><span>ModelNotFoundException → NOT_FOUND</span></div>
+            <div class="node chart2"><b>Nhánh 429</b><span>TooManyRequests → TOO_MANY_REQUESTS</span></div>
+          </div>
+
+          <div class="note">
+            <strong>Vì sao controller mỏng quan trọng:</strong> 24 controller chỉ chiếm 2.618 dòng. Khối lớn nhất là <code>OptionController</code> (224 dòng) và nó chỉ là truy vấn dropdown, không có nghiệp vụ — nghĩa là mọi luật nghiệp vụ đều nằm một chỗ (Service), dễ test và dễ soát.
+          </div>
+        </div>
+
+        <h3>3.2. Sơ đồ lớp theo miền</h3>
+
+        <div class="panel">
+          <div class="domain d1">
+            <h4><span class="dot"></span>Miền 1 — Người dùng &amp; phân quyền</h4>
+            <div class="classes">
+              <div class="cls">
+                <b>User</b>
+                <ul>
+                  <li><span class="pk">id</span> · PK</li>
+                  <li>email · vai_tro</li>
+                  <li>must_change_password</li>
+                  <li>trang_thai · deleted_at</li>
+                </ul>
+              </div>
+              <div class="cls">
+                <b>SinhVien</b>
+                <ul>
+                  <li><span class="pk">id</span> · PK</li>
+                  <li>ma_sv · ho_ten</li>
+                  <li>user_id → users</li>
+                  <li>lop_hanh_chinh_id → lop_hanh_chinh</li>
+                </ul>
+              </div>
+              <div class="cls">
+                <b>GiangVien</b>
+                <ul>
+                  <li><span class="pk">id</span> · PK</li>
+                  <li>ma_gv · ho_ten</li>
+                  <li>user_id → users</li>
+                  <li>nganh_id → nganh</li>
+                </ul>
+              </div>
+              <div class="cls">
+                <b>Policy (5 lớp)</b>
+                <ul>
+                  <li>LopHocPhanPolicy</li>
+                  <li>SinhVienPolicy</li>
+                  <li>DiemPolicy</li>
+                  <li>DiemDanhPolicy · LichThiPolicy</li>
+                </ul>
+              </div>
+            </div>
+            <div class="rel-list" style="margin-top:10px">
+              <div class="rel"><span class="from">User</span><span class="card">1 — 0..1</span><span class="to">SinhVien</span></div>
+              <div class="rel"><span class="from">User</span><span class="card">1 — 0..1</span><span class="to">GiangVien</span></div>
+              <div class="rel"><span class="from">User</span><span class="card">kiểm quyền</span><span class="to">Policy</span></div>
+            </div>
+          </div>
+
+          <div class="domain d2">
+            <h4><span class="dot"></span>Miền 2 — Đào tạo</h4>
+            <div class="classes">
+              <div class="cls">
+                <b>Khoa</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_khoa · ten_khoa</li><li>trang_thai</li></ul>
+              </div>
+              <div class="cls">
+                <b>Nganh</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_nganh · ten_nganh</li><li>khoa_id → khoa</li></ul>
+              </div>
+              <div class="cls">
+                <b>MonHoc</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_mon · ten_mon</li><li>so_tin_chi</li><li>khoa_id → khoa</li></ul>
+              </div>
+              <div class="cls">
+                <b>LopHanhChinh</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_lop · khoa_hoc</li><li>nam_nhap_hoc</li><li>nganh_id → nganh</li></ul>
+              </div>
+              <div class="cls">
+                <b>HocKy</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_hoc_ky · nam_hoc</li><li>ky_thu · trang_thai</li><li>mo/dong_dang_ky_luc</li></ul>
+              </div>
+              <div class="cls">
+                <b>PhongHoc</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_phong · ten_phong</li><li>suc_chua</li></ul>
+              </div>
+              <div class="cls">
+                <b>TietHoc</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>so_tiet · ca</li><li>gio_bat_dau · gio_ket_thuc</li></ul>
+              </div>
+            </div>
+            <div class="rel-list" style="margin-top:10px">
+              <div class="rel"><span class="from">Khoa</span><span class="card">1 — n</span><span class="to">Nganh</span></div>
+              <div class="rel"><span class="from">Khoa</span><span class="card">1 — n</span><span class="to">MonHoc</span></div>
+              <div class="rel"><span class="from">Nganh</span><span class="card">1 — n</span><span class="to">GiangVien</span></div>
+              <div class="rel"><span class="from">Nganh</span><span class="card">1 — n</span><span class="to">LopHanhChinh</span></div>
+              <div class="rel"><span class="from">LopHanhChinh</span><span class="card">1 — n</span><span class="to">SinhVien</span></div>
+            </div>
+          </div>
+
+          <div class="domain d3">
+            <h4><span class="dot"></span>Miền 3 — Học vụ</h4>
+            <div class="classes">
+              <div class="cls">
+                <b>LopHocPhan</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ma_lop_hp · si_so_toi_da</li><li>nam_thu · trang_thai</li><li>chot_diem_luc</li></ul>
+              </div>
+              <div class="cls">
+                <b>BuoiHoc</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ngay_hoc · tiet_bat_dau</li><li>phong_hoc_id · buoi_goc_id</li><li>trang_thai · hinh_thuc</li></ul>
+              </div>
+              <div class="cls">
+                <b>DangKyHocPhan</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>sinh_vien_id · lop_hoc_phan_id</li><li>trang_thai</li><li>dang_ky_luc · huy_luc</li></ul>
+              </div>
+              <div class="cls">
+                <b>DiemDanh</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>buoi_hoc_id</li><li>dang_ky_hoc_phan_id</li><li>trang_thai · diem_danh_luc</li></ul>
+              </div>
+              <div class="cls">
+                <b>Diem</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>dang_ky_hoc_phan_id</li><li>diem_tong_ket · diem_chu</li><li>diem_he_4 · ket_qua</li></ul>
+              </div>
+              <div class="cls">
+                <b>LichSuDiem</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>diem_id</li><li>truong · gia_tri_cu · gia_tri_moi</li><li>nguoi_sua_id · thoi_diem</li></ul>
+              </div>
+              <div class="cls">
+                <b>LichThi</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>hoc_ky_id · mon_hoc_id</li><li>ngay_thi · tiet_bat_dau</li><li>phong_hoc_id · dot_thi</li></ul>
+              </div>
+              <div class="cls">
+                <b>QuyDoiDiem</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>hoc_ky_id · UNIQUE</li><li>trong_so · bang_quy_doi</li><li>so_ngay_sua_diem_danh</li></ul>
+              </div>
+            </div>
+            <div class="rel-list" style="margin-top:10px">
+              <div class="rel"><span class="from">MonHoc</span><span class="card">1 — n</span><span class="to">LopHocPhan</span></div>
+              <div class="rel"><span class="from">HocKy</span><span class="card">1 — n</span><span class="to">LopHocPhan</span></div>
+              <div class="rel"><span class="from">GiangVien</span><span class="card">1 — n</span><span class="to">LopHocPhan</span></div>
+              <div class="rel"><span class="from">LopHocPhan</span><span class="card">1 — n</span><span class="to">BuoiHoc</span></div>
+              <div class="rel"><span class="from">LopHocPhan</span><span class="card">1 — n</span><span class="to">DangKyHocPhan</span></div>
+              <div class="rel"><span class="from">SinhVien</span><span class="card">1 — n</span><span class="to">DangKyHocPhan</span></div>
+              <div class="rel"><span class="from">PhongHoc</span><span class="card">1 — n</span><span class="to">BuoiHoc</span></div>
+              <div class="rel"><span class="from">BuoiHoc</span><span class="card">1 — 0..1</span><span class="to">BuoiHoc (dạy bù)</span></div>
+              <div class="rel"><span class="from">BuoiHoc</span><span class="card">1 — n</span><span class="to">DiemDanh</span></div>
+              <div class="rel"><span class="from">DangKyHocPhan</span><span class="card">1 — n</span><span class="to">DiemDanh</span></div>
+              <div class="rel"><span class="from">DangKyHocPhan</span><span class="card">1 — 0..1</span><span class="to">Diem</span></div>
+              <div class="rel"><span class="from">Diem</span><span class="card">1 — n</span><span class="to">LichSuDiem</span></div>
+              <div class="rel"><span class="from">HocKy</span><span class="card">1 — 0..1</span><span class="to">QuyDoiDiem</span></div>
+              <div class="rel"><span class="from">QuyDoiDiem</span><span class="card">1 — n</span><span class="to">Diem</span></div>
+              <div class="rel"><span class="from">HocKy</span><span class="card">1 — n</span><span class="to">LichThi</span></div>
+              <div class="rel"><span class="from">MonHoc</span><span class="card">1 — n</span><span class="to">LichThi</span></div>
+              <div class="rel"><span class="from">PhongHoc</span><span class="card">1 — n</span><span class="to">LichThi</span></div>
+            </div>
+          </div>
+
+          <div class="domain d4">
+            <h4><span class="dot"></span>Miền 4 — Hệ thống nghiệp vụ</h4>
+            <div class="classes">
+              <div class="cls">
+                <b>CauHinh</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>khoa · UNIQUE</li><li>gia_tri (json)</li></ul>
+              </div>
+              <div class="cls">
+                <b>NhatKy</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>hanh_dong · doi_tuong_loai</li><li>doi_tuong_id</li><li>nguoi_thuc_hien_id · thoi_diem</li></ul>
+              </div>
+              <div class="cls">
+                <b>Menu</b>
+                <ul><li><span class="pk">id</span> · PK</li><li>ten · url · vi_tri</li><li>vai_tro (json mảng)</li><li>thu_tu · trang_thai</li></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="note">
+            <strong>TietHoc không có khoá ngoại.</strong> Đó là khung tiết cấu hình dùng chung; buổi học và ca thi lưu bản sao <code>tiet_bat_dau</code> / <code>tiet_ket_thuc</code> + <code>gio_bat_dau</code> / <code>gio_ket_thuc</code>, nên sửa khung tiết về sau không làm lệch lịch đã xếp.
+          </div>
+        </div>
+
+        <h3>3.3. 18 Service</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>Service</th><th>Việc</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td class="mono">CloudinaryService</td><td>Upload / xoá ảnh đại diện; DB chỉ giữ URL và public_id</td></tr>
+              <tr><td class="num">2</td><td class="mono">DangKyHocPhanService</td><td>Đăng ký, huỷ, hàng loạt; kiểm sĩ số, trùng môn, trùng lịch, năm thứ; khoá dòng</td></tr>
+              <tr><td class="num">3</td><td class="mono">DashboardService</td><td>Số liệu 3 dashboard theo vai trò, chọn học kỳ mặc định</td></tr>
+              <tr><td class="num">4</td><td class="mono">QuanLyBuoiHocService</td><td>Sinh lịch tuần, thêm/sửa/huỷ/mở lại/xoá buổi; gọi ScheduleService trong transaction</td></tr>
+              <tr><td class="num">5</td><td class="mono">QuanLyCauHinhService</td><td>Đọc/ghi <code>cau_hinh</code>; danh sách học kỳ áp dụng</td></tr>
+              <tr><td class="num">6</td><td class="mono">QuanLyDiemDanhService</td><td>Điểm danh theo buổi, lưu hàng loạt, của tôi, thống kê chuyên cần</td></tr>
+              <tr><td class="num">7</td><td class="mono">QuanLyDiemService</td><td>Nhập điểm, lịch sử sửa, điểm của tôi, GPA/CPA, tính điểm chữ + hệ 4</td></tr>
+              <tr><td class="num">8</td><td class="mono">QuanLyHoSoService</td><td>CRUD hồ sơ SV/GV/lớp hành chính; khoá–kích hoạt; xoá hàng loạt</td></tr>
+              <tr><td class="num">9</td><td class="mono">QuanLyHocKyService</td><td>Tạo/sửa/xoá/chuyển trạng thái kỳ; vòng đời chỉ tiến</td></tr>
+              <tr><td class="num">10</td><td class="mono">QuanLyKhoaNganhService</td><td>CRUD khoa/ngành; chặn xoá khi còn bản ghi con</td></tr>
+              <tr><td class="num">11</td><td class="mono">QuanLyLichThiService</td><td>CRUD ca thi; xung đột chỉ xét phòng</td></tr>
+              <tr><td class="num">12</td><td class="mono">QuanLyLopHocPhanService</td><td>CRUD lớp, bảng điểm, nhập hàng loạt, chốt/mở khoá điểm, chuyên cần</td></tr>
+              <tr><td class="num">13</td><td class="mono">QuanLyMonHocService</td><td>Xoá, khoá/mở hàng loạt môn học</td></tr>
+              <tr><td class="num">14</td><td class="mono">QuanLyNguoiDungService</td><td>CRUD tài khoản, khoá (thu hồi token), đặt lại mật khẩu, trạng thái hàng loạt</td></tr>
+              <tr><td class="num">15</td><td class="mono">QuanLyNhatKyService</td><td>Danh sách / chi tiết nhật ký + danh mục lọc</td></tr>
+              <tr><td class="num">16</td><td class="mono">QuanLyPhongHocService</td><td>Xoá, khoá/mở hàng loạt phòng học</td></tr>
+              <tr><td class="num">17</td><td class="mono">ScheduleService</td><td>Lõi phát hiện trùng lịch: phòng, giảng viên, sinh viên, ca thi — chỉ đọc</td></tr>
+              <tr><td class="num">18</td><td class="mono">ThungRacService</td><td>Liệt kê, khôi phục bản ghi xoá mềm theo loại</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 4. FRONTEND ============ -->
+      <section id="frontend">
+        <h2>4. Kiến trúc frontend</h2>
+
+        <h3>4.1. Điều hướng và nạp mã</h3>
+        <div class="panel">
+          <div class="diagram">
+            <div class="tier">
+              <div class="node mono"><b>app.config.ts</b><span>provideRouter · provideHttpClient</span></div>
+              <div class="node mono"><b>app.routes.ts</b><span>Chỉ gộp route, không khai màn cụ thể</span></div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node chart2">
+                <b>3 cổng đăng nhập ngoài layout</b>
+                <span>/dang-nhap/admin · /giang-vien · /sinh-vien<br>guestGuard</span>
+              </div>
+              <div class="node">
+                <b>MainLayout</b>
+                <span>sidebar + header + footer<br>authGuard + authChildGuard</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node chart1">
+                <b>/dashboard — 3 khai báo cùng path</b>
+                <span>vaiTroCanMatch('ADMIN' | 'GIANG_VIEN' | 'SINH_VIEN')<br>cái đầu tiên khớp thắng</span>
+              </div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node mono"><b>routes/dao-tao.routes.ts</b><span>31 loadComponent</span></div>
+              <div class="node mono"><b>routes/hoc-vu.routes.ts</b><span>21 loadComponent</span></div>
+              <div class="node mono"><b>routes/he-thong.routes.ts</b><span>10 loadComponent</span></div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node"><b>features/dao-tao</b><span>25 component</span></div>
+              <div class="node"><b>features/hoc-vu</b><span>22 component</span></div>
+              <div class="node"><b>features/he-thong</b><span>4 component</span></div>
+              <div class="node plain"><b>shared/ui</b><span>15 component + 1 service</span></div>
+            </div>
+            <div class="arrow" aria-hidden="true"></div>
+            <div class="tier">
+              <div class="node chart2 mono"><b>core/services</b><span>12 service HTTP</span></div>
+              <div class="node warning mono"><b>authInterceptor</b><span>Gắn Bearer · 401 → xoá phiên</span></div>
+              <div class="node success mono"><b>Laravel API</b><span>/api/*</span></div>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:16px">
+            <table>
+              <thead><tr><th>Cơ chế</th><th>File</th><th>Vì sao quan trọng</th></tr></thead>
+              <tbody>
+                <tr><td>Lazy <code>loadComponent</code></td><td class="mono">routes/*.ts</td><td>74 khai báo: 62 ở nhóm route (đào tạo 31 · học vụ 21 · hệ thống 10) + 12 ở <code>app.routes.ts</code>; toàn bộ màn nghiệp vụ nằm ngoài bundle initial</td></tr>
+                <tr><td><code>roleGuard</code> (canActivate)</td><td class="mono">core/auth/auth.guard.ts</td><td>Chặn theo <code>data.roles</code>; cũng chặn khi <code>must_change_password</code></td></tr>
+                <tr><td><code>vaiTroCanMatch</code> (canMatch)</td><td class="mono">core/auth/vai-tro-can-match.guard.ts</td><td>Chọn component <em>trước khi</em> router chốt route — cần cho <code>/dashboard</code> dùng chung path; không redirect nên không vòng lặp</td></tr>
+                <tr><td><code>authInterceptor</code></td><td class="mono">core/auth/auth.interceptor.ts</td><td>Gắn <code>Authorization</code> cho request bắt đầu bằng <code>apiBaseUrl</code>; 401 → <code>xoaPhien()</code> + về <code>/dang-nhap?returnUrl=</code></td></tr>
+                <tr><td><code>laTrangChuaLamGuard</code></td><td class="mono">core/auth/trang-chua-lam.guard.ts</td><td>URL có trong menu nhưng chưa có màn → trang "chưa làm" <em>trong</em> layout, không rơi 404</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3>4.2. Thư mục <code>frontend/src/app/</code></h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Thư mục</th><th>Vai trò</th><th class="num">Số file</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">core/auth/</td><td>Auth service, 4 guard, interceptor</td><td class="num">8</td></tr>
+              <tr><td class="mono">core/services/</td><td>HTTP client theo resource (12 service + 6 spec)</td><td class="num">18</td></tr>
+              <tr><td class="mono">core/models/</td><td>Kiểu dữ liệu khớp hợp đồng API</td><td class="num">3</td></tr>
+              <tr><td class="mono">core/layout/</td><td>main-layout · sidebar · header · footer</td><td class="num">6</td></tr>
+              <tr><td class="mono">core/mock/</td><td>Mock backend (đang tắt: <code>useMock: false</code>)</td><td class="num">22</td></tr>
+              <tr><td class="mono">core/utils/</td><td>menu-vai-tro · menu-url · chuẩn hoá tìm kiếm</td><td class="num">7</td></tr>
+              <tr><td class="mono">shared/ui/</td><td>15 component dùng chung + toast service + 2 spec</td><td class="num">18</td></tr>
+              <tr><td class="mono">shared/pipes/</td><td><code>ngayVn</code> — định dạng dd/mm/yyyy</td><td class="num">1</td></tr>
+              <tr><td class="mono">routes/</td><td>3 nhóm route + 3 file menu + 3 spec</td><td class="num">8</td></tr>
+              <tr><td class="mono">features/dao-tao/</td><td>Sinh viên, giảng viên, lớp hành chính, môn, kỳ, phòng, khoa, ngành</td><td class="num">48</td></tr>
+              <tr><td class="mono">features/hoc-vu/</td><td>Lớp học phần, đăng ký, lịch học, lịch thi, điểm danh, điểm, menu</td><td class="num">31</td></tr>
+              <tr><td class="mono">features/dashboard/</td><td>3 dashboard + 4 component biểu đồ/thẻ (7 component) + model + hàm tính toán + spec</td><td class="num">20</td></tr>
+              <tr><td class="mono">features/he-thong/</td><td>Cấu hình, người dùng, nhật ký</td><td class="num">7</td></tr>
+              <tr><td class="mono">features/auth/ · tai-khoan/ · thung-rac/ · not-found/ · style-guide/</td><td>Đăng nhập, hồ sơ, thùng rác, 404, trang mẫu token</td><td class="num">13</td></tr>
+              <tr><td class="mono">app/ (gốc)</td><td>app.ts · app.config.ts · app.routes.ts + spec</td><td class="num">7</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>4.3. <code>shared/ui/</code> — 18 file, nhưng 15 component</h3>
+        <div class="panel">
+          <div class="cards" style="margin:0">
+            <div class="card is-primary"><span class="lbl">Component</span><span class="val">15</span><span class="sub">app-alert · app-button · app-card · chon-tim-kiem · confirm-dialog · dang-xay-dung · data-table · date-input · empty-state · form-field · loading · page-header · pagination · search-input · status-badge</span></div>
+            <div class="card is-chart2"><span class="lbl">Service</span><span class="val">1</span><span class="sub"><code>app-toast.service.ts</code></span></div>
+            <div class="card is-chart1"><span class="lbl">Spec</span><span class="val">2</span><span class="sub"><code>design-system.spec.ts</code> · <code>shared-components.spec.ts</code></span></div>
+          </div>
+          <div class="note warn">
+            Lưu ý đếm: thư mục có 18 <strong>file</strong>, gồm 15 component + 1 service + 2 file test. Con số đúng khi đếm component là <strong>15</strong>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 5. LUỒNG NGHIỆP VỤ ============ -->
+      <section id="luong">
+        <h2>5. Luồng nghiệp vụ then chốt</h2>
+
+        <h3>5.1. Đăng nhập và phân quyền</h3>
+        <div class="panel">
+          <div class="steps">
+            <div class="step"><span class="flow">Người dùng → LoginPage</span><span class="txt">Nhập email (hoặc mã sinh viên) và mật khẩu; chọn cổng theo vai trò.</span></div>
+            <div class="step"><span class="flow">LoginPage → AuthService → API</span><span class="txt"><code>POST /api/auth/login</code>. Route có <code>throttle:5,1</code> — 5 lần mỗi phút mỗi IP.</span></div>
+            <div class="step"><span class="flow">AuthController → MySQL</span><span class="txt">Tìm theo <code>email</code>, hoặc theo <code>ma_sv</code> với điều kiện <code>vai_tro = SINH_VIEN</code>. Kiểm mật khẩu bằng <code>Hash::check</code>.</span></div>
+            <div class="step alt"><span class="flow">API → FE · sai mật khẩu</span><span class="txt">401 <code>AUTH_INVALID</code> — thông báo chung, không tiết lộ email có tồn tại hay không.</span></div>
+            <div class="step alt"><span class="flow">API → FE · tài khoản bị khoá</span><span class="txt">403 <code>ACCOUNT_LOCKED</code> khi <code>users.trang_thai = false</code>.</span></div>
+            <div class="step ok"><span class="flow">API → AuthService · hợp lệ</span><span class="txt">Tạo token Sanctum hạn 7 ngày, trả <code>token</code> + <code>het_han_luc</code> + <code>nguoi_dung</code>.</span></div>
+            <div class="step"><span class="flow">AuthService → localStorage</span><span class="txt">Lưu khoá <code>qllh_access_token</code>, ghi <code>nguoiDung</code> vào signal, chuyển <code>/dashboard</code>.</span></div>
+            <div class="step"><span class="flow">Router · authGuard → vaiTroCanMatch</span><span class="txt">authGuard kiểm token và <code>must_change_password</code>; vaiTroCanMatch chọn đúng component trong 3 khai báo cùng <code>path: 'dashboard'</code>.</span></div>
+            <div class="step"><span class="flow">Mọi request sau → authInterceptor → API</span><span class="txt">Interceptor gắn <code>Authorization: Bearer &lt;token&gt;</code> cho mọi URL bắt đầu bằng <code>apiBaseUrl</code>, trừ <code>/auth/login</code>.</span></div>
+            <div class="step alt"><span class="flow">API → interceptor · token hết hạn / bị thu hồi</span><span class="txt">401 <code>UNAUTHENTICATED</code> → <code>xoaPhien()</code> → chuyển <code>/dang-nhap?returnUrl=…</code>.</span></div>
+          </div>
+
+          <h4 style="margin-top:20px">Bốn lớp bảo vệ — không lớp nào thay được lớp khác</h4>
+          <div class="perm">
+            <div class="p"><b>auth:sanctum</b><span>Bắt: không có / sai / hết hạn token.<br>Không bắt: token hợp lệ nhưng sai vai trò.</span></div>
+            <div class="p"><b>doi.mat.khau</b><span>Bắt: <code>must_change_password = true</code> gọi endpoint khác 3 route cho phép.<br>Không bắt: người dùng vai trò khác.</span></div>
+            <div class="p"><b>vai.tro:x,y</b><span>Bắt: vai trò không nằm trong danh sách.<br>Không bắt: cùng vai trò nhưng không sở hữu đối tượng (GV A sửa lớp GV B).</span></div>
+            <div class="p"><b>Policy + Gate.authorize</b><span>Bắt: sở hữu đối tượng cụ thể.<br>ADMIN bỏ qua qua <code>Gate.before</code> (FR-01.04).</span></div>
+          </div>
+        </div>
+
+        <h3>5.2. Đăng ký học phần: sĩ số + trùng lịch</h3>
+        <div class="panel">
+          <div class="steps">
+            <div class="step"><span class="flow">Sinh viên → màn đăng ký → Controller</span><span class="txt"><code>POST /api/me/enrollments</code>, route khoá <code>vai.tro:SINH_VIEN</code>.</span></div>
+            <div class="step"><span class="flow">Service → MySQL</span><span class="txt"><code>BEGIN</code>, rồi <code>SELECT … FOR UPDATE</code> trên <code>lop_hoc_phan</code> và <code>sinh_vien</code>. Hai request đồng thời cho cùng lớp bị tuần tự hoá.</span></div>
+            <div class="step"><span class="flow">Service · điều kiện vào lớp</span><span class="txt">SV đang hoạt động, kỳ chưa <code>CLOSED</code>, đang trong đợt đăng ký, đúng năm thứ (BR-23 — bỏ qua nếu thiếu dữ liệu để không khoá nhầm).</span></div>
+            <div class="step alt"><span class="flow">Service → Controller · đủ sĩ số</span><span class="txt">Đếm đăng ký <code>ACTIVE</code> ≥ <code>si_so_toi_da</code> → 409 <code>SECTION_FULL</code>, <code>ROLLBACK</code>.</span></div>
+            <div class="step alt"><span class="flow">Service · trùng môn trong kỳ</span><span class="txt">Đã có lớp khác cùng <code>mon_hoc_id</code> trong cùng <code>hoc_ky_id</code> → 409 <code>DUPLICATE_SUBJECT_IN_SEMESTER</code>.</span></div>
+            <div class="step"><span class="flow">Service · kiểm tra chồng giờ</span><span class="txt">Lấy buổi <code>SCHEDULED</code> của lớp mới và của các lớp SV đang học; so theo từng ngày: <code>gio_bat_dau &lt; gio_ket_thuc</code> và <code>gio_ket_thuc &gt; gio_bat_dau</code>.</span></div>
+            <div class="step alt"><span class="flow">Service → Controller · có buổi chồng</span><span class="txt">409 <code>SCHEDULE_CONFLICT</code> kèm <code>errors.trung_lich</code>: ngày, giờ, mã lớp mới, mã lớp đã đăng ký, để FE hiển thị đúng cặp buổi.</span></div>
+            <div class="step ok"><span class="flow">Service → MySQL · hợp lệ</span><span class="txt"><code>INSERT</code> hoặc cập nhật lại <code>dang_ky_hoc_phan = ACTIVE</code> (trường hợp đăng ký lại sau huỷ), rồi <code>COMMIT</code>.</span></div>
+            <div class="step ok"><span class="flow">Controller → FE</span><span class="txt">200 + envelope <code>{success, message, data}</code> chứa bản ghi đăng ký đã eager-load.</span></div>
+          </div>
+
+          <h4 style="margin-top:20px">Bốn cơ chế chống ghi đè sĩ số</h4>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Cơ chế</th><th>Tác dụng</th><th>Chỗ code</th></tr></thead>
+              <tbody>
+                <tr><td><code>DB::transaction</code></td><td>Kiểm tra + ghi là một đơn vị; lỗi giữa đường không để lại bản ghi dở</td><td class="mono">DangKyHocPhanService.php:63</td></tr>
+                <tr><td><code>lockForUpdate()</code></td><td>Tuần tự hoá hai request đồng thời; người sau thấy số đăng ký đã tăng</td><td class="mono">:64–65</td></tr>
+                <tr><td>Sĩ số không lưu cột</td><td>Không có cột để lệch — luôn đếm <code>dang_ky_hoc_phan</code> trạng thái ACTIVE</td><td class="mono">LopHocPhan::siSoHienTai()</td></tr>
+                <tr><td>Unique ghép</td><td>Chốt chặn cuối ở tầng DB nếu logic trên có khe hở</td><td class="mono">migration 2026_10_21_001800</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="note danger">
+            <strong>Nợ kỹ thuật đã xác nhận (S3):</strong> phần kiểm tra trùng lịch ở luồng này là bản cài <em>thứ hai</em> của luật BR-06/BR-22 (<code>DangKyHocPhanService::kiemTraTrungLich</code>, private, dòng 211–261). <code>ScheduleService::timTrungLichDangKy</code> tồn tại nhưng <strong>chỉ test gọi</strong> — hai bản luật có thể trôi khác nhau.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 6. DỮ LIỆU ============ -->
+      <section id="du-lieu">
+        <h2>6. Sơ đồ dữ liệu</h2>
+        <div class="panel">
+          <p><strong>Đo trên DB thật (<code>QLLopHoc</code>, MySQL 8.4.11):</strong> 30 bảng = <strong>21 bảng nghiệp vụ</strong> + 9 bảng hệ thống (<code>cache</code>, <code>cache_locks</code>, <code>failed_jobs</code>, <code>job_batches</code>, <code>jobs</code>, <code>migrations</code>, <code>password_reset_tokens</code>, <code>personal_access_tokens</code>, <code>sessions</code>). Toàn bộ 30 bảng dùng InnoDB.</p>
+          <div class="note warn">
+            Tài liệu cũ ghi 23 bảng. Con số đúng là <strong>21 bảng nghiệp vụ</strong>; 23 là khi tính thêm <code>personal_access_tokens</code> và <code>sessions</code> — hai bảng hạ tầng framework, không thuộc mô hình nghiệp vụ.
+          </div>
+
+          <h4>Ràng buộc đo được</h4>
+          <div class="cards" style="margin:12px 0 0">
+            <div class="card is-primary"><span class="lbl">Bảng nghiệp vụ</span><span class="val">21</span><span class="sub">+ 9 bảng hệ thống</span></div>
+            <div class="card is-chart1"><span class="lbl">Index thường</span><span class="val">82</span><span class="sub">Ngoài PRIMARY KEY</span></div>
+            <div class="card is-chart2"><span class="lbl">Unique</span><span class="val">22</span><span class="sub">5 unique ghép nhiều cột</span></div>
+            <div class="card is-danger"><span class="lbl">Khoá ngoại</span><span class="val">54</span><span class="sub">24 nghiệp vụ + 30 kiểm toán</span></div>
+          </div>
+
+          <h4 style="margin-top:20px">5 unique ghép đáng nhớ</h4>
+          <div class="rel-list">
+            <div class="rel"><span class="from">lop_hoc_phan</span><span class="card">UNIQUE</span><span class="to">(hoc_ky_id, ma_lop_hp)</span></div>
+            <div class="rel"><span class="from">dang_ky_hoc_phan</span><span class="card">UNIQUE</span><span class="to">(sinh_vien_id, lop_hoc_phan_id)</span></div>
+            <div class="rel"><span class="from">diem_danh</span><span class="card">UNIQUE</span><span class="to">(buoi_hoc_id, dang_ky_hoc_phan_id)</span></div>
+            <div class="rel"><span class="from">hoc_ky</span><span class="card">UNIQUE</span><span class="to">(nam_hoc, ky_thu)</span></div>
+            <div class="rel"><span class="from">nganh</span><span class="card">UNIQUE</span><span class="to">(khoa_id, ten_nganh)</span></div>
+          </div>
+          <p style="margin-top:12px; font-size:.875rem; color:var(--ink-muted)">Unique index <strong>không</strong> bao gồm <code>deleted_at</code> → bản ghi đã xoá mềm vẫn chiếm mã (BR-01). Đây là quyết định có chủ đích, không phải thiếu sót.</p>
+
+          <h4 style="margin-top:20px">13 bảng xoá mềm · 8 bảng không</h4>
+          <div class="perm">
+            <div class="p"><b>Có deleted_at (13)</b><span>users · sinh_vien · giang_vien · khoa · nganh · lop_hanh_chinh · mon_hoc · hoc_ky · phong_hoc · lop_hoc_phan · buoi_hoc · menu · lich_thi</span></div>
+            <div class="p"><b>Không xoá mềm (8)</b><span>dang_ky_hoc_phan (dùng <code>CANCELLED</code>) · diem_danh · diem · lich_su_diem · nhat_ky · cau_hinh · quy_doi_diem · tiet_hoc</span></div>
+          </div>
+
+          <h4 style="margin-top:20px">Dữ liệu đang có</h4>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bảng</th><th class="num">Số dòng</th><th>Bảng</th><th class="num">Số dòng</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">users</td><td class="num">555</td><td class="mono">sinh_vien</td><td class="num">501</td></tr>
+                <tr><td class="mono">giang_vien</td><td class="num">51</td><td class="mono">lop_hanh_chinh</td><td class="num">20</td></tr>
+                <tr><td class="mono">nganh</td><td class="num">5</td><td class="mono">khoa</td><td class="num">1</td></tr>
+                <tr><td class="mono">mon_hoc</td><td class="num">30</td><td class="mono">hoc_ky</td><td class="num">3</td></tr>
+                <tr><td class="mono">phong_hoc</td><td class="num">25</td><td class="mono">tiet_hoc</td><td class="num">15</td></tr>
+                <tr><td class="mono">lop_hoc_phan</td><td class="num">120</td><td class="mono">buoi_hoc</td><td class="num">2.040</td></tr>
+                <tr><td class="mono">dang_ky_hoc_phan</td><td class="num">7.028</td><td class="mono">diem_danh</td><td class="num">86.443</td></tr>
+                <tr><td class="mono">diem</td><td class="num">2.999</td><td class="mono">quy_doi_diem</td><td class="num">1</td></tr>
+                <tr><td class="mono">menu</td><td class="num">23</td><td class="mono">cau_hinh</td><td class="num">3</td></tr>
+                <tr><td class="mono">nhat_ky</td><td class="num">5</td><td class="mono">lich_thi</td><td class="num">0</td></tr>
+                <tr><td class="mono">lich_su_diem</td><td class="num">0</td><td></td><td class="num"></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="note">
+            <code>diem_danh</code> <strong>86.443 dòng</strong> là bảng lớn nhất — mọi tối ưu đọc điểm danh phải bắt đầu từ đây. <code>lich_thi</code> và <code>lich_su_diem</code> đang rỗng: hai tính năng mới, chưa có dữ liệu thật.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 7. SỨC KHOẺ ============ -->
+      <section id="suc-khoe">
+        <h2>7. Chỉ số sức khoẻ</h2>
+
+        <h3>7.1. Backend</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Chỉ số</th><th class="num">Số đo</th><th>Đánh giá</th></tr></thead>
+            <tbody>
+              <tr><td>Route API</td><td class="num">136</td><td>GET 58 · POST 30 · PUT 18 · DELETE 17 · PATCH 13</td></tr>
+              <tr><td>Controller / Service / Model</td><td class="num">24 / 18 / 21</td><td>Controller trung bình 109 dòng</td></tr>
+              <tr><td>Resource / FormRequest / Policy</td><td class="num">17 / 26 / 5</td><td>LichThiPolicy tự phát hiện, không cần đăng ký</td></tr>
+              <tr><td>Migration</td><td class="num">36</td><td></td></tr>
+              <tr><td>PHPUnit</td><td class="num">302</td><td>286 pass · <strong>4 fail</strong> · 12 skip · 1.725 assert · 13,5 s</td></tr>
+              <tr><td>Pint</td><td class="num">fail</td><td><strong>15 file</strong> lỗi style — không lỗi logic</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:.875rem; color:var(--ink-muted)">12 test <em>skip</em> là các test cần MySQL/Docker thật (<code>MySQLThucTeTest</code>); chạy được bằng <code>composer test:mysql</code>.</p>
+
+        <h3>7.2. Frontend</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Chỉ số</th><th class="num">Số đo</th><th>Đánh giá</th></tr></thead>
+            <tbody>
+              <tr><td>Component standalone</td><td class="num">85</td><td>100% <code>standalone: true</code></td></tr>
+              <tr><td><code>ChangeDetectionStrategy.OnPush</code></td><td class="num">4 / 85</td><td><strong>4,7%</strong> — chỉ 4 component dashboard mới</td></tr>
+              <tr><td><code>@defer</code></td><td class="num">0</td><td>Không có block trì hoãn nào</td></tr>
+              <tr><td>File dùng <code>signal()</code></td><td class="num">64</td><td>Signals rộng, nhưng chưa kèm OnPush nên lợi ích bị chặn</td></tr>
+              <tr><td>Bundle initial</td><td class="num">588,46 kB</td><td><strong>Vượt budget cảnh báo 500 kB đúng 88,45 kB</strong> (transfer 146,74 kB)</td></tr>
+              <tr><td>Chunk lớn nhất</td><td class="num">343,79 kB</td><td><code>main</code> + một chunk 167,42 kB</td></tr>
+              <tr><td>Vitest</td><td class="num">415</td><td><strong>415 pass</strong> · 0 fail · 73 file (đo lại 10:23)</td></tr>
+              <tr><td>Route lazy</td><td class="num">74</td><td>Khai báo <code>loadComponent</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>7.3. Cơ sở dữ liệu và tài liệu</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Chỉ số</th><th class="num">Số đo</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+              <tr><td>Phiên bản MySQL</td><td class="num">8.4.11</td><td>InnoDB 30/30 bảng</td></tr>
+              <tr><td>Bảng nghiệp vụ</td><td class="num">21</td><td>+ 9 bảng hệ thống = 30</td></tr>
+              <tr><td>Index thường / Unique / FK</td><td class="num">82 / 22 / 54</td><td>Nhiều index sinh tự động từ FK</td></tr>
+              <tr><td>Index đề xuất chưa tạo</td><td class="num">3</td><td><code>docs/03</code> §5.7 — cho dashboard TEACHER/STUDENT</td></tr>
+              <tr><td>Dòng Markdown trong <code>docs/</code></td><td class="num">6.319</td><td>Không tính file 09 này · 22 ADR (ADR-001 → ADR-022)</td></tr>
+              <tr><td><code>openapi.yaml</code> / Postman</td><td class="num">68 / 74</td><td>Postman chưa cập nhật sau đợt lịch học/lịch thi</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 8. PHÁT HIỆN ============ -->
+      <section id="phat-hien">
+        <h2>8. Phát hiện kiến trúc</h2>
+        <p style="color:var(--ink-muted); font-size:.95rem">
+          <span class="tag p">P</span> chặn deploy — không được lên staging/production khi còn ·
+          <span class="tag s">S</span> nên sửa trước đợt sau ·
+          <span class="tag g">G</span> ghi nhận, không cấp bách
+        </p>
+
+        <h3>8.1. Chặn deploy (3)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mức</th><th>Vị trí</th><th>Vấn đề</th><th>Đề xuất</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="tag p">P1</span></td>
+                <td class="mono">frontend/angular.json:35–56<br>src/environments/environment.prod.ts:3</td>
+                <td><code>angular.json</code> <strong>không khai <code>fileReplacements</code></strong>, nên <code>ng build --configuration production</code> vẫn dùng <code>environment.ts</code>. Bundle production chứa <code>http://localhost:8000/api</code>; <code>environment.prod.ts</code> khai đúng <code>/api</code> nhưng là file chết. Deploy là mọi lời gọi API trắng.</td>
+                <td>Thêm <code>fileReplacements</code> cho configuration <code>production</code>. Kiểm bằng <code>grep localhost dist/**/*.js</code> phải ra 0.</td>
+              </tr>
+              <tr>
+                <td><span class="tag p">P2</span></td>
+                <td class="mono">tests/Feature/DashboardVaiTroTest.php:233, 422, 578, 882<br>features/dashboard/dashboard-sinh-vien.spec.ts:265</td>
+                <td><strong>Test backend chưa xanh:</strong> PHPUnit còn <strong>4 fail</strong>, cả bốn thuộc dashboard ba vai trò (chọn kỳ, hạn sửa điểm danh, kiểu số <code>1</code> vs <code>1.0</code>, ngân sách truy vấn). Phía frontend đã xanh trong lúc rà soát (415/415 lúc 10:23).</td>
+                <td>Sửa 4 test hoặc sửa code cho khớp. Không nới assert để test xanh giả; riêng test ngân sách (P3) phải sửa <em>code</em>.</td>
+              </tr>
+              <tr>
+                <td><span class="tag p">P3</span></td>
+                <td class="mono">app/Services/DashboardService.php:395–524</td>
+                <td><strong>Dashboard sinh viên dùng 18 truy vấn, ngân sách 8.</strong> Nguyên nhân: <code>layThongKeSinhVien</code> gọi <code>gpaCuaToi()</code> mà hàm này gọi lại <code>diemCuaToi()</code>, cộng chuỗi truy vấn chọn kỳ, đăng ký, điểm danh, thời khoá biểu. Vượt 2,25 lần ngưỡng UC-16 AC-3 (&lt; 500 ms).</td>
+                <td>Truyền <code>$hocKy</code> đã chọn xuống để không chọn kỳ hai lần; tính CPA bằng một truy vấn join thay vì tải collection rồi gộp trong PHP; tái dùng <code>$dangKys</code> cho phần chuyên cần. Mục tiêu ≤ 8.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>8.2. Nên sửa (15)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mức</th><th>Vị trí</th><th>Vấn đề</th><th>Đề xuất</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tag s">S1</span></td><td class="mono">routes/api.php:80–88 và :115–124</td><td><strong>6 route <code>/semesters</code> khai hai lần.</strong> Laravel gộp theo method+uri nên tổng vẫn 136, nhưng middleware <strong>cộng dồn</strong>: <code>POST /api/semesters</code> chạy <code>CheckVaiTro</code> hai lần với hai danh sách khác nhau (<code>route:list -v</code> hiện 5 middleware).</td><td>Xoá block thứ hai, giữ block có <code>name()</code>.</td></tr>
+              <tr><td><span class="tag s">S2</span></td><td class="mono">routes/api.php:279–281 và :106</td><td>Hai route thừa, không theo hợp đồng: <code>GET /api/user</code> trả <code>User</code> trần <strong>không bọc envelope</strong>; <code>GET /api/audit-logs</code> là alias của <code>/api/logs</code> (cùng handler).</td><td>Xoá <code>/api/user</code>; giữ một trong hai route log (giữ <code>/logs</code> vì FE đang gọi).</td></tr>
+              <tr><td><span class="tag s">S3</span></td><td class="mono">DangKyHocPhanService.php:211–261<br>ScheduleService.php:211–234</td><td><strong>Hai bản cài cùng luật chống trùng lịch.</strong> Bản trong <code>DangKyHocPhanService</code> là bản chạy thật; <code>ScheduleService::timTrungLichDangKy</code> <strong>chỉ test gọi</strong>.</td><td>Cho một bên gọi bên kia; chỉ giữ <strong>một</strong> bản.</td></tr>
+              <tr><td><span class="tag s">S4</span></td><td class="mono">QuanLyDiemDanhService.php:307–310</td><td><strong>N+1:</strong> trong <code>foreach ($dangKys)</code> truy vấn <code>DiemDanh</code> riêng từng đăng ký. 8 học phần → 8 truy vấn trên bảng 86.443 dòng.</td><td>Một truy vấn gộp <code>whereIn</code> rồi nhóm trong PHP — đúng cách <code>DashboardService::thongKeChuyenCanTheoDangKy</code> đã làm.</td></tr>
+              <tr><td><span class="tag s">S5</span></td><td class="mono">backend/ — 15 file</td><td><code>pint --test</code> fail <strong>15 file</strong>: <code>DashboardService</code>, <code>QuanLyDiemService</code>, <code>QuanLyCauHinhService</code>, <code>HocKyController</code>, <code>OptionController</code>, <code>ThungRacController</code>, <code>ThungRacService</code>, <code>CauHinhController</code>, <code>DiemController</code>, <code>DashboardController</code>, <code>NhapDiemDonRequest</code>, 1 migration, 3 test.</td><td>Chạy <code>vendor/bin/pint</code> (chỉ định dạng), commit riêng, không trộn commit tính năng.</td></tr>
+              <tr><td><span class="tag s">S6</span></td><td class="mono">angular.json:36–41</td><td>Bundle initial <strong>588,46 kB, vượt 500 kB 88,45 kB</strong>; ngưỡng lỗi 1 MB nên build vẫn xanh và cảnh báo dễ bị bỏ qua.</td><td>Không nâng budget. Cắt thật: <code>@defer</code> cho biểu đồ, tách import Material, kiểm <code>main</code> 343,79 kB.</td></tr>
+              <tr><td><span class="tag s">S7</span></td><td class="mono">toàn bộ frontend/src/app</td><td><strong>OnPush 4/85, <code>@defer</code> 0.</strong> 81 component còn lại quét lại cây mỗi sự kiện — rào cản chính của Lighthouse ≥ 90.</td><td>Bật OnPush cho component mới ngay; chuyển dần 85 component (đã có signals nên không phải viết lại).</td></tr>
+              <tr><td><span class="tag s">S8</span></td><td class="mono">src/index.html:15,18</td><td><strong>Hai stylesheet Google Fonts chặn render</strong>: 4 độ đậm × 2 họ chữ + Material Icons (cả bộ font icon). Không self-host, không preload font file.</td><td>Self-host woff2 + <code>font-display: swap</code>; thay Material Icons bằng SVG hoặc subset. Đo lại LCP.</td></tr>
+              <tr><td><span class="tag s">S9</span></td><td class="mono">environment.prod.ts:4</td><td>File production đặt <code>useMock: true</code>. Hiện vô hại vì file chưa được dùng (P1) — nhưng sửa P1 xong là bật mock interceptor ở production, API thật không bao giờ được gọi.</td><td>Đặt <code>useMock: false</code> cùng lượt sửa P1.</td></tr>
+              <tr><td><span class="tag s">S10</span></td><td class="mono">backend/dt.json<br>tests/Feature/TmpDebugTest.php<br>features/dashboard/dbg4.spec.ts</td><td><strong>Rác debug chưa commit</strong> và không có trong <code>.gitignore</code>. <code>TmpDebugTest</code> chạy cùng suite; <code>dbg4.spec.ts</code> in vết.</td><td>Xoá cả ba; nếu cần giữ mẫu đo đặt dưới <code>tools/</code> và thêm vào <code>.gitignore</code>.</td></tr>
+              <tr><td><span class="tag s">S11</span></td><td class="mono">bootstrap/app.php:37<br>Http/Middleware/CheckTaiKhoanHoatDong.php</td><td>Middleware <code>CheckTaiKhoanHoatDong</code> được đăng ký alias <code>tai.khoan.hoat.dong</code> nhưng <strong>không route nào dùng</strong> → code chết. Khoá tài khoản chỉ dựa vào thu hồi token ở service; đường nào đổi <code>trang_thai</code> mà quên thu hồi thì token cũ sống tới 7 ngày.</td><td>Gắn middleware vào nhóm chung sau <code>auth:sanctum</code> (một truy vấn đã có sẵn), hoặc xoá và ghi rõ BR-30 chỉ xử lý ở service.</td></tr>
+              <tr><td><span class="tag s">S12</span></td><td class="mono">docs/03-data-model.md</td><td><strong>Tài liệu trôi khỏi DB:</strong> thiếu hẳn <code>tiet_hoc</code> và <code>lich_thi</code>; §3.9 <code>buoi_hoc</code> thiếu <code>tiet_bat_dau</code>, <code>tiet_ket_thuc</code>, <code>hinh_thuc</code>, <code>buoi_goc_id</code>; §4 ghi 10 bảng xoá mềm trong khi DB có <strong>13</strong>; §6 dừng ở migration <code>2026_10_30_000200</code> — thiếu <strong>7</strong> file về sau (<code>2026_11_04</code>→<code>2026_11_08</code>).</td><td>Bổ sung §3.20 <code>tiet_hoc</code>, §3.21 <code>lich_thi</code>, cập nhật §3.9, §4, §6. Thuộc <code>qllh-analyst</code>, không phải backend.</td></tr>
+              <tr><td><span class="tag s">S13</span></td><td class="mono">docs/04-api-contract.md:1630</td><td>Bảng §18 ghi <code>dashboard</code> "Đặc tả 3 · Đã code <strong>1</strong>" và tổng "code <strong>134</strong>". Đo lại: dashboard đã code <strong>3</strong> route, tổng <strong>136</strong> — tài liệu đang tự báo thiếu hai endpoint đã có.</td><td>Cập nhật cột "Đã code" của <code>dashboard</code> thành 3, tổng thành 136, ghi ngày đo 2026-11-09.</td></tr>
+              <tr><td><span class="tag s">S14</span></td><td class="mono">docs/03-data-model.md:482,515</td><td><strong>Trùng số mục:</strong> <code>### 3.15</code> xuất hiện hai lần (<code>cau_hinh</code> và <code>nhat_ky</code>). Mọi tham chiếu "§3.15" đều nhập nhằng.</td><td>Đánh số lại <code>nhat_ky</code> thành 3.16 và dồn các mục sau.</td></tr>
+              <tr><td><span class="tag s">S15</span></td><td class="mono">docker-compose.staging.yml:60</td><td><strong><code>APP_KEY</code> hardcode giá trị mặc định trong repo.</strong> Ai đọc repo cũng có khoá mã hoá staging; biến không được đặt thì hệ thống vẫn chạy với khoá công khai.</td><td>Đổi thành <code>${APP_KEY:?…}</code> để compose từ chối chạy khi thiếu; phát khoá mới qua secret, không commit.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>8.3. Ghi nhận (5)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mức</th><th>Vị trí</th><th>Ghi nhận</th><th>Hướng xử lý</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tag g">G1</span></td><td class="mono">core/auth/auth.service.ts:42</td><td>Token Sanctum (7 ngày, không refresh) lưu trong <code>localStorage</code> — XSS là mất phiên 7 ngày. Rủi ro đã giảm ở phía server vì đổi mật khẩu và khoá tài khoản đều thu hồi token.</td><td>Chấp nhận cho đồ án. Siết thì chuyển cookie <code>httpOnly</code> + <code>SameSite</code> — đổi hợp đồng auth, <strong>chờ user chốt</strong>.</td></tr>
+              <tr><td><span class="tag g">G2</span></td><td class="mono">AppServiceProvider.php:37</td><td><code>Gate.before</code> cho ADMIN bỏ qua <strong>mọi</strong> Policy (đúng FR-01.04) — nghĩa là Policy chỉ bảo vệ GIANG_VIEN/SINH_VIEN. Thêm vai trò mới mà quên sửa là mặc định không bị chặn.</td><td>Giữ nguyên; ghi thành luật trong ADR: vai trò mới phải rà lại <code>Gate.before</code> và bảng phân quyền.</td></tr>
+              <tr><td><span class="tag g">G3</span></td><td class="mono">47/85 component thiếu spec</td><td>Độ phủ test không đều: service/route dày (302 test), component nhiều màn chưa có test riêng (điểm danh, danh sách lớp học phần, toàn bộ <code>shared/ui</code> trừ hai file gộp).</td><td>Trước deploy chỉ cần test cho 3 màn ghi dữ liệu: điểm danh, nhập điểm, đăng ký.</td></tr>
+              <tr><td><span class="tag g">G4</span></td><td class="mono">app/Notifications/ — không tồn tại</td><td><strong>Phần thông báo (DB + polling) chưa bắt đầu ở backend:</strong> chưa có model, migration, controller, endpoint <code>GET /api/notifications/unread-count</code>.</td><td>Phạm vi mới, không phải nợ kỹ thuật. Hướng đã chốt trong <code>CLAUDE.md</code>.</td></tr>
+              <tr><td><span class="tag g">G5</span></td><td class="mono">HocKyController.php:96<br>HoSoController.php:38<br>MenuController.php:70</td><td>Ba controller <strong>tự mở <code>DB::transaction</code></strong> và ghi dữ liệu, lệch quy ước "nghiệp vụ ở service" mà 18 service còn lại đang theo. Không phải lỗi chức năng, nhưng làm mờ ranh giới tầng.</td><td>Khi chạm ba module này thì chuyển vào service. Không refactor riêng lẻ vì không có số đo lỗi.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 9. ƯU TIÊN ============ -->
+      <section id="uu-tien">
+        <h2>9. Đề xuất ưu tiên</h2>
+        <ol class="prio">
+          <li>
+            <div><b>Sửa <code>fileReplacements</code> production + đặt <code>useMock: false</code></b>
+            <span>P1, S9. Bản build hiện tại trỏ <code>localhost:8000</code> — deploy là hệ thống chết, mọi việc khác vô nghĩa. Sửa khoảng 5 dòng.</span></div>
+          </li>
+          <li>
+            <div><b>Sửa 4 test backend đỏ, trong đó giảm dashboard sinh viên 18 → ≤ 8 truy vấn bằng code</b>
+            <span>P2, P3. Test đỏ chặn "định nghĩa xong"; 18 truy vấn trên bảng <code>diem_danh</code> 86k dòng là rủi ro hiệu năng thật khi nhiều sinh viên vào cùng lúc. Không nới ngưỡng.</span></div>
+          </li>
+          <li>
+            <div><b>Xoá 6 route <code>semesters</code> trùng + 2 route thừa (<code>/user</code>, <code>/audit-logs</code>)</b>
+            <span>S1, S2. Giảm bề mặt tấn công và làm <code>route:list</code> đọc được; hiện một route chạy middleware hai lần, dễ hiểu sai khi phân quyền.</span></div>
+          </li>
+          <li>
+            <div><b>Hợp nhất luật chống trùng lịch về một chỗ, sửa N+1 điểm danh</b>
+            <span>S3, S4. Hai bản cài cùng luật BR-06/BR-22 sẽ trôi khác nhau; N+1 điểm danh là truy vấn nặng nhất hệ thống.</span></div>
+          </li>
+          <li>
+            <div><b>Chạy <code>pint</code> + cập nhật <code>docs/03</code> (tiet_hoc, lich_thi, 13 bảng xoá mềm, §6) và <code>docs/04</code> §18 (136 route)</b>
+            <span>S5, S12, S13, S14. Cổng chất lượng phải xanh trước bàn giao, và tài liệu lệch DB là nguồn lỗi cho người làm sau.</span></div>
+          </li>
+        </ol>
+
+        <div class="note warn">
+          <strong>Không làm ngay (đã cân nhắc và loại):</strong> chuyển sang cookie <code>httpOnly</code> (G1) và refactor 3 controller tự transaction (G5) — cả hai đổi hợp đồng hoặc không có số đo lỗi, phải chờ user chốt. Tối ưu Lighthouse (S6, S7, S8) làm <em>sau</em> 5 việc trên, vì cần build production đúng mới đo được.
+        </div>
+      </section>
+
+      <footer>
+        <p><strong>QLLH — Báo cáo kiến trúc v1.0</strong> · đo ngày 09/11/2026 trên nhánh <code>feature/dashboard-ba-vai-tro</code> · DB <code>QLLopHoc</code> (MySQL 8.4.11, Aiven).</p>
+        <p>Bản Markdown đầy đủ (kèm lệnh đo lại và truy vấn SQL): <code>docs/09-kien-truc-he-thong.md</code>. Số liệu tái lập bằng <code>php artisan route:list</code>, <code>php artisan test</code>, <code>npx ng build</code>, <code>npx ng test</code>.</p>
+        <p>Trang này tự chứa: không CDN, không font ngoài, mở offline bằng trình duyệt vẫn đúng. Màu lấy từ <code>frontend/src/_tokens.scss</code>; hỗ trợ sáng/tối theo hệ điều hành hoặc nút đổi chế độ.</p>
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeBtn');
+  var luu = null;
+  try { luu = localStorage.getItem('qllh-doc-theme'); } catch (e) { luu = null; }
+  if (luu === 'dark' || luu === 'light') root.setAttribute('data-theme', luu);
+
+  function hienTai() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function capNhatNhan() {
+    if (!btn) return;
+    btn.textContent = hienTai() === 'dark' ? 'Đang tối — chuyển sang sáng' : 'Đang sáng — chuyển sang tối';
+  }
+  if (btn) {
+    btn.addEventListener('click', function () {
+      var moi = hienTai() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', moi);
+      try { localStorage.setItem('qllh-doc-theme', moi); } catch (e) {}
+      capNhatNhan();
+    });
+  }
+  capNhatNhan();
+})();
+</script>
+</body>
+</html>

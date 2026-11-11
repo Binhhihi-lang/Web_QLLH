@@ -29,26 +29,36 @@
   <!-- ============ CÓ DỮ LIỆU ============ -->
   @if (!dangTai() && !loi()) {
     <!-- ---- Thẻ số liệu ---- -->
-    <div class="the-so">
-      @for (t of theSoLieu(); track t.khoa) {
-        <div class="the">
-          <div class="the-dau">
-            <span class="the-nhan">{{ t.label }}</span>
-            <span class="material-icons the-icon">{{ iconThe(t.khoa) }}</span>
+    @if (theSoLieu().length === 0) {
+      <app-empty-state
+        icon="insights"
+        title="Chưa có số liệu tổng quan"
+        description="Số liệu sẽ hiện khi hệ thống có sinh viên, lớp học phần và lượt đăng ký."
+      />
+    } @else {
+      <div class="the-so">
+        @for (t of theSoLieu(); track t.khoa) {
+          <div class="the" [class]="'the-' + sacThe(t.khoa)">
+            <div class="the-dau">
+              <span class="the-nhan">{{ t.label }}</span>
+              <span class="the-icon" aria-hidden="true">
+                <span class="material-icons">{{ iconThe(t.khoa) }}</span>
+              </span>
+            </div>
+            <div class="the-so-lieu">
+              {{ dinhDang(t.gia_tri) }}
+              @if (t.don_vi) {
+                <small>{{ t.don_vi }}</small>
+              }
+            </div>
+            <div class="the-phu" [class]="'huong-' + t.xu_huong">
+              <span class="material-icons">{{ iconXuHuong(t) }}</span>
+              {{ t.phu_chu }}
+            </div>
           </div>
-          <div class="the-so-lieu">
-            {{ t.gia_tri | number }}
-            @if (t.don_vi) {
-              <small>{{ t.don_vi }}</small>
-            }
-          </div>
-          <div class="the-phu" [class]="'huong-' + t.xu_huong">
-            <span class="material-icons">{{ iconXuHuong(t) }}</span>
-            {{ t.phu_chu }}
-          </div>
-        </div>
-      }
-    </div>
+        }
+      </div>
+    }
 
     <!-- ---- Hai cột: biểu đồ + lớp sắp mở ---- -->
     <div class="luoi-hai">
@@ -63,15 +73,42 @@
             description="Mở học kỳ và lớp học phần để bắt đầu theo dõi tỷ lệ lấp đầy."
           />
         } @else {
-          <div class="bieu-do">
-            @for (t of tyLeLapDay(); track t.hoc_ky) {
-              <div class="cot">
-                <div class="cot-gia-tri">{{ phanTram(t) }}%</div>
-                <div class="cot-vung">
-                  <div class="cot-than" [style.height]="chieuCaoCot(t)"></div>
+          <div class="bieu-do-wrap" [class.chi-cot]="!latLapDay()">
+            <!-- Cột: xu hướng 4 kỳ -->
+            <div class="bieu-do">
+              @for (t of tyLeLapDay(); track t.hoc_ky; let i = $index) {
+                <div class="cot">
+                  <div class="cot-gia-tri">{{ phanTram(t) }}%</div>
+                  <div class="cot-vung">
+                    <div
+                      class="cot-than"
+                      [style.height]="chieuCaoCot(t)"
+                      [style.background]="mauCot(i)"
+                    ></div>
+                  </div>
+                  <div class="cot-nhan" [title]="t.hoc_ky">{{ t.hoc_ky }}</div>
+                  <div class="cot-phu">{{ dinhDang(t.da_dang_ky) }}/{{ dinhDang(t.tong_cho) }}</div>
                 </div>
-                <div class="cot-nhan">{{ t.hoc_ky }}</div>
-                <div class="cot-phu">{{ t.da_dang_ky | number }}/{{ t.tong_cho | number }}</div>
+              }
+            </div>
+
+            <!-- Tròn: chỉ kỳ hiện tại, hai lát đã đăng ký / còn trống -->
+            @if (latLapDay(); as lat) {
+              <div class="bieu-do-tron">
+                <app-bieu-do-tron
+                  [lat]="lat"
+                  [nhanGiua]="phanTram(kyHienTai()!) + '%'"
+                  [phuGiua]="kyHienTai()!.hoc_ky"
+                  [moTa]="
+                    'Biểu đồ tròn tỷ lệ lấp đầy ' +
+                    kyHienTai()!.hoc_ky +
+                    ': ' +
+                    dinhDang(kyHienTai()!.da_dang_ky) +
+                    ' trên ' +
+                    dinhDang(kyHienTai()!.tong_cho) +
+                    ' chỗ đã đăng ký'
+                  "
+                />
               </div>
             }
           </div>

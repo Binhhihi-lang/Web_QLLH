@@ -16,6 +16,8 @@ class DiemDanhSeeder extends Seeder
     public function run(): void
     {
         if (DiemDanh::query()->exists()) {
+            $this->boSungDiemDanhChoDangKyThieu();
+
             return;
         }
 
@@ -46,6 +48,66 @@ class DiemDanhSeeder extends Seeder
             }
 
             foreach ($dangKys as $dangKy) {
+                $so = random_int(1, 100);
+                $trangThai = match (true) {
+                    $so <= 85 => DiemDanh::PRESENT,
+                    $so <= 90 => DiemDanh::LATE,
+                    $so <= 97 => DiemDanh::ABSENT,
+                    default => DiemDanh::EXCUSED,
+                };
+
+                $rows[] = [
+                    'buoi_hoc_id' => $buoi->id,
+                    'dang_ky_hoc_phan_id' => $dangKy->id,
+                    'trang_thai' => $trangThai,
+                    'ghi_chu' => null,
+                    'diem_danh_boi' => $gvId,
+                    'diem_danh_luc' => $bayGio,
+                    'created_at' => $bayGio,
+                    'updated_at' => $bayGio,
+                ];
+            }
+        }
+
+        foreach (array_chunk($rows, 2000) as $chunk) {
+            DiemDanh::query()->insert($chunk);
+        }
+    }
+
+    private function boSungDiemDanhChoDangKyThieu(): void
+    {
+        $dangKyThieu = DangKyHocPhan::query()
+            ->leftJoin('diem_danh', 'diem_danh.dang_ky_hoc_phan_id', '=', 'dang_ky_hoc_phan.id')
+            ->where('dang_ky_hoc_phan.trang_thai', DangKyHocPhan::ACTIVE)
+            ->whereNull('diem_danh.id')
+            ->get(['dang_ky_hoc_phan.id', 'dang_ky_hoc_phan.lop_hoc_phan_id']);
+
+        if ($dangKyThieu->isEmpty()) {
+            return;
+        }
+
+        $lopIds = $dangKyThieu->pluck('lop_hoc_phan_id')->unique()->values()->all();
+        $gvTheoLop = LopHocPhan::query()
+            ->join('giang_vien', 'giang_vien.id', '=', 'lop_hoc_phan.giang_vien_id')
+            ->whereIn('lop_hoc_phan.id', $lopIds)
+            ->pluck('giang_vien.user_id', 'lop_hoc_phan.id');
+
+        $buoiTheoLop = BuoiHoc::query()
+            ->whereIn('lop_hoc_phan_id', $lopIds)
+            ->where('trang_thai', BuoiHoc::DONE)
+            ->orderBy('id')
+            ->get(['id', 'lop_hoc_phan_id'])
+            ->groupBy('lop_hoc_phan_id');
+
+        $bayGio = now();
+        $rows = [];
+
+        foreach ($dangKyThieu as $dangKy) {
+            $gvId = $gvTheoLop[$dangKy->lop_hoc_phan_id] ?? null;
+            if ($gvId === null) {
+                continue;
+            }
+            foreach ($buoiTheoLop->get($dangKy->lop_hoc_phan_id, collect()) as $buoi) {
                 $so = random_int(1, 100);
                 $trangThai = match (true) {
                     $so <= 85 => DiemDanh::PRESENT,

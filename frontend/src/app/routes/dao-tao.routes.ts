@@ -58,7 +58,8 @@ export const daoTaoRoutes: Routes = [
   {
     path: 'giang-vien/:id',
     canActivate: [roleGuard],
-    data: { roles: ['ADMIN', 'GIANG_VIEN'], ownTeacherProfile: true },
+    // Sinh viên xem được chi tiết (chỉ khối liên hệ), giảng viên xem hồ sơ mình.
+    data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'], ownTeacherProfile: true },
     loadComponent: () =>
       import('@features/dao-tao/giang-vien/chi-tiet').then((m) => m.GiangVienChiTiet),
   },

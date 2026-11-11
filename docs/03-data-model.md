@@ -692,6 +692,21 @@ Trả `null` khi sinh viên không thuộc lớp hành chính hoặc lớp chưa
 
 Dùng để đối chiếu với `lop_hoc_phan.nam_thu` khi sinh viên tự đăng ký (BR-23).
 
+### 5.7. Index đề xuất cho dashboard TEACHER/STUDENT (chưa tạo)
+
+Đặc tả `GET /api/dashboard/teacher` và `/student` (`04-api-contract.md` §14) cần đọc
+`buoi_hoc` và `diem_danh` theo từng lớp/đăng ký. Ba index dưới đây **đề xuất**, chưa có
+migration — chi tiết lý do và kết luận "không bắt buộc" nằm ở `04-api-contract.md` §18b:
+
+| Bảng | Index đề xuất | Thay cho |
+|---|---|---|
+| `diem_danh` | `(dang_ky_hoc_phan_id, buoi_hoc_id)` | `index(dang_ky_hoc_phan_id)` hiện có |
+| `buoi_hoc` | `(lop_hoc_phan_id, trang_thai, ngay_hoc)` | `index(lop_hoc_phan_id, ngay_hoc)` hiện có |
+| `dang_ky_hoc_phan` | `(sinh_vien_id, trang_thai, lop_hoc_phan_id)` | `index(sinh_vien_id, trang_thai)` hiện có |
+
+> Bảng §3.9 và §3.10 ở trên ghi index **hiện có**. Khi user duyệt một index trong bảng này,
+> sửa luôn dòng index của bảng tương ứng ở §3 và ghi migration vào §6.
+
 ---
 
 ## 6. Thứ tự migration
@@ -745,17 +760,17 @@ Số liệu **thực tế sau khi chạy `php artisan migrate:fresh --seed`** ng
 | mon_hoc | 30 | 30 | |
 | hoc_ky | 3 | 3 | `2025-2` CLOSED · `2026-1` ONGOING · `2026-2` UPCOMING |
 | phong_hoc | 25 | 25 | |
-| lop_hoc_phan | 120 | 120 | 80 thuộc `2026-1` (OPEN), 40 thuộc `2025-2` (CLOSED) |
-| buoi_hoc | ~2.000 | 2.040 | 17 buổi/lớp, lịch hàng tuần |
-| dang_ky_hoc_phan | ~4.000 | 7.028 | 8 lớp/SV ở `2026-1`, 6 lớp/SV ở `2025-2` |
-| diem_danh | ~30.000 | 76.381 | chỉ cho buổi `DONE` |
-| diem | ~4.000 | 2.999 | chỉ học kỳ đã đóng `2025-2` |
+| lop_hoc_phan | 150 | 150 | 80 thuộc `2026-1` (OPEN), 40 thuộc `2025-2` (CLOSED), 30 thuộc `2026-2` (OPEN — để mở luồng đăng ký) |
+| buoi_hoc | ~2.500 | 2.550 | 17 buổi/lớp, lịch hàng tuần |
+| dang_ky_hoc_phan | ~4.000 | 7.028 | 8 lớp/SV ở `2026-1`, 6 lớp/SV ở `2025-2`; `2026-2` **cố ý chưa có đăng ký** để demo đợt đăng ký |
+| diem_danh | ~30.000 | 76.381 | chỉ cho buổi `DONE` (toàn bộ buổi của `2026-2` còn `SCHEDULED` nên không có dòng nào) |
+| diem | ~4.000 | ~4.700 | `2025-2` (toàn bộ lớp đã đóng) + `2026-1` (chỉ lớp đã qua ≥ 8 buổi `DONE`) — kỳ đang chạy cần có điểm để dashboard giảng viên vẽ được "Điểm TB lớp phụ trách" |
 
 **Dữ liệu cố ý tạo để kiểm chứng nghiệp vụ:**
 - `LHP0001` (2026-1) đăng ký **đầy** 70/70 → dùng test `SECTION_FULL`.
 - 79 lớp còn lại của `2026-1` còn chỗ → dùng demo luồng đăng ký.
 - 39/40 lớp của `2025-2` đầy vì sức chứa nhỏ hơn nhu cầu — phản ánh học kỳ đã kết thúc.
-- Điểm chữ phân bố A=137, B=623, C=713, D=318, F=9 (tổng 1.800 dòng có điểm).
+- Điểm chữ phân bố theo `2025-2`; `2026-1` chỉ sinh điểm cho lớp đã qua đủ buổi, và **không** chốt điểm (chốt là thao tác của giảng viên).
 
 Tài khoản demo: `admin@example.com` / `password`, `giangvien@example.com` / `password`, `sinhvien@example.com` / `password`.
 Ngoài ra `admin2@example.com`, `admin3@example.com` cùng mật khẩu.

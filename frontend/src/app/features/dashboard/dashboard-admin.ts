@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DashboardService } from '@core/services/dashboard.service';
@@ -16,29 +15,46 @@ import { EmptyState } from '@shared/ui/empty-state';
 import { LoadingState } from '@shared/ui/loading';
 import { PageHeader } from '@shared/ui/page-header';
 import { StatusBadge, BadgeSac } from '@shared/ui/status-badge';
+import { BieuDoTron } from './bieu-do-tron';
+import {
+  dinhDangSoHienThi,
+  iconTheSoLieu,
+  iconXuHuong,
+  latLapDay,
+  mauCotBieuDo,
+  sacTheSoLieu,
+  tyLeLapDayPhanTram,
+} from './dashboard-tinh-toan';
 
 /**
  * Dashboard ADMIN (SCR-03).
  *
  * Bốn phần theo tài liệu: thẻ số liệu, tỷ lệ lấp đầy, lớp sắp mở, đăng ký
  * gần đây. Có đủ 4 trạng thái UI bắt buộc: loading, có dữ liệu, rỗng, lỗi.
+ *
+ * Kiểu dữ liệu vẫn import từ `core/mock/data/dashboard.mock` — nợ kiến trúc
+ * đã biết (kiểu hợp đồng nên nằm ở `features/dashboard/dashboard.model.ts`),
+ * chờ xử lý riêng để không phá build trong lượt này.
  */
 @Component({
   selector: 'app-dashboard-admin',
   standalone: true,
   imports: [
     RouterLink,
-    DecimalPipe,
     AppAlert,
     AppButton,
     AppCard,
+    BieuDoTron,
     EmptyState,
     LoadingState,
     PageHeader,
     StatusBadge,
   ],
   templateUrl: './dashboard-admin.html',
-  styleUrl: './dashboard-admin.css',
+  // `dashboard-chung.css` nạp TRƯỚC để `.dashboard-admin.css` vẫn thắng ở
+  // những chỗ hai file cùng khai (lưới, thanh tiến trình) — nó chỉ mang
+  // animation/keyframe dùng chung sang dashboard ADMIN.
+  styleUrls: ['./dashboard-chung.css', './dashboard-admin.css'],
 })
 export class DashboardAdminPage {
   private readonly service = inject(DashboardService);
@@ -51,6 +67,15 @@ export class DashboardAdminPage {
   readonly tyLeLapDay = computed(() => this.duLieu()?.ty_le_lap_day ?? []);
   readonly lopSapMo = computed(() => this.duLieu()?.lop_sap_mo ?? []);
   readonly dangKyGanDay = computed(() => this.duLieu()?.dang_ky_gan_day ?? []);
+
+  /** Kỳ hiện tại = phần tử cuối của mảng 4 kỳ gần nhất. */
+  readonly kyHienTai = computed(() => this.tyLeLapDay().at(-1) ?? null);
+
+  /**
+   * Lát của biểu đồ tròn — chỉ vẽ khi mảng có >= 2 kỳ (quy ước: một cột duy
+   * nhất trông như lỗi render). Hàm thuần nằm ở `dashboard-tinh-toan.ts`.
+   */
+  readonly latLapDay = computed(() => latLapDay(this.tyLeLapDay()));
 
   /** Tỷ lệ lấp đầy cao nhất trong 4 kỳ — dùng để chuẩn hoá chiều cao cột. */
   private readonly tyLeCaoNhat = computed(() =>
@@ -78,7 +103,7 @@ export class DashboardAdminPage {
   }
 
   phanTram(t: TyLeLapDay): number {
-    return t.tong_cho === 0 ? 0 : Math.round((t.da_dang_ky / t.tong_cho) * 100);
+    return tyLeLapDayPhanTram(t);
   }
 
   /** Chiều cao cột theo % của kỳ cao nhất, tối thiểu 6% để cột 0 vẫn thấy. */
@@ -86,18 +111,25 @@ export class DashboardAdminPage {
     return `${Math.max(6, Math.round((this.phanTram(t) / this.tyLeCaoNhat()) * 100))}%`;
   }
 
+  /** Màu cột luân phiên tím / teal / xanh chính / đỏ — cùng hàm với 2 dashboard kia. */
+  mauCot(chiSo: number): string {
+    return mauCotBieuDo(chiSo);
+  }
+
+  dinhDang(giaTri: number | null | undefined): string {
+    return dinhDangSoHienThi(giaTri);
+  }
+
+  sacThe(khoa: string): string {
+    return sacTheSoLieu(khoa);
+  }
+
   iconThe(khoa: string): string {
-    const map: Record<string, string> = {
-      sinh_vien: 'school',
-      lop_hoc_phan: 'class',
-      dang_ky: 'how_to_reg',
-      cho_dang_ky: 'event_seat',
-    };
-    return map[khoa] ?? 'insights';
+    return iconTheSoLieu(khoa);
   }
 
   iconXuHuong(t: TheSoLieu): string {
-    return t.xu_huong === 'len' ? 'trending_up' : t.xu_huong === 'xuong' ? 'trending_down' : 'remove';
+    return iconXuHuong(t);
   }
 
   nhanTrangThaiDangKy(t: DangKyGanDay): string {

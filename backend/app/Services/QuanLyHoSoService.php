@@ -36,7 +36,7 @@ class QuanLyHoSoService
                 'trang_thai' => $trangThai,
             ]);
 
-            return [$sinhVien->load(['lopHanhChinh', 'user']), $matKhau];
+            return [$sinhVien->load(['lopHanhChinh.nganh', 'user']), $matKhau];
         });
     }
 
@@ -79,7 +79,7 @@ class QuanLyHoSoService
                 $this->sauKhiDoiTrangThai($sinhVien, $trangThaiCu, $duLieu['trang_thai']);
             }
 
-            return $sinhVien->fresh(['lopHanhChinh', 'user']);
+            return $sinhVien->fresh(['lopHanhChinh.nganh', 'user']);
         });
     }
 
@@ -110,7 +110,7 @@ class QuanLyHoSoService
             $sinhVien->user->update(['trang_thai' => $trangThai]);
             $this->sauKhiDoiTrangThai($sinhVien, $cu, $trangThai);
 
-            return $sinhVien->fresh(['lopHanhChinh', 'user']);
+            return $sinhVien->fresh(['lopHanhChinh.nganh', 'user']);
         });
     }
 

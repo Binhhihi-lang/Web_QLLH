@@ -24,14 +24,14 @@
 .the-so {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 
 .the {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 14px 16px;
+  padding: 10px 14px;
   box-shadow: var(--shadow-sm);
   min-width: 0;
 }
@@ -49,11 +49,48 @@
   color: var(--color-ink-muted);
 }
 
+/*
+ * Nền icon theo `khoa` của thẻ. Bốn màu này KHÔNG phải trạng thái — chúng chỉ
+ * để bốn thẻ không trông như bốn bản sao của nhau. Màu chữ trên nền nhạt lấy
+ * cặp `on-*-soft` đã đo WCAG AA, không tự chọn.
+ */
 .the-icon {
-  font-size: 20px;
-  color: var(--color-primary);
-  opacity: 0.75;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
   flex: none;
+}
+
+.the-icon .material-icons {
+  font-size: 19px;
+}
+
+.the-primary .the-icon {
+  background: var(--color-primary-soft);
+  color: var(--color-on-primary-soft);
+}
+
+.the-chart-1 .the-icon {
+  background: var(--color-chart-1-soft);
+  color: var(--color-on-chart-1-soft);
+}
+
+.the-chart-2 .the-icon {
+  background: var(--color-chart-2-soft);
+  color: var(--color-on-chart-2-soft);
+}
+
+.the-danger .the-icon {
+  background: var(--color-danger-soft);
+  color: var(--color-on-danger-soft);
+}
+
+.the-info .the-icon {
+  background: var(--color-info-soft);
+  color: var(--color-on-info-soft);
 }
 
 .the-so-lieu {
@@ -122,7 +159,19 @@
   text-decoration: underline;
 }
 
-/* ================= Biểu đồ cột ================= */
+/* ================= Biểu đồ ================= */
+.bieu-do-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 200px);
+  gap: 20px;
+  align-items: center;
+}
+
+/* Không có doughnut (mảng < 2 kỳ) thì cột chiếm hết chiều ngang. */
+.bieu-do-wrap.chi-cot {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .bieu-do {
   display: flex;
   align-items: flex-end;
@@ -130,6 +179,11 @@
   gap: 12px;
   height: 210px;
   padding-top: 8px;
+  min-width: 0;
+}
+
+.bieu-do-tron {
+  min-width: 0;
 }
 
 .cot {
@@ -161,16 +215,23 @@
   width: 100%;
   background: var(--color-primary);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  transition: height var(--dur) var(--ease);
+  transition:
+    height var(--dur) var(--ease),
+    background var(--dur) var(--ease);
   min-height: 6px;
 }
 
+/* Nhãn kỳ dài ("HK1 2025-2026") cắt 1 dòng — cột hẹp mà nhãn tràn sẽ đẩy
+   cả hàng cột lệch nhau. Tên đầy đủ nằm ở `title`. */
 .cot-nhan {
   margin-top: 7px;
   font-size: var(--text-caption);
   font-weight: 600;
   color: var(--color-ink);
   text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -182,6 +243,12 @@
 }
 
 /* ================= Danh sách lớp ================= */
+/*
+ * Không đặt `max-height` + `overflow-y: auto`. Bản cũ giới hạn 240px trong khi
+ * 5 lớp cao 406px → khung cuộn lồng bên trong `main.noi-dung`, phải cuộn hai
+ * lần (đo trên trình duyệt thật 2026-11-11). Cùng cách chữa với dashboard
+ * giảng viên và sinh viên: card cao theo nội dung, cuộn là việc của trang.
+ */
 .danh-sach-lop {
   display: flex;
   flex-direction: column;
@@ -268,8 +335,16 @@
 }
 
 /* ================= Bảng ================= */
+/*
+ * Chỉ cuộn NGANG khi bảng rộng hơn khung. `overflow-y: clip` thay vì `auto`:
+ * khi trục x là `auto`, trình duyệt ép trục y thành `auto` bất kể khai gì, và
+ * `max-height: 240px` cũ biến khung thành vòng cuộn dọc thứ hai lồng trong
+ * `main.noi-dung` (đo 2026-11-11). `clip` không sinh thanh cuộn, không cắt nội
+ * dung vì khung không còn giới hạn chiều cao.
+ */
 .bang-cuon {
   overflow-x: auto;
+  overflow-y: clip;
 }
 
 table {
@@ -278,6 +353,9 @@ table {
 }
 
 thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   text-align: left;
   font-size: var(--text-caption);
   font-weight: 700;
@@ -285,13 +363,13 @@ thead th {
   text-transform: uppercase;
   color: var(--color-ink-muted);
   background: var(--color-surface-alt);
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
 }
 
 tbody td {
-  padding: 10px 12px;
+  padding: 7px 12px;
   border-bottom: 1px solid var(--color-border-soft);
   font-size: var(--text-small);
   color: var(--color-ink);
@@ -316,25 +394,66 @@ td.thoi-gian {
 }
 
 /* ================= Responsive ================= */
+/* 1180px: bốn thẻ không còn đủ chỗ cho số 4 chữ số + đơn vị. */
 @media (max-width: 1180px) {
   .the-so {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+/* 1020px: hai cột nội dung chính xếp dọc. */
 @media (max-width: 1020px) {
   .luoi-hai {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-@media (max-width: 620px) {
+/* 900px: cột + doughnut cạnh nhau bắt đầu chật — doughnut xuống dưới. */
+@media (max-width: 900px) {
+  .bieu-do-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .bieu-do-tron {
+    max-width: 260px;
+    margin: 0 auto;
+  }
+}
+
+/* 640px: nhãn thẻ và phụ chú dài bắt đầu xuống dòng nhiều. */
+@media (max-width: 640px) {
+  .dash {
+    gap: 12px;
+  }
+
+  .the {
+    padding: 12px 13px;
+  }
+
+  .the-so-lieu {
+    font-size: 23px;
+  }
+
+  .bieu-do {
+    height: 180px;
+    gap: 8px;
+  }
+
+  thead th,
+  tbody td {
+    padding: 8px 10px;
+  }
+}
+
+/* 600px: một cột thẻ, ẩn phụ chú cột để biểu đồ không tràn. */
+@media (max-width: 600px) {
   .the-so {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .bieu-do {
-    height: 170px;
+    height: 160px;
     gap: 6px;
   }
 
