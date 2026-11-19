@@ -54,11 +54,11 @@ interface LichSuDiemMock {
  * thì thêm ở đây, không đụng registry đào tạo của Đức Anh.
  */
 export class HocVuRegistry {
-  private readonly lopHocPhan = LOP_HOC_PHAN_MOCK.map((row) => ({
+  private readonly lopHocPhan: LopHocPhan[] = LOP_HOC_PHAN_MOCK.map((row) => ({
     ...row,
     mon_hoc: { ...row.mon_hoc },
     hoc_ky: { ...row.hoc_ky },
-    giang_vien: { ...row.giang_vien },
+    giang_vien: row.giang_vien ? { ...row.giang_vien } : null,
   }));
   private readonly diemDaLuu = new Map<number, DongDiem[]>();
   private readonly lichSuDiem = new Map<number, LichSuDiemMock[]>();
@@ -319,7 +319,6 @@ export class HocVuRegistry {
             id: row.id,
             label: `${row.ma_lop_hp} — ${row.mon_hoc.ten_mon}`,
             con_cho: Math.max(0, row.si_so_toi_da - row.si_so_hien_tai),
-            nam_thu: row.nam_thu,
           })),
       );
     }
@@ -431,8 +430,8 @@ export class HocVuRegistry {
     let result = rows;
     if (hocKyId) result = result.filter((row) => row.hoc_ky.id === Number(hocKyId));
     if (monHocId) result = result.filter((row) => row.mon_hoc.id === Number(monHocId));
-    if (giangVienId) result = result.filter((row) => row.giang_vien.id === Number(giangVienId));
-    result = filterBy(result, params, ['nam_thu', 'trang_thai']);
+    if (giangVienId) result = result.filter((row) => row.giang_vien?.id === Number(giangVienId));
+    result = filterBy(result, params, ['trang_thai']);
     if (params.get('con_cho') === 'true') {
       result = result.filter((row) => row.si_so_hien_tai < row.si_so_toi_da);
     }
@@ -454,7 +453,6 @@ export class HocVuRegistry {
       hoc_ky_id: Number(data['hoc_ky_id']),
       giang_vien_id: Number(data['giang_vien_id']),
       si_so_toi_da: Number(data['si_so_toi_da']),
-      nam_thu: data['nam_thu'] === null ? null : Number(data['nam_thu']),
       trang_thai: data['trang_thai'] as TrangThaiLopHocPhan,
     };
     const mon = MON_HOC_MOCK.find((row) => row.id === input.mon_hoc_id && row.trang_thai);
@@ -476,12 +474,6 @@ export class HocVuRegistry {
       errors['si_so_toi_da'] = ['Sĩ số tối đa phải từ 1 đến 500.'];
     } else if (current && input.si_so_toi_da < current.si_so_hien_tai) {
       errors['si_so_toi_da'] = ['Sĩ số tối đa không được nhỏ hơn sĩ số hiện tại.'];
-    }
-    if (
-      input.nam_thu !== null &&
-      (!Number.isInteger(input.nam_thu) || input.nam_thu < 1 || input.nam_thu > 6)
-    ) {
-      errors['nam_thu'] = ['Năm thứ phải từ 1 đến 6.'];
     }
     if (!['OPEN', 'CLOSED', 'CANCELLED'].includes(input.trang_thai)) {
       errors['trang_thai'] = ['Trạng thái lớp học phần không hợp lệ.'];
@@ -516,7 +508,6 @@ export class HocVuRegistry {
       giang_vien: { id: giangVien.id, ma_gv: giangVien.ma_gv, ho_ten: giangVien.ho_ten },
       si_so_toi_da: input.si_so_toi_da,
       si_so_hien_tai: current?.si_so_hien_tai ?? 0,
-      nam_thu: input.nam_thu,
       trang_thai: current?.trang_thai ?? input.trang_thai,
       da_chot_diem: current?.da_chot_diem ?? false,
       chot_diem_luc: current?.chot_diem_luc ?? null,

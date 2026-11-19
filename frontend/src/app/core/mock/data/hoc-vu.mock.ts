@@ -45,8 +45,6 @@ export const LOP_HOC_PHAN_MOCK: LopHocPhan[] = Array.from({ length: 34 }, (_, i)
     giang_vien: { id: gv.id, ma_gv: gv.ma_gv, ho_ten: gv.ho_ten },
     si_so_toi_da: toiDa,
     si_so_hien_tai: hienTai,
-    // Cứ 5 lớp thì 1 lớp dành riêng một năm thứ, còn lại mọi năm (BR-23).
-    nam_thu: (i + 1) % 5 === 0 ? (((i + 1) / 5) % 4) + 1 : null,
     trang_thai: hienTai >= toiDa ? 'CLOSED' : 'OPEN',
     da_chot_diem: false,
     chot_diem_luc: null,

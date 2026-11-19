@@ -41,7 +41,6 @@ class LopHocPhanResource extends JsonResource
             'si_so_toi_da' => $this->si_so_toi_da,
             'si_so_hien_tai' => $this->siSoHienTai(),
             'con_cho' => max(0, $this->si_so_toi_da - $this->siSoHienTai()),
-            'nam_thu' => $this->nam_thu,
             'trang_thai' => $this->trang_thai,
             'da_chot_diem' => $this->daChotDiem(),
             'chot_diem_luc' => $this->chot_diem_luc?->format('Y-m-d H:i:s'),

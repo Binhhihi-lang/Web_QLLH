@@ -35,12 +35,11 @@ class LopHocPhanController extends Controller
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'in:10,25,50,100'],
             'q' => ['sometimes', 'string', 'max:255'],
-            'sort_by' => ['sometimes', 'in:id,ma_lop_hp,si_so_toi_da,nam_thu,trang_thai'],
+            'sort_by' => ['sometimes', 'in:id,ma_lop_hp,si_so_toi_da,trang_thai'],
             'sort_dir' => ['sometimes', 'in:asc,desc'],
             'hoc_ky_id' => ['sometimes', 'integer'],
             'mon_hoc_id' => ['sometimes', 'integer'],
             'giang_vien_id' => ['sometimes', 'integer'],
-            'nam_thu' => ['sometimes', 'integer', 'between:1,6'],
             'trang_thai' => ['sometimes', Rule::in([LopHocPhan::OPEN, LopHocPhan::CLOSED, LopHocPhan::CANCELLED])],
             'con_cho' => ['sometimes', 'in:true,false,1,0'],
         ]);
@@ -79,7 +78,6 @@ class LopHocPhanController extends Controller
             ->when($request->filled('hoc_ky_id'), fn ($truyVan) => $truyVan->where('hoc_ky_id', $request->integer('hoc_ky_id')))
             ->when($request->filled('mon_hoc_id'), fn ($truyVan) => $truyVan->where('mon_hoc_id', $request->integer('mon_hoc_id')))
             ->when($request->filled('giang_vien_id'), fn ($truyVan) => $truyVan->where('giang_vien_id', $request->integer('giang_vien_id')))
-            ->when($request->filled('nam_thu'), fn ($truyVan) => $truyVan->where('nam_thu', $request->integer('nam_thu')))
             ->when($request->filled('trang_thai'), fn ($truyVan) => $truyVan->where('trang_thai', $request->string('trang_thai')->toString()))
             ->when($request->has('con_cho'), function ($truyVan) use ($request) {
                 $chiLayConCho = $request->boolean('con_cho');
@@ -105,6 +103,39 @@ class LopHocPhanController extends Controller
         $lop = $this->service->tao($request->validated(), $request->user()->id);
 
         return $this->success(new LopHocPhanResource($lop), 'Mở lớp học phần thành công.', 201);
+    }
+
+    /**
+     * Mở lớp hàng loạt theo chương trình đào tạo (2026-11-13).
+     *
+     * Chọn chương trình + kỳ thứ, hệ thống mở lớp cho TOÀN BỘ môn của kỳ đó —
+     * nhanh hơn mở lẻ từng môn. Mở lẻ vẫn còn (dùng cho học lại/nguyện vọng).
+     */
+    public function moLopTheoChuongTrinh(Request $request): JsonResponse
+    {
+        $duLieu = $request->validate([
+            'chuong_trinh_id' => ['required', 'integer', 'exists:chuong_trinh_dao_tao,id'],
+            'hoc_ky_id' => ['required', 'integer', 'exists:hoc_ky,id'],
+            'ky_thu' => ['nullable', 'integer', 'between:1,10'],
+            'giang_vien_id' => ['nullable', 'integer', 'exists:giang_vien,id'],
+            'si_so_toi_da' => ['required', 'integer', 'between:1,500'],
+            'cau_hinh_mon' => ['nullable', 'array'],
+            'cau_hinh_mon.*.mon_hoc_id' => ['required', 'integer', 'exists:mon_hoc,id'],
+            'cau_hinh_mon.*.giang_vien_id' => ['nullable', 'integer', 'exists:giang_vien,id'],
+            'cau_hinh_mon.*.si_so_toi_da' => ['nullable', 'integer', 'between:1,500'],
+            'cau_hinh_mon.*.lich' => ['nullable', 'array'],
+            'cau_hinh_mon.*.lich.*.thu' => ['required', 'integer', 'between:2,8'],
+            'cau_hinh_mon.*.lich.*.tiet_bat_dau' => ['required', 'integer', 'between:1,12'],
+            'cau_hinh_mon.*.lich.*.tiet_ket_thuc' => ['required', 'integer', 'between:1,12'],
+            'cau_hinh_mon.*.lich.*.phong_hoc_id' => ['required', 'integer', 'exists:phong_hoc,id'],
+        ]);
+
+        $ketQua = $this->service->moLopTheoChuongTrinh($duLieu, $request->user()->id);
+
+        return $this->success(
+            $ketQua,
+            sprintf('Đã mở %d lớp, bỏ qua %d môn đã có lớp.', $ketQua['tao'], $ketQua['bo_qua']),
+        );
     }
 
     public function show(LopHocPhan $lopHocPhan): JsonResponse

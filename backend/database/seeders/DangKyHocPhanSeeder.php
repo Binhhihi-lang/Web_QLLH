@@ -34,6 +34,10 @@ class DangKyHocPhanSeeder extends Seeder
             return;
         }
 
+        // Môn đã đăng ký của từng sinh viên, tích luỹ qua các học kỳ — để không
+        // sinh ra hai lớp cùng môn ở hai kỳ khác nhau (trái luật đăng ký hiện tại).
+        $monDaHocTheoSv = [];
+
         foreach ([['2026-1', 8], ['2025-2', 6]] as [$maHocKy, $soLopMoiSv]) {
             $hocKy = HocKy::query()->where('ma_hoc_ky', $maHocKy)->firstOrFail();
 
@@ -58,12 +62,16 @@ class DangKyHocPhanSeeder extends Seeder
 
             foreach ($sinhVienIds as $viTri => $sinhVienId) {
                 $monDaChon = [];
+                // Môn đã học ở KỲ KHÁC: không đăng ký lại — trừ khi đó là học
+                // lại có chủ đích (HocLaiSeeder lo riêng). Luật SUBJECT_ALREADY_PASSED
+                // chặn đăng ký lại môn đã đạt, nên seeder phải tôn trọng.
+                $monDaHoc = $monDaHocTheoSv[$sinhVienId] ?? [];
                 $batDau = ($viTri * 3) % $lopTheoMon->count();
 
                 for ($buoc = 0; $buoc < $lopTheoMon->count() && count($monDaChon) < $soLopMoiSv; $buoc++) {
                     $lop = $lopTheoMon[($batDau + $buoc) % $lopTheoMon->count()];
 
-                    if (isset($monDaChon[$lop->mon_hoc_id])) {
+                    if (isset($monDaChon[$lop->mon_hoc_id]) || isset($monDaHoc[$lop->mon_hoc_id])) {
                         continue;
                     }
 
@@ -73,6 +81,7 @@ class DangKyHocPhanSeeder extends Seeder
                     }
 
                     $monDaChon[$lop->mon_hoc_id] = true;
+                    $monDaHocTheoSv[$sinhVienId][$lop->mon_hoc_id] = true;
                     $soDangKy[$lop->id] = $daCo + 1;
 
                     $laDemo = $sinhVienId === $demoSvId;

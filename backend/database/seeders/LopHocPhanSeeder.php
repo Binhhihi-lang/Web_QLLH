@@ -2,21 +2,26 @@
 
 namespace Database\Seeders;
 
+use App\Models\ChuongTrinhDaoTao;
 use App\Models\GiangVien;
 use App\Models\HocKy;
+use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\MonHoc;
 use Illuminate\Database\Seeder;
 
 class LopHocPhanSeeder extends Seeder
 {
-    // Các mã thứ tự lớp ($dem) gán cố định cho giảng viên demo (giangvien@example.com)
-    // trải đều cả 3 học kỳ: 2026-1 (1..80), 2025-2 (81..120), 2026-2 (121..150).
-    private const LOP_CUA_GV_DEMO = [1, 2, 61, 62, 63, 81, 82, 101, 102, 121, 122, 123];
-
     /**
-     * 150 lớp học phần: 80 thuộc 2026-1 (đang diễn ra), 40 thuộc 2025-2 (đã đóng),
-     * 30 thuộc 2026-2 (sắp diễn ra, đang mở đợt đăng ký).
+     * Lớp học phần sinh THEO CHƯƠNG TRÌNH ĐÀO TẠO, không phải theo số lượng cố định.
+     *
+     * Số lớp phụ thuộc số môn mỗi kỳ trong chương trình:
+     * - 2025-2 (đã đóng): khóa K66, kỳ 1–6
+     * - 2026-1 (đang chạy): khóa K67, kỳ 7–10
+     * - 2026-2 (sắp tới, mở đợt): khóa K67, kỳ 7–10
+     *
+     * Giảng viên demo được gán cho mỗi lớp thứ 7 để có đủ dữ liệu test cho vai
+     * giảng viên (không còn phụ thuộc danh sách chỉ số cố định).
      */
     public function run(): void
     {
@@ -31,35 +36,72 @@ class LopHocPhanSeeder extends Seeder
             return;
         }
 
-        $monIds = MonHoc::query()->orderBy('id')->pluck('id')->all();
         $gvIds = GiangVien::query()->orderBy('id')->pluck('id')->all();
+        $maMonTheoId = MonHoc::query()->pluck('ma_mon', 'id');
+        $gvDemoId = $gvDemo?->id;
 
         $bayGio = now();
         $rows = [];
         $dem = 0;
 
-        foreach ([$hocKyDangDienRa->id => 80, $hocKyDaDong->id => 40, $hocKySapToi->id => 30] as $hocKyId => $soLuong) {
-            for ($i = 1; $i <= $soLuong; $i++) {
-                $dem++;
-                $rows[] = [
-                    'ma_lop_hp' => sprintf('LHP%04d', $dem),
-                    'mon_hoc_id' => $monIds[($dem - 1) % count($monIds)],
-                    'hoc_ky_id' => $hocKyId,
-                    'giang_vien_id' => ($gvDemo && in_array($dem, self::LOP_CUA_GV_DEMO, true))
-                        ? $gvDemo->id
-                        : $gvIds[($dem - 1) % count($gvIds)],
-                    'si_so_toi_da' => [60, 70, 80, 90][$dem % 4],
-                    // Cứ 5 lớp thì 1 lớp dành riêng cho một năm thứ (BR-23);
-                    // còn lại null = mọi năm, giống môn đại cương.
-                    'nam_thu' => $dem % 5 === 0 ? (($dem / 5) % 4) + 1 : null,
-                    'trang_thai' => ($hocKyId === $hocKyDaDong->id || $hocKyId === $hocKyDangDienRa->id)
-                        ? LopHocPhan::CLOSED
-                        : LopHocPhan::OPEN,
-                    'created_at' => $bayGio,
-                    'updated_at' => $bayGio,
-                ];
+        // Mở lớp THEO CHƯƠNG TRÌNH ĐÀO TẠO (2026-11-13) thay vì lặp ngẫu nhiên.
+        //
+        // Vì sao: nghiệp vụ đúng là "chọn chương trình của một khóa, mở cả kỳ cho
+        // khóa đó" — các môn đã nằm sẵn trong chương trình khung. Sinh mã lớp
+        // `<mã lớp hành chính>-<mã môn>` cho từng môn thuộc đúng kỳ thứ.
+        //
+        // Hai học kỳ đã qua/đang chạy lấy chương trình của khóa cũ hơn để dữ liệu
+        // nhất quán với lớp hành chính đã có.
+        $moLopTheoKy = function (HocKy $hocKy, string $khoaHoc, array $kyThus, string $trangThai) use (&$rows, &$dem, $maMonTheoId, $gvIds, $gvDemoId, $bayGio): void {
+            $chuongTrinhs = ChuongTrinhDaoTao::query()
+                ->with(['nganh', 'mon'])
+                ->where('khoa_hoc', $khoaHoc)
+                ->where('trang_thai', true)
+                ->orderBy('id')
+                ->get();
+
+            foreach ($chuongTrinhs as $ct) {
+                $lopHanhChinh = LopHanhChinh::query()
+                    ->where('nganh_id', $ct->nganh_id)
+                    ->where('khoa_hoc', $khoaHoc)
+                    ->orderBy('ma_lop')
+                    ->first();
+
+                if ($lopHanhChinh === null) {
+                    continue;
+                }
+
+                $monTrongKy = $ct->mon->filter(fn ($m) => in_array($m->ky_thu, $kyThus, true));
+
+                foreach ($monTrongKy as $dong) {
+                    $maMon = $maMonTheoId[$dong->mon_hoc_id] ?? null;
+                    if ($maMon === null) {
+                        continue;
+                    }
+
+                    $dem++;
+                    $rows[] = [
+                        'ma_lop_hp' => sprintf('%s-%s', $lopHanhChinh->ma_lop, $maMon),
+                        'mon_hoc_id' => $dong->mon_hoc_id,
+                        'hoc_ky_id' => $hocKy->id,
+                        'giang_vien_id' => ($gvDemoId !== null && $dem % 7 === 0)
+                            ? $gvDemoId
+                            : $gvIds[($dem - 1) % count($gvIds)],
+                        'si_so_toi_da' => [60, 70, 80, 90][$dem % 4],
+                        'trang_thai' => $trangThai,
+                        'created_at' => $bayGio,
+                        'updated_at' => $bayGio,
+                    ];
+                }
             }
-        }
+        };
+
+        // 2025-2 (đã đóng): khóa K66, kỳ 1–6 của chương trình.
+        $moLopTheoKy($hocKyDaDong, 'K66', [1, 2, 3, 4, 5, 6], LopHocPhan::CLOSED);
+        // 2026-1 (đang chạy): khóa K67, kỳ 7–10.
+        $moLopTheoKy($hocKyDangDienRa, 'K67', [7, 8, 9, 10], LopHocPhan::CLOSED);
+        // 2026-2 (sắp tới, đang mở đợt): khóa K67, kỳ 7–10 — lớp OPEN để đăng ký.
+        $moLopTheoKy($hocKySapToi, 'K67', [7, 8, 9, 10], LopHocPhan::OPEN);
 
         foreach (array_chunk($rows, 50) as $chunk) {
             LopHocPhan::query()->insert($chunk);
@@ -81,10 +123,21 @@ class LopHocPhanSeeder extends Seeder
             ->update(['trang_thai' => LopHocPhan::OPEN]);
 
         if ($gvDemo !== null) {
-            $maLopDemo = array_map(fn (int $so) => sprintf('LHP%04d', $so), self::LOP_CUA_GV_DEMO);
-            LopHocPhan::query()
-                ->whereIn('ma_lop_hp', $maLopDemo)
-                ->update(['giang_vien_id' => $gvDemo->id]);
+            // Gán giảng viên demo cho một phần lớp của kỳ đang chạy để có dữ liệu
+            // test cho vai giảng viên. Mỗi lớp thứ 7, giống cách `run()` làm.
+            $idCuaGvDemo = LopHocPhan::query()
+                ->where('hoc_ky_id', $hocKyDangDienRa->id)
+                ->orderBy('id')
+                ->pluck('id')
+                ->filter(fn ($id, $viTri) => ($viTri + 1) % 7 === 0)
+                ->values()
+                ->all();
+
+            if ($idCuaGvDemo !== []) {
+                LopHocPhan::query()
+                    ->whereIn('id', $idCuaGvDemo)
+                    ->update(['giang_vien_id' => $gvDemo->id]);
+            }
         }
     }
 }

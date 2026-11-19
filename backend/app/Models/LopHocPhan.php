@@ -27,7 +27,6 @@ class LopHocPhan extends Model
         'hoc_ky_id',
         'giang_vien_id',
         'si_so_toi_da',
-        'nam_thu',
         'trang_thai',
     ];
 
@@ -35,7 +34,6 @@ class LopHocPhan extends Model
     {
         return [
             'si_so_toi_da' => 'integer',
-            'nam_thu' => 'integer',
             'chot_diem_luc' => 'datetime',
         ];
     }

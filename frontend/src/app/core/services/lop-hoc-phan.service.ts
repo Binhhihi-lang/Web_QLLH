@@ -14,7 +14,6 @@ export interface BoLocLopHocPhan extends ThamSoDanhSach {
   hoc_ky_id?: number;
   mon_hoc_id?: number;
   giang_vien_id?: number;
-  nam_thu?: number;
   trang_thai?: TrangThaiLopHocPhan;
   con_cho?: boolean;
 }
@@ -76,6 +75,18 @@ export class LopHocPhanService {
   tao(data: LopHocPhanInput): Observable<LopHocPhan> {
     return this.http
       .post<{ data: LopHocPhan }>(`${this.goc}/sections`, data)
+      .pipe(map((response) => response.data));
+  }
+
+  /**
+   * Mở lớp hàng loạt theo chương trình đào tạo (2026-11-13).
+   *
+   * Chọn chương trình + kỳ thứ, backend mở lớp cho toàn bộ môn của kỳ đó.
+   * Môn nào đã có lớp trong kỳ thì bỏ qua, nên gọi lại an toàn.
+   */
+  moLopTheoChuongTrinh(yeuCau: MoLopTheoChuongTrinhInput): Observable<KetQuaMoLop> {
+    return this.http
+      .post<{ data: KetQuaMoLop }>(`${this.goc}/sections/open-by-curriculum`, yeuCau)
       .pipe(map((response) => response.data));
   }
 
@@ -141,13 +152,50 @@ export interface TuyChon {
   id: number;
   label: string;
 }
+export interface DongLichMonInput {
+  thu: number;
+  tiet_bat_dau: number;
+  tiet_ket_thuc: number;
+  phong_hoc_id: number;
+}
+
+export interface CauHinhMonInput {
+  mon_hoc_id: number;
+  giang_vien_id?: number | null;
+  si_so_toi_da?: number | null;
+  lich?: DongLichMonInput[];
+}
+
+export interface MoLopTheoChuongTrinhInput {
+  chuong_trinh_id: number;
+  hoc_ky_id: number;
+  ky_thu?: number | null;
+  giang_vien_id?: number | null;
+  si_so_toi_da: number;
+  cau_hinh_mon?: CauHinhMonInput[];
+}
+
+export interface KetQuaMoLopChiTiet {
+  ma_mon: string;
+  ten_mon: string;
+  bat_buoc?: boolean;
+  ket_qua: 'THANH_CONG' | 'BO_QUA';
+  ma_lop_hp?: string;
+  ly_do?: string;
+}
+
+export interface KetQuaMoLop {
+  tao: number;
+  bo_qua: number;
+  chi_tiet: KetQuaMoLopChiTiet[];
+}
+
 export interface LopHocPhanInput {
   ma_lop_hp: string;
   mon_hoc_id: number;
   hoc_ky_id: number;
   giang_vien_id: number;
   si_so_toi_da: number;
-  nam_thu: number | null;
   trang_thai: TrangThaiLopHocPhan;
 }
 export interface SinhVienLop {

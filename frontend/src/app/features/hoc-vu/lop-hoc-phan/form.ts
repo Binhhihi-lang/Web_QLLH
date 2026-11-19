@@ -29,11 +29,23 @@ interface DongLichNhap {
   imports: [FormsModule, RouterLink, AppAlert, AppButton, ChonTimKiem, DateInput, PageHeader],
   template: `
     <app-page-header
-      [title]="laSua() ? 'Sửa lớp học phần' : 'Mở lớp học phần'"
-      description="Gán môn học, học kỳ, giảng viên, giới hạn sĩ số và xếp lịch học."
+      [title]="laSua() ? 'Sửa lớp học phần' : 'Mở lớp lẻ (nguyện vọng)'"
+      [description]="laSua() ? 'Cập nhật môn học, học kỳ, giảng viên, sĩ số và trạng thái lớp.' : 'Dành cho lớp học lại, học vượt, cải thiện hoặc lớp nguyện vọng phát sinh ngoài chương trình khung.'"
     />
     @if (loi()) {
       <app-alert muc="danger">{{ loi() }}</app-alert>
+    }
+    @if (!laSua()) {
+      <div class="hop-huong-dan-lop-le">
+        <span class="material-icons" aria-hidden="true">info</span>
+        <div>
+          <strong>Quy chuẩn mở lớp lẻ (nguyện vọng / học lại):</strong>
+          <p>
+            Mã lớp có định dạng <code>LOPNV</code> + số thứ tự viết liền (ví dụ: <code>LOPNV01</code>, <code>LOPNV02</code>...).
+            Thời hạn học và lịch buổi được tự động cấu hình theo học kỳ hoặc tùy chỉnh cho các đợt học tăng cường ngắn hạn.
+          </p>
+        </div>
+      </div>
     }
     @if (dangTai()) {
       <p class="loading" role="status">Đang tải lớp học phần…</p>
@@ -41,14 +53,24 @@ interface DongLichNhap {
       <form class="form" (ngSubmit)="luu()" #f="ngForm">
         <div class="luoi">
           <label>
-            Mã lớp học phần *
+            <div class="tieu-de-ma">
+              <span>Mã lớp học phần *</span>
+              @if (!laSua()) {
+                <button type="button" class="nut-tao-ma" (click)="taoMaLopLe()">
+                  Sinh mã LOPNV
+                </button>
+              }
+            </div>
             <input
               name="ma"
               required
-              maxlength="50"
+              maxlength="30"
               [(ngModel)]="data.ma_lop_hp"
-              placeholder="VD: INT2203-HK1-2026-01"
+              placeholder="VD: LOPNV01"
             />
+            @if (!laSua()) {
+              <small class="chu-thich-ma">Quy chuẩn lớp lẻ: <b>LOPNV</b> + số thứ tự (không dấu gạch dưới).</small>
+            }
           </label>
           <label>
             Học kỳ *
@@ -95,15 +117,6 @@ interface DongLichNhap {
               step="1"
               [(ngModel)]="data.si_so_toi_da"
             />
-          </label>
-          <label>
-            Năm thứ
-            <select name="nam-thu" [(ngModel)]="data.nam_thu">
-              <option [ngValue]="null">Mọi năm</option>
-              @for (year of [1, 2, 3, 4, 5, 6]; track year) {
-                <option [ngValue]="year">Năm {{ year }}</option>
-              }
-            </select>
           </label>
 
           @if (laSua()) {
@@ -374,6 +387,59 @@ interface DongLichNhap {
     .loading {
       color: var(--color-ink-muted);
     }
+    .hop-huong-dan-lop-le {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-small);
+      color: var(--color-ink);
+    }
+    .hop-huong-dan-lop-le .material-icons {
+      color: var(--color-primary);
+      font-size: 20px;
+      margin-top: 2px;
+    }
+    .hop-huong-dan-lop-le p {
+      margin: 4px 0 0;
+      color: var(--color-ink-muted);
+      line-height: 1.5;
+    }
+    .hop-huong-dan-lop-le code {
+      font-family: var(--font-mono, ui-monospace, monospace);
+      background: var(--color-surface);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border-soft);
+      font-weight: 600;
+    }
+    .tieu-de-ma {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nut-tao-ma {
+      background: transparent;
+      border: none;
+      color: var(--color-primary);
+      font-size: var(--text-caption);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px;
+      text-decoration: underline;
+    }
+    .nut-tao-ma:hover {
+      color: var(--color-primary-hover, var(--color-primary));
+    }
+    .chu-thich-ma {
+      font-size: var(--text-caption);
+      color: var(--color-ink-muted);
+      font-weight: 400;
+    }
     @media (max-width: 720px) {
       .form {
         padding: 16px;
@@ -425,7 +491,6 @@ export class LopHocPhanForm {
     hoc_ky_id: 0,
     giang_vien_id: 0,
     si_so_toi_da: 40,
-    nam_thu: null,
     trang_thai: 'OPEN',
   };
 
@@ -464,6 +529,16 @@ export class LopHocPhanForm {
     if (this.id !== null) this.taiLop(this.id);
   }
 
+  taoMaLopLe(): void {
+    if (!this.data.ma_lop_hp || !this.data.ma_lop_hp.startsWith('LOPNV')) {
+      this.data.ma_lop_hp = 'LOPNV01';
+      return;
+    }
+    const soHienTai = parseInt(this.data.ma_lop_hp.replace('LOPNV', ''), 10);
+    const soTiep = isNaN(soHienTai) ? 1 : soHienTai + 1;
+    this.data.ma_lop_hp = `LOPNV${String(soTiep).padStart(2, '0')}`;
+  }
+
   hopLe(): boolean {
     const coBan =
       !!this.data.ma_lop_hp.trim() &&
@@ -472,9 +547,7 @@ export class LopHocPhanForm {
       this.data.giang_vien_id > 0 &&
       Number.isInteger(this.data.si_so_toi_da) &&
       this.data.si_so_toi_da >= 1 &&
-      this.data.si_so_toi_da <= 500 &&
-      (this.data.nam_thu === null ||
-        (Number.isInteger(this.data.nam_thu) && this.data.nam_thu >= 1 && this.data.nam_thu <= 6));
+      this.data.si_so_toi_da <= 500;
 
     if (!coBan || this.laSua()) return coBan;
 
@@ -632,12 +705,11 @@ export class LopHocPhanForm {
         this.data.ma_lop_hp = row.ma_lop_hp;
         this.data.mon_hoc_id = row.mon_hoc.id;
         this.data.hoc_ky_id = row.hoc_ky.id;
-        this.data.giang_vien_id = row.giang_vien.id;
+        this.data.giang_vien_id = row.giang_vien?.id ?? 0;
         this.data.si_so_toi_da = row.si_so_toi_da;
-        this.data.nam_thu = row.nam_thu;
         this.data.trang_thai = row.trang_thai;
         this.nhanMon.set(`${row.mon_hoc.ma_mon} · ${row.mon_hoc.ten_mon}`);
-        this.nhanGiangVien.set(`${row.giang_vien.ho_ten}`);
+        this.nhanGiangVien.set(row.giang_vien ? `${row.giang_vien.ho_ten}` : '');
         this.dangTai.set(false);
       },
       error: () => {

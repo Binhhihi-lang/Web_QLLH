@@ -4,12 +4,15 @@ namespace App\Services;
 
 use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
+use App\Models\ChuongTrinhDaoTao;
+use App\Models\ChuongTrinhMon;
 use App\Models\DangKyHocPhan;
 use App\Models\Diem;
 use App\Models\DiemDanh;
 use App\Models\GiangVien;
 use App\Models\HocKy;
 use App\Models\LichSuDiem;
+use App\Models\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\NhatKy;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +26,10 @@ use LogicException;
  */
 class QuanLyLopHocPhanService
 {
-    public function __construct(private readonly QuanLyCauHinhService $cauHinhService) {}
+    public function __construct(
+        private readonly QuanLyCauHinhService $cauHinhService,
+        private readonly ?QuanLyBuoiHocService $buoiHocService = null,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $duLieu
@@ -47,6 +53,197 @@ class QuanLyLopHocPhanService
 
             // fresh() để lấy `trang_thai` do DB gán mặc định khi payload không gửi lên.
             return $lop->fresh()->load($this->quanHeCanThiet());
+        });
+    }
+
+    /**
+     * Mở lớp hàng loạt theo chương trình đào tạo (2026-11-13).
+     *
+     * Vì sao có method này: mở lớp bằng tay từng môn rất chậm — một khóa × một kỳ
+     * có thể 3-5 môn, mỗi môn một lớp. Chọn chương trình rồi mở cả lô là thao tác
+     * chính; mở lẻ từng môn chỉ dành cho học lại/nguyện vọng.
+     *
+     * Sinh mã lớp `<mã lớp hành chính>-<mã môn>` cho từng môn thuộc `ky_thu` đã chọn.
+     * Môn nào đã có lớp trong kỳ đó thì bỏ qua (chạy lại được).
+     *
+     * @param  array{chuong_trinh_id: int, hoc_ky_id: int, ky_thu?: int|null, giang_vien_id?: int|null, si_so_toi_da: int}  $duLieu
+     * @return array{tao: int, bo_qua: int, chi_tiet: array<int, array<string, mixed>>}
+     */
+    public function moLopTheoChuongTrinh(array $duLieu, int $nguoiThucHienId): array
+    {
+        return DB::transaction(function () use ($duLieu, $nguoiThucHienId) {
+            $hocKy = HocKy::query()->findOrFail($duLieu['hoc_ky_id']);
+            $this->chanKhiHocKyDaDong($hocKy);
+
+            $chuongTrinh = ChuongTrinhDaoTao::query()
+                ->with('nganh')
+                ->findOrFail($duLieu['chuong_trinh_id']);
+
+            // Lớp hành chính của đúng ngành + khóa này — dùng để sinh mã lớp.
+            $lopHanhChinh = LopHanhChinh::query()
+                ->where('nganh_id', $chuongTrinh->nganh_id)
+                ->where('khoa_hoc', $chuongTrinh->khoa_hoc)
+                ->orderBy('ma_lop')
+                ->first();
+
+            if ($lopHanhChinh === null) {
+                throw new LoiNghiepVu(
+                    'NO_ADMIN_CLASS',
+                    'Chưa có lớp hành chính nào cho ngành và khóa của chương trình này.',
+                    422,
+                );
+            }
+
+            if (empty($duLieu['ky_thu'])) {
+                $namHocKy = $hocKy->namBatDauNamHoc();
+                $kyTrongNam = (int) $hocKy->ky_thu;
+                $namNhapHoc = $lopHanhChinh->nam_nhap_hoc;
+
+                if ($kyTrongNam === 3) {
+                    throw new LoiNghiepVu(
+                        'SUMMER_SEMESTER_MANUAL',
+                        'Học kỳ hè không áp dụng tiến độ CTĐT tự động. Vui lòng mở lớp theo nhu cầu (LOPNV).',
+                        422,
+                    );
+                }
+
+                if ($namHocKy === null || $namNhapHoc === null) {
+                    throw new LoiNghiepVu(
+                        'CANNOT_CALCULATE_TERM',
+                        'Không đủ dữ liệu năm học và năm nhập học để tự tính kỳ thứ.',
+                        422,
+                    );
+                }
+
+                if ($namHocKy < $namNhapHoc) {
+                    throw new LoiNghiepVu(
+                        'COHORT_NOT_ADMITTED',
+                        sprintf('Khóa %s chưa nhập học ở thời điểm học kỳ này (nhập học năm %d).', $chuongTrinh->khoa_hoc, $namNhapHoc),
+                        422,
+                    );
+                }
+
+                $kyThu = (($namHocKy - $namNhapHoc) * 2) + $kyTrongNam;
+                $soKyToiDa = $chuongTrinh->so_ky ?: ($chuongTrinh->so_nam ? (int) ($chuongTrinh->so_nam * 2) : 8);
+
+                if ($kyThu > $soKyToiDa) {
+                    throw new LoiNghiepVu(
+                        'COHORT_GRADUATED',
+                        sprintf('Khóa %s đã hoàn thành chương trình đào tạo (%d kỳ). Không mở lớp chính khóa.', $chuongTrinh->khoa_hoc, $soKyToiDa),
+                        422,
+                    );
+                }
+            } else {
+                $kyThu = (int) $duLieu['ky_thu'];
+            }
+
+            $monTrongKy = ChuongTrinhMon::query()
+                ->with('monHoc')
+                ->where('chuong_trinh_id', $chuongTrinh->id)
+                ->where('ky_thu', $kyThu)
+                ->orderBy('id')
+                ->get();
+
+            if ($monTrongKy->isEmpty()) {
+                throw new LoiNghiepVu(
+                    'NO_SUBJECT_IN_TERM',
+                    'Chương trình này không có môn nào ở kỳ thứ '.$kyThu.'.',
+                    422,
+                );
+            }
+
+            $daCo = LopHocPhan::query()
+                ->where('hoc_ky_id', $hocKy->id)
+                ->whereIn('mon_hoc_id', $monTrongKy->pluck('mon_hoc_id'))
+                ->pluck('mon_hoc_id')
+                ->flip()
+                ->all();
+
+            $tao = 0;
+            $boQua = 0;
+            $chiTiet = [];
+            $cauHinhMap = collect($duLieu['cau_hinh_mon'] ?? [])->keyBy('mon_hoc_id');
+
+            foreach ($monTrongKy as $dong) {
+                $mon = $dong->monHoc;
+
+                if ($mon === null) {
+                    continue;
+                }
+
+                if (isset($daCo[$mon->id])) {
+                    $boQua++;
+                    $chiTiet[] = [
+                        'ma_mon' => $mon->ma_mon,
+                        'ten_mon' => $mon->ten_mon,
+                        'bat_buoc' => (bool) $dong->bat_buoc,
+                        'ket_qua' => 'BO_QUA',
+                        'ly_do' => 'Môn đã có lớp trong học kỳ này.',
+                    ];
+
+                    continue;
+                }
+
+                $maLopHp = sprintf('%s-%s', $lopHanhChinh->ma_lop, $mon->ma_mon);
+
+                // Hậu tố nhóm nếu trùng (một môn đã mở 2 lớp cho cùng lớp HC).
+                $goc = $maLopHp;
+                $nhom = 1;
+                while (LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->where('ma_lop_hp', $maLopHp)->exists()) {
+                    $nhom++;
+                    $maLopHp = $goc.'-'.$nhom;
+                }
+
+                $ch = $cauHinhMap->get($mon->id);
+                $gvId = $ch['giang_vien_id'] ?? ($duLieu['giang_vien_id'] ?? null);
+                $siSo = !empty($ch['si_so_toi_da']) ? (int) $ch['si_so_toi_da'] : (int) $duLieu['si_so_toi_da'];
+
+                $lop = LopHocPhan::query()->create([
+                    'ma_lop_hp' => $maLopHp,
+                    'mon_hoc_id' => $mon->id,
+                    'hoc_ky_id' => $hocKy->id,
+                    'giang_vien_id' => $gvId,
+                    'si_so_toi_da' => $siSo,
+                    'trang_thai' => LopHocPhan::OPEN,
+                ]);
+
+                if (!empty($ch['lich']) && $this->buoiHocService !== null && $hocKy->ngay_bat_dau && $hocKy->ngay_ket_thuc) {
+                    foreach ($ch['lich'] as $dongLich) {
+                        try {
+                            $this->buoiHocService->sinhLich($lop, [
+                                'thu' => [$dongLich['thu']],
+                                'tiet_bat_dau' => $dongLich['tiet_bat_dau'],
+                                'tiet_ket_thuc' => $dongLich['tiet_ket_thuc'],
+                                'phong_hoc_id' => $dongLich['phong_hoc_id'],
+                                'tu_ngay' => $hocKy->ngay_bat_dau->toDateString(),
+                                'den_ngay' => $hocKy->ngay_ket_thuc->toDateString(),
+                            ], $nguoiThucHienId);
+                        } catch (\Throwable $e) {
+                            // Bỏ qua lỗi sinh lịch trùng nếu có, vẫn tạo lớp thành công
+                        }
+                    }
+                }
+
+                NhatKy::ghi(
+                    'lop_hoc_phan',
+                    $lop->id,
+                    NhatKy::TAO,
+                    null,
+                    $this->duLieuGhiNhatKy($lop),
+                    nguoiThucHienId: $nguoiThucHienId,
+                );
+
+                $tao++;
+                $chiTiet[] = [
+                    'ma_mon' => $mon->ma_mon,
+                    'ten_mon' => $mon->ten_mon,
+                    'bat_buoc' => (bool) $dong->bat_buoc,
+                    'ket_qua' => 'THANH_CONG',
+                    'ma_lop_hp' => $maLopHp,
+                ];
+            }
+
+            return ['tao' => $tao, 'bo_qua' => $boQua, 'chi_tiet' => $chiTiet];
         });
     }
 
@@ -724,7 +921,6 @@ class QuanLyLopHocPhanService
             'hoc_ky_id',
             'giang_vien_id',
             'si_so_toi_da',
-            'nam_thu',
             'trang_thai',
         ]);
     }

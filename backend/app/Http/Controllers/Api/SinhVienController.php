@@ -39,10 +39,10 @@ class SinhVienController extends Controller
             'ngay_sinh_den' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:ngay_sinh_tu'],
         ]);
 
-        // `lopHanhChinh.nganh` eager-load cùng lượt: `SinhVienResource` đọc
-        // `khoa_hoc`/`nam_nhap_hoc`/`nganh` của lớp, thiếu eager-load thì mỗi
+        // `lopHanhChinh.nganh.khoa` eager-load cùng lượt: `SinhVienResource` đọc
+        // `khoa_hoc`/`nam_nhap_hoc`/`nganh`/`khoa` của lớp, thiếu eager-load thì mỗi
         // dòng sinh ra thêm truy vấn ngành.
-        $query = SinhVien::query()->with(['lopHanhChinh.nganh', 'user']);
+        $query = SinhVien::query()->with(['lopHanhChinh.nganh.khoa', 'user']);
 
         if ($request->user()->laGiangVien()) {
             $giangVienId = $request->user()->giangVien?->id;
@@ -86,7 +86,7 @@ class SinhVienController extends Controller
     {
         Gate::authorize('xem', $sinhVien);
 
-        return $this->success(new SinhVienResource($sinhVien->load(['lopHanhChinh.nganh', 'user'])));
+        return $this->success(new SinhVienResource($sinhVien->load(['lopHanhChinh.nganh.khoa', 'user'])));
     }
 
     public function update(SinhVienRequest $request, SinhVien $sinhVien): JsonResponse

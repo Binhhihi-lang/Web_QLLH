@@ -50,7 +50,6 @@ class LopHocPhanTest extends TestCase
             'hoc_ky_id' => $this->hocKy->id,
             'giang_vien_id' => GiangVien::factory()->create(['trang_thai' => true])->id,
             'si_so_toi_da' => 40,
-            'nam_thu' => 3,
         ], $ghiDe);
     }
 
@@ -93,11 +92,9 @@ class LopHocPhanTest extends TestCase
 
         $this->putJson("/api/sections/{$lopId}", array_merge($duLieu, [
             'si_so_toi_da' => 60,
-            'nam_thu' => 4,
         ]))
             ->assertOk()
-            ->assertJsonPath('data.si_so_toi_da', 60)
-            ->assertJsonPath('data.nam_thu', 4);
+            ->assertJsonPath('data.si_so_toi_da', 60);
 
         $this->assertDatabaseHas('nhat_ky', [
             'doi_tuong_loai' => 'lop_hoc_phan',

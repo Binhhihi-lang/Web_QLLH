@@ -48,7 +48,6 @@ class LopHocPhanRequest extends FormRequest
             'giang_vien_id' => ['required', 'integer', Rule::exists('giang_vien', 'id')->whereNull('deleted_at')],
             'si_so_toi_da' => ['required', 'integer', 'between:1,1000'],
             // null = lớp phục vụ mọi năm thứ (BR-23).
-            'nam_thu' => ['nullable', 'integer', 'between:1,6'],
             'trang_thai' => ['sometimes', Rule::in([
                 LopHocPhan::OPEN,
                 LopHocPhan::CLOSED,

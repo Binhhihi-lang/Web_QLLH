@@ -11,6 +11,7 @@ use App\Models\LopHocPhan;
 use App\Models\MonHoc;
 use App\Models\Nganh;
 use App\Models\PhongHoc;
+use App\Models\TietHoc;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -50,13 +51,18 @@ class OptionController extends Controller
     {
         $data = HocKy::query()
             ->orderByDesc('ngay_bat_dau')
-            ->get(['id', 'ten_hoc_ky', 'nam_hoc', 'ngay_bat_dau', 'ngay_ket_thuc', 'trang_thai'])
+            ->get(['id', 'ma_hoc_ky', 'ten_hoc_ky', 'nam_hoc', 'ky_thu', 'ngay_bat_dau', 'ngay_ket_thuc', 'mo_dang_ky_luc', 'dong_dang_ky_luc', 'trang_thai'])
             ->map(fn (HocKy $h) => [
                 'id' => $h->id,
+                'ma_hoc_ky' => $h->ma_hoc_ky,
                 'label' => $h->ten_hoc_ky,
                 'nam_hoc' => $h->nam_hoc,
+                'ky_thu' => $h->ky_thu,
                 'ngay_bat_dau' => $h->ngay_bat_dau->toDateString(),
                 'ngay_ket_thuc' => $h->ngay_ket_thuc->toDateString(),
+                'mo_dang_ky_luc' => $h->mo_dang_ky_luc?->toIso8601String(),
+                'dong_dang_ky_luc' => $h->dong_dang_ky_luc?->toIso8601String(),
+                'dang_mo_dang_ky' => $h->dangMoDangKy(),
                 'trang_thai' => $h->trang_thai,
             ]);
 
@@ -132,10 +138,10 @@ class OptionController extends Controller
      */
     public function periods()
     {
-        $data = \App\Models\TietHoc::query()
+        $data = TietHoc::query()
             ->orderBy('so_tiet')
             ->get(['id', 'so_tiet', 'ca', 'gio_bat_dau', 'gio_ket_thuc'])
-            ->map(fn (\App\Models\TietHoc $t) => [
+            ->map(fn (TietHoc $t) => [
                 'id' => $t->id,
                 'so_tiet' => $t->so_tiet,
                 'ca' => $t->ca,
@@ -211,12 +217,11 @@ class OptionController extends Controller
             ->withCount(['dangKyHocPhan as so_dang_ky' => fn ($q) => $q->where('trang_thai', 'ACTIVE')])
             ->where('trang_thai', LopHocPhan::OPEN)
             ->orderBy('ma_lop_hp')
-            ->get(['id', 'ma_lop_hp', 'mon_hoc_id', 'si_so_toi_da', 'nam_thu'])
+            ->get(['id', 'ma_lop_hp', 'mon_hoc_id', 'si_so_toi_da'])
             ->map(fn (LopHocPhan $l) => [
                 'id' => $l->id,
                 'label' => $l->ma_lop_hp.' — '.($l->monHoc?->ten_mon ?? ''),
                 'con_cho' => max(0, $l->si_so_toi_da - $l->so_dang_ky),
-                'nam_thu' => $l->nam_thu,
             ]);
 
         return $this->success($data);

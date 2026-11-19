@@ -167,7 +167,7 @@ class DangKyHocPhanTest extends TestCase
             ->assertJsonPath('ma_loi', 'HAS_GRADE_OR_ATTENDANCE');
     }
 
-    public function test_chan_dang_ky_trung_mon_trung_lich_va_sai_nam_thu(): void
+    public function test_chan_dang_ky_trung_mon_va_trung_lich(): void
     {
         $hocKy = $this->hocKyTrongDot();
         $mon = MonHoc::factory()->create();
@@ -218,19 +218,12 @@ class DangKyHocPhanTest extends TestCase
             ->assertJsonPath('errors.trung_lich.0.buoi_da_dang_ky.gio_bat_dau', '09:00')
             ->assertJsonPath('errors.trung_lich.0.buoi_da_dang_ky.gio_ket_thuc', '10:00');
 
-        $hocKy->update(['nam_hoc' => '2025-2026']);
-        $lopSaiNam = LopHocPhan::factory()->create([
-            'hoc_ky_id' => $hocKy->id,
-            'nam_thu' => 4,
-        ]);
-        $this->postJson('/api/me/enrollments', ['lop_hoc_phan_id' => $lopSaiNam->id])
-            ->assertStatus(409)
-            ->assertJsonPath('ma_loi', 'WRONG_STUDY_YEAR');
-
+        // ADMIN đăng ký hộ vào một lớp KHÁC môn, không vướng trùng lịch.
+        $lopKhac = LopHocPhan::factory()->create(['hoc_ky_id' => $hocKy->id]);
         $this->actingAs($this->admin, 'sanctum')
             ->postJson('/api/enrollments', [
                 'sinh_vien_id' => $sinhVien->id,
-                'lop_hoc_phan_id' => $lopSaiNam->id,
+                'lop_hoc_phan_id' => $lopKhac->id,
             ])
             ->assertCreated();
 
@@ -239,6 +232,60 @@ class DangKyHocPhanTest extends TestCase
             'hanh_dong' => 'TAO',
             'nguoi_thuc_hien_id' => $this->admin->id,
         ]);
+    }
+
+    public function test_cho_hoc_lai_khi_mon_chua_dat(): void
+    {
+        $hocKyCu = HocKy::factory()->create(['trang_thai' => HocKy::CLOSED]);
+        $hocKyMoi = $this->hocKyTrongDot();
+        $mon = MonHoc::factory()->create();
+        $sinhVien = SinhVien::factory()->create();
+
+        // Lần học cũ: chưa đạt
+        $lopCu = LopHocPhan::factory()->create(['hoc_ky_id' => $hocKyCu->id, 'mon_hoc_id' => $mon->id]);
+        $dangKyCu = DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $sinhVien->id,
+            'lop_hoc_phan_id' => $lopCu->id,
+        ]);
+        Diem::factory()->create([
+            'dang_ky_hoc_phan_id' => $dangKyCu->id,
+            'ket_qua' => Diem::KHONG_DAT,
+            'diem_tong_ket' => 4.2,
+        ]);
+
+        // Học lại ở lớp khác của khóa dưới, cùng môn
+        $lopMoi = LopHocPhan::factory()->create(['hoc_ky_id' => $hocKyMoi->id, 'mon_hoc_id' => $mon->id]);
+
+        $this->actingAs($sinhVien->user, 'sanctum')
+            ->postJson('/api/me/enrollments', ['lop_hoc_phan_id' => $lopMoi->id])
+            ->assertCreated();
+    }
+
+    public function test_chan_hoc_lai_khi_mon_da_dat(): void
+    {
+        $hocKyCu = HocKy::factory()->create(['trang_thai' => HocKy::CLOSED]);
+        $hocKyMoi = $this->hocKyTrongDot();
+        $mon = MonHoc::factory()->create();
+        $sinhVien = SinhVien::factory()->create();
+
+        // Lần học cũ: đã đạt
+        $lopCu = LopHocPhan::factory()->create(['hoc_ky_id' => $hocKyCu->id, 'mon_hoc_id' => $mon->id]);
+        $dangKyCu = DangKyHocPhan::factory()->create([
+            'sinh_vien_id' => $sinhVien->id,
+            'lop_hoc_phan_id' => $lopCu->id,
+        ]);
+        Diem::factory()->create([
+            'dang_ky_hoc_phan_id' => $dangKyCu->id,
+            'ket_qua' => Diem::DAT,
+            'diem_tong_ket' => 7.5,
+        ]);
+
+        $lopMoi = LopHocPhan::factory()->create(['hoc_ky_id' => $hocKyMoi->id, 'mon_hoc_id' => $mon->id]);
+
+        $this->actingAs($sinhVien->user, 'sanctum')
+            ->postJson('/api/me/enrollments', ['lop_hoc_phan_id' => $lopMoi->id])
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'SUBJECT_ALREADY_PASSED');
     }
 
     public function test_dang_ky_lai_sau_huy_dung_lai_ban_ghi_cu(): void

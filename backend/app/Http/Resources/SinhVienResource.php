@@ -37,6 +37,11 @@ class SinhVienResource extends JsonResource
                     'id' => $this->lopHanhChinh->nganh->id,
                     'ma_nganh' => $this->lopHanhChinh->nganh->ma_nganh,
                     'ten_nganh' => $this->lopHanhChinh->nganh->ten_nganh,
+                    'khoa' => $this->lopHanhChinh->nganh->relationLoaded('khoa') && $this->lopHanhChinh->nganh->khoa !== null ? [
+                        'id' => $this->lopHanhChinh->nganh->khoa->id,
+                        'ma_khoa' => $this->lopHanhChinh->nganh->khoa->ma_khoa,
+                        'ten_khoa' => $this->lopHanhChinh->nganh->khoa->ten_khoa,
+                    ] : null,
                 ] : null,
             ]),
             'avatar_url' => $this->when(! $laGiangVien, $this->relationLoaded('user') ? $this->user?->avatar_url : null),

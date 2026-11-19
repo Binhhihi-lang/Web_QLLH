@@ -75,13 +75,19 @@ class DangKyHocPhanService
                 throw new LoiNghiepVu('DUPLICATE_ENROLLMENT', 'Sinh viên đã đăng ký lớp học phần này.');
             }
 
+            // Chỉ chặn KÍCH HOẠT LẠI đúng bản ghi cũ đã có điểm (BR-27): điểm
+            // đã gắn với `dang_ky_hoc_phan_id` đó, bật lại sẽ treo điểm cũ.
+            // Học lại đi qua LỚP KHÁC nên tạo đăng ký mới, không chạm nhánh này;
+            // điều kiện học lại do `kiemTraMonDaDat()` quyết định.
             if ($dangKy !== null && Diem::query()->where('dang_ky_hoc_phan_id', $dangKy->id)->exists()) {
-                throw new LoiNghiepVu('HAS_GRADE_OR_ATTENDANCE', 'Đăng ký cũ đã có điểm, không thể đăng ký lại.');
+                throw new LoiNghiepVu('HAS_GRADE_OR_ATTENDANCE', 'Đăng ký cũ đã có điểm, không thể kích hoạt lại.');
             }
 
             if ($lop->trang_thai !== LopHocPhan::OPEN) {
                 throw new LoiNghiepVu('SECTION_NOT_OPEN', 'Lớp học phần không nhận đăng ký.');
             }
+
+            $this->kiemTraMonDaDat($sinhVien, $lop);
 
             $dangKyCungMon = DangKyHocPhan::query()
                 ->where('sinh_vien_id', $sinhVien->id)
@@ -199,12 +205,30 @@ class DangKyHocPhanService
         if (! $adminOverride && ! $lop->hocKy->dangMoDangKy()) {
             throw new LoiNghiepVu('OUTSIDE_REGISTRATION', 'Hiện không trong đợt đăng ký của học kỳ này.');
         }
+    }
 
-        if (! $adminOverride && $lop->nam_thu !== null) {
-            $namThu = $sinhVien->namThuTrong($lop->hocKy);
-            if ($namThu !== null && $namThu !== $lop->nam_thu) {
-                throw new LoiNghiepVu('WRONG_STUDY_YEAR', 'Lớp dành cho năm thứ khác với năm thứ hiện tại của sinh viên.');
-            }
+    /**
+     * Chặn đăng ký lại môn đã ĐẠT. Môn CHƯA ĐẠT thì được đăng ký học lại —
+     * đó là toàn bộ mục đích của tab Học lại.
+     *
+     * Kiểm trên mọi đăng ký của sinh viên (mọi học kỳ), không chỉ đăng ký cùng
+     * lớp: học lại ở kỳ sau dùng lớp khác nên `dangKy` theo `lop_hoc_phan_id`
+     * không bắt được.
+     *
+     * `Diem::ket_qua` null (chưa chấm) coi như chưa đạt — chưa có kết luận thì
+     * không có lý do chặn.
+     */
+    private function kiemTraMonDaDat(SinhVien $sinhVien, LopHocPhan $lop): void
+    {
+        $daDat = DangKyHocPhan::query()
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->where('trang_thai', DangKyHocPhan::ACTIVE)
+            ->whereHas('lopHocPhan', fn ($query) => $query->where('mon_hoc_id', $lop->mon_hoc_id))
+            ->whereHas('diem', fn ($query) => $query->where('ket_qua', Diem::DAT))
+            ->exists();
+
+        if ($daDat) {
+            throw new LoiNghiepVu('SUBJECT_ALREADY_PASSED', 'Sinh viên đã đạt môn này, không thể đăng ký lại.');
         }
     }
 

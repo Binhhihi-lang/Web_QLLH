@@ -26,7 +26,6 @@ describe('LopHocPhanChiTiet — tab theo vai trò', () => {
     giang_vien: { id: 4, ma_gv: 'GV0004', ho_ten: 'Nguyễn Minh An' },
     si_so_toi_da: 40,
     si_so_hien_tai: 25,
-    nam_thu: null,
     trang_thai: 'OPEN',
     da_chot_diem: false,
     chot_diem_luc: null,
@@ -58,7 +57,7 @@ describe('LopHocPhanChiTiet — tab theo vai trò', () => {
       (a) => a.getAttribute('href') ?? '',
     );
 
-  it('SINH_VIEN chỉ thấy 4 tab, không có tab quản lý của lớp', async () => {
+  it('SINH_VIEN chỉ thấy 3 tab cơ bản, không có tab quản lý hay điểm danh/điểm', async () => {
     await taoTrang('SINH_VIEN');
 
     const href = hrefTab();
@@ -66,36 +65,19 @@ describe('LopHocPhanChiTiet — tab theo vai trò', () => {
       '/lop-hoc-phan/7',
       '/lop-hoc-phan/7/sinh-vien',
       '/lop-hoc-phan/7/lich-hoc',
-      '/diem-danh-cua-toi?hoc_ky_id=2',
-      '/diem-cua-toi?hoc_ky_id=2',
     ]);
 
-    // Không được có lối vào ba màn cả lớp: BE trả 403 cho sinh viên.
-    expect(href.some((h) => h.endsWith('/diem'))).toBe(false);
-    expect(href.some((h) => h.endsWith('/chuyen-can'))).toBe(false);
-    expect(href.some((h) => h.startsWith('/diem-danh?'))).toBe(false);
+    // Không được có lối vào các màn điểm/điểm danh/chuyên cần
+    expect(href.some((h) => h.includes('/diem'))).toBe(false);
+    expect(href.some((h) => h.includes('/chuyen-can'))).toBe(false);
+    expect(href.some((h) => h.includes('/diem-danh'))).toBe(false);
   });
 
-  it('SINH_VIEN có hai lối sang trang cá nhân, mang học kỳ của lớp', async () => {
-    await taoTrang('SINH_VIEN');
-
-    const href = hrefTab();
-    expect(href).toContain('/diem-danh-cua-toi?hoc_ky_id=2');
-    expect(href).toContain('/diem-cua-toi?hoc_ky_id=2');
-
-    const nhan = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('.tabs a'),
-    ).map((a) => a.textContent?.trim());
-    expect(nhan).toContain('Điểm danh của tôi');
-    expect(nhan).toContain('Điểm của tôi');
-  });
-
-  it('GIANG_VIEN giữ đủ 6 tab quản lý lớp', async () => {
+  it('GIANG_VIEN giữ đủ 5 tab quản lý lớp gồm thông tin, sinh viên, lịch, điểm danh và điểm', async () => {
     await taoTrang('GIANG_VIEN');
 
     const href = hrefTab();
-    expect(href.length).toBe(6);
-    expect(href).toContain('/lop-hoc-phan/7/chuyen-can');
+    expect(href.length).toBe(5);
     expect(href).toContain('/lop-hoc-phan/7/diem');
     expect(href).toContain('/diem-danh?lop_hoc_phan_id=7');
     // Không lẫn lối sang trang cá nhân của sinh viên.

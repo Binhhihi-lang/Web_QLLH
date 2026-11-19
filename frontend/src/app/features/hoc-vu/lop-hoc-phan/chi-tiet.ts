@@ -42,21 +42,8 @@ import { StatusBadge } from '@shared/ui/status-badge';
         <a class="active" [routerLink]="['/lop-hoc-phan', x.id]">Thông tin</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'sinh-vien']">Sinh viên</a>
         <a [routerLink]="['/lop-hoc-phan', x.id, 'lich-hoc']">Lịch học</a>
-        @if (laSinhVien()) {
-          <!--
-            Sinh viên không được vào màn quản lý của lớp: chuyen-can, diem,
-            diem-danh cần dữ liệu cả lớp nên BE trả 403. Hai link dưới đưa sang
-            trang cá nhân, kèm kỳ của lớp để mở đúng học kỳ.
-          -->
-          <a [routerLink]="['/diem-danh-cua-toi']" [queryParams]="{ hoc_ky_id: x.hoc_ky.id }"
-            >Điểm danh của tôi</a
-          >
-          <a [routerLink]="['/diem-cua-toi']" [queryParams]="{ hoc_ky_id: x.hoc_ky.id }"
-            >Điểm của tôi</a
-          >
-        } @else {
+        @if (!laSinhVien()) {
           <a [routerLink]="['/diem-danh']" [queryParams]="{ lop_hoc_phan_id: x.id }">Điểm danh</a>
-          <a [routerLink]="['/lop-hoc-phan', x.id, 'chuyen-can']">Chuyên cần</a>
           <a [routerLink]="['/lop-hoc-phan', x.id, 'diem']">Điểm</a>
         }
       </nav>
@@ -70,21 +57,20 @@ import { StatusBadge } from '@shared/ui/status-badge';
         </div>
         <div>
           <small>Giảng viên</small
-          ><strong>{{ x.giang_vien.ho_ten }} ({{ x.giang_vien.ma_gv }})</strong>
+          ><strong>{{ x.giang_vien ? x.giang_vien.ho_ten + ' (' + x.giang_vien.ma_gv + ')' : 'Chưa phân công' }}</strong>
         </div>
         <div>
           <small>Sĩ số</small><strong>{{ x.si_so_hien_tai }} / {{ x.si_so_toi_da }}</strong>
         </div>
         <div>
-          <small>Năm thứ</small><strong>{{ x.nam_thu ? 'Năm ' + x.nam_thu : 'Mọi năm' }}</strong>
-        </div>
-        <div>
           <small>Trạng thái</small
           ><app-status-badge [value]="x.trang_thai" [label]="nhanTrangThai(x.trang_thai)" />
         </div>
-        <div>
-          <small>Điểm</small><strong>{{ x.da_chot_diem ? 'Đã chốt' : 'Chưa chốt' }}</strong>
-        </div>
+        @if (!laSinhVien()) {
+          <div>
+            <small>Điểm</small><strong>{{ x.da_chot_diem ? 'Đã chốt' : 'Chưa chốt' }}</strong>
+          </div>
+        }
       </section>
     } @else if (loi()) {
       <app-alert muc="danger">{{ loi() }}</app-alert>

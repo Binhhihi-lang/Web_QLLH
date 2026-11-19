@@ -12,7 +12,7 @@ import { AppButton } from '@shared/ui/app-button';
 import { AppAlert } from '@shared/ui/app-alert';
 import { DangKyHocPhan, DangKyService } from '@features/hoc-vu/dang-ky/dang-ky.service';
 
-type GiaTriLoc = { hocKy: string; mon: string; giangVien: string; namThu: string; trangThai: string; conCho: boolean };
+type GiaTriLoc = { hocKy: string; mon: string; giangVien: string; trangThai: string; conCho: boolean };
 type LuaChonLoc = { id: number; ten: string };
 
 @Component({
@@ -22,7 +22,12 @@ type LuaChonLoc = { id: number; ten: string };
     <app-page-header
       [title]="laSinhVien() ? 'Lớp học phần đang mở' : 'Lớp học phần'"
       [description]="laSinhVien() ? 'Tìm lớp còn chỗ và gửi yêu cầu đăng ký học phần.' : 'Theo dõi lớp mở theo môn học, học kỳ, giảng viên và sĩ số.'">
-      @if (laAdmin()) { <app-button variant="primary" routerLink="/lop-hoc-phan/them"><span class="material-icons">add</span> Mở lớp học phần</app-button> }
+      @if (laAdmin()) {
+        <app-button variant="secondary" routerLink="/lop-hoc-phan/mo-theo-chuong-trinh">
+          <span class="material-icons">playlist_add</span> Mở theo chương trình
+        </app-button>
+        <app-button variant="primary" routerLink="/lop-hoc-phan/them"><span class="material-icons">add</span> Mở lớp lẻ</app-button>
+      }
       @if (laSinhVien()) { <a class="don-cua-toi" routerLink="/dang-ky-cua-toi">Đăng ký của tôi</a> }
     </app-page-header>
 
@@ -41,7 +46,6 @@ type LuaChonLoc = { id: number; ten: string };
         <label><span>Học kỳ</span><select [value]="locTam().hocKy" (change)="doiLoc('hocKy', $event)"><option value="">Tất cả học kỳ</option>@for (item of hocKy(); track item.id) { <option [value]="item.id" [selected]="locTam().hocKy === idChuoi(item.id)">{{ item.ten }}</option> }</select></label>
         <label><span>Môn học</span><select [value]="locTam().mon" (change)="doiLoc('mon', $event)"><option value="">Tất cả môn học</option>@for (item of monHoc(); track item.id) { <option [value]="item.id" [selected]="locTam().mon === idChuoi(item.id)">{{ item.ten }}</option> }</select></label>
         <label><span>Giảng viên</span><select [value]="locTam().giangVien" (change)="doiLoc('giangVien', $event)"><option value="">Tất cả giảng viên</option>@for (item of giangVien(); track item.id) { <option [value]="item.id" [selected]="locTam().giangVien === idChuoi(item.id)">{{ item.ten }}</option> }</select></label>
-        <label><span>Năm thứ</span><select [value]="locTam().namThu" (change)="doiLoc('namThu', $event)"><option value="">Mọi năm</option><option value="1">Năm 1</option><option value="2">Năm 2</option><option value="3">Năm 3</option><option value="4">Năm 4</option></select></label>
         <label><span>Trạng thái</span><select [value]="locTam().trangThai" (change)="doiLoc('trangThai', $event)"><option value="">Tất cả trạng thái</option><option value="OPEN">Đang mở</option><option value="CLOSED">Đã đóng</option><option value="CANCELLED">Đã hủy</option></select></label>
         <label class="check"><input type="checkbox" [checked]="locTam().conCho" (change)="doiConCho($event)" /> Chỉ lớp còn chỗ</label>
         <div class="nut-loc"><app-button variant="secondary" size="sm" (click)="apDungLoc()">Áp dụng</app-button>@if (coLoc()) { <button type="button" (click)="xoaLoc()">Xóa lọc</button> }</div>
@@ -51,8 +55,7 @@ type LuaChonLoc = { id: number; ten: string };
     <app-data-table [cot]="cot()" [rows]="rows()" [dangTai]="dangTai()" [loi]="loi()" [sortBy]="sapXep().sort_by" [sortDir]="sapXep().sort_dir" [bamDong]="!laSinhVien()" (sapXep)="doiSapXep($event)" (dongDuocBam)="moChiTiet($event)" (thuLai)="tai()" [tieuDeRong]="laSinhVien() ? 'Chưa có lớp nào để đăng ký' : 'Không tìm thấy lớp học phần'" [moTaRong]="coLoc() ? 'Thử thay đổi điều kiện lọc hoặc xóa bộ lọc.' : (laSinhVien() ? 'Hiện chưa có lớp học phần đang mở còn chỗ.' : 'Chưa có lớp học phần nào.')">
       <ng-template appOTuyChinh="mon_hoc" let-row><div class="mon"><strong>{{ row.mon_hoc.ten_mon }}</strong><small>{{ row.mon_hoc.ma_mon }} · {{ row.mon_hoc.so_tin_chi }} tín chỉ</small></div></ng-template>
       <ng-template appOTuyChinh="hoc_ky" let-row><div class="phu"><strong>{{ row.hoc_ky.ten_hoc_ky }}</strong><small>{{ row.hoc_ky.nam_hoc }}</small></div></ng-template>
-      <ng-template appOTuyChinh="giang_vien" let-row><div class="phu"><strong>{{ row.giang_vien.ho_ten }}</strong><small>{{ row.giang_vien.ma_gv }}</small></div></ng-template>
-      <ng-template appOTuyChinh="nam_thu" let-row>{{ row.nam_thu ? 'Năm ' + row.nam_thu : 'Mọi năm' }}</ng-template>
+      <ng-template appOTuyChinh="giang_vien" let-row><div class="phu">@if (row.giang_vien) {<strong>{{ row.giang_vien.ho_ten }}</strong><small>{{ row.giang_vien.ma_gv }}</small>} @else {<span>Chưa phân công</span>}</div></ng-template>
       <ng-template appOTuyChinh="si_so" let-row><div class="si-so"><strong>{{ row.si_so_hien_tai }}/{{ row.si_so_toi_da }}</strong><span><i [style.width.%]="phanTram(row)"></i></span></div></ng-template>
       <ng-template appOTuyChinh="trang_thai" let-row><app-status-badge [value]="row.trang_thai" [label]="nhanTrangThai(row.trang_thai)" /></ng-template>
       @if (laSinhVien()) {
@@ -86,20 +89,20 @@ export class LopHocPhanDanhSach {
   readonly thongBao = signal<string | null>(null);
   readonly thongBaoMuc = signal<'success' | 'danger'>('success');
   readonly rows = signal<LopHocPhan[]>([]); readonly meta = signal<any>(null); readonly dangTai = signal(true); readonly loi = signal<string | null>(null);
-  readonly tuKhoa = signal(''); readonly locTam = signal<GiaTriLoc>({ hocKy:'', mon:'', giangVien:'', namThu:'', trangThai:'', conCho:false }); readonly loc = signal<GiaTriLoc>({ hocKy:'', mon:'', giangVien:'', namThu:'', trangThai:'', conCho:false });
+  readonly tuKhoa = signal(''); readonly locTam = signal<GiaTriLoc>({ hocKy:'', mon:'', giangVien:'', trangThai:'', conCho:false }); readonly loc = signal<GiaTriLoc>({ hocKy:'', mon:'', giangVien:'', trangThai:'', conCho:false });
   readonly sapXep = signal<SapXep>({ sort_by:'ma_lop_hp', sort_dir:'asc' }); private trang = 1; private coTrang = 10;
   readonly hocKy = signal<LuaChonLoc[]>([]); readonly monHoc = signal<LuaChonLoc[]>([]); readonly giangVien = signal<LuaChonLoc[]>([]);
-  readonly cot = computed<CotBang<LopHocPhan>[]>(() => [{khoa:'ma_lop_hp',nhan:'Mã lớp',sap_xep:true,rong:'180px'},{khoa:'mon_hoc',nhan:'Môn học',rong:'220px'},{khoa:'hoc_ky',nhan:'Học kỳ',rong:'180px'},{khoa:'giang_vien',nhan:'Giảng viên',rong:'180px'},{khoa:'nam_thu',nhan:'Năm thứ',rong:'100px'},{khoa:'si_so',nhan:'Sĩ số',can_phai:true,rong:'105px'},{khoa:'trang_thai',nhan:'Trạng thái',rong:'135px'},...(this.laSinhVien()?[{khoa:'thao_tac',nhan:'Thao tác',rong:'140px'}]:[])]);
-  readonly coLoc = computed(() => { const f=this.loc(); return !!(this.tuKhoa() || f.hocKy || f.mon || f.giangVien || f.namThu || f.trangThai || f.conCho); });
+  readonly cot = computed<CotBang<LopHocPhan>[]>(() => [{khoa:'ma_lop_hp',nhan:'Mã lớp',sap_xep:true,rong:'180px'},{khoa:'mon_hoc',nhan:'Môn học',rong:'220px'},{khoa:'hoc_ky',nhan:'Học kỳ',rong:'180px'},{khoa:'giang_vien',nhan:'Giảng viên',rong:'180px'},{khoa:'si_so',nhan:'Sĩ số',can_phai:true,rong:'105px'},{khoa:'trang_thai',nhan:'Trạng thái',rong:'135px'},...(this.laSinhVien()?[{khoa:'thao_tac',nhan:'Thao tác',rong:'140px'}]:[])]);
+  readonly coLoc = computed(() => { const f=this.loc(); return !!(this.tuKhoa() || f.hocKy || f.mon || f.giangVien || f.trangThai || f.conCho); });
   constructor(){this.tai();this.taiTuyChon();if(this.laSinhVien())this.taiDangKy();}
   timKiem(value:string){this.tuKhoa.set(value);this.trang=1;this.tai();}
   doiLoc(key:keyof GiaTriLoc,event:Event){this.locTam.update(f=>({...f,[key]:(event.target as HTMLSelectElement).value}));}
   doiConCho(event:Event){this.locTam.update(f=>({...f,conCho:(event.target as HTMLInputElement).checked}));}
   apDungLoc(){this.loc.set(this.locTam());this.trang=1;this.tai();}
-  xoaLoc(){const rong={hocKy:'',mon:'',giangVien:'',namThu:'',trangThai:'',conCho:false};this.tuKhoa.set('');this.locTam.set(rong);this.loc.set(rong);this.trang=1;this.tai();}
+  xoaLoc(){const rong={hocKy:'',mon:'',giangVien:'',trangThai:'',conCho:false};this.tuKhoa.set('');this.locTam.set(rong);this.loc.set(rong);this.trang=1;this.tai();}
   doiSapXep(sort:SapXep){this.sapXep.set(sort);this.trang=1;this.tai();}
   doiTrang(page:number){this.trang=page;this.tai();} doiCoTrang(perPage:number){this.coTrang=perPage;this.trang=1;this.tai();}
-  tai(){this.dangTai.set(true);this.loi.set(null);const f=this.loc();const s=this.sapXep();const p:BoLocLopHocPhan={page:this.trang,per_page:this.coTrang as 10|25|50|100,q:this.tuKhoa()||undefined,sort_by:s.sort_by,sort_dir:s.sort_dir,hoc_ky_id:this.laSinhVien()?undefined:this.so(f.hocKy),mon_hoc_id:this.laSinhVien()?undefined:this.so(f.mon),giang_vien_id:this.laSinhVien()?undefined:this.so(f.giangVien),nam_thu:this.laSinhVien()?undefined:this.so(f.namThu),trang_thai:this.laSinhVien()?'OPEN':((f.trangThai||undefined) as any),con_cho:this.laSinhVien()?true:(f.conCho||undefined)};this.service.layDanhSach(p).subscribe({next:r=>{this.rows.set(r.data);this.meta.set(r.meta);this.dangTai.set(false);},error:()=>{this.loi.set('Không tải được danh sách lớp học phần. Vui lòng thử lại.');this.dangTai.set(false);}});}
+  tai(){this.dangTai.set(true);this.loi.set(null);const f=this.loc();const s=this.sapXep();const p:BoLocLopHocPhan={page:this.trang,per_page:this.coTrang as 10|25|50|100,q:this.tuKhoa()||undefined,sort_by:s.sort_by,sort_dir:s.sort_dir,hoc_ky_id:this.laSinhVien()?undefined:this.so(f.hocKy),mon_hoc_id:this.laSinhVien()?undefined:this.so(f.mon),giang_vien_id:this.laSinhVien()?undefined:this.so(f.giangVien),trang_thai:this.laSinhVien()?'OPEN':((f.trangThai||undefined) as any),con_cho:this.laSinhVien()?true:(f.conCho||undefined)};this.service.layDanhSach(p).subscribe({next:r=>{this.rows.set(r.data);this.meta.set(r.meta);this.dangTai.set(false);},error:()=>{this.loi.set('Không tải được danh sách lớp học phần. Vui lòng thử lại.');this.dangTai.set(false);}});}
   moChiTiet(row:LopHocPhan){this.router.navigate(['/lop-hoc-phan', row.id]);}
   phanTram(row:LopHocPhan){return Math.min(100,Math.round(row.si_so_hien_tai/row.si_so_toi_da*100));}
   nhanTrangThai(s:LopHocPhan['trang_thai']){return s==='OPEN'?'Đang mở':s==='CLOSED'?'Đã đóng':'Đã hủy';}
