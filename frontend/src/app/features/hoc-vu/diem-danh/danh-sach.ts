@@ -161,25 +161,25 @@ import { BuoiHocDiemDanh, DiemDanhService, ThongKeChuyenCan } from './diem-danh.
                       {{ buoi.gio_bat_dau }} – {{ buoi.gio_ket_thuc }}
                     </span>
                   </div>
-                  @if (buoi.trang_thai === 'CANCELLED') {
-                    <span class="da-huy">Buổi học đã hủy</span>
-                  } @else {
-                    <a
-                      class="hanh-dong"
-                      [routerLink]="['/diem-danh', buoi.id]"
-                      [queryParams]="{
-                        ngay_hoc: buoi.ngay_hoc,
-                        gio_bat_dau: buoi.gio_bat_dau,
-                        gio_ket_thuc: buoi.gio_ket_thuc,
-                        ma_lop_hp: lopDuocChon()?.ma_lop_hp,
-                        ten_mon: lopDuocChon()?.mon_hoc?.ten_mon,
-                        lop_hoc_phan_id: lopDuocChon()?.id,
-                      }"
-                    >
-                      {{ buoi.da_diem_danh ? 'Xem / sửa' : 'Điểm danh' }}
-                      <span class="material-icons" aria-hidden="true">arrow_forward</span>
-                    </a>
-                  }
+                  <a
+                    class="hanh-dong"
+                    [routerLink]="['/diem-danh', buoi.id]"
+                    [queryParams]="{
+                      ngay_hoc: buoi.ngay_hoc,
+                      gio_bat_dau: buoi.gio_bat_dau,
+                      gio_ket_thuc: buoi.gio_ket_thuc,
+                      ma_lop_hp: lopDuocChon()?.ma_lop_hp,
+                      ten_mon: lopDuocChon()?.mon_hoc?.ten_mon,
+                      lop_hoc_phan_id: lopDuocChon()?.id,
+                    }"
+                  >
+                    {{
+                      buoi.co_the_diem_danh
+                        ? buoi.da_diem_danh ? 'Xem / sửa' : 'Điểm danh'
+                        : 'Xem điểm danh'
+                    }}
+                    <span class="material-icons" aria-hidden="true">arrow_forward</span>
+                  </a>
                 </article>
               }
             </section>

@@ -23,7 +23,7 @@ class BuoiHocController extends Controller
         Gate::authorize('xemBuoiHoc', $lopHocPhan);
 
         $buoi = $lopHocPhan->buoiHoc()
-            ->with('phongHoc')
+            ->with(['phongHoc', 'lopHocPhan.hocKy'])
             ->withCount('diemDanh')
             ->orderBy('ngay_hoc')
             ->orderBy('gio_bat_dau')

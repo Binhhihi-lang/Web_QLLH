@@ -65,6 +65,15 @@
         ],
         "createdAt": "2026-11-09T02:03:51.237Z",
         "reason": "sanctioned: matches the project's own alert convention. shared/ui/app-alert.ts uses 'border-left: 3px solid' + 'padding: 11px 14px' for exactly this semantic - a warning strip. This row is not a decorative accent on a plain card; it mirrors an existing shipped component so the warning reads the same everywhere. Changing it here alone would make the dashboard warning look different from every other alert in the app."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "docs/design/ctdt-va-quyen-buoi-hoc.html"
+        ],
+        "createdAt": "2026-11-11T15:55:05.441Z",
+        "reason": "Quy ước callout có sẵn của dự án: .note trong docs/design/lich-hoc-ba-vai-tro.html cũng dùng border-left 3px cho khối ghi chú/cảnh báo"
       }
     ]
   }

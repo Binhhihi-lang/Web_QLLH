@@ -44,6 +44,8 @@ class QuanLyDiemService
                 throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã đóng.', 409);
             }
 
+            $this->chanKhiChuaDenNgayNhapDiem($lop->hocKy);
+
             if ($lop->daChotDiem()) {
                 throw new LoiNghiepVu('GRADE_LOCKED', 'Lớp đã chốt điểm.', 409);
             }
@@ -502,6 +504,20 @@ class QuanLyDiemService
         }
 
         return $nguoiDung->sinhVien;
+    }
+
+    private function chanKhiChuaDenNgayNhapDiem(?HocKy $hocKy): void
+    {
+        $ngayChoPhep = $hocKy?->ngay_bat_dau_nhap_diem;
+
+        if ($ngayChoPhep === null || today()->lt($ngayChoPhep)) {
+            $ngayHienThi = $ngayChoPhep?->format('d/m/Y');
+            $thongBao = $ngayHienThi
+                ? "Chỉ được nhập điểm từ ngày {$ngayHienThi}."
+                : 'Học kỳ chưa được cấu hình ngày bắt đầu nhập điểm.';
+
+            throw new LoiNghiepVu('GRADE_ENTRY_NOT_OPEN', $thongBao, 409);
+        }
     }
 
     private function dinhDangDongDiem(DangKyHocPhan $dangKy, LopHocPhan $lop): array

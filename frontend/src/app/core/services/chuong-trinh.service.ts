@@ -42,6 +42,7 @@ export interface ChuongTrinhDaoTao {
   ma_ctdt: string;
   nganh: NganhTrongChuongTrinh | null;
   khoa_hoc: string;
+  ma_lop_hanh_chinh_goi_y?: string | null;
   ten: string;
   so_nam?: number;
   so_ky?: number;

@@ -22,6 +22,7 @@ export interface HocKyOption extends TuyChon {
 
 interface CauHinhMonForm {
   mon_hoc_id: number;
+  ma_lop_hp: string;
   giang_vien_id: number;
   si_so_toi_da: number;
   lich: DongLichMonInput[];
@@ -156,6 +157,7 @@ interface CauHinhMonForm {
             <table>
               <thead>
                 <tr>
+                  <th>Mã lớp học phần</th>
                   <th>Mã môn</th>
                   <th>Tên môn</th>
                   <th>Số TC</th>
@@ -170,6 +172,7 @@ interface CauHinhMonForm {
               <tbody>
                 @for (m of monXemTruoc(); track m.id) {
                   <tr class="dong-mon" (click)="moThietLapMon(m)">
+                    <td class="mono">{{ layMaLopMon(m.mon_hoc.id) }}</td>
                     <td class="mono font-bold">{{ m.mon_hoc.ma_mon }}</td>
                     <td><strong>{{ m.mon_hoc.ten_mon }}</strong></td>
                     <td>{{ m.mon_hoc.so_tin_chi }}</td>
@@ -191,7 +194,7 @@ interface CauHinhMonForm {
                       @if (daThietLap(m.mon_hoc.id)) {
                         <span class="pill pill--ok">Đã thiết lập</span>
                       } @else {
-                        <span class="pill pill--off">Mặc định</span>
+                        <span class="pill pill--off">Cần nhập mã và sĩ số</span>
                       }
                     </td>
                     <td class="can-phai">
@@ -213,11 +216,6 @@ interface CauHinhMonForm {
       }
 
       <div class="luoi">
-        <label>
-          <span>Sĩ số tối đa mặc định cho các lớp *</span>
-          <input name="si-so" type="number" min="1" max="500" [(ngModel)]="mau.si_so_toi_da" required />
-        </label>
-
         @if (choPhepChinhKyThu()) {
           <label>
             <span>Kỳ thứ CTĐT (chỉnh sửa thủ công)</span>
@@ -238,7 +236,8 @@ interface CauHinhMonForm {
       </div>
 
       <p class="hint">
-        Mã lớp sinh tự động theo chuẩn <span class="mono">&lt;mã lớp hành chính&gt;-&lt;mã môn&gt;</span>.
+        Mã lớp được gợi ý theo lớp hành chính và mã môn; quản trị có thể sửa từng mã trước khi mở lớp.
+        Nhập sĩ số riêng cho từng lớp trong phần thiết lập môn.
         Môn nào đã có lớp trong học kỳ này sẽ được tự động bỏ qua (idempotent), không nhân đôi lớp.
       </p>
 
@@ -270,6 +269,14 @@ interface CauHinhMonForm {
           <div class="than-modal">
             <div class="hang-input">
               <label>
+                <span>Mã lớp học phần *</span>
+                <input type="text" maxlength="30" [(ngModel)]="formMon.ma_lop_hp" />
+              </label>
+              <label>
+                <span>Sĩ số tối đa lớp này *</span>
+                <input type="number" min="1" max="500" [(ngModel)]="formMon.si_so_toi_da" />
+              </label>
+              <label>
                 <span>Giảng viên phụ trách môn</span>
                 <select [(ngModel)]="formMon.giang_vien_id">
                   <option [ngValue]="0">Chưa phân công giảng viên</option>
@@ -279,10 +286,6 @@ interface CauHinhMonForm {
                 </select>
               </label>
 
-              <label>
-                <span>Sĩ số tối đa lớp này</span>
-                <input type="number" min="1" max="500" [(ngModel)]="formMon.si_so_toi_da" />
-              </label>
             </div>
 
             <!-- Thiết lập thời khóa biểu và phòng học -->
@@ -522,7 +525,7 @@ interface CauHinhMonForm {
       padding: 4px;
     }
     .than-modal { padding: 20px; overflow-y: auto; display: grid; gap: 16px; }
-    .hang-input { display: grid; grid-template-columns: 1fr 140px; gap: 16px; }
+    .hang-input { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
     .khung-lich-modal {
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
@@ -606,8 +609,9 @@ export class MoLopTheoChuongTrinh {
 
   formMon: CauHinhMonForm = {
     mon_hoc_id: 0,
+    ma_lop_hp: '',
     giang_vien_id: 0,
-    si_so_toi_da: 40,
+    si_so_toi_da: 0,
     lich: [],
   };
 
@@ -615,7 +619,7 @@ export class MoLopTheoChuongTrinh {
     chuong_trinh_id: 0,
     hoc_ky_id: 0,
     ky_thu: 1,
-    si_so_toi_da: 40,
+    cau_hinh_mon: [],
   };
 
   readonly chuongTrinhDangChon = computed(() =>
@@ -707,7 +711,12 @@ export class MoLopTheoChuongTrinh {
     () =>
       this.mau.chuong_trinh_id > 0 &&
       this.mau.hoc_ky_id > 0 &&
-      this.mau.si_so_toi_da > 0,
+      this.monXemTruoc().length > 0 &&
+      this.monXemTruoc().every((mon) => {
+        const config = this.mapCauHinh().get(mon.mon_hoc.id);
+        return !!config?.ma_lop_hp.trim() && Number.isInteger(config.si_so_toi_da)
+          && config.si_so_toi_da >= 1 && config.si_so_toi_da <= 500;
+      }),
   );
 
   readonly coTheMo = computed(() => this.thongTinKyThu()?.coTheMo ?? true);
@@ -756,7 +765,10 @@ export class MoLopTheoChuongTrinh {
 
     if (id > 0) {
       this.chuongTrinh.layMot(id).subscribe({
-        next: (ct) => this.chuongTrinhChiTiet.set(ct),
+        next: (ct) => {
+          this.chuongTrinhChiTiet.set(ct);
+          this.damBaoCauHinhMon();
+        },
         error: () => this.chuongTrinhChiTiet.set(null),
       });
     } else {
@@ -766,18 +778,22 @@ export class MoLopTheoChuongTrinh {
 
   doiKyThuThuCong(k: number): void {
     this.mau.ky_thu = k;
+    this.damBaoCauHinhMon();
   }
 
   // ---------------- Cấu hình chi tiết từng môn ----------------
 
   daThietLap(monHocId: number): boolean {
     const ch = this.mapCauHinh().get(monHocId);
-    if (!ch) return false;
-    return (ch.giang_vien_id > 0) || (ch.lich.length > 0) || (ch.si_so_toi_da !== this.mau.si_so_toi_da);
+    return !!ch?.ma_lop_hp.trim() && ch.si_so_toi_da >= 1 && ch.si_so_toi_da <= 500;
   }
 
   laySiSoMon(monHocId: number): number {
-    return this.mapCauHinh().get(monHocId)?.si_so_toi_da ?? this.mau.si_so_toi_da;
+    return this.mapCauHinh().get(monHocId)?.si_so_toi_da ?? 0;
+  }
+
+  layMaLopMon(monHocId: number): string {
+    return this.mapCauHinh().get(monHocId)?.ma_lop_hp ?? '';
   }
 
   moTaGiangVien(monHocId: number): string {
@@ -804,15 +820,17 @@ export class MoLopTheoChuongTrinh {
     if (tonTai) {
       this.formMon = {
         mon_hoc_id: mon.mon_hoc.id,
+        ma_lop_hp: tonTai.ma_lop_hp,
         giang_vien_id: tonTai.giang_vien_id ?? 0,
-        si_so_toi_da: tonTai.si_so_toi_da ?? this.mau.si_so_toi_da,
+        si_so_toi_da: tonTai.si_so_toi_da ?? 0,
         lich: tonTai.lich.map((l) => ({ ...l })),
       };
     } else {
       this.formMon = {
         mon_hoc_id: mon.mon_hoc.id,
+        ma_lop_hp: this.maLopGoiY(mon),
         giang_vien_id: 0,
-        si_so_toi_da: this.mau.si_so_toi_da,
+        si_so_toi_da: 0,
         lich: [],
       };
     }
@@ -851,7 +869,33 @@ export class MoLopTheoChuongTrinh {
     const tt = this.thongTinKyThu();
     if (tt?.kyThu) {
       this.mau.ky_thu = tt.kyThu;
+      this.damBaoCauHinhMon();
     }
+  }
+
+  private damBaoCauHinhMon(): void {
+    const mon = this.monXemTruoc();
+    if (mon.length === 0) return;
+    this.mapCauHinh.update((current) => {
+      const next = new Map(current);
+      mon.forEach((dong) => {
+        if (!next.has(dong.mon_hoc.id)) {
+          next.set(dong.mon_hoc.id, {
+            mon_hoc_id: dong.mon_hoc.id,
+            ma_lop_hp: this.maLopGoiY(dong),
+            giang_vien_id: 0,
+            si_so_toi_da: 0,
+            lich: [],
+          });
+        }
+      });
+      return next;
+    });
+  }
+
+  private maLopGoiY(mon: ChuongTrinhMon): string {
+    const lopHanhChinh = this.chuongTrinhChiTiet()?.ma_lop_hanh_chinh_goi_y;
+    return lopHanhChinh ? `${lopHanhChinh}-${mon.mon_hoc.ma_mon}` : mon.mon_hoc.ma_mon;
   }
 
   private layNamNhapHoc(khoaHoc: string): number | null {
@@ -877,18 +921,20 @@ export class MoLopTheoChuongTrinh {
     this.ketQua.set(null);
 
     // Thu thập cấu hình chi tiết cho từng môn đã thiết lập
-    const cauHinhMon: CauHinhMonInput[] = Array.from(this.mapCauHinh().entries()).map(
-      ([monId, ch]) => ({
-        mon_hoc_id: monId,
+    const cauHinhMon: CauHinhMonInput[] = this.monXemTruoc().map((mon) => {
+      const ch = this.mapCauHinh().get(mon.mon_hoc.id)!;
+      return {
+        mon_hoc_id: mon.mon_hoc.id,
+        ma_lop_hp: ch.ma_lop_hp.trim(),
         giang_vien_id: ch.giang_vien_id && ch.giang_vien_id > 0 ? ch.giang_vien_id : null,
         si_so_toi_da: ch.si_so_toi_da,
         lich: ch.lich.filter((l) => l.phong_hoc_id > 0),
-      }),
-    );
+      };
+    });
 
     const payload: MoLopTheoChuongTrinhInput = {
       ...this.mau,
-      cau_hinh_mon: cauHinhMon.length > 0 ? cauHinhMon : undefined,
+      cau_hinh_mon: cauHinhMon,
     };
 
     this.lopHocPhan.moLopTheoChuongTrinh(payload).subscribe({

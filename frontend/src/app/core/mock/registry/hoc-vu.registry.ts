@@ -342,6 +342,7 @@ export class HocVuRegistry {
       trang_thai: (index < 2 ? 'DONE' : 'SCHEDULED') as BuoiHocDiemDanh['trang_thai'],
       da_diem_danh: index < 2,
       so_diem_danh: index < 2 ? 3 : 0,
+      co_the_diem_danh: index < 2,
     }));
     this.buoiHoc.set(id, rows);
     return rows;

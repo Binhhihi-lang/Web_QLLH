@@ -4,10 +4,9 @@ namespace App\Services;
 
 use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
-use App\Models\CauHinh;
 use App\Models\DangKyHocPhan;
 use App\Models\DiemDanh;
-use App\Models\HocKy;
+use App\Models\LopHocPhan;
 use App\Models\NhatKy;
 use App\Models\User;
 use Carbon\Carbon;
@@ -38,7 +37,7 @@ class QuanLyDiemDanhService
             abort(403, 'Bạn không có quyền thực hiện chức năng này.');
         }
 
-        $coTheSua = $this->kiemTraCoTheSua($buoiHoc, $user);
+        $coTheSua = $this->kiemTraCoTheSua($buoiHoc);
 
         // BR-21: Lấy danh sách đăng ký hiệu lực tại thời điểm buổi học
         // Bao gồm: Đăng ký ACTIVE (có dang_ky_luc <= kết thúc buổi)
@@ -135,21 +134,7 @@ class QuanLyDiemDanhService
             abort(403, 'Bạn không có quyền thực hiện chức năng này.');
         }
 
-        // Học kỳ CLOSED là khóa vĩnh viễn: KHÔNG AI ghi được, kể cả ADMIN.
-        // Muốn sửa thì phải chốt xong trong kỳ. Đây là thay đổi so với BR-14
-        // cũ (từng cho ADMIN ngoại lệ) — xem docs/11.
-        if ($lop->hocKy?->trang_thai === HocKy::CLOSED) {
-            throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã đóng, không thể điểm danh. Muốn sửa phải làm trong kỳ.', 409);
-        }
-
-        // BR-21, FR-11.03: Quá 7 ngày kể từ khi kết thúc buổi học chỉ ADMIN được sửa
-        if (! $user->laAdmin()) {
-            $soNgay = (int) CauHinh::lay('diem.diem_danh.sua_trong_so_ngay', 7);
-            $thoiDiemKetThuc = Carbon::parse($buoiHoc->ngay_hoc->toDateString().' '.$buoiHoc->gio_ket_thuc);
-            if (now()->gt($thoiDiemKetThuc->copy()->addDays($soNgay))) {
-                throw new LoiNghiepVu('ATTENDANCE_EDIT_EXPIRED', 'Đã quá hạn sửa điểm danh (quá 7 ngày kể từ khi kết thúc buổi học).', 409);
-            }
-        }
+        $this->chanNeuKhongTheDiemDanh($buoiHoc);
 
         // Kiểm tra tất cả dang_ky_hoc_phan_id thuộc về lớp học phần này
         $hopLeIds = DangKyHocPhan::query()
@@ -349,21 +334,32 @@ class QuanLyDiemDanhService
         return $danhSach;
     }
 
-    private function kiemTraCoTheSua(BuoiHoc $buoiHoc, User $user): bool
+    private function kiemTraCoTheSua(BuoiHoc $buoiHoc): bool
     {
-        // Kỳ CLOSED chặn cả ADMIN — kiểm trước nhánh quyền, không có ngoại lệ.
-        if ($buoiHoc->lopHocPhan->hocKy?->trang_thai === HocKy::CLOSED) {
-            return false;
+        return $this->coTheDiemDanh($buoiHoc);
+    }
+
+    private function chanNeuKhongTheDiemDanh(BuoiHoc $buoiHoc): void
+    {
+        if ($buoiHoc->lopHocPhan->trang_thai === LopHocPhan::CANCELLED) {
+            throw new LoiNghiepVu('ATTENDANCE_NOT_ALLOWED', 'Lớp học phần đã hủy, không thể điểm danh.', 409);
         }
 
-        // ADMIN không bị giới hạn 7 ngày, nhưng vẫn chịu khóa học kỳ ở trên.
-        if ($user->laAdmin()) {
-            return true;
+        if ($buoiHoc->trang_thai === BuoiHoc::CANCELLED) {
+            throw new LoiNghiepVu('ATTENDANCE_NOT_ALLOWED', 'Buổi học đã hủy, không thể điểm danh.', 409);
         }
 
-        $soNgay = (int) CauHinh::lay('diem.diem_danh.sua_trong_so_ngay', 7);
-        $thoiDiemKetThuc = Carbon::parse($buoiHoc->ngay_hoc->toDateString().' '.$buoiHoc->gio_ket_thuc);
+        if (! $this->coTheDiemDanh($buoiHoc)) {
+            throw new LoiNghiepVu(
+                'ATTENDANCE_NOT_ALLOWED',
+                'Chỉ được điểm danh cho buổi đã diễn ra trong khoảng thời gian của học kỳ.',
+                409,
+            );
+        }
+    }
 
-        return now()->lte($thoiDiemKetThuc->copy()->addDays($soNgay));
+    private function coTheDiemDanh(BuoiHoc $buoiHoc): bool
+    {
+        return $buoiHoc->coTheDiemDanh();
     }
 }

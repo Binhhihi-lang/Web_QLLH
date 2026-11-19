@@ -37,6 +37,10 @@ class ChuongTrinhDaoTaoResource extends JsonResource
                 'ten_khoa' => $this->nganh->khoa->ten_khoa,
             ]),
             'khoa_hoc' => $this->khoa_hoc,
+            'ma_lop_hanh_chinh_goi_y' => $this->when(
+                $this->ma_lop_hanh_chinh_goi_y !== null,
+                $this->ma_lop_hanh_chinh_goi_y,
+            ),
             'ten' => $this->ten,
             'so_nam' => (float) ($this->so_nam ?? 4.0),
             'so_ky' => (int) ($this->so_ky ?? 8),

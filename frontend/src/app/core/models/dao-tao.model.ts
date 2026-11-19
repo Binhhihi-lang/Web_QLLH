@@ -171,6 +171,7 @@ export interface HocKyRutGon {
   nam_hoc: string;
   ky_thu: number;
   trang_thai: TrangThaiHocKy;
+  ngay_bat_dau_nhap_diem?: string | null;
 }
 
 export interface GiangVienRutGon {
@@ -192,6 +193,7 @@ export interface HocKy {
   ky_thu: number;
   ngay_bat_dau: string;
   ngay_ket_thuc: string;
+  ngay_bat_dau_nhap_diem?: string | null;
   mo_dang_ky_luc: string;
   dong_dang_ky_luc: string;
   trang_thai: TrangThaiHocKy;

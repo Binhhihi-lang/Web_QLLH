@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
+use App\Models\ChuongTrinhDaoTao;
+use App\Models\ChuongTrinhMon;
 use App\Models\DangKyHocPhan;
 use App\Models\Diem;
 use App\Models\DiemDanh;
@@ -87,6 +89,7 @@ class DangKyHocPhanService
                 throw new LoiNghiepVu('SECTION_NOT_OPEN', 'Lớp học phần không nhận đăng ký.');
             }
 
+            $this->kiemTraMonThuocChuongTrinhTrongKy($sinhVien, $lop);
             $this->kiemTraMonDaDat($sinhVien, $lop);
 
             $dangKyCungMon = DangKyHocPhan::query()
@@ -229,6 +232,53 @@ class DangKyHocPhanService
 
         if ($daDat) {
             throw new LoiNghiepVu('SUBJECT_ALREADY_PASSED', 'Sinh viên đã đạt môn này, không thể đăng ký lại.');
+        }
+    }
+
+    private function kiemTraMonThuocChuongTrinhTrongKy(SinhVien $sinhVien, LopHocPhan $lop): void
+    {
+        $lopHanhChinh = $sinhVien->lopHanhChinh;
+        $hocKy = $lop->hocKy;
+
+        if ($lopHanhChinh === null || $hocKy === null || $lopHanhChinh->nam_nhap_hoc === null) {
+            throw new LoiNghiepVu(
+                'SUBJECT_NOT_IN_CURRICULUM',
+                'Không xác định được chương trình đào tạo của sinh viên để kiểm tra môn học.',
+                422,
+            );
+        }
+
+        $chuongTrinh = ChuongTrinhDaoTao::query()
+            ->where('nganh_id', $lopHanhChinh->nganh_id)
+            ->where('khoa_hoc', $lopHanhChinh->khoa_hoc)
+            ->first();
+        $namHoc = $hocKy->namBatDauNamHoc();
+
+        if ($chuongTrinh === null || $namHoc === null || $namHoc < $lopHanhChinh->nam_nhap_hoc) {
+            throw new LoiNghiepVu(
+                'SUBJECT_NOT_IN_CURRICULUM',
+                'Không tìm thấy chương trình đào tạo áp dụng cho sinh viên và học kỳ này.',
+                422,
+            );
+        }
+
+        // Kỳ hè là đợt học bổ sung; chỉ cần môn nằm trong CTĐT của sinh viên.
+        $kyThuChuongTrinh = (int) $hocKy->ky_thu === 3
+            ? null
+            : (($namHoc - $lopHanhChinh->nam_nhap_hoc) * 2) + (int) $hocKy->ky_thu;
+
+        $duocHoc = ChuongTrinhMon::query()
+            ->where('chuong_trinh_id', $chuongTrinh->id)
+            ->where('mon_hoc_id', $lop->mon_hoc_id)
+            ->when($kyThuChuongTrinh !== null, fn ($query) => $query->where('ky_thu', $kyThuChuongTrinh))
+            ->exists();
+
+        if (! $duocHoc) {
+            throw new LoiNghiepVu(
+                'SUBJECT_NOT_IN_CURRICULUM',
+                'Môn học không thuộc chương trình đào tạo của sinh viên trong học kỳ này.',
+                422,
+            );
         }
     }
 

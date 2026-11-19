@@ -63,10 +63,10 @@ class QuanLyLopHocPhanService
      * có thể 3-5 môn, mỗi môn một lớp. Chọn chương trình rồi mở cả lô là thao tác
      * chính; mở lẻ từng môn chỉ dành cho học lại/nguyện vọng.
      *
-     * Sinh mã lớp `<mã lớp hành chính>-<mã môn>` cho từng môn thuộc `ky_thu` đã chọn.
+     * Gợi ý mã lớp `<mã lớp hành chính>-<mã môn>` cho từng môn; cho phép quản trị sửa mã.
      * Môn nào đã có lớp trong kỳ đó thì bỏ qua (chạy lại được).
      *
-     * @param  array{chuong_trinh_id: int, hoc_ky_id: int, ky_thu?: int|null, giang_vien_id?: int|null, si_so_toi_da: int}  $duLieu
+     * @param  array{chuong_trinh_id: int, hoc_ky_id: int, ky_thu?: int|null, giang_vien_id?: int|null, cau_hinh_mon: array<int, array<string, mixed>>}  $duLieu
      * @return array{tao: int, bo_qua: int, chi_tiet: array<int, array<string, mixed>>}
      */
     public function moLopTheoChuongTrinh(array $duLieu, int $nguoiThucHienId): array
@@ -163,6 +163,7 @@ class QuanLyLopHocPhanService
             $boQua = 0;
             $chiTiet = [];
             $cauHinhMap = collect($duLieu['cau_hinh_mon'] ?? [])->keyBy('mon_hoc_id');
+            $maDaDungTrongLenh = [];
 
             foreach ($monTrongKy as $dong) {
                 $mon = $dong->monHoc;
@@ -184,19 +185,40 @@ class QuanLyLopHocPhanService
                     continue;
                 }
 
-                $maLopHp = sprintf('%s-%s', $lopHanhChinh->ma_lop, $mon->ma_mon);
-
-                // Hậu tố nhóm nếu trùng (một môn đã mở 2 lớp cho cùng lớp HC).
-                $goc = $maLopHp;
-                $nhom = 1;
-                while (LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->where('ma_lop_hp', $maLopHp)->exists()) {
-                    $nhom++;
-                    $maLopHp = $goc.'-'.$nhom;
+                $ch = $cauHinhMap->get($mon->id);
+                if (! is_array($ch)) {
+                    throw new LoiNghiepVu(
+                        'VALIDATION_ERROR',
+                        'Cần nhập mã lớp và sĩ số riêng cho môn '.$mon->ma_mon.'.',
+                        422,
+                    );
                 }
 
-                $ch = $cauHinhMap->get($mon->id);
+                $maGoiY = sprintf('%s-%s', $lopHanhChinh->ma_lop, $mon->ma_mon);
+                $maLopHp = trim((string) ($ch['ma_lop_hp'] ?? $maGoiY));
+
+                // Hậu tố nhóm nếu trùng (một môn đã mở 2 lớp cho cùng lớp HC).
+                if ($maLopHp === $maGoiY) {
+                    $goc = $maLopHp;
+                    $nhom = 1;
+                    while (LopHocPhan::withTrashed()->where('hoc_ky_id', $hocKy->id)->where('ma_lop_hp', $maLopHp)->exists()
+                        || isset($maDaDungTrongLenh[$maLopHp])) {
+                        $nhom++;
+                        $maLopHp = $goc.'-'.$nhom;
+                    }
+                } elseif (LopHocPhan::withTrashed()->where('hoc_ky_id', $hocKy->id)->where('ma_lop_hp', $maLopHp)->exists()
+                    || isset($maDaDungTrongLenh[$maLopHp])) {
+                    throw new LoiNghiepVu(
+                        'VALIDATION_ERROR',
+                        "Mã lớp học phần {$maLopHp} đã được sử dụng trong học kỳ này.",
+                        422,
+                        ['cau_hinh_mon' => ["Mã lớp học phần {$maLopHp} đã được sử dụng trong học kỳ này."]],
+                    );
+                }
+
+                $maDaDungTrongLenh[$maLopHp] = true;
                 $gvId = $ch['giang_vien_id'] ?? ($duLieu['giang_vien_id'] ?? null);
-                $siSo = !empty($ch['si_so_toi_da']) ? (int) $ch['si_so_toi_da'] : (int) $duLieu['si_so_toi_da'];
+                $siSo = (int) $ch['si_so_toi_da'];
 
                 $lop = LopHocPhan::query()->create([
                     'ma_lop_hp' => $maLopHp,
@@ -368,6 +390,7 @@ class QuanLyLopHocPhanService
         return DB::transaction(function () use ($lop, $cacDong, $nguoiThucHienId, $lyDo) {
             $lop = LopHocPhan::query()->lockForUpdate()->findOrFail($lop->id);
             $this->chanKhiHocKyDaDong($lop->hocKy);
+            $this->chanKhiChuaDenNgayNhapDiem($lop->hocKy);
 
             if ($lop->daChotDiem()) {
                 throw new LoiNghiepVu('GRADE_LOCKED', 'Lớp đã chốt điểm.');
@@ -466,6 +489,7 @@ class QuanLyLopHocPhanService
         return DB::transaction(function () use ($lop, $nguoiThucHienId) {
             $lop = LopHocPhan::query()->lockForUpdate()->findOrFail($lop->id);
             $this->chanKhiHocKyDaDong($lop->hocKy);
+            $this->chanKhiChuaDenNgayNhapDiem($lop->hocKy);
 
             if ($lop->daChotDiem()) {
                 throw new LoiNghiepVu('GRADE_LOCKED', 'Lớp đã chốt điểm.');
@@ -827,6 +851,20 @@ class QuanLyLopHocPhanService
     {
         if ($hocKy?->trang_thai === HocKy::CLOSED) {
             throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã đóng, chỉ đọc.');
+        }
+    }
+
+    private function chanKhiChuaDenNgayNhapDiem(?HocKy $hocKy): void
+    {
+        $ngayChoPhep = $hocKy?->ngay_bat_dau_nhap_diem;
+
+        if ($ngayChoPhep === null || today()->lt($ngayChoPhep)) {
+            $ngayHienThi = $ngayChoPhep?->format('d/m/Y');
+            $thongBao = $ngayHienThi
+                ? "Chỉ được nhập và chốt điểm từ ngày {$ngayHienThi}."
+                : 'Học kỳ chưa được cấu hình ngày bắt đầu nhập điểm.';
+
+            throw new LoiNghiepVu('GRADE_ENTRY_NOT_OPEN', $thongBao, 409);
         }
     }
 

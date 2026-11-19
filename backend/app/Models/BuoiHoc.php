@@ -97,6 +97,23 @@ class BuoiHoc extends Model
         return $this->ngay_hoc->copy()->setTimeFromTimeString($this->gio_ket_thuc)->lt(now());
     }
 
+    public function coTheDiemDanh(): bool
+    {
+        $lop = $this->lopHocPhan;
+        $hocKy = $lop?->hocKy;
+
+        if ($lop === null || $hocKy === null
+            || $lop->trang_thai === LopHocPhan::CANCELLED
+            || $hocKy->trang_thai === HocKy::CLOSED
+            || $this->trang_thai === self::CANCELLED
+            || $this->ngay_hoc->lt($hocKy->ngay_bat_dau)
+            || $this->ngay_hoc->gt($hocKy->ngay_ket_thuc)) {
+            return false;
+        }
+
+        return ! now()->lt($this->ngay_hoc->copy()->setTimeFromTimeString($this->gio_ket_thuc));
+    }
+
     public function scopeSapDienRa(Builder $query): Builder
     {
         return $query

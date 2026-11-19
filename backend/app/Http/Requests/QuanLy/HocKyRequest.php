@@ -28,6 +28,7 @@ class HocKyRequest extends FormRequest
             ],
             'ngay_bat_dau' => ['required', 'date_format:Y-m-d'],
             'ngay_ket_thuc' => ['required', 'date_format:Y-m-d', 'after:ngay_bat_dau'],
+            'ngay_bat_dau_nhap_diem' => ['required', 'date_format:Y-m-d'],
             'mo_dang_ky_luc' => ['required', 'date_format:Y-m-d H:i:s'],
             'dong_dang_ky_luc' => ['required', 'date_format:Y-m-d H:i:s', 'after:mo_dang_ky_luc'],
             // Chỉ endpoint /status được thay đổi trạng thái (BR-24).

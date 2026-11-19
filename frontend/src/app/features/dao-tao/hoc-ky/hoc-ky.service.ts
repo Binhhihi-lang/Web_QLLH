@@ -18,6 +18,7 @@ export interface HocKyInput {
   ky_thu: number;
   ngay_bat_dau: string;
   ngay_ket_thuc: string;
+  ngay_bat_dau_nhap_diem: string;
   mo_dang_ky_luc: string;
   dong_dang_ky_luc: string;
 }

@@ -32,6 +32,10 @@ class BuoiHocResource extends JsonResource
                 : null,
             'da_diem_danh' => (int) ($this->diem_danh_count ?? 0) > 0,
             'so_diem_danh' => (int) ($this->diem_danh_count ?? 0),
+            'co_the_diem_danh' => $this->when(
+                $this->relationLoaded('lopHocPhan') && $this->lopHocPhan?->relationLoaded('hocKy'),
+                fn () => $this->resource->coTheDiemDanh(),
+            ),
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\LoiNghiepVu;
 use App\Models\ChuongTrinhDaoTao;
 use App\Models\ChuongTrinhMon;
+use App\Models\LopHanhChinh;
 use App\Models\MonHoc;
 use App\Models\NhatKy;
 use App\Models\SinhVien;
@@ -83,6 +84,11 @@ class QuanLyChuongTrinhService
         $chuongTrinh->setAttribute('so_bat_buoc', $mons->where('bat_buoc', true)->count());
         $chuongTrinh->setAttribute('so_tu_chon', $mons->where('bat_buoc', false)->count());
         $chuongTrinh->setAttribute('so_mon_chua_gan_ky', $mons->whereNull('ky_thu')->count());
+        $chuongTrinh->setAttribute('ma_lop_hanh_chinh_goi_y', LopHanhChinh::query()
+            ->where('nganh_id', $chuongTrinh->nganh_id)
+            ->where('khoa_hoc', $chuongTrinh->khoa_hoc)
+            ->orderBy('ma_lop')
+            ->value('ma_lop'));
 
         return $chuongTrinh;
     }

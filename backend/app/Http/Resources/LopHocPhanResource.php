@@ -32,6 +32,7 @@ class LopHocPhanResource extends JsonResource
                 'nam_hoc' => $this->hocKy->nam_hoc,
                 'ky_thu' => $this->hocKy->ky_thu,
                 'trang_thai' => $this->hocKy->trang_thai,
+                'ngay_bat_dau_nhap_diem' => $this->hocKy->ngay_bat_dau_nhap_diem?->format('Y-m-d'),
             ]),
             'giang_vien' => $this->whenLoaded('giangVien', fn () => $this->giangVien === null ? null : [
                 'id' => $this->giangVien->id,

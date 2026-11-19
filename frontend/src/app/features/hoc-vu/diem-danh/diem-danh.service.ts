@@ -15,6 +15,7 @@ export interface BuoiHocDiemDanh {
   /** Buổi đã có ít nhất một dòng điểm danh — API sessions trả sẵn, không cần gọi thêm. */
   da_diem_danh: boolean;
   so_diem_danh: number;
+  co_the_diem_danh: boolean;
 }
 
 /**
@@ -89,10 +90,10 @@ export class DiemDanhService {
   }
 
   /** Danh sách dòng điểm danh — bóc `data.danh_sach`, không lấy nguyên `data`. */
-  layDiemDanh(buoiHocId: number): Observable<DongDiemDanh[]> {
+  layDiemDanh(buoiHocId: number): Observable<PhanHoiDiemDanh> {
     return this.http
       .get<{ data: PhanHoiDiemDanh }>(`${this.goc}/sessions/${buoiHocId}/attendance`)
-      .pipe(map((response) => response.data.danh_sach ?? []));
+      .pipe(map((response) => response.data));
   }
 
   luuDiemDanh(buoiHocId: number, diemDanh: DongDiemDanhInput[]): Observable<KetQuaLuuDiemDanh> {

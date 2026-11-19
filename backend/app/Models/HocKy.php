@@ -29,6 +29,7 @@ class HocKy extends Model
         'ky_thu',
         'ngay_bat_dau',
         'ngay_ket_thuc',
+        'ngay_bat_dau_nhap_diem',
         'mo_dang_ky_luc',
         'dong_dang_ky_luc',
         'trang_thai',
@@ -40,6 +41,7 @@ class HocKy extends Model
             'ky_thu' => 'integer',
             'ngay_bat_dau' => 'date',
             'ngay_ket_thuc' => 'date',
+            'ngay_bat_dau_nhap_diem' => 'date',
             'mo_dang_ky_luc' => 'datetime',
             'dong_dang_ky_luc' => 'datetime',
         ];

@@ -19,6 +19,7 @@ class HocKyResource extends JsonResource
             'ky_thu' => $this->ky_thu,
             'ngay_bat_dau' => $this->ngay_bat_dau->format('Y-m-d'),
             'ngay_ket_thuc' => $this->ngay_ket_thuc->format('Y-m-d'),
+            'ngay_bat_dau_nhap_diem' => $this->ngay_bat_dau_nhap_diem?->format('Y-m-d'),
             'mo_dang_ky_luc' => $this->mo_dang_ky_luc->format('Y-m-d H:i:s'),
             'dong_dang_ky_luc' => $this->dong_dang_ky_luc->format('Y-m-d H:i:s'),
             'trang_thai' => $this->trang_thai,

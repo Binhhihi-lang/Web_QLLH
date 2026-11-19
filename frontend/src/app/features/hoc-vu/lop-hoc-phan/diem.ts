@@ -11,6 +11,7 @@ import {
 } from '@core/models/he-thong.model';
 import { CauHinhService } from '@core/services/cau-hinh.service';
 import { DongDiem, LopHocPhanService } from '@core/services/lop-hoc-phan.service';
+import { TrangThaiHocKy } from '@core/models/dao-tao.model';
 import { chuanHoaTimKiem } from '@core/utils/chuan-hoa-tim-kiem';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
@@ -31,6 +32,9 @@ import { SearchInput } from '@shared/ui/search-input';
     @if (loi()) {
       <app-alert muc="danger">{{ loi() }}</app-alert>
     }
+    @if (!dangTai() && !coTheNhapDiem()) {
+      <app-alert muc="warning">{{ moTaNgayNhapDiem() }}</app-alert>
+    }
     @if (dangTai()) {
       <p class="loading" role="status">Đang tải bảng điểm…</p>
     } @else if (diem().length) {
@@ -45,7 +49,7 @@ import { SearchInput } from '@shared/ui/search-input';
         }
       </section>
       <section class="toolbar">
-        <span>{{ daChot() ? 'Điểm đã chốt' : 'Có thể chỉnh sửa điểm' }}</span>
+        <span>{{ daChot() ? 'Điểm đã chốt' : coTheNhapDiem() ? 'Có thể chỉnh sửa điểm' : 'Chưa đến ngày nhập điểm' }}</span>
         <div>
           @if (!daChot()) {
             <app-button variant="secondary" size="sm" (click)="tai()">Khôi phục</app-button>
@@ -53,7 +57,7 @@ import { SearchInput } from '@shared/ui/search-input';
               variant="secondary"
               size="sm"
               (click)="luu()"
-              [disabled]="!hopLe()"
+              [disabled]="!hopLe() || !coTheNhapDiem()"
               [loading]="dangLuu()"
               >Lưu điểm</app-button
             >
@@ -61,7 +65,7 @@ import { SearchInput } from '@shared/ui/search-input';
               variant="primary"
               size="sm"
               (click)="chot()"
-              [disabled]="!duDiem()"
+              [disabled]="!duDiem() || !coTheNhapDiem()"
               [loading]="dangLuu()"
               >Chốt điểm</app-button
             >
@@ -95,7 +99,7 @@ import { SearchInput } from '@shared/ui/search-input';
                       min="0"
                       max="10"
                       step=".01"
-                      [disabled]="daChot()"
+                      [disabled]="daChot() || !coTheNhapDiem()"
                       [(ngModel)]="row.diem_chuyen_can"
                       (ngModelChange)="danhDauSua(row)"
                     />
@@ -107,7 +111,7 @@ import { SearchInput } from '@shared/ui/search-input';
                       min="0"
                       max="10"
                       step=".01"
-                      [disabled]="daChot()"
+                      [disabled]="daChot() || !coTheNhapDiem()"
                       [(ngModel)]="row.diem_giua_ky"
                       (ngModelChange)="danhDauSua(row)"
                     />
@@ -119,7 +123,7 @@ import { SearchInput } from '@shared/ui/search-input';
                       min="0"
                       max="10"
                       step=".01"
-                      [disabled]="daChot()"
+                      [disabled]="daChot() || !coTheNhapDiem()"
                       [(ngModel)]="row.diem_cuoi_ky"
                       (ngModelChange)="danhDauSua(row)"
                     />
@@ -243,6 +247,23 @@ export class LopHocPhanDiem {
   readonly dangTai = signal(true);
   readonly dangLuu = signal(false);
   readonly daChot = signal(false);
+  readonly ngayBatDauNhapDiem = signal<string | null>(null);
+  readonly trangThaiHocKy = signal<TrangThaiHocKy | null>(null);
+  readonly coTheNhapDiem = computed(() => {
+    if (this.trangThaiHocKy() === 'CLOSED') return false;
+    const ngay = this.ngayBatDauNhapDiem();
+    if (!ngay) return false;
+    const nay = new Date();
+    const homNay = `${nay.getFullYear()}-${String(nay.getMonth() + 1).padStart(2, '0')}-${String(nay.getDate()).padStart(2, '0')}`;
+    return homNay >= ngay;
+  });
+  readonly moTaNgayNhapDiem = computed(() => {
+    if (this.trangThaiHocKy() === 'CLOSED') return 'Học kỳ đã đóng. Không thể nhập hoặc chốt điểm.';
+    const ngay = this.ngayBatDauNhapDiem();
+    if (!ngay) return 'Học kỳ chưa được cấu hình ngày bắt đầu nhập điểm.';
+    const [nam, thang, ngayTrongThang] = ngay.split('-').map(Number);
+    return `Chỉ được nhập và chốt điểm từ ngày ${new Intl.DateTimeFormat('vi-VN').format(new Date(nam, thang - 1, ngayTrongThang))}.`;
+  });
   readonly hopLe = computed(() => this.diem().every((row) => this.diemHopLe(row)));
   readonly duDiem = computed(
     () => this.hopLe() && this.diem().length > 0 && this.diem().every((row) => this.diemDayDu(row)),
@@ -315,6 +336,8 @@ export class LopHocPhanDiem {
             return;
           }
           this.daChot.set(lop.da_chot_diem);
+          this.trangThaiHocKy.set(lop.hoc_ky.trang_thai);
+          this.ngayBatDauNhapDiem.set(lop.hoc_ky.ngay_bat_dau_nhap_diem ?? null);
           this.diem.set(diem);
           this.luuAnhDiemGoc(diem);
           this.dongDaSua.set(new Set());
@@ -347,7 +370,7 @@ export class LopHocPhanDiem {
   }
 
   luu(): void {
-    if (!this.hopLe() || this.daChot() || this.dangLuu()) return;
+    if (!this.hopLe() || !this.coTheNhapDiem() || this.daChot() || this.dangLuu()) return;
     this.guiDiem();
   }
 
@@ -366,7 +389,7 @@ export class LopHocPhanDiem {
   }
 
   chot(): void {
-    if (!this.duDiem() || this.daChot() || this.dangLuu()) return;
+    if (!this.duDiem() || !this.coTheNhapDiem() || this.daChot() || this.dangLuu()) return;
     if (!confirm('Chốt điểm lớp này? Điểm sẽ không còn chỉnh sửa.')) return;
 
     this.dangLuu.set(true);

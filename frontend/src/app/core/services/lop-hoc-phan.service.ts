@@ -161,8 +161,9 @@ export interface DongLichMonInput {
 
 export interface CauHinhMonInput {
   mon_hoc_id: number;
+  ma_lop_hp: string;
   giang_vien_id?: number | null;
-  si_so_toi_da?: number | null;
+  si_so_toi_da: number;
   lich?: DongLichMonInput[];
 }
 
@@ -171,8 +172,7 @@ export interface MoLopTheoChuongTrinhInput {
   hoc_ky_id: number;
   ky_thu?: number | null;
   giang_vien_id?: number | null;
-  si_so_toi_da: number;
-  cau_hinh_mon?: CauHinhMonInput[];
+  cau_hinh_mon: CauHinhMonInput[];
 }
 
 export interface KetQuaMoLopChiTiet {

@@ -130,6 +130,19 @@ import { HocKyInput, HocKyService } from './hoc-ky.service';
                 <small class="loi">{{ loiTruong('ngay_ket_thuc') || loiNgayKetThuc() }}</small>
               }
             </label>
+            <label class="truong">
+              <span>Ngày bắt đầu nhập điểm <span class="sao" aria-hidden="true">*</span></span>
+              <app-date-input
+                id="ngay-bat-dau-nhap-diem"
+                nhan="Ngày bắt đầu nhập điểm"
+                [giaTri]="ngayBatDauNhapDiem()"
+                (giaTriChange)="ngayBatDauNhapDiem.set($event)"
+              />
+              <small>Giảng viên có thể nhập và chốt điểm từ ngày này.</small>
+              @if (loiTruong('ngay_bat_dau_nhap_diem')) {
+                <small class="loi">{{ loiTruong('ngay_bat_dau_nhap_diem') }}</small>
+              }
+            </label>
           </div>
         </section>
 
@@ -376,6 +389,7 @@ export class HocKyForm {
   readonly kyThu = signal(1);
   readonly ngayBatDau = signal('');
   readonly ngayKetThuc = signal('');
+  readonly ngayBatDauNhapDiem = signal('');
   readonly moDangKyLuc = signal('');
   readonly dongDangKyLuc = signal('');
 
@@ -445,6 +459,7 @@ export class HocKyForm {
       ky_thu: this.kyThu(),
       ngay_bat_dau: this.ngayBatDau(),
       ngay_ket_thuc: this.ngayKetThuc(),
+      ngay_bat_dau_nhap_diem: this.ngayBatDauNhapDiem(),
       mo_dang_ky_luc: this.sangApiDateTime(this.moDangKyLuc()),
       dong_dang_ky_luc: this.sangApiDateTime(this.dongDangKyLuc()),
     };
@@ -481,6 +496,9 @@ export class HocKyForm {
       errors['ngay_ket_thuc'] = ['Ngày kết thúc không hợp lệ.'];
     } else if (this.ngayBatDau() && this.ngayKetThuc() <= this.ngayBatDau()) {
       errors['ngay_ket_thuc'] = ['Ngày kết thúc phải sau ngày bắt đầu.'];
+    }
+    if (!this.laNgayIso(this.ngayBatDauNhapDiem())) {
+      errors['ngay_bat_dau_nhap_diem'] = ['Ngày bắt đầu nhập điểm không hợp lệ.'];
     }
 
     if (!this.laDateTime(this.moDangKyLuc())) {
@@ -537,6 +555,7 @@ export class HocKyForm {
         this.kyThu.set(hocKy.ky_thu);
         this.ngayBatDau.set(hocKy.ngay_bat_dau);
         this.ngayKetThuc.set(hocKy.ngay_ket_thuc);
+        this.ngayBatDauNhapDiem.set(hocKy.ngay_bat_dau_nhap_diem ?? '');
         this.moDangKyLuc.set(this.sangDateTimeInput(hocKy.mo_dang_ky_luc));
         this.dongDangKyLuc.set(this.sangDateTimeInput(hocKy.dong_dang_ky_luc));
         this.chiDoc.set(hocKy.trang_thai === 'CLOSED');

@@ -41,6 +41,9 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
     @if (loi() && !rows().length) {
       <app-alert muc="danger">{{ loi() }}</app-alert>
     }
+    @if (!dangTai() && rows().length && !coTheDiemDanh()) {
+      <app-alert muc="warning">{{ hocKyDaDong() ? 'Học kỳ đã đóng. Không thể sửa điểm danh.' : 'Chỉ được điểm danh cho buổi đã diễn ra trong thời gian học kỳ, lớp và buổi học chưa bị hủy.' }}</app-alert>
+    }
 
     @if (dangTai()) {
       <app-loading-state label="Đang tải danh sách sinh viên…" />
@@ -116,7 +119,7 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
                           type="button"
                           [class.active]="row.trang_thai === item.value"
                           [attr.aria-pressed]="row.trang_thai === item.value"
-                          [disabled]="dangLuu()"
+                          [disabled]="dangLuu() || !coTheDiemDanh()"
                           (click)="doiTrangThai(row, item.value)"
                         >
                           {{ item.label }}
@@ -131,7 +134,7 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
                       maxlength="500"
                       [ngModel]="row.ghi_chu ?? ''"
                       (ngModelChange)="doiGhiChu(row, $event)"
-                      [disabled]="dangLuu()"
+                      [disabled]="dangLuu() || !coTheDiemDanh()"
                       [attr.aria-label]="'Ghi chú điểm danh ' + row.sinh_vien.ho_ten"
                       placeholder="Ghi chú (không bắt buộc)"
                     />
@@ -325,6 +328,8 @@ export class DiemDanhChiTiet {
   readonly dangTai = signal(true);
   readonly dangLuu = signal(false);
   readonly loi = signal('');
+  readonly coTheDiemDanh = signal(false);
+  readonly hocKyDaDong = signal(false);
   readonly rowsHienThi = computed(() => {
     const tuKhoa = chuanHoaTimKiem(this.tuKhoa());
     if (!tuKhoa) return this.rows();
@@ -335,7 +340,7 @@ export class DiemDanhChiTiet {
     );
   });
   readonly hopLe = computed(
-    () => !this.dangLuu() && this.rows().length > 0 && this.rows().every((row) => row.trang_thai),
+    () => this.coTheDiemDanh() && !this.dangLuu() && this.rows().length > 0 && this.rows().every((row) => row.trang_thai),
   );
 
   constructor() {
@@ -369,9 +374,12 @@ export class DiemDanhChiTiet {
   tai(): void {
     this.dangTai.set(true);
     this.loi.set('');
+    this.coTheDiemDanh.set(false);
     this.service.layDiemDanh(this.buoiHocId).subscribe({
-      next: (rows) => {
-        this.rows.set(rows);
+      next: (response) => {
+        this.coTheDiemDanh.set(response.buoi_hoc.co_the_sua);
+        this.hocKyDaDong.set(response.buoi_hoc.lop_hoc_phan.hoc_ky?.trang_thai === 'CLOSED');
+        this.rows.set(response.danh_sach ?? []);
         this.dangTai.set(false);
       },
       error: () => {
