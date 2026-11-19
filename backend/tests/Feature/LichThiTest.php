@@ -258,4 +258,54 @@ class LichThiTest extends TestCase
         // Ca thi tiết 1–3 kết thúc 09:10, buổi học bắt đầu 10:15 → không giao.
         $this->taoCa(['ngay_thi' => '2026-11-10'])->assertCreated();
     }
+
+    public function test_khong_cho_xoa_ca_thi_o_hoc_ky_da_dong(): void
+    {
+        $kyDong = HocKy::factory()->create([
+            'ngay_bat_dau' => '2026-01-01',
+            'ngay_ket_thuc' => '2026-05-30',
+            'trang_thai' => HocKy::CLOSED,
+        ]);
+        $caThi = LichThi::create([
+            'hoc_ky_id' => $kyDong->id,
+            'mon_hoc_id' => $this->mon->id,
+            'phong_hoc_id' => $this->phong->id,
+            'ngay_thi' => '2026-05-10',
+            'tiet_bat_dau' => 1,
+            'tiet_ket_thuc' => 3,
+            'gio_bat_dau' => '06:30',
+            'gio_ket_thuc' => '09:10',
+            'dot_thi' => 'Cuối kỳ',
+        ]);
+
+        $this->deleteJson('/api/exams/'.$caThi->id)
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'SEMESTER_CLOSED');
+    }
+
+    public function test_khong_cho_sua_ca_thi_o_hoc_ky_da_dong(): void
+    {
+        $kyDong = HocKy::factory()->create([
+            'ngay_bat_dau' => '2026-01-01',
+            'ngay_ket_thuc' => '2026-05-30',
+            'trang_thai' => HocKy::CLOSED,
+        ]);
+        $caThi = LichThi::create([
+            'hoc_ky_id' => $kyDong->id,
+            'mon_hoc_id' => $this->mon->id,
+            'phong_hoc_id' => $this->phong->id,
+            'ngay_thi' => '2026-05-10',
+            'tiet_bat_dau' => 1,
+            'tiet_ket_thuc' => 3,
+            'gio_bat_dau' => '06:30',
+            'gio_ket_thuc' => '09:10',
+            'dot_thi' => 'Cuối kỳ',
+        ]);
+
+        $this->putJson('/api/exams/'.$caThi->id, [
+            'dot_thi' => 'Giữa kỳ',
+        ])
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'SEMESTER_CLOSED');
+    }
 }

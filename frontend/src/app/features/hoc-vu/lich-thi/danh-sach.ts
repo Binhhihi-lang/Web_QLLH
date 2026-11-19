@@ -4,6 +4,7 @@ import {
   HostListener,
   Injector,
   afterNextRender,
+  computed,
   inject,
   signal,
   viewChild,
@@ -70,6 +71,12 @@ interface FormCaThi {
       <app-alert muc="danger">{{ loi() }}</app-alert>
     }
 
+    @if (kyDaDong()) {
+      <app-alert muc="info">
+        Học kỳ này đã kết thúc. Lịch thi được khóa để bảo toàn dữ liệu lịch sử (không thể thêm, sửa hoặc xóa).
+      </app-alert>
+    }
+
     <section class="bo-loc">
       <label>
         <span>Học kỳ</span>
@@ -79,7 +86,7 @@ interface FormCaThi {
           }
         </select>
       </label>
-      @if (laAdmin()) {
+      @if (laAdmin() && !kyDaDong()) {
         <app-button variant="primary" (click)="moForm()">
           <span class="material-icons" aria-hidden="true">add</span>
           Thêm ca thi
@@ -218,7 +225,7 @@ interface FormCaThi {
                 <td>{{ t.phong_hoc?.ma_phong ?? '—' }}</td>
                 <td>{{ t.dot_thi ?? '—' }}</td>
                 <td class="thao-tac">
-                  @if (laAdmin()) {
+                  @if (laAdmin() && !kyDaDong()) {
                     <button
                       type="button"
                       class="nut-thao-tac nut-sua"
@@ -314,7 +321,7 @@ interface FormCaThi {
 
         <footer>
           <app-button variant="secondary" (click)="dongChiTiet()">Đóng</app-button>
-          @if (laAdmin()) {
+          @if (laAdmin() && !kyDaDong()) {
             <app-button variant="primary" (click)="moSua(t)">
               <span class="material-icons" aria-hidden="true">edit</span>
               Sửa
@@ -652,6 +659,12 @@ export class LichThiTrang {
   readonly form = signal<FormCaThi>(this.formRong());
 
   readonly laAdmin = () => this.auth.nguoiDung()?.vai_tro === 'ADMIN';
+
+  readonly kyDaDong = computed(() => {
+    const id = this.hocKyId();
+    const ky = this.hocKy().find((k) => k.id === id) as (TuyChon & { trang_thai?: string }) | undefined;
+    return ky?.trang_thai === 'CLOSED';
+  });
 
   private readonly nganKeo = viewChild<ElementRef<HTMLElement>>('nganKeo');
 

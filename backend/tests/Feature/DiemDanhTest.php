@@ -212,7 +212,7 @@ class DiemDanhTest extends TestCase
         ]);
     }
 
-    public function test_chan_diem_danh_khi_hoc_ky_closed_tru_admin(): void
+    public function test_chan_diem_danh_khi_hoc_ky_closed_voi_moi_vai_tro(): void
     {
         $giangVien = GiangVien::factory()->create();
         $hocKyClosed = HocKy::factory()->create(['trang_thai' => HocKy::CLOSED]);
@@ -247,10 +247,14 @@ class DiemDanhTest extends TestCase
             ->assertStatus(409)
             ->assertJsonPath('ma_loi', 'SEMESTER_CLOSED');
 
-        // ADMIN được phép sửa (ADR-017 ngoại lệ BR-14)
+        // ADMIN cũng bị chặn: đóng kỳ là khóa vĩnh viễn, không còn ngoại lệ
+        // nào cho ADMIN (thay đổi BR-14 cũ, xem docs/11).
         $this->actingAs($this->admin, 'sanctum')
             ->putJson("/api/sessions/{$buoiHoc->id}/attendance", $payload)
-            ->assertOk();
+            ->assertStatus(409)
+            ->assertJsonPath('ma_loi', 'SEMESTER_CLOSED');
+
+        $this->assertDatabaseCount('diem_danh', 0);
     }
 
     public function test_chan_giang_vien_sua_diem_danh_qua_7_ngay(): void

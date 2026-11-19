@@ -79,6 +79,11 @@ class QuanLyLichThiService
 
     public function sua(LichThi $caThi, array $duLieu, int $nguoiThucHienId): LichThi
     {
+        $caThi->loadMissing('hocKy');
+        if ($caThi->hocKy?->trang_thai === HocKy::CLOSED) {
+            throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã kết thúc, không thể thay đổi lịch thi.');
+        }
+
         $duLieu = $this->chuanHoa($duLieu + [
             'hoc_ky_id' => $caThi->hoc_ky_id,
             'mon_hoc_id' => $caThi->mon_hoc_id,
@@ -114,6 +119,11 @@ class QuanLyLichThiService
 
     public function xoa(LichThi $caThi, int $nguoiThucHienId): void
     {
+        $caThi->loadMissing('hocKy');
+        if ($caThi->hocKy?->trang_thai === HocKy::CLOSED) {
+            throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã kết thúc, không thể thay đổi lịch thi.');
+        }
+
         DB::transaction(function () use ($caThi, $nguoiThucHienId) {
             $caThi->delete();
             NhatKy::ghi('lich_thi', $caThi->id, NhatKy::XOA, nguoiThucHienId: $nguoiThucHienId);
