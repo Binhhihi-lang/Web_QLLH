@@ -58,13 +58,11 @@ import { AppButton } from '@shared/ui/app-button';
         <div class="ket-qua">
           @if (dangTim()) {
             <div class="dang-tai" role="status" aria-live="polite">Đang tìm sinh viên…</div>
+          } @else if (ketQua().length === 0 && !tuKhoa().trim()) {
+            <div class="rong-tim">Nhập mã, họ tên hoặc email để tìm sinh viên.</div>
           } @else if (ketQua().length === 0) {
             <div class="rong-tim">
-              @if (tuKhoa().trim()) {
-                Không tìm thấy sinh viên phù hợp chưa thuộc lớp này.
-              } @else {
-                Không còn sinh viên để gán trong danh sách.
-              }
+              Không tìm thấy sinh viên phù hợp chưa thuộc lớp này.
             </div>
           } @else {
             <div class="danh-sach-chon">

@@ -92,7 +92,7 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
               }
             </p>
           </div>
-          <app-button (click)="moHopGanSinhVien()">
+          <app-button type="button" (click)="moHopGanSinhVien()">
             <span class="material-icons" aria-hidden="true">person_add</span>
             Gán sinh viên
           </app-button>
@@ -142,7 +142,7 @@ import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
             } @else {
               <strong>Lớp chưa có sinh viên</strong>
               <p>Gán sinh viên hiện có vào lớp để cập nhật danh sách.</p>
-              <app-button variant="secondary" (click)="moHopGanSinhVien()">
+              <app-button type="button" variant="secondary" (click)="moHopGanSinhVien()">
                 Gán sinh viên
               </app-button>
             }
@@ -717,9 +717,15 @@ export class LopHanhChinhChiTiet {
       .pipe(
         debounceTime(250),
         switchMap((q) => {
-          this.dangTim.set(true);
           this.loiTimKiem.set('');
-          return this.service.timSinhVien(q).pipe(
+          const tuKhoa = q.trim();
+          if (!tuKhoa) {
+            this.dangTim.set(false);
+            this.ketQuaTim.set([]);
+            return of(null);
+          }
+          this.dangTim.set(true);
+          return this.service.timSinhVien(tuKhoa).pipe(
             catchError((error: unknown) => {
               this.loiTimKiem.set(this.thongBaoLoi(error, 'Không thể tìm sinh viên. Thử lại sau.'));
               return of(null);
@@ -746,7 +752,9 @@ export class LopHanhChinhChiTiet {
     this.tuKhoa.set('');
     this.daChon.set([]);
     this.loiGan.set('');
-    this.tuKhoaThayDoi.next('');
+    this.dangTim.set(false);
+    this.ketQuaTim.set([]);
+    this.loiTimKiem.set('');
   }
 
   dongHopGan(event?: Event): void {
@@ -759,6 +767,7 @@ export class LopHanhChinhChiTiet {
 
   capNhatTuKhoa(q: string): void {
     this.tuKhoa.set(q);
+    this.dangTim.set(!!q.trim());
     this.tuKhoaThayDoi.next(q);
   }
 
@@ -768,10 +777,36 @@ export class LopHanhChinhChiTiet {
   }
 
   moTaChuyen(maLop: string): string {
-    const danhSach = this.svCanChuyen()
+    const sinhVienChuyen = this.svCanChuyen();
+    const danhSach = sinhVienChuyen
       .map((sv) => `${sv.ho_ten} (từ ${sv.lop_hanh_chinh?.ma_lop ?? 'chưa xếp lớp'})`)
       .join('; ');
-    return `${this.svCanChuyen().length} sinh viên sẽ được chuyển sang ${maLop}: ${danhSach}. Việc này chỉ cập nhật lớp hành chính, không thay đổi điểm, đăng ký học phần hay điểm danh.`;
+    const lopDich = this.lop();
+    const khacKhoa = sinhVienChuyen.filter(
+      (sv) =>
+        sv.lop_hanh_chinh?.khoa_hoc &&
+        lopDich?.khoa_hoc &&
+        sv.lop_hanh_chinh.khoa_hoc !== lopDich.khoa_hoc,
+    );
+    const khacNganh = sinhVienChuyen.filter(
+      (sv) =>
+        sv.lop_hanh_chinh?.nganh?.id &&
+        lopDich?.nganh_id &&
+        sv.lop_hanh_chinh.nganh.id !== lopDich.nganh_id,
+    );
+    const canhBao = [
+      khacKhoa.length
+        ? `${khacKhoa.length} sinh viên khác khóa với lớp đích (${lopDich?.khoa_hoc ?? 'chưa xác định'}).`
+        : '',
+      khacNganh.length
+        ? `${khacNganh.length} sinh viên khác ngành với lớp đích.`
+        : '',
+    ].filter(Boolean);
+    const thongTinCanhBao = canhBao.length
+      ? `Cảnh báo: ${canhBao.join(' ')} Việc chuyển vẫn được phép; hãy xác nhận lớp/khóa/ngành đích chính xác.`
+      : '';
+
+    return `${sinhVienChuyen.length} sinh viên sẽ được chuyển sang ${maLop}: ${danhSach}. ${thongTinCanhBao} Việc này chỉ cập nhật lớp hành chính, không thay đổi điểm, đăng ký học phần hay điểm danh.`;
   }
 
   capNhatChon(sv: SinhVien, checked: boolean): void {

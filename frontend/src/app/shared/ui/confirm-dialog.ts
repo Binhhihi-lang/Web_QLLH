@@ -49,7 +49,7 @@ import { AppButton } from '@shared/ui/app-button';
     :host {
       position: fixed;
       inset: 0;
-      z-index: 100;
+      z-index: 1100;
       display: flex;
       align-items: center;
       justify-content: center;

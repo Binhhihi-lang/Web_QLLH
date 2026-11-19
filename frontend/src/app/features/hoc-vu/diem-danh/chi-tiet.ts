@@ -73,6 +73,18 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
           [value]="tuKhoa()"
           (valueChange)="tuKhoa.set($event)"
         />
+        <div class="diem-danh-hang-loat" aria-label="Áp dụng trạng thái cho cả buổi học">
+          <span>Áp dụng cho cả buổi:</span>
+          @for (item of trangThai; track item.value) {
+            <button
+              type="button"
+              [disabled]="dangLuu() || !coTheDiemDanh() || !rows().length"
+              (click)="apDungTrangThaiChoTatCa(item.value)"
+            >
+              {{ item.label }}
+            </button>
+          }
+        </div>
         <div class="nut">
           <app-button variant="secondary" size="sm" (click)="tai()" [disabled]="dangLuu()">
             Tải lại
@@ -210,6 +222,28 @@ const TRANG_THAI: Array<{ value: TrangThaiDiemDanh; label: string }> = [
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+    }
+    .diem-danh-hang-loat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      color: var(--color-ink-muted);
+      font-size: var(--text-caption);
+    }
+    .diem-danh-hang-loat button {
+      padding: 7px 9px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-primary);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+    }
+    .diem-danh-hang-loat button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
     }
     .bang {
       overflow: auto;
@@ -390,8 +424,14 @@ export class DiemDanhChiTiet {
   }
 
   doiTrangThai(row: DongDiemDanh, trangThai: TrangThaiDiemDanh): void {
+    if (!this.coTheDiemDanh() || this.dangLuu()) return;
     row.trang_thai = trangThai;
     this.rows.update((rows) => [...rows]);
+  }
+
+  apDungTrangThaiChoTatCa(trangThai: TrangThaiDiemDanh): void {
+    if (!this.coTheDiemDanh() || this.dangLuu() || !this.rows().length) return;
+    this.rows.update((rows) => rows.map((row) => ({ ...row, trang_thai: trangThai })));
   }
 
   doiGhiChu(row: DongDiemDanh, ghiChu: string): void {
