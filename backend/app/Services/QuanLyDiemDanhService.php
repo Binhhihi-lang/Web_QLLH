@@ -135,9 +135,11 @@ class QuanLyDiemDanhService
             abort(403, 'Bạn không có quyền thực hiện chức năng này.');
         }
 
-        // BR-14, ADR-017: Học kỳ CLOSED chỉ có ADMIN được sửa điểm danh
-        if ($lop->hocKy?->trang_thai === HocKy::CLOSED && ! $user->laAdmin()) {
-            throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã kết thúc, không thể điểm danh.', 409);
+        // Học kỳ CLOSED là khóa vĩnh viễn: KHÔNG AI ghi được, kể cả ADMIN.
+        // Muốn sửa thì phải chốt xong trong kỳ. Đây là thay đổi so với BR-14
+        // cũ (từng cho ADMIN ngoại lệ) — xem docs/11.
+        if ($lop->hocKy?->trang_thai === HocKy::CLOSED) {
+            throw new LoiNghiepVu('SEMESTER_CLOSED', 'Học kỳ đã đóng, không thể điểm danh. Muốn sửa phải làm trong kỳ.', 409);
         }
 
         // BR-21, FR-11.03: Quá 7 ngày kể từ khi kết thúc buổi học chỉ ADMIN được sửa
@@ -349,12 +351,14 @@ class QuanLyDiemDanhService
 
     private function kiemTraCoTheSua(BuoiHoc $buoiHoc, User $user): bool
     {
-        if ($user->laAdmin()) {
-            return true;
-        }
-
+        // Kỳ CLOSED chặn cả ADMIN — kiểm trước nhánh quyền, không có ngoại lệ.
         if ($buoiHoc->lopHocPhan->hocKy?->trang_thai === HocKy::CLOSED) {
             return false;
+        }
+
+        // ADMIN không bị giới hạn 7 ngày, nhưng vẫn chịu khóa học kỳ ở trên.
+        if ($user->laAdmin()) {
+            return true;
         }
 
         $soNgay = (int) CauHinh::lay('diem.diem_danh.sua_trong_so_ngay', 7);

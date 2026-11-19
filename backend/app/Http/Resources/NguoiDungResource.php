@@ -36,12 +36,22 @@ class NguoiDungResource extends JsonResource
     private function hoSo(): ?array
     {
         if ($this->relationLoaded('sinhVien') && $this->sinhVien !== null) {
+            $sv = $this->sinhVien;
+            $lhc = $sv->relationLoaded('lopHanhChinh') ? $sv->lopHanhChinh : null;
+            $nganh = $lhc && $lhc->relationLoaded('nganh') ? $lhc->nganh : null;
+
             return [
                 'loai' => 'sinh_vien',
-                'id' => $this->sinhVien->id,
-                'ma_sv' => $this->sinhVien->ma_sv,
-                'ho_ten' => $this->sinhVien->ho_ten,
-                'lop_hanh_chinh_id' => $this->sinhVien->lop_hanh_chinh_id,
+                'id' => $sv->id,
+                'ma_sv' => $sv->ma_sv,
+                'ho_ten' => $sv->ho_ten,
+                'lop_hanh_chinh_id' => $sv->lop_hanh_chinh_id,
+                'ma_lop' => $lhc?->ma_lop,
+                'ten_lop' => $lhc?->ten_lop,
+                'khoa_hoc' => $lhc?->khoa_hoc,
+                'nam_nhap_hoc' => $lhc?->nam_nhap_hoc,
+                'ma_nganh' => $nganh?->ma_nganh,
+                'ten_nganh' => $nganh?->ten_nganh,
             ];
         }
 

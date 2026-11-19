@@ -50,7 +50,7 @@ class AuthController extends Controller
         // (nút Sửa hồ sơ, route `ownTeacherProfile`). Thiếu nó thì cả phiên chỉ
         // có `ho_so: null` vì `authGuard` thấy người dùng đã có nên không gọi
         // lại `/auth/me`.
-        $nguoiDung->load(['sinhVien', 'giangVien']);
+        $nguoiDung->load(['sinhVien.lopHanhChinh.nganh', 'giangVien']);
 
         return $this->success([
             'token' => $token,
@@ -74,7 +74,7 @@ class AuthController extends Controller
      */
     public function toi(Request $request): JsonResponse
     {
-        return $this->success(new NguoiDungResource($request->user()->load(['sinhVien', 'giangVien'])));
+        return $this->success(new NguoiDungResource($request->user()->load(['sinhVien.lopHanhChinh.nganh', 'giangVien'])));
     }
 
     /**

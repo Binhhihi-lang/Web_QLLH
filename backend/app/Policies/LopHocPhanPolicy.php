@@ -91,10 +91,16 @@ class LopHocPhanPolicy
             || $this->daDangKy($nguoiDung, $lop);
     }
 
-    /** Sinh lịch, sửa, hủy, xóa buổi — ADMIN hoặc giảng viên phụ trách lớp. */
+    /**
+     * Sinh lịch, thêm, sửa, hủy, mở lại, xóa buổi — CHỈ ADMIN.
+     *
+     * Giảng viên không tự xếp lịch và không tự hủy buổi; vai trò này như
+     * phòng đào tạo. Giảng viên vẫn xem lịch lớp mình (`xemBuoiHoc`) và
+     * điểm danh (`diemDanh`) — chỉ mất quyền thay đổi lịch.
+     */
     public function quanLyBuoiHoc(User $nguoiDung, LopHocPhan $lop): bool
     {
-        return $nguoiDung->laAdmin() || $this->laGiangVienCuaLop($nguoiDung, $lop);
+        return $nguoiDung->laAdmin();
     }
 
     public function nhapDiem(User $nguoiDung, LopHocPhan $lop): bool

@@ -303,4 +303,64 @@ class BuoiHocTest extends TestCase
 
         $this->assertSame(BuoiHoc::DONE, $buoi->fresh()->trang_thai);
     }
+
+    public function test_giang_vien_khong_sinh_duoc_lich(): void
+    {
+        $this->actingAs($this->lop->giangVien->user, 'sanctum');
+
+        $this->sinhLich()->assertForbidden();
+
+        $this->assertSame(0, BuoiHoc::query()->count());
+    }
+
+    public function test_giang_vien_khong_sua_duoc_buoi(): void
+    {
+        $buoi = BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $this->lop->id,
+            'ngay_hoc' => '2026-11-04',
+            'gio_bat_dau' => '07:00',
+            'gio_ket_thuc' => '09:00',
+            'phong_hoc_id' => $this->phong->id,
+        ]);
+
+        $this->actingAs($this->lop->giangVien->user, 'sanctum');
+
+        $this->putJson("/api/sessions/{$buoi->id}", [
+            'ngay_hoc' => '2026-11-05',
+            'phong_hoc_id' => $this->phong->id,
+        ])->assertForbidden();
+
+        $this->assertSame('2026-11-04', $buoi->fresh()->ngay_hoc->toDateString());
+    }
+
+    public function test_giang_vien_khong_huy_duoc_buoi_chua_day(): void
+    {
+        $buoi = BuoiHoc::factory()->create([
+            'lop_hoc_phan_id' => $this->lop->id,
+            'ngay_hoc' => '2026-11-04',
+            'gio_bat_dau' => '07:00',
+            'gio_ket_thuc' => '09:00',
+            'phong_hoc_id' => $this->phong->id,
+            'trang_thai' => BuoiHoc::SCHEDULED,
+        ]);
+
+        $this->actingAs($this->lop->giangVien->user, 'sanctum');
+
+        $this->patchJson("/api/sessions/{$buoi->id}/status", ['trang_thai' => BuoiHoc::CANCELLED])
+            ->assertForbidden();
+
+        $this->assertSame(BuoiHoc::SCHEDULED, $buoi->fresh()->trang_thai);
+    }
+
+    public function test_admin_van_sinh_duoc_lich_va_sua_duoc_buoi(): void
+    {
+        $this->sinhLich()->assertCreated();
+        $this->assertSame(4, BuoiHoc::query()->count());
+
+        $buoi = BuoiHoc::query()->orderBy('ngay_hoc')->firstOrFail();
+        $this->putJson("/api/sessions/{$buoi->id}", [
+            'ngay_hoc' => $buoi->ngay_hoc->toDateString(),
+            'phong_hoc_id' => $this->phong->id,
+        ])->assertOk();
+    }
 }

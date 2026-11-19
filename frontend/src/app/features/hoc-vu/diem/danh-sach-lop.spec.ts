@@ -21,7 +21,6 @@ describe('DanhSachLopNhapDiem', () => {
     giang_vien: { id: 4, ma_gv: 'GV0004', ho_ten: 'Nguyễn Minh An' },
     si_so_toi_da: 40,
     si_so_hien_tai: 25,
-    nam_thu: null,
     trang_thai: 'OPEN',
     da_chot_diem: false,
     chot_diem_luc: null,

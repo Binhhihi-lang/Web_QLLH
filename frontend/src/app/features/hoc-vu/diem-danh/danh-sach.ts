@@ -10,8 +10,9 @@ import { ChonTimKiem, LuaChonTimKiem } from '@shared/ui/chon-tim-kiem';
 import { DateInput } from '@shared/ui/date-input';
 import { LoadingState } from '@shared/ui/loading';
 import { PageHeader } from '@shared/ui/page-header';
+import { SearchInput } from '@shared/ui/search-input';
 import { StatusBadge } from '@shared/ui/status-badge';
-import { BuoiHocDiemDanh, DiemDanhService } from './diem-danh.service';
+import { BuoiHocDiemDanh, DiemDanhService, ThongKeChuyenCan } from './diem-danh.service';
 
 @Component({
   selector: 'app-diem-danh-danh-sach',
@@ -24,6 +25,7 @@ import { BuoiHocDiemDanh, DiemDanhService } from './diem-danh.service';
     LoadingState,
     PageHeader,
     RouterLink,
+    SearchInput,
     StatusBadge,
   ],
   template: `
@@ -100,67 +102,172 @@ import { BuoiHocDiemDanh, DiemDanhService } from './diem-danh.service';
           </button>
         </app-alert>
       } @else if (lopIdDangChon() && !loi()) {
-        @if (buoiHienThi().length) {
-          <section class="danh-sach" aria-label="Danh sách buổi học">
-            @for (buoi of buoiHienThi(); track buoi.id) {
-              <article class="buoi">
-                <div class="ngay" aria-label="Ngày học">
-                  <span class="material-icons" aria-hidden="true">event</span>
-                  <time [attr.datetime]="buoi.ngay_hoc">{{ dinhDangNgay(buoi.ngay_hoc) }}</time>
-                </div>
-                <div class="noi-dung">
-                  <div class="tieu-de">
-                    <h2>{{ lopDuocChon()?.mon_hoc?.ten_mon }}</h2>
-                    <app-status-badge
-                      [value]="
-                        buoi.trang_thai === 'CANCELLED'
-                          ? 'CANCELLED'
-                          : buoi.da_diem_danh
-                            ? 'DONE'
-                            : 'PENDING'
-                      "
-                      [label]="nhanTrangThai(buoi)"
-                      [mau]="mauTrangThai(buoi)"
-                    />
+        <div class="thanh-chuyen-muc">
+          <div class="tabs-muc">
+            <button
+              type="button"
+              class="tab-nut"
+              [class.tab-nut--active]="tabHienTai() === 'buoi-hoc'"
+              (click)="tabHienTai.set('buoi-hoc')"
+            >
+              <span class="material-icons" aria-hidden="true">event_available</span>
+              Danh sách buổi học
+            </button>
+            <button
+              type="button"
+              class="tab-nut"
+              [class.tab-nut--active]="tabHienTai() === 'chuyen-can'"
+              (click)="chuyenSangThongKe()"
+            >
+              <span class="material-icons" aria-hidden="true">analytics</span>
+              Thống kê chuyên cần của lớp
+            </button>
+          </div>
+          @if (tabHienTai() === 'chuyen-can' && thongKe(); as tk) {
+            <button class="nut-xuat-csv" type="button" (click)="xuatCsv(tk)">
+              <span class="material-icons" aria-hidden="true">download</span>
+              Xuất CSV
+            </button>
+          }
+        </div>
+
+        @if (tabHienTai() === 'buoi-hoc') {
+          @if (buoiHienThi().length) {
+            <section class="danh-sach" aria-label="Danh sách buổi học">
+              @for (buoi of buoiHienThi(); track buoi.id) {
+                <article class="buoi">
+                  <div class="ngay" aria-label="Ngày học">
+                    <span class="material-icons" aria-hidden="true">event</span>
+                    <time [attr.datetime]="buoi.ngay_hoc">{{ dinhDangNgay(buoi.ngay_hoc) }}</time>
                   </div>
-                  <p>{{ lopDuocChon()?.ma_lop_hp }} · {{ lopDuocChon()?.mon_hoc?.ma_mon }}</p>
-                  <span class="gio">
-                    <span class="material-icons" aria-hidden="true">schedule</span>
-                    {{ buoi.gio_bat_dau }} – {{ buoi.gio_ket_thuc }}
-                  </span>
-                </div>
-                @if (buoi.trang_thai === 'CANCELLED') {
-                  <span class="da-huy">Buổi học đã hủy</span>
-                } @else {
-                  <a
-                    class="hanh-dong"
-                    [routerLink]="['/diem-danh', buoi.id]"
-                    [queryParams]="{
-                      ngay_hoc: buoi.ngay_hoc,
-                      gio_bat_dau: buoi.gio_bat_dau,
-                      gio_ket_thuc: buoi.gio_ket_thuc,
-                      ma_lop_hp: lopDuocChon()?.ma_lop_hp,
-                      ten_mon: lopDuocChon()?.mon_hoc?.ten_mon,
-                      lop_hoc_phan_id: lopDuocChon()?.id,
-                    }"
-                  >
-                    {{ buoi.da_diem_danh ? 'Xem / sửa' : 'Điểm danh' }}
-                    <span class="material-icons" aria-hidden="true">arrow_forward</span>
-                  </a>
-                }
-              </article>
-            }
-          </section>
+                  <div class="noi-dung">
+                    <div class="tieu-de">
+                      <h2>{{ lopDuocChon()?.mon_hoc?.ten_mon }}</h2>
+                      <app-status-badge
+                        [value]="
+                          buoi.trang_thai === 'CANCELLED'
+                            ? 'CANCELLED'
+                            : buoi.da_diem_danh
+                              ? 'DONE'
+                              : 'PENDING'
+                        "
+                        [label]="nhanTrangThai(buoi)"
+                        [mau]="mauTrangThai(buoi)"
+                      />
+                    </div>
+                    <p>{{ lopDuocChon()?.ma_lop_hp }} · {{ lopDuocChon()?.mon_hoc?.ma_mon }}</p>
+                    <span class="gio">
+                      <span class="material-icons" aria-hidden="true">schedule</span>
+                      {{ buoi.gio_bat_dau }} – {{ buoi.gio_ket_thuc }}
+                    </span>
+                  </div>
+                  @if (buoi.trang_thai === 'CANCELLED') {
+                    <span class="da-huy">Buổi học đã hủy</span>
+                  } @else {
+                    <a
+                      class="hanh-dong"
+                      [routerLink]="['/diem-danh', buoi.id]"
+                      [queryParams]="{
+                        ngay_hoc: buoi.ngay_hoc,
+                        gio_bat_dau: buoi.gio_bat_dau,
+                        gio_ket_thuc: buoi.gio_ket_thuc,
+                        ma_lop_hp: lopDuocChon()?.ma_lop_hp,
+                        ten_mon: lopDuocChon()?.mon_hoc?.ten_mon,
+                        lop_hoc_phan_id: lopDuocChon()?.id,
+                      }"
+                    >
+                      {{ buoi.da_diem_danh ? 'Xem / sửa' : 'Điểm danh' }}
+                      <span class="material-icons" aria-hidden="true">arrow_forward</span>
+                    </a>
+                  }
+                </article>
+              }
+            </section>
+          } @else {
+            <section class="rong">
+              <span class="material-icons" aria-hidden="true">event_busy</span>
+              <h2>
+                {{
+                  ngayLoc() || trangThaiLoc() !== 'ALL' ? 'Không có buổi phù hợp' : 'Chưa có buổi học'
+                }}
+              </h2>
+              <p>Thử điều chỉnh bộ lọc hoặc chọn một lớp học phần khác.</p>
+            </section>
+          }
         } @else {
-          <section class="rong">
-            <span class="material-icons" aria-hidden="true">event_busy</span>
-            <h2>
-              {{
-                ngayLoc() || trangThaiLoc() !== 'ALL' ? 'Không có buổi phù hợp' : 'Chưa có buổi học'
-              }}
-            </h2>
-            <p>Thử điều chỉnh bộ lọc hoặc chọn một lớp học phần khác.</p>
-          </section>
+          <!-- Thống kê chuyên cần của lớp -->
+          @if (dangTaiThongKe()) {
+            <app-loading-state label="Đang tải dữ liệu chuyên cần của lớp…" />
+          } @else if (thongKe(); as data) {
+            <section class="thong-ke-lop" aria-label="Thống kê chuyên cần">
+              <div class="luoi-the-tk">
+                <div class="the-tk">
+                  <span class="the-tk__nhan">Tổng số buổi đã lên lịch</span>
+                  <strong class="the-tk__so">{{ data.tong_buoi }}</strong>
+                </div>
+                <div class="the-tk">
+                  <span class="the-tk__nhan">Sĩ số sinh viên</span>
+                  <strong class="the-tk__so">{{ data.sinh_vien.length }}</strong>
+                </div>
+              </div>
+
+              <div class="thanh-loc-sv">
+                <app-search-input
+                  placeholder="Tìm theo mã sinh viên hoặc họ tên…"
+                  [value]="tuKhoaThongKe()"
+                  (valueChange)="tuKhoaThongKe.set($event)"
+                />
+                <span class="so-luong-sv">{{ rowsThongKeHienThi().length }} / {{ data.sinh_vien.length }} sinh viên</span>
+              </div>
+
+              @if (rowsThongKeHienThi().length) {
+                <div class="bang-cuon-tk">
+                  <table class="bang-tk">
+                    <thead>
+                      <tr>
+                        <th>Mã sinh viên</th>
+                        <th>Họ và tên</th>
+                        <th class="so">Có mặt</th>
+                        <th class="so">Đi muộn</th>
+                        <th class="so">Vắng</th>
+                        <th class="so">Có phép</th>
+                        <th>Tỷ lệ chuyên cần</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of rowsThongKeHienThi(); track row.dang_ky_hoc_phan_id) {
+                        <tr>
+                          <td class="mono font-bold">{{ row.sinh_vien.ma_sv }}</td>
+                          <td>
+                            <strong>{{ row.sinh_vien.ho_ten }}</strong>
+                            <small class="chu-mo">{{ row.sinh_vien.lop || row.sinh_vien.email }}</small>
+                          </td>
+                          <td class="so text-success font-semibold">{{ row.co_mat }}</td>
+                          <td class="so text-warning font-semibold">{{ row.di_muon }}</td>
+                          <td class="so text-danger font-semibold">{{ row.vang }}</td>
+                          <td class="so font-semibold">{{ row.co_phep }}</td>
+                          <td>
+                            @if (row.ty_le === null) {
+                              <span class="chu-mo">Chưa có dữ liệu</span>
+                            } @else {
+                              <div class="ti-le-box">
+                                <strong>{{ dinhDangTyLe(row.ty_le) }}</strong>
+                                <div class="thanh-ty-le">
+                                  <div class="phan-tram-ty-le" [style.width.%]="row.ty_le * 100"></div>
+                                </div>
+                              </div>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="chu-mo">Không tìm thấy sinh viên nào phù hợp.</p>
+              }
+            </section>
+          }
         }
       } @else {
         <section class="rong">
@@ -290,6 +397,156 @@ import { BuoiHocDiemDanh, DiemDanhService } from './diem-danh.service';
       font-weight: 650;
       text-decoration: none;
     }
+    .thanh-chuyen-muc {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tabs-muc {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      background: var(--color-surface-alt);
+      border-radius: var(--radius);
+      border: 1px solid var(--color-border);
+    }
+    .tab-nut {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-ink-muted);
+      font: inherit;
+      font-size: var(--text-small);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-nut .material-icons {
+      font-size: 18px;
+    }
+    .tab-nut--active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .nut-xuat-csv {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+      color: var(--color-ink);
+      font: inherit;
+      font-size: var(--text-small);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .nut-xuat-csv .material-icons {
+      font-size: 18px;
+      color: var(--color-primary);
+    }
+    .thong-ke-lop {
+      display: grid;
+      gap: 14px;
+    }
+    .luoi-the-tk {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .the-tk {
+      padding: 14px 18px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+      display: grid;
+      gap: 4px;
+    }
+    .the-tk__nhan {
+      font-size: var(--text-caption);
+      color: var(--color-ink-muted);
+    }
+    .the-tk__so {
+      font-size: var(--text-h3);
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+    .thanh-loc-sv {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .thanh-loc-sv app-search-input {
+      width: min(100%, 340px);
+    }
+    .so-luong-sv {
+      font-size: var(--text-caption);
+      color: var(--color-ink-muted);
+    }
+    .bang-cuon-tk {
+      overflow-x: auto;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+    }
+    .bang-tk {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-small);
+    }
+    .bang-tk th,
+    .bang-tk td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--color-border-soft);
+      text-align: left;
+    }
+    .bang-tk th {
+      background: var(--color-surface-alt);
+      font-size: var(--text-caption);
+      color: var(--color-ink-muted);
+      font-weight: 600;
+    }
+    .bang-tk th.so,
+    .bang-tk td.so {
+      text-align: center;
+    }
+    .ti-le-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .thanh-ty-le {
+      flex: 1;
+      height: 8px;
+      background: var(--color-surface-alt);
+      border-radius: 999px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+    .phan-tram-ty-le {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: 999px;
+    }
+    .mono { font-family: var(--font-mono, ui-monospace, monospace); }
+    .chu-mo { color: var(--color-ink-muted); font-size: var(--text-caption); }
+    .text-success { color: var(--color-on-success-soft, #166534); }
+    .text-warning { color: var(--color-on-warning-soft, #854d0e); }
+    .text-danger { color: var(--color-on-danger-soft, #991b1b); }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+
     .hanh-dong:hover {
       text-decoration: underline;
     }
@@ -379,6 +636,22 @@ export class DiemDanhDanhSach {
   readonly loi = signal('');
   readonly loiBuoi = signal('');
 
+  readonly tabHienTai = signal<'buoi-hoc' | 'chuyen-can'>('buoi-hoc');
+  readonly thongKe = signal<ThongKeChuyenCan | null>(null);
+  readonly dangTaiThongKe = signal(false);
+  readonly tuKhoaThongKe = signal('');
+
+  readonly rowsThongKeHienThi = computed(() => {
+    const rows = this.thongKe()?.sinh_vien ?? [];
+    const tuKhoa = chuanHoaTimKiem(this.tuKhoaThongKe());
+    if (!tuKhoa) return rows;
+    return rows.filter((row) =>
+      chuanHoaTimKiem(
+        `${row.sinh_vien.ma_sv} ${row.sinh_vien.ho_ten} ${row.sinh_vien.email}`,
+      ).includes(tuKhoa),
+    );
+  });
+
   /**
    * Nguồn cho ô chọn lớp có tìm kiếm. Danh sách đã tải hết một lần, nên lọc
    * ngay tại client — tìm theo mã lớp, tên môn và mã môn, bỏ dấu tiếng Việt.
@@ -453,7 +726,12 @@ export class DiemDanhDanhSach {
     this.loiBuoi.set('');
     if (!id) {
       this.dangTaiBuoi.set(false);
+      this.thongKe.set(null);
       return;
+    }
+
+    if (this.tabHienTai() === 'chuyen-can') {
+      this.taiThongKe(id);
     }
 
     this.dangTaiBuoi.set(true);
@@ -469,6 +747,67 @@ export class DiemDanhDanhSach {
         this.dangTaiBuoi.set(false);
       },
     });
+  }
+
+  chuyenSangThongKe(): void {
+    this.tabHienTai.set('chuyen-can');
+    const id = this.lopIdDangChon();
+    if (id) {
+      this.taiThongKe(id);
+    }
+  }
+
+  taiThongKe(lopId: number): void {
+    this.dangTaiThongKe.set(true);
+    this.service.layThongKe(lopId).subscribe({
+      next: (data) => {
+        this.thongKe.set(data);
+        this.dangTaiThongKe.set(false);
+      },
+      error: () => {
+        this.dangTaiThongKe.set(false);
+      },
+    });
+  }
+
+  dinhDangTyLe(tyLe: number): string {
+    return new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 1 }).format(
+      tyLe,
+    );
+  }
+
+  xuatCsv(data: ThongKeChuyenCan): void {
+    const cot = [
+      'Mã sinh viên',
+      'Họ và tên',
+      'Có mặt',
+      'Đi muộn',
+      'Vắng',
+      'Có phép',
+      'Tỷ lệ chuyên cần',
+    ];
+    const dong = data.sinh_vien.map((row) =>
+      [
+        row.sinh_vien.ma_sv,
+        row.sinh_vien.ho_ten,
+        row.co_mat,
+        row.di_muon,
+        row.vang,
+        row.co_phep,
+        row.ty_le === null ? '' : this.dinhDangTyLe(row.ty_le),
+      ]
+        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+        .join(','),
+    );
+    const file = new Blob(['\uFEFF', [cot.join(','), ...dong].join('\r\n')], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chuyen-can-${data.ma_lop_hp}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   dinhDangNgay(ngay: string): string {

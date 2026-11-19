@@ -79,7 +79,7 @@ import { StatusBadge } from '@shared/ui/status-badge';
               <div class="chan-lop">
                 <span>
                   <span class="material-icons" aria-hidden="true">person</span>
-                  {{ lop.giang_vien.ho_ten }}
+                  {{ lop.giang_vien?.ho_ten ?? 'Chưa phân công' }}
                 </span>
                 <span>
                   <span class="material-icons" aria-hidden="true">groups</span>
@@ -373,7 +373,7 @@ export class DanhSachLopNhapDiem {
       if (kyId && lop.hoc_ky?.id !== kyId) return false;
       if (!tuKhoa) return true;
       return chuanHoaTimKiem(
-        `${lop.ma_lop_hp} ${lop.mon_hoc.ma_mon} ${lop.mon_hoc.ten_mon} ${lop.giang_vien.ho_ten}`,
+        `${lop.ma_lop_hp} ${lop.mon_hoc.ma_mon} ${lop.mon_hoc.ten_mon} ${lop.giang_vien?.ho_ten ?? ''}`,
       ).includes(tuKhoa);
     });
   });
