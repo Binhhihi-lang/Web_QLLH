@@ -12,6 +12,23 @@ use Illuminate\Database\Seeder;
 
 class DanhMucSeeder extends Seeder
 {
+    /**
+     * Viết tắt ngành dùng trong mã lớp: KTPM → PM, ATTT → ATTT...
+     *
+     * Không thêm cột `viet_tat` vào bảng `nganh` chỉ để phục vụ seeder —
+     * đây là quy ước hiển thị, giữ trong code. Nếu sau này ADMIN cần tự
+     * cấu hình thì mới đáng thêm cột.
+     *
+     * @var array<string, string>
+     */
+    private const VIET_TAT_NGANH = [
+        'KTPM' => 'PM',
+        'HTTT' => 'HTTT',
+        'KHMT' => 'KHMT',
+        'MTTT' => 'MTTT',
+        'ATTT' => 'ATTT',
+    ];
+
     public function run(): void
     {
         $this->seedLopHanhChinh();
@@ -32,10 +49,21 @@ class DanhMucSeeder extends Seeder
         $idTheoMa = Nganh::query()->pluck('id', 'ma_nganh');
         $rows = [];
 
+        // Đếm số lớp đã sinh cho mỗi cặp (ngành, khóa) để đánh số 1, 2, 3...
+        $demTheoKhoaNganh = [];
+
         for ($i = 1; $i <= 20; $i++) {
-            $khoaHoc = 'K'.(63 + intdiv($i, 5));
+            $khoaSo = 63 + intdiv($i, 5);
+            $khoaHoc = 'K'.$khoaSo;
             $nganhCuaLop = $nganh[($i - 1) % count($nganh)];
-            $ma = sprintf('%s-%s%02d', $nganhCuaLop, $khoaHoc, $i);
+
+            // Mã lớp hành chính: <2 số cuối khóa><viết tắt ngành><số thứ tự>
+            // trong cùng (khóa, ngành) — vd 68PM2 = khóa 68, Phần mềm, lớp 2.
+            $vietTat = self::VIET_TAT_NGANH[$nganhCuaLop] ?? $nganhCuaLop;
+            $khoaNganh = $khoaSo.'-'.$nganhCuaLop;
+            $demTheoKhoaNganh[$khoaNganh] = ($demTheoKhoaNganh[$khoaNganh] ?? 0) + 1;
+
+            $ma = sprintf('%d%s%d', $khoaSo, $vietTat, $demTheoKhoaNganh[$khoaNganh]);
             $rows[] = [
                 'ma_lop' => $ma,
                 'ten_lop' => 'Lớp '.$ma,

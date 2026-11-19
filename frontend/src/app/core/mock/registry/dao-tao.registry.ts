@@ -1597,7 +1597,7 @@ export class DaoTaoRegistry {
     id: number,
   ): { ma_loi: typeof MaLoi.DELETE_BLOCKED; message: string } | null {
     const conLopDangMo = LOP_HOC_PHAN_MOCK.some(
-      (lop) => lop.giang_vien.id === id && !lop.da_xoa && lop.hoc_ky.trang_thai !== 'CLOSED',
+      (lop) => lop.giang_vien?.id === id && !lop.da_xoa && lop.hoc_ky.trang_thai !== 'CLOSED',
     );
     return conLopDangMo
       ? {

@@ -37,6 +37,11 @@ export interface HoSoNguoiDung {
   ma_gv?: string;
   lop_hanh_chinh_id?: number | null;
   nganh_id?: number | null;
+  ma_lop?: string;
+  ten_lop?: string;
+  khoa_hoc?: string | null;
+  ma_nganh?: string;
+  ten_nganh?: string;
 }
 
 export interface SinhVien {
@@ -70,8 +75,13 @@ export interface LopHanhChinhRutGon {
   khoa_hoc?: string | null;
   /** Năm nhập học, dạng 2023. */
   nam_nhap_hoc?: number | null;
-  /** Ngành của lớp — khối rút gọn, không kèm `khoa_id`. */
-  nganh?: { id: number; ma_nganh: string; ten_nganh: string } | null;
+  /** Ngành của lớp — khối rút gọn, kèm khoa nếu có. */
+  nganh?: {
+    id: number;
+    ma_nganh: string;
+    ten_nganh: string;
+    khoa?: KhoaRutGon | null;
+  } | null;
 }
 
 /** Khoa — đơn vị quản lý cấp trên của ngành và của môn học (ADR-020). */
@@ -137,11 +147,10 @@ export interface LopHocPhan {
   ma_lop_hp: string;
   mon_hoc: MonHocRutGon;
   hoc_ky: HocKyRutGon;
-  giang_vien: GiangVienRutGon;
+  giang_vien: GiangVienRutGon | null;
+  giang_vien_id?: number | null;
   si_so_toi_da: number;
   si_so_hien_tai: number;
-  /** null = lớp phục vụ mọi năm (BR-23). */
-  nam_thu: number | null;
   trang_thai: TrangThaiLopHocPhan;
   da_chot_diem: boolean;
   chot_diem_luc: string | null;
@@ -301,7 +310,6 @@ export interface TuyChonLopHanhChinh extends TuyChon {
 
 export interface TuyChonLopHocPhan extends TuyChon {
   con_cho: number;
-  nam_thu: number | null;
 }
 
 /**

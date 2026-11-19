@@ -48,6 +48,12 @@ export const DAO_TAO_MENU: NhomMenu = {
       vai_tro: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'],
     },
     {
+      nhan: 'Chương trình đào tạo',
+      duong_dan: '/chuong-trinh-dao-tao',
+      icon: 'schema',
+      vai_tro: ['ADMIN'],
+    },
+    {
       nhan: 'Học kỳ',
       duong_dan: '/hoc-ky',
       icon: 'date_range',

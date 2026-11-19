@@ -27,6 +27,12 @@ export const HOC_VU_MENU: NhomMenu = {
       vai_tro: ['ADMIN', 'GIANG_VIEN'],
     },
     {
+      nhan: 'Chương trình học',
+      duong_dan: '/chuong-trinh-hoc',
+      icon: 'menu_book',
+      vai_tro: ['SINH_VIEN'],
+    },
+    {
       nhan: 'Đăng ký học phần',
       duong_dan: '/dang-ky-hoc-phan',
       icon: 'how_to_reg',

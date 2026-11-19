@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '@core/auth/auth.guard';
+import { vaiTroCanMatch } from '@core/auth/vai-tro-can-match.guard';
 import { DangXayDung } from '@shared/ui/dang-xay-dung';
 
 /**
@@ -121,6 +122,26 @@ export const daoTaoRoutes: Routes = [
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'], ma: 'SCR-20', title: 'Sửa môn học' },
     loadComponent: () => import('@features/dao-tao/mon-hoc/form').then((m) => m.MonHocForm),
+  },
+
+  // SCR mới — Chương trình đào tạo (mockup docs/design/ctdt-va-quyen-buoi-hoc.html §04/05).
+  // Dùng `canMatch` chứ không `canActivate` như các màn ADMIN khác: brief của
+  // đợt này chốt `vaiTroCanMatch('ADMIN')`, và guard này không redirect nên
+  // người không phải ADMIN rơi xuống 404 thay vì bị đẩy về dashboard giữa lúc
+  // đang mở một luồng khác.
+  {
+    path: 'chuong-trinh-dao-tao',
+    canMatch: [vaiTroCanMatch('ADMIN')],
+    data: { title: 'Chương trình đào tạo' },
+    loadComponent: () =>
+      import('@features/dao-tao/chuong-trinh/danh-sach').then((m) => m.ChuongTrinhDanhSach),
+  },
+  {
+    path: 'chuong-trinh-dao-tao/:id',
+    canMatch: [vaiTroCanMatch('ADMIN')],
+    data: { title: 'Môn trong chương trình' },
+    loadComponent: () =>
+      import('@features/dao-tao/chuong-trinh/chi-tiet').then((m) => m.ChuongTrinhChiTiet),
   },
 
   // SCR-54 — Quản lý Khoa

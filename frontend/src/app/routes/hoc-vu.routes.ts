@@ -59,6 +59,9 @@ export const hocVuRoutes: Routes = [
   },
   { path: 'lop-hoc-phan/:id/diem/lich-su', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-43', title: 'Lịch sử sửa điểm' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
   { path: 'lop-hoc-phan/:id/diem', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN'], ma: 'SCR-41', title: 'Bảng điểm lớp' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/diem').then((m) => m.LopHocPhanDiem) },
+  // Mở lớp hàng loạt theo chương trình (2026-11-13). Phải khai TRƯỚC
+  // `lop-hoc-phan/:id` để router không hiểu "mo-theo-chuong-trinh" là id.
+  { path: 'lop-hoc-phan/mo-theo-chuong-trinh', canActivate: [roleGuard], data: { roles: ['ADMIN'], title: 'Mở lớp theo chương trình' }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/mo-theo-chuong-trinh').then((m) => m.MoLopTheoChuongTrinh) },
   { path: 'lop-hoc-phan/them', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
   { path: 'lop-hoc-phan/:id/sua', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/form').then((m) => m.LopHocPhanForm) },
   { path: 'lop-hoc-phan/:id', canActivate: [roleGuard], data: { roles: ['ADMIN', 'GIANG_VIEN', 'SINH_VIEN'] }, loadComponent: () => import('@features/hoc-vu/lop-hoc-phan/chi-tiet').then((m) => m.LopHocPhanChiTiet) },
@@ -69,6 +72,20 @@ export const hocVuRoutes: Routes = [
     canActivate: [roleGuard],
     data: { roles: ['ADMIN'], ma: 'SCR-30', title: 'Đăng ký' },
     loadComponent: () => import('@features/hoc-vu/dang-ky/dang-ky-ho').then((m) => m.DangKyHo),
+  },
+  {
+    path: 'chuong-trinh-hoc',
+    canActivate: [roleGuard],
+    data: { roles: ['SINH_VIEN'], ma: 'SCR-CTK', title: 'Chương trình học' },
+    loadComponent: () =>
+      import('@features/hoc-vu/chuong-trinh-khung/chuong-trinh-khung').then(
+        (m) => m.ChuongTrinhKhungSinhVien,
+      ),
+  },
+  {
+    path: 'chuong-trinh-khung',
+    redirectTo: 'chuong-trinh-hoc',
+    pathMatch: 'full',
   },
   {
     path: 'dang-ky-hoc-phan',

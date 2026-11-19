@@ -34,6 +34,7 @@ class MenuSeeder extends Seeder
             ['ten' => 'Điểm', 'url' => '/diem', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => [User::ADMIN, User::GIANG_VIEN], 'thu_tu' => 15],
             // Bốn mục của sinh viên: KHÔNG ghi ADMIN — ADMIN không có hồ sơ sinh viên.
             // Tên bỏ chữ "của tôi" cho gọn; màn đã nằm trong nhóm Học vụ của chính họ.
+            ['ten' => 'Chương trình học', 'url' => '/chuong-trinh-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => [User::SINH_VIEN], 'thu_tu' => 15],
             ['ten' => 'Đăng ký học phần', 'url' => '/dang-ky-hoc-phan', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => [User::SINH_VIEN], 'thu_tu' => 16],
             ['ten' => 'Lịch sử đăng ký', 'url' => '/dang-ky-cua-toi', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => [User::SINH_VIEN], 'thu_tu' => 17],
             ['ten' => 'Điểm danh', 'url' => '/diem-danh-cua-toi', 'vi_tri' => 'sidebar', 'nhom' => 'Học vụ', 'vai_tro' => [User::SINH_VIEN], 'thu_tu' => 18],
@@ -48,6 +49,9 @@ class MenuSeeder extends Seeder
             ['ten' => 'Phòng học', 'url' => '/phong-hoc', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN, User::GIANG_VIEN], 'thu_tu' => 25],
             ['ten' => 'Khoa', 'url' => '/khoa', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN], 'thu_tu' => 26],
             ['ten' => 'Ngành', 'url' => '/nganh', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN], 'thu_tu' => 27],
+            // Chương trình đào tạo (ADR-024, 2026-11-13) — nguồn dữ liệu để lọc môn
+            // theo ngành × khóa × kỳ và để mở lớp hàng loạt.
+            ['ten' => 'Chương trình đào tạo', 'url' => '/chuong-trinh-dao-tao', 'vi_tri' => 'sidebar', 'nhom' => 'Đào tạo', 'vai_tro' => [User::ADMIN], 'thu_tu' => 28],
 
             // --- Sidebar: Hệ thống ---
             ['ten' => 'Người dùng', 'url' => '/nguoi-dung', 'vi_tri' => 'sidebar', 'nhom' => 'Hệ thống', 'vai_tro' => [User::ADMIN], 'thu_tu' => 30],

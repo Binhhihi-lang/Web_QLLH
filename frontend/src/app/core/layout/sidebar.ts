@@ -349,6 +349,8 @@ export class Sidebar {
     return (
       {
         '/dashboard': 'dashboard',
+        '/chuong-trinh-hoc': 'menu_book',
+        '/chuong-trinh-khung': 'menu_book',
         '/lop-hoc-phan': 'class',
         '/lich-hoc': 'calendar_month',
         '/dang-ky': 'how_to_reg',

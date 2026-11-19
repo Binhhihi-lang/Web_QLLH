@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
             // khoa_id/nganh_id nên cần danh mục có sẵn.
             KhoaNganhSeeder::class,
             DanhMucSeeder::class,
+            // Chạy sau DanhMucSeeder (cần ngành + môn), trước LopHocPhanSeeder
+            // (mở lớp theo chương trình cần biết môn nào của khóa nào).
+            ChuongTrinhDaoTaoSeeder::class,
             GiangVienSeeder::class,
             SinhVienSeeder::class,
             LopHocPhanSeeder::class,
@@ -25,6 +28,8 @@ class DatabaseSeeder extends Seeder
             DangKyHocPhanSeeder::class,
             DiemDanhSeeder::class,
             DiemSeeder::class,
+            // Chạy sau DiemSeeder: cần điểm kỳ đã đóng mới biết ai chưa đạt.
+            HocLaiSeeder::class,
             NhatKySeeder::class,
         ]);
     }
