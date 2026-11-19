@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { DashboardService } from '@core/services/dashboard.service';
@@ -10,9 +10,10 @@ import { DashboardSinhVienPage } from './dashboard-sinh-vien';
 
 /**
  * SCR-05 — kiểm những chỗ hợp đồng hay bị hiểu sai:
- * - `the_so_lieu[chuyen_can].gia_tri` là phần trăm 0–100, KHÔNG nhân 100 lại.
- * - `chuyen_can.ty_le` là phân số 0–1 → hiện `90,7 %`.
- * - `null` hiện "—", khác `0` hiện `0 %`.
+ * - Dashboard KHÔNG còn phần chuyên cần (docs/11 V4): không thẻ, không card,
+ *   không cột trong bảng học phần.
+ * - Thẻ số liệu thứ tư là `buoi_tuan`, bấm vào điều hướng sang `/lich-hoc`.
+ * - Bảng "Học phần đã đăng ký" đúng HAI cột: môn học/học phần + số tín chỉ.
  * - Đổi học kỳ gửi đúng `hoc_ky_id` tới CẢ dashboard và /me/grades.
  */
 describe('DashboardSinhVienPage', () => {
@@ -33,11 +34,11 @@ describe('DashboardSinhVienPage', () => {
         xu_huong: 'bang',
       },
       {
-        khoa: 'chuyen_can',
-        label: 'Tỷ lệ chuyên cần',
-        gia_tri: 90.7,
-        don_vi: '%',
-        phu_chu: '39/43 buổi có mặt hoặc đi muộn',
+        khoa: 'buoi_tuan',
+        label: 'Buổi học tuần này',
+        gia_tri: 12,
+        don_vi: 'buổi',
+        phu_chu: '1 buổi hôm nay',
         xu_huong: 'bang',
       },
     ],
@@ -49,11 +50,6 @@ describe('DashboardSinhVienPage', () => {
         ma_mon: 'INT3306',
         ten_mon: 'Lập trình web',
         so_tin_chi: 3,
-        giang_vien: { id: 5, ma_gv: 'GV005', ho_ten: 'Nguyễn Văn An' },
-        ty_le_chuyen_can: 1,
-        diem_tong_ket: null,
-        diem_chu: null,
-        ket_qua: null,
       },
       {
         dang_ky_hoc_phan_id: 152,
@@ -62,11 +58,6 @@ describe('DashboardSinhVienPage', () => {
         ma_mon: 'INT2204',
         ten_mon: 'Cơ sở dữ liệu',
         so_tin_chi: 3,
-        giang_vien: null,
-        ty_le_chuyen_can: 0.7778,
-        diem_tong_ket: null,
-        diem_chu: null,
-        ket_qua: null,
       },
     ],
     thoi_khoa_bieu_tuan: {
@@ -125,16 +116,6 @@ describe('DashboardSinhVienPage', () => {
         tin_chi_dat: 88,
         so_hoc_ky_da_tinh: 3,
       },
-    },
-    chuyen_can: {
-      ty_le: 0.907,
-      tong_buoi_da_diem_danh: 45,
-      mau_so: 43,
-      co_mat: 35,
-      di_muon: 4,
-      vang: 4,
-      co_phep: 2,
-      ty_le_thap_nhat: { ma_mon: 'INT2204', ten_mon: 'Cơ sở dữ liệu', ty_le: 0.7778 },
     },
   };
 
@@ -225,34 +206,69 @@ describe('DashboardSinhVienPage', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Học kỳ 1 năm học 2026-2027');
     expect(text).toContain('Học phần đã đăng ký');
-    expect(text).toContain('Tỷ lệ chuyên cần');
+    expect(text).toContain('Buổi học tuần này');
     expect(text).toContain('Lập trình web');
-    expect(text).toContain('Nguyễn Văn An');
+    expect(text).toContain('INT3306');
   });
 
-  it('phân số 0–1 trong khối chuyên cần hiện phần trăm, KHÔNG nhân thêm lần nữa', () => {
+  it('bảng học phần ĐÚNG hai cột: Môn học/học phần + Số tín chỉ', () => {
     const { fixture } = tao();
-    const text = fixture.nativeElement.textContent as string;
-    // 0.907 → "90,7 %", không phải "9.070 %" hay "0,907".
-    expect(text).toContain('90,7 %');
-    expect(text).not.toContain('9.070');
-    // 0.7778 → "77,8 %".
-    expect(text).toContain('77,8 %');
+    const th = fixture.nativeElement.querySelectorAll(
+      '.bang-hoc-phan thead th',
+    ) as NodeListOf<HTMLElement>;
+    expect(Array.from(th).map((o) => o.textContent?.trim())).toEqual([
+      'Môn học/học phần',
+      'Số tín chỉ',
+    ]);
+
+    const dong = fixture.nativeElement.querySelector(
+      '.bang-hoc-phan tbody tr',
+    ) as HTMLElement;
+    const o = dong.querySelectorAll('td') as NodeListOf<HTMLElement>;
+    expect(o).toHaveLength(2);
+    // Cột 1: mã môn (mono, primary) ở trên + tên môn ở dưới.
+    expect(o[0].querySelector('.ma-mon')?.textContent?.trim()).toBe('INT3306');
+    expect(o[0].querySelector('.ten-mon')?.textContent?.trim()).toBe('Lập trình web');
+    // Cột 2: số tín chỉ, căn phải.
+    expect(o[1].textContent?.trim()).toBe('3');
+    expect(o[1].classList).toContain('cot-tin-chi');
   });
 
-  it('môn có chuyên cần null hiện "—" chứ không phải "0 %"', () => {
-    const { fixture } = tao(
-      vi.fn(() =>
-        of({
-          ...duLieu,
-          hoc_phan_da_dang_ky: [
-            { ...duLieu.hoc_phan_da_dang_ky[0], ty_le_chuyen_can: null },
-          ],
-        }),
-      ),
+  it('bảng học phần không còn cột Giảng viên / Chuyên cần / Điểm', () => {
+    const { fixture } = tao();
+    const th = Array.from(
+      fixture.nativeElement.querySelectorAll('.bang-hoc-phan thead th') as NodeListOf<HTMLElement>,
+    ).map((o) => o.textContent?.trim());
+    expect(th).not.toContain('Giảng viên');
+    expect(th).not.toContain('Chuyên cần');
+    expect(th).not.toContain('Điểm');
+    expect(fixture.nativeElement.querySelector('.o-chuyen-can')).toBeNull();
+  });
+
+  it('card "Chuyên cần & GPA" không còn trong DOM', () => {
+    const { fixture } = tao();
+    const html = fixture.nativeElement as HTMLElement;
+    const text = html.textContent as string;
+    expect(text).not.toContain('Chuyên cần & GPA');
+    expect(text).not.toContain('Tỷ lệ chuyên cần');
+    expect(html.querySelector('.o-ket-qua')).toBeNull();
+    expect(html.querySelector('.canh-bao')).toBeNull();
+    expect(html.querySelector('app-bieu-do-tron')).toBeNull();
+  });
+
+  it('thẻ số liệu thứ tư là buoi_tuan và bấm được, đi tới /lich-hoc', () => {
+    const { fixture } = tao();
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const the = Array.from(
+      fixture.nativeElement.querySelectorAll('.the-so > *') as NodeListOf<HTMLElement>,
     );
-    const o = fixture.nativeElement.querySelector('.so-nho') as HTMLElement;
-    expect(o.textContent?.trim()).toBe('—');
+    expect(the.length).toBe(2);
+    const cuoi = the[the.length - 1];
+    const nut = cuoi.querySelector('button') ?? cuoi;
+    (nut as HTMLElement).click();
+    expect(navigate).toHaveBeenCalledWith(['/lich-hoc']);
   });
 
   it('buổi đã huỷ mang lớp tam-ngung; buổi lý thuyết mang lớp ly-thuyet', () => {
@@ -286,14 +302,6 @@ describe('DashboardSinhVienPage', () => {
     expect(chon.options.length).toBe(2);
     expect(chon.value).toBe('2');
     expect(chon.options[0].textContent).toContain('đang diễn ra');
-  });
-
-  it('dòng "Môn cần chú ý" hiện môn có tỉ lệ thấp nhất', () => {
-    const { fixture } = tao();
-    expect(fixture.nativeElement.querySelector('.canh-bao')).toBeTruthy();
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Môn cần chú ý: Cơ sở dữ liệu');
-    expect(text).toContain('77,8 %');
   });
 
   it('lỗi tải dashboard hiện thông báo + nút Thử lại, không hiện khối dữ liệu', () => {

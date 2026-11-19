@@ -4,15 +4,17 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService, CapNhatHoSoInput } from '@core/auth/auth.service';
 import { GiangVien, NguoiDung, SinhVien } from '@core/models/dao-tao.model';
+import { ChuongTrinhDaoTao, ChuongTrinhService } from '@core/services/chuong-trinh.service';
 import { GiangVienService } from '@core/services/giang-vien.service';
 import { SinhVienService } from '@core/services/sinh-vien.service';
+import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
 import { AppAlert } from '@shared/ui/app-alert';
 import { AppButton } from '@shared/ui/app-button';
 
 @Component({
   selector: 'app-tai-khoan',
   standalone: true,
-  imports: [AppAlert, AppButton, RouterLink],
+  imports: [AppAlert, AppButton, NgayVnPipe, RouterLink],
   template: `
     <main class="trang">
       <header class="dau-trang">
@@ -127,6 +129,7 @@ import { AppButton } from '@shared/ui/app-button';
               }
             } @else if (user.vai_tro === 'SINH_VIEN') {
               @if (sinhVien(); as sv) {
+                <h3 class="muc-ho-so">Định danh</h3>
                 <div class="luoi-truong">
                   <div class="truong-chi-doc">
                     <span>Mã sinh viên</span>
@@ -137,13 +140,114 @@ import { AppButton } from '@shared/ui/app-button';
                     <strong>{{ sv.ho_ten }}</strong>
                   </div>
                   <div class="truong-chi-doc">
+                    <span>Ngày sinh</span>
+                    <strong>{{ sv.ngay_sinh ? (sv.ngay_sinh | ngayVn) : '—' }}</strong>
+                  </div>
+                  <div class="truong-chi-doc">
+                    <span>Giới tính</span>
+                    <strong>{{ sv.gioi_tinh ? 'Nam' : 'Nữ' }}</strong>
+                  </div>
+                  <div class="truong-chi-doc">
                     <span>Email</span>
                     <strong>{{ sv.email }}</strong>
                   </div>
+                </div>
+
+                <h3 class="muc-ho-so">Học vấn</h3>
+                <div class="luoi-truong">
+                  <div class="truong-chi-doc">
+                    <span>Khoa</span>
+                    <strong>{{ sv.lop_hanh_chinh?.nganh?.khoa?.ten_khoa ?? 'Khoa Công nghệ thông tin' }}</strong>
+                  </div>
+                  <div class="truong-chi-doc">
+                    <span>Ngành</span>
+                    <strong>
+                      @if (sv.lop_hanh_chinh?.nganh) {
+                        {{ sv.lop_hanh_chinh.nganh.ten_nganh }}
+                        <span class="chu-mo">({{ sv.lop_hanh_chinh.nganh.ma_nganh }})</span>
+                      } @else {
+                        —
+                      }
+                    </strong>
+                  </div>
                   <div class="truong-chi-doc">
                     <span>Lớp hành chính</span>
-                    <strong>{{ sv.lop_hanh_chinh?.ten_lop ?? 'Chưa xếp lớp' }}</strong>
+                    <strong>{{ sv.lop_hanh_chinh?.ten_lop ?? sv.lop_hanh_chinh?.ma_lop ?? 'Chưa xếp lớp' }}</strong>
                   </div>
+                  <div class="truong-chi-doc">
+                    <span>Khóa</span>
+                    <strong>{{ sv.lop_hanh_chinh?.khoa_hoc ?? chuongTrinh()?.khoa_hoc ?? '—' }}</strong>
+                  </div>
+                  <div class="truong-chi-doc">
+                    <span>Năm nhập học</span>
+                    <strong>{{ sv.lop_hanh_chinh?.nam_nhap_hoc ?? '—' }}</strong>
+                  </div>
+                  <div class="truong-chi-doc truong-rong">
+                    <span>Chương trình đào tạo</span>
+                    @if (chuongTrinh(); as ct) {
+                      <div class="ctdt-box">
+                        <div class="ctdt-info">
+                          <strong>{{ ct.ten }}</strong>
+                          <span class="chu-mo">
+                            {{ ct.so_nam ?? 4 }} năm · {{ ct.so_ky ?? 8 }} kỳ · {{ ct.tong_tin_chi }} tín chỉ · {{ ct.so_mon }} môn
+                          </span>
+                        </div>
+                        <app-button
+                          variant="secondary"
+                          size="sm"
+                          type="button"
+                          (click)="toggleXemCtdt()"
+                        >
+                          <span class="material-icons" aria-hidden="true">{{ dangXemCtdt() ? 'expand_less' : 'expand_more' }}</span>
+                          {{ dangXemCtdt() ? 'Thu gọn' : 'Xem khung CTĐT' }}
+                        </app-button>
+                      </div>
+                    } @else {
+                      <strong>Chưa gán chương trình đào tạo</strong>
+                    }
+                  </div>
+                </div>
+
+                @if (dangXemCtdt() && chuongTrinh(); as ct) {
+                  <div class="khung-ctdt-chi-tiet">
+                    <h4>Môn học theo chương trình đào tạo</h4>
+                    @if (dsMonCtdt().length === 0) {
+                      <p class="chu-mo">Chương trình chưa có môn học nào.</p>
+                    } @else {
+                      <div class="bang-cuon">
+                        <table class="bang-mon-ctdt">
+                          <thead>
+                            <tr>
+                              <th>Kỳ</th>
+                              <th>Mã môn</th>
+                              <th>Tên môn</th>
+                              <th>Số tín chỉ</th>
+                              <th>Loại</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (m of dsMonCtdt(); track m.id) {
+                              <tr>
+                                <td>{{ m.ky_thu ? 'Kỳ ' + m.ky_thu : 'Chưa gán' }}</td>
+                                <td class="mono"><b>{{ m.mon_hoc.ma_mon }}</b></td>
+                                <td>{{ m.mon_hoc.ten_mon }}</td>
+                                <td>{{ m.mon_hoc.so_tin_chi }}</td>
+                                <td>
+                                  <span class="nhan-loai" [class.bat-buoc]="m.bat_buoc">
+                                    {{ m.bat_buoc ? 'Bắt buộc' : 'Tự chọn' }}
+                                  </span>
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <h3 class="muc-ho-so">Liên hệ</h3>
+                <div class="luoi-truong">
                   <label>
                     Số điện thoại
                     <input
@@ -432,6 +536,82 @@ import { AppButton } from '@shared/ui/app-button';
       grid-column: 1 / -1;
     }
 
+    .muc-ho-so {
+      margin: 18px 0 6px;
+      font-size: var(--text-small);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-primary);
+    }
+    .muc-ho-so:first-of-type {
+      margin-top: 0;
+    }
+    .chu-mo {
+      color: var(--color-ink-muted);
+      font-weight: 400;
+    }
+    .ctdt-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--color-surface-alt);
+      border-radius: var(--radius);
+      border: 1px solid var(--color-border);
+    }
+    .ctdt-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .khung-ctdt-chi-tiet {
+      margin: 14px 0 18px;
+      padding: 16px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface-alt);
+    }
+    .khung-ctdt-chi-tiet h4 {
+      margin: 0 0 12px;
+      font-size: var(--text-small);
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+    .bang-cuon {
+      overflow-x: auto;
+    }
+    .bang-mon-ctdt {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-small);
+    }
+    .bang-mon-ctdt th,
+    .bang-mon-ctdt td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-soft);
+    }
+    .bang-mon-ctdt th {
+      font-size: var(--text-caption);
+      color: var(--color-ink-muted);
+      font-weight: 600;
+    }
+    .nhan-loai {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: var(--text-caption);
+      font-weight: 600;
+      background: var(--color-surface);
+      color: var(--color-ink-muted);
+    }
+    .nhan-loai.bat-buoc {
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+    }
+
     .chan-form {
       display: flex;
       align-items: center;
@@ -548,10 +728,13 @@ export class TaiKhoanPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly giangVienService = inject(GiangVienService);
   private readonly sinhVienService = inject(SinhVienService);
+  private readonly chuongTrinhService = inject(ChuongTrinhService);
 
   readonly nguoiDung = this.auth.nguoiDung;
   readonly giangVien = signal<GiangVien | null>(null);
   readonly sinhVien = signal<SinhVien | null>(null);
+  readonly chuongTrinh = signal<ChuongTrinhDaoTao | null>(null);
+  readonly dangXemCtdt = signal(false);
   readonly ten = signal('');
   readonly email = signal('');
   readonly soDienThoai = signal('');
@@ -582,6 +765,20 @@ export class TaiKhoanPage implements OnInit {
     if (tu.length === 1) return tu[0].slice(0, 2).toUpperCase();
     return `${tu[tu.length - 2][0]}${tu[tu.length - 1][0]}`.toUpperCase();
   });
+
+  readonly dsMonCtdt = computed(() => {
+    const mons = this.chuongTrinh()?.mon ?? [];
+    return [...mons].sort((a, b) => {
+      const kyA = a.ky_thu ?? 99;
+      const kyB = b.ky_thu ?? 99;
+      if (kyA !== kyB) return kyA - kyB;
+      return a.mon_hoc.ma_mon.localeCompare(b.mon_hoc.ma_mon);
+    });
+  });
+
+  toggleXemCtdt(): void {
+    this.dangXemCtdt.update((v) => !v);
+  }
 
   ngOnInit(): void {
     const user = this.nguoiDung();
@@ -671,6 +868,11 @@ export class TaiKhoanPage implements OnInit {
         this.loi.set(this.thongBaoLoi(loi));
         this.dangTai.set(false);
       },
+    });
+
+    this.chuongTrinhService.layCuaToi().subscribe({
+      next: (ct) => this.chuongTrinh.set(ct),
+      error: () => this.chuongTrinh.set(null),
     });
   }
 

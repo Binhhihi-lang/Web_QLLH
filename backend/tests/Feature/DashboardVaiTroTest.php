@@ -138,9 +138,10 @@ class DashboardVaiTroTest extends TestCase
                     'hoc_phan_da_dang_ky',
                     'thoi_khoa_bieu_tuan' => ['tu_ngay', 'den_ngay', 'cac_buoi'],
                     'gpa' => ['hoc_ky_hien_tai', 'tich_luy'],
-                    'chuyen_can',
                 ],
-            ]);
+            ])
+            // Dashboard sinh viên không còn khối chuyên cần (docs/11 V4).
+            ->assertJsonMissingPath('data.chuyen_can');
     }
 
     public function test_admin_va_giang_vien_khong_goi_duoc_dashboard_student(): void
@@ -174,7 +175,7 @@ class DashboardVaiTroTest extends TestCase
         $this->assertSame([], $response->json('data.viec_can_lam'));
     }
 
-    public function test_sinh_vien_chua_dang_ky_nhan_200_va_chuyen_can_null(): void
+    public function test_sinh_vien_chua_dang_ky_nhan_200_va_khong_co_chuyen_can(): void
     {
         [$svUser] = $this->sinhVienCoTaiKhoan();
 
@@ -185,8 +186,7 @@ class DashboardVaiTroTest extends TestCase
 
         $this->assertSame([], $response->json('data.the_so_lieu'));
         $this->assertSame([], $response->json('data.hoc_phan_da_dang_ky'));
-        $this->assertNull($response->json('data.chuyen_can.ty_le'));
-        $this->assertSame(0, $response->json('data.chuyen_can.mau_so'));
+        $this->assertNull($response->json('data.chuyen_can'));
     }
 
     public function test_tai_khoan_thieu_ho_so_nhan_403_chu_khong_500(): void
@@ -694,7 +694,7 @@ class DashboardVaiTroTest extends TestCase
         return [$lop, $dangKy, $ketQua];
     }
 
-    public function test_cong_thuc_chuyen_can_tru_co_phep(): void
+    public function test_cong_thuc_chuyen_can_tru_co_phep_o_man_diem_danh(): void
     {
         [$svUser, $sinhVien] = $this->sinhVienCoTaiKhoan();
         [, $giangVien] = $this->giangVienCoTaiKhoan();
@@ -710,17 +710,17 @@ class DashboardVaiTroTest extends TestCase
             DiemDanh::EXCUSED,
         ]);
 
+        // Dashboard không còn khối chuyên cần; công thức này giờ thuộc màn
+        // Điểm danh (docs/11 V4).
         $response = $this->actingAs($svUser, 'sanctum')
-            ->getJson('/api/dashboard/student')
+            ->getJson('/api/me/attendance-summary')
             ->assertOk();
 
-        $chuyenCan = $response->json('data.chuyen_can');
-        $this->assertSame(7, $chuyenCan['tong_buoi_da_diem_danh']);
-        $this->assertSame(2, $chuyenCan['co_phep']);
-        $this->assertSame(5, $chuyenCan['mau_so']);
+        $mon = $response->json('data.0');
+        $this->assertSame(5, $mon['co_mat'] + $mon['di_muon'] + $mon['vang']);
+        $this->assertSame(2, $mon['co_phep']);
         // (3 + 1) / 5 = 0.8
-        $this->assertSame(0.8, $chuyenCan['ty_le']);
-        $this->assertSame(80, $response->json('data.the_so_lieu.3.gia_tri'));
+        $this->assertEqualsWithDelta(0.8, $mon['ty_le'], 0.0001);
     }
 
     public function test_br27_buoi_truoc_ngay_dang_ky_khong_vao_mau_so(): void
@@ -761,20 +761,19 @@ class DashboardVaiTroTest extends TestCase
         ]);
 
         $response = $this->actingAs($svUser, 'sanctum')
-            ->getJson('/api/dashboard/student')
+            ->getJson('/api/me/attendance-summary')
             ->assertOk();
 
-        $chuyenCan = $response->json('data.chuyen_can');
-        $this->assertSame(1, $chuyenCan['tong_buoi_da_diem_danh']);
-        $this->assertSame(1, $chuyenCan['mau_so']);
-        $this->assertSame(0, $chuyenCan['vang']);
+        $mon = $response->json('data.0');
+        $this->assertSame(1, $mon['co_mat'] + $mon['di_muon'] + $mon['vang']);
+        $this->assertSame(0, $mon['vang']);
         // `ty_le` là PHÂN SỐ 0–1 (docs/04 §14), không phải phần trăm. JSON
         // không có `JSON_PRESERVE_ZERO_FRACTION` nên `1.0` serialize thành `1`;
         // dùng assertEquals để không phụ thuộc int/float của decoder.
-        $this->assertEquals(1.0, $chuyenCan['ty_le']);
+        $this->assertEquals(1.0, $mon['ty_le']);
     }
 
-    public function test_ty_le_tung_mon_cong_lai_khop_khoi_chuyen_can(): void
+    public function test_ty_le_tung_mon_tinh_dung_o_man_diem_danh(): void
     {
         [$svUser, $sinhVien] = $this->sinhVienCoTaiKhoan();
         [, $giangVien] = $this->giangVienCoTaiKhoan();
@@ -790,79 +789,37 @@ class DashboardVaiTroTest extends TestCase
         ]);
 
         $response = $this->actingAs($svUser, 'sanctum')
-            ->getJson('/api/dashboard/student')
+            ->getJson('/api/me/attendance-summary')
             ->assertOk();
 
-        $hocPhans = $response->json('data.hoc_phan_da_dang_ky');
-        $this->assertCount(2, $hocPhans);
+        $monHocs = $response->json('data');
+        $this->assertCount(2, $monHocs);
 
-        $tongCoMat = 0;
-        $tongMauSo = 0;
-        foreach ($hocPhans as $hocPhan) {
-            $tyLe = $hocPhan['ty_le_chuyen_can'];
-            $this->assertNotNull($tyLe);
-            $tongCoMat += (int) round($tyLe * 3); // chỉ kiểm tra dạng số, xem assert dưới
-            $tongMauSo++;
-        }
-        $this->assertSame(2, $tongMauSo);
+        $tyLes = array_column($monHocs, 'ty_le');
+        sort($tyLes);
 
-        // Môn 1: 2/3 = 0.6667, môn 2: 1/1 = 1.0 → tổng (2 + 1) / (3 + 1) = 0.75
-        $this->assertSame(0.75, $response->json('data.chuyen_can.ty_le'));
-        $this->assertSame(4, $response->json('data.chuyen_can.mau_so'));
-        $this->assertSame(1, $response->json('data.chuyen_can.co_phep'));
+        // Môn 1: 2/3 = 0.6667, môn 2: 1/1 = 1.0
+        $this->assertEqualsWithDelta(0.6667, $tyLes[0], 0.0001);
+        $this->assertEqualsWithDelta(1.0, $tyLes[1], 0.0001);
     }
 
-    public function test_ty_le_thap_nhat_lay_mon_nho_nhat(): void
+    public function test_the_so_lieu_thu_tu_la_buoi_tuan(): void
     {
         [$svUser, $sinhVien] = $this->sinhVienCoTaiKhoan();
         [, $giangVien] = $this->giangVienCoTaiKhoan();
 
-        $monTot = MonHoc::factory()->create(['ma_mon' => 'INT9999', 'ten_mon' => 'Môn tốt']);
-        $lopTot = LopHocPhan::factory()->create([
-            'mon_hoc_id' => $monTot->id,
-            'hoc_ky_id' => $this->hocKy->id,
-            'giang_vien_id' => $giangVien->id,
-        ]);
-        $dkTot = $this->dangKy($sinhVien, $lopTot);
-        $buoiTot = BuoiHoc::factory()->create([
-            'lop_hoc_phan_id' => $lopTot->id,
-            'ngay_hoc' => now()->subDays(2)->toDateString(),
-            'trang_thai' => BuoiHoc::DONE,
-        ]);
-        DiemDanh::factory()->create([
-            'buoi_hoc_id' => $buoiTot->id,
-            'dang_ky_hoc_phan_id' => $dkTot->id,
-            'trang_thai' => DiemDanh::PRESENT,
-        ]);
-
-        $monXau = MonHoc::factory()->create(['ma_mon' => 'INT8888', 'ten_mon' => 'Môn cần chú ý']);
-        $lopXau = LopHocPhan::factory()->create([
-            'mon_hoc_id' => $monXau->id,
-            'hoc_ky_id' => $this->hocKy->id,
-            'giang_vien_id' => $giangVien->id,
-        ]);
-        $dkXau = $this->dangKy($sinhVien, $lopXau);
-        foreach ([DiemDanh::PRESENT, DiemDanh::ABSENT, DiemDanh::ABSENT] as $i => $trangThai) {
-            $buoi = BuoiHoc::factory()->create([
-                'lop_hoc_phan_id' => $lopXau->id,
-                'ngay_hoc' => now()->subDays(10 - $i)->toDateString(),
-                'trang_thai' => BuoiHoc::DONE,
-            ]);
-            DiemDanh::factory()->create([
-                'buoi_hoc_id' => $buoi->id,
-                'dang_ky_hoc_phan_id' => $dkXau->id,
-                'trang_thai' => $trangThai,
-            ]);
-        }
+        $lop = $this->lopCuaGiangVien($giangVien);
+        $this->dangKy($sinhVien, $lop);
 
         $response = $this->actingAs($svUser, 'sanctum')
             ->getJson('/api/dashboard/student')
             ->assertOk();
 
-        $thapNhat = $response->json('data.chuyen_can.ty_le_thap_nhat');
-        $this->assertSame('INT8888', $thapNhat['ma_mon']);
-        $this->assertSame('Môn cần chú ý', $thapNhat['ten_mon']);
-        $this->assertEqualsWithDelta(0.3333, $thapNhat['ty_le'], 0.0001);
+        // Thẻ thứ 4 thay cho "Tỷ lệ chuyên cần" cũ (docs/11 V4).
+        $this->assertSame('buoi_tuan', $response->json('data.the_so_lieu.3.khoa'));
+        $this->assertSame('Buổi học tuần này', $response->json('data.the_so_lieu.3.label'));
+        $this->assertSame('buổi', $response->json('data.the_so_lieu.3.don_vi'));
+        $this->assertIsInt($response->json('data.the_so_lieu.3.gia_tri'));
     }
 
     public function test_tuan_hien_tai_tu_thu_2_den_chu_nhat_va_thu_cua_chu_nhat_la_8(): void

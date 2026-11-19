@@ -128,7 +128,7 @@
   margin-top: 3px;
 }
 
-/* ================= Bảng học phần ================= */
+/* ================= Bảng học phần — đúng hai cột ================= */
 /*
  * Chỉ cuộn NGANG khi bảng rộng hơn khung (màn hẹp). Không còn `max-height:
  * 250px` + `overflow-y: auto`: khung đó cao 235px trong khi bảng 713px, tạo
@@ -144,15 +144,21 @@
   overflow-y: clip;
 }
 
-table {
+/*
+ * Bảng hai cột theo mockup `docs/design/ctdt-va-quyen-buoi-hoc.html` mục 08:
+ * cột 1 là mã + tên môn xếp dọc, cột 2 là số tín chỉ căn phải. Không còn cột
+ * giảng viên / chuyên cần / điểm — chúng thuộc màn Điểm và màn Điểm danh.
+ *
+ * `table-layout: fixed` để tên môn dài tự ellipsis thay vì đẩy bảng rộng hơn
+ * khung ở 390px (cùng lý do với `.bang-buoi` ở dashboard giảng viên).
+ */
+table.bang-hoc-phan {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
-thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.bang-hoc-phan thead th {
   text-align: left;
   font-size: var(--text-caption);
   font-weight: 700;
@@ -160,223 +166,64 @@ thead th {
   text-transform: uppercase;
   color: var(--color-ink-muted);
   background: var(--color-surface-alt);
-  padding: 8px 10px;
+  padding: 8px 4px;
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
 }
 
-tbody td {
-  padding: 7px 10px;
+/* Số tín chỉ: cột hẹp cố định, căn phải cả đầu cột lẫn ô dữ liệu. */
+.bang-hoc-phan th.cot-tin-chi,
+.bang-hoc-phan td.cot-tin-chi {
+  width: 92px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bang-hoc-phan tbody td {
+  padding: 9px 4px;
   border-bottom: 1px solid var(--color-border-soft);
   font-size: var(--text-small);
   color: var(--color-ink);
-  white-space: nowrap;
+  vertical-align: top;
 }
 
-tbody tr:last-child td {
+.bang-hoc-phan tbody tr:last-child td {
   border-bottom: none;
 }
 
-tbody tr:hover {
+.bang-hoc-phan tbody tr:hover {
   background: var(--color-primary-soft);
 }
 
-td.ma {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-tbody tr.hang-bam {
+.bang-hoc-phan tbody tr.hang-bam {
   cursor: pointer;
 }
 
-td.cat-dong {
-  max-width: 220px;
+/* Mã môn: mono, màu primary, đậm — nhận ra ngay bằng mắt giữa tên môn.
+   `--text-small` đúng bằng 13px của ảnh mẫu, không cần số viết tay. */
+.ma-mon {
+  display: block;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* Cùng bậc với mã môn để hai dòng trong một ô không lệch cỡ chữ.
+   Thang token chỉ có 11px và 13px, nên dùng `--text-small` thay vì
+   viết tay 13.5px như bản mockup. */
 .ten-mon {
-  font-size: var(--text-caption);
-  color: var(--color-ink-subtle);
-  max-width: 190px;
-}
-
-/* Thanh chuyên cần trong ô bảng — nhận phân số 0–1 trực tiếp. */
-.o-chuyen-can {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 130px;
-}
-
-.thanh-nen.nho {
-  height: 5px;
-  flex: 1;
-}
-
-.thanh-day.sac-warning {
-  background: var(--color-warning);
-}
-
-.thanh-day.sac-info {
-  background: var(--color-info);
-}
-
-.thanh-day.sac-success {
-  background: var(--color-success);
-}
-
-.thanh-day.sac-neutral {
-  background: var(--color-border);
-}
-
-.so-nho {
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--color-ink-muted);
-  font-variant-numeric: tabular-nums;
-  flex: none;
-}
-
-/* ================= Kết quả học tập ================= */
-.ket-qua {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.o-ket-qua {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  font: inherit;
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-  transition:
-    border-color var(--dur) var(--ease),
-    background var(--dur-fast) var(--ease);
-}
-
-.o-ket-qua:hover {
-  border-color: var(--color-primary);
-  background: var(--color-surface-alt);
-}
-
-.o-ket-qua:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.o-kq-nhan {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
   font-size: var(--text-small);
-  font-weight: 600;
-  color: var(--color-ink-muted);
-}
-
-.o-kq-nhan .material-icons {
-  font-size: 16px;
-}
-
-.o-kq-so {
-  font-family: var(--font-heading);
-  font-size: 26px;
-  font-weight: 700;
   color: var(--color-ink);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-}
-
-.o-kq-so small {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-ink-subtle);
-}
-
-.o-kq-phu,
-.o-kq-them {
-  font-size: var(--text-caption);
-  color: var(--color-ink-muted);
-}
-
-.kq-tron {
-  margin: 4px 0 8px;
-}
-
-/* Màu số chuyên cần theo ngưỡng — ngưỡng CHỈ để tô màu (§3.2). */
-.o-kq-so.mau-warning {
-  color: var(--color-on-warning-soft);
-}
-
-.o-kq-so.mau-info {
-  color: var(--color-on-info-soft);
-}
-
-.o-kq-so.mau-success {
-  color: var(--color-on-success-soft);
-}
-
-.o-kq-so.mau-neutral {
-  color: var(--color-ink-subtle);
-}
-
-/* ================= Dòng cảnh báo "Môn cần chú ý" ================= */
-.canh-bao-wrap {
-  margin-top: 12px;
-}
-
-.canh-bao {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  width: 100%;
-  padding: 11px 14px;
-  border: 1px solid var(--color-warning);
-  border-left-width: 3px;
-  border-radius: var(--radius);
-  background: var(--color-warning-soft);
-  font: inherit;
-  text-align: left;
-  color: var(--color-on-warning-soft);
-  cursor: pointer;
-}
-
-.canh-bao:focus-visible {
-  outline: 2px solid var(--color-warning);
-  outline-offset: 2px;
-}
-
-.canh-bao-icon {
-  font-size: 20px;
-  flex: none;
-}
-
-.canh-bao-noi-dung {
-  flex: 1;
-  min-width: 0;
-}
-
-.canh-bao-noi-dung strong {
-  display: block;
-  font-size: var(--text-small);
-  font-weight: 600;
-}
-
-.canh-bao-noi-dung small {
-  display: block;
-  font-size: var(--text-caption);
-  opacity: 0.92;
-}
-
-.canh-bao .viec-mui {
-  color: inherit;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ================= Responsive ================= */
@@ -394,9 +241,9 @@ td.cat-dong {
 }
 
 @media (max-width: 640px) {
-  thead th,
-  tbody td {
-    padding: 8px 10px;
+  .bang-hoc-phan thead th,
+  .bang-hoc-phan tbody td {
+    padding: 8px 4px;
   }
 
   /* Điện thoại: mỗi ngày một khối dọc. Bỏ ngày trống để không phải cuộn qua

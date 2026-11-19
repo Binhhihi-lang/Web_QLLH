@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { GiangVien, NguoiDung, SinhVien } from '@core/models/dao-tao.model';
+import { ChuongTrinhService } from '@core/services/chuong-trinh.service';
 import { GiangVienService } from '@core/services/giang-vien.service';
 import { SinhVienService } from '@core/services/sinh-vien.service';
 import { TaiKhoanPage } from './tai-khoan';
@@ -54,6 +55,7 @@ describe('TaiKhoanPage', () => {
         { provide: AuthService, useValue: auth },
         { provide: GiangVienService, useValue: { layMot: vi.fn() } },
         { provide: SinhVienService, useValue: sinhVienService },
+        { provide: ChuongTrinhService, useValue: { layCuaToi: vi.fn(() => of(null)) } },
       ],
     });
 
@@ -116,6 +118,7 @@ describe('TaiKhoanPage', () => {
         { provide: AuthService, useValue: auth },
         { provide: GiangVienService, useValue: { layMot: vi.fn(() => of(giangVien)) } },
         { provide: SinhVienService, useValue: { layMot: vi.fn() } },
+        { provide: ChuongTrinhService, useValue: { layCuaToi: vi.fn(() => of(null)) } },
       ],
     });
 

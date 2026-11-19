@@ -127,7 +127,6 @@ erDiagram
         bigint hoc_ky_id FK
         bigint giang_vien_id FK
         smallint si_so_toi_da
-        tinyint nam_thu
         string trang_thai
         datetime chot_diem_luc
         bigint chot_diem_boi
@@ -283,7 +282,7 @@ erDiagram
 | ten_lop | varchar(255) | no | |
 | khoa_hoc | varchar(20) | yes | **Khóa** (cohort, năm nhập học), ví dụ `K65`. Không phải khoa/faculty |
 | nganh_id | bigint unsigned | yes | FK `nganh.id`, `nullOnDelete` (ADR-020). Khoa suy ra qua ngành |
-| nam_nhap_hoc | smallint unsigned | yes | Năm nhập học, ví dụ `2023`. Dùng tính `nam_thu` |
+| nam_nhap_hoc | smallint unsigned | yes | Năm nhập học, ví dụ `2023`. Còn dùng để lọc học kỳ sinh viên đã học |
 | mo_ta | text | yes | |
 | trang_thai | boolean | no | |
 | deleted_at, deleted_by, restored_by | | yes | |
@@ -349,23 +348,26 @@ erDiagram
 | Cột | Kiểu | Null | Ghi chú |
 |---|---|---|---|
 | id | bigint unsigned | PK | |
-| ma_lop_hp | varchar(30) | no | unique theo học kỳ |
+| ma_lop_hp | varchar(30) | no | unique theo học kỳ. Định dạng `<mã lớp hành chính>-<mã môn>`, vd `68PM2-396602`; khi một môn mở 2 lớp cho cùng lớp HC thì thêm hậu tố nhóm `-2`. Xem `docs/11` V1 |
 | mon_hoc_id | bigint unsigned | no | FK `mon_hoc.id`, `restrictOnDelete` |
 | hoc_ky_id | bigint unsigned | no | FK `hoc_ky.id`, `restrictOnDelete` |
 | giang_vien_id | bigint unsigned | no | FK `giang_vien.id`, `restrictOnDelete` |
 | si_so_toi_da | smallint unsigned | no | > 0 |
-| nam_thu | tinyint unsigned | yes | Năm thứ lớp phục vụ (1–6). `null` = mọi năm. Xem BR-23 |
 | trang_thai | varchar(20) | no | `OPEN`, `CLOSED`, `CANCELLED` |
 | chot_diem_luc | datetime | yes | null = chưa chốt |
 | chot_diem_boi | bigint unsigned | yes | FK `users.id`, `nullOnDelete` |
 | deleted_at, deleted_by, restored_by | | yes | |
 | created_at, updated_at | timestamp | yes | |
 
-**Index:** `unique(hoc_ky_id, ma_lop_hp)`, `index(mon_hoc_id)`, `index(giang_vien_id)`, `index(nam_thu)`, `index(trang_thai)`, `index(deleted_at)`.
+**Index:** `unique(hoc_ky_id, ma_lop_hp)`, `index(mon_hoc_id)`, `index(giang_vien_id)`, `index(trang_thai)`, `index(deleted_at)`.
 
 > `unique(hoc_ky_id, ma_lop_hp)` **không** lọc `deleted_at`, nên bản ghi xóa mềm vẫn giữ chỗ mã — đúng BR-01.
+> Mã môn nằm ngay trong `ma_lop_hp` nên ràng buộc này vẫn đủ: hai lớp khác môn không thể trùng mã,
+> không cần thêm `mon_hoc_id` vào unique key.
 > Không lưu `si_so_hien_tai`; tính bằng `count` đăng ký ACTIVE (tránh lệch dữ liệu).
-> `nam_thu` là ràng buộc **thô** ở cấp lớp, không thay thế chương trình đào tạo (ADR-016). Môn đại cương phục vụ nhiều năm thì để `null`.
+> **`nam_thu` đã bị xoá 2026-11-12.** Đây từng là ràng buộc thô ở cấp lớp (ADR-016), nhưng nó chặn
+> luôn sinh viên khóa trước đăng ký học lại vào lớp khóa dưới. Luật thay thế: chặn môn đã **đạt**
+> (BR-33), cho phép môn **chưa đạt**. Xem `docs/11`.
 
 ### 3.9. `buoi_hoc`
 
@@ -585,7 +587,45 @@ nguyên kết quả và khóa tham chiếu của nó.
 > `lop_hanh_chinh.nganh_id` trỏ về `nganh`; `mon_hoc.khoa_id` trỏ về `khoa`.
 > **`lop_hoc_phan` cố ý không có cột khoa/ngành** — suy ra qua `mon_hoc`.
 
-### 3.19. Bảng hệ thống giữ nguyên
+### 3.19. `chuong_trinh_dao_tao`
+
+Chương trình khung của một **ngành × một khóa** (ADR-024). Một ngành chỉ có một chương trình
+cho mỗi khóa; đổi chương trình cho khóa mới thì tạo bản mới.
+
+| Cột | Kiểu | Null | Ghi chú |
+|---|---|---|---|
+| id | bigint unsigned | no | PK |
+| ma_ctdt | varchar(30) | no | unique, vd `CT-KTPM-K68` |
+| nganh_id | bigint unsigned | no | FK `nganh.id`, `restrictOnDelete` |
+| khoa_hoc | varchar(20) | no | Khóa (cohort), vd `K68`. Cùng từ vựng `lop_hanh_chinh.khoa_hoc` |
+| ten | varchar(255) | no | vd "Kỹ thuật phần mềm — Khóa K68" |
+| mo_ta | text | yes | |
+| trang_thai | boolean | no | `true` = đang áp dụng |
+| deleted_at, deleted_by, restored_by | | yes | Xóa mềm |
+| created_at, updated_at | timestamp | yes | |
+
+**Index:** `unique(ma_ctdt)`, `unique(nganh_id, khoa_hoc)`, `index(khoa_hoc)`, `index(trang_thai)`, `index(deleted_at)`.
+
+### 3.20. `chuong_trinh_mon`
+
+Một môn trong chương trình, kèm kỳ thứ và loại bắt buộc/tự chọn.
+
+| Cột | Kiểu | Null | Ghi chú |
+|---|---|---|---|
+| id | bigint unsigned | no | PK |
+| chuong_trinh_id | bigint unsigned | no | FK `chuong_trinh_dao_tao.id`, `cascadeOnDelete` |
+| mon_hoc_id | bigint unsigned | no | FK `mon_hoc.id`, `restrictOnDelete` |
+| ky_thu | tinyint unsigned | yes | Kỳ thứ 1–10 trong chương trình. **`null` = chưa gán kỳ** — sinh viên không thấy môn này khi đăng ký |
+| bat_buoc | boolean | no | `true` = bắt buộc, `false` = tự chọn |
+| created_at, updated_at | timestamp | yes | |
+
+**Index:** `unique(chuong_trinh_id, mon_hoc_id)`, `index(ky_thu)`, `index(mon_hoc_id)`.
+
+> Không có xóa mềm: gỡ môn khỏi chương trình là xóa cứng dòng này, lịch sử nằm ở `nhat_ky`.
+> Không có cột nối `lop_hoc_phan` với CTĐT — quan hệ suy qua `(nganh_id, khoa_hoc)`.
+
+
+### 3.21. Bảng hệ thống giữ nguyên
 
 `personal_access_tokens` (Sanctum), `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens`.
 
@@ -680,17 +720,14 @@ gio_bat_dau_moi < gio_ket_thuc_cu AND gio_ket_thuc_moi > gio_bat_dau_cu
 
 Bỏ qua bản ghi đang sửa và bản ghi `CANCELLED`/đã xóa.
 
-### 5.6. Năm thứ của sinh viên
+### 5.6. Năm thứ của sinh viên — đã bãi bỏ
 
-```
-nam_thu = nam_bat_dau(nam_hoc cua hoc_ky) - sinh_vien.lop_hanh_chinh.nam_nhap_hoc + 1
-```
+`sinh_vien::namThuTrong()` và cột `lop_hoc_phan.nam_thu` đã bị xoá 2026-11-12 (BR-23 bãi bỏ).
+Lý do: nó chặn chính luồng học lại — sinh viên khóa trước muốn học lại môn đã rớt phải vào lớp
+khóa dưới, mà lớp đó mang `nam_thu` khác nên bị từ chối `WRONG_STUDY_YEAR`.
 
-Ví dụ: sinh viên nhập học `2023` (K68), học kỳ thuộc năm học `2026-2027` → `2026 - 2023 + 1 = 4`.
-
-Trả `null` khi sinh viên không thuộc lớp hành chính hoặc lớp chưa có `nam_nhap_hoc` — khi đó BR-23 **không** chặn (không đủ dữ liệu để kết luận).
-
-Dùng để đối chiếu với `lop_hoc_phan.nam_thu` khi sinh viên tự đăng ký (BR-23).
+Luật hiện hành (**BR-33**): chặn đăng ký khi môn đã **đạt**, cho phép khi **chưa đạt** — không
+phụ thuộc khóa hay năm. Xem `docs/11`.
 
 ### 5.7. Index đề xuất cho dashboard TEACHER/STUDENT (chưa tạo)
 
@@ -735,6 +772,7 @@ migration — chi tiết lý do và kết luận "không bắt buộc" nằm ở
 2026_10_24_000100_doi_khoa_thanh_khoa_hoc_tren_lop_hanh_chinh   (ADR-016)
 2026_10_24_000200_them_nam_hoc_ky_thu_vao_hoc_ky               (ADR-016, ADR-017)
 2026_10_24_000300_them_nam_thu_vao_lop_hoc_phan                 (ADR-016)
+2026_11_12_000100_bo_nam_thu_khoi_lop_hoc_phan                    (bãi bỏ BR-23)
 2026_10_27_000100_doi_menu_vai_tro_thanh_mang                   (ADR — menu.vai_tro thành mảng)
 2026_10_28_000100_noi_dai_cot_url_menu                          (varchar 255 → 2048)
 2026_10_30_000100_tao_bang_khoa_va_nganh                        (ADR-020)
@@ -767,7 +805,7 @@ Số liệu **thực tế sau khi chạy `php artisan migrate:fresh --seed`** ng
 | diem | ~4.000 | ~4.700 | `2025-2` (toàn bộ lớp đã đóng) + `2026-1` (chỉ lớp đã qua ≥ 8 buổi `DONE`) — kỳ đang chạy cần có điểm để dashboard giảng viên vẽ được "Điểm TB lớp phụ trách" |
 
 **Dữ liệu cố ý tạo để kiểm chứng nghiệp vụ:**
-- `LHP0001` (2026-1) đăng ký **đầy** 70/70 → dùng test `SECTION_FULL`.
+- `68PM2-<mã môn>` (2026-1) đăng ký **đầy** → dùng test `SECTION_FULL`.
 - 79 lớp còn lại của `2026-1` còn chỗ → dùng demo luồng đăng ký.
 - 39/40 lớp của `2025-2` đầy vì sức chứa nhỏ hơn nhu cầu — phản ánh học kỳ đã kết thúc.
 - Điểm chữ phân bố theo `2025-2`; `2026-1` chỉ sinh điểm cho lớp đã qua đủ buổi, và **không** chốt điểm (chốt là thao tác của giảng viên).

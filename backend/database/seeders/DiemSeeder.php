@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\BuoiHoc;
 use App\Models\DangKyHocPhan;
 use App\Models\Diem;
 use App\Models\HocKy;
@@ -33,8 +32,8 @@ class DiemSeeder extends Seeder
             ->update(['chot_diem_luc' => now()]);
 
         // 2. Học kỳ đang học (2026-1): chỉ một vài môn đã học xong mới có điểm và chốt điểm.
-        //    - GV demo phụ trách LHP0001, LHP0002, LHP0061, LHP0062, LHP0063 -> chốt 3 lớp (1, 61, 62), 2 lớp chưa có điểm (2, 63).
-        //    - SV demo học LHP0061..LHP0068 -> chốt 4 môn (61, 62, 64, 65), 4 môn chưa có điểm (63, 66, 67, 68).
+        //    - GV demo phụ trách lớp ở vị trí 1, 2, 61, 62, 63 -> chốt 3 lớp (1, 61, 62), 2 lớp chưa có điểm (2, 63).
+        //    - SV demo học lớp ở vị trí 61..68 -> chốt 4 môn (61, 62, 64, 65), 4 môn chưa có điểm (63, 66, 67, 68).
         $lopKyDangChay = LopHocPhan::query()
             ->where('hoc_ky_id', $hocKyDangChay->id)
             ->orderBy('id')

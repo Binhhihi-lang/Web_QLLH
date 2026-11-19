@@ -85,7 +85,7 @@ class DashboardTest extends TestCase
                     '*' => ['hoc_ky', 'tong_cho', 'da_dang_ky'],
                 ],
                 'lop_sap_mo' => [
-                    '*' => ['id', 'ma_lop_hp', 'ten_mon_hoc', 'ten_giang_vien', 'si_so', 'ty_le', 'trang_thai', 'nam_thu'],
+                    '*' => ['id', 'ma_lop_hp', 'ten_mon_hoc', 'ten_giang_vien', 'si_so', 'ty_le', 'trang_thai'],
                 ],
                 'dang_ky_gan_day' => [
                     '*' => ['id', 'ma_sv', 'ho_ten', 'ma_lop_hp', 'ten_mon_hoc', 'thoi_gian', 'trang_thai'],

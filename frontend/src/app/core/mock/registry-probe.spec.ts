@@ -76,11 +76,6 @@ describe('MockRegistry khớp hợp đồng API', () => {
     expect(khoa.data.every((s: any) => s.trang_thai === false)).toBe(true);
   });
 
-  it('lọc số đúng kiểu (nam_thu)', () => {
-    const nam4 = goi('/sections?nam_thu=4');
-    expect(nam4.data.every((s: any) => s.nam_thu === 4)).toBe(true);
-  });
-
   it('per_page chỉ nhận 10/25/50/100', () => {
     expect(goi('/students?per_page=37').meta.per_page).toBe(10);
     expect(goi('/students?per_page=25').meta.per_page).toBe(25);
@@ -370,7 +365,6 @@ describe('MockRegistry khớp hợp đồng API', () => {
       hoc_ky_id: original.hoc_ky.id,
       giang_vien_id: original.giang_vien.id,
       si_so_toi_da: 48,
-      nam_thu: null,
       trang_thai: 'OPEN',
     };
     const tao = r.resolve('POST', 'http://localhost:8000/api/sections', body) as any;
@@ -403,7 +397,6 @@ describe('MockRegistry khớp hợp đồng API', () => {
       hoc_ky_id: original.hoc_ky.id,
       giang_vien_id: original.giang_vien.id,
       si_so_toi_da: original.si_so_toi_da,
-      nam_thu: original.nam_thu,
       trang_thai: original.trang_thai,
     };
     const missing = r.resolve('PUT', 'http://localhost:8000/api/sections/999999', body) as any;

@@ -1,12 +1,11 @@
 import { BadgeSac } from '@shared/ui/status-badge';
-import { BuoiTrongTuan, ChuyenCan, TheSoLieu } from './dashboard.model';
+import { BuoiTrongTuan, TheSoLieu } from './dashboard.model';
 
 /**
  * Logic thuần của ba dashboard — tách khỏi component để test được mà không
  * cần dựng DOM, và để ba màn dùng CHUNG một cách hiển thị.
  *
  * Quy ước quan trọng (docs/04-api-contract.md §14):
- * - Trường tên `ty_le` là PHÂN SỐ 0–1 → nhân 100 khi cần hiện phần trăm.
  * - `the_so_lieu[].gia_tri` là PHẦN TRĂM 0–100 khi có `don_vi: '%'` → KHÔNG
  *   nhân 100 thêm lần nữa.
  * - `null` nghĩa là "chưa có dữ liệu" (hiện `—`), khác `0` (đã đo và bằng 0).
@@ -32,32 +31,6 @@ export function dinhDangSoHienThi(giaTri: number | null | undefined): string {
   return dinhDangSo.format(giaTri);
 }
 
-/** Phân số 0–1 → phần trăm 0–100, làm tròn 1 chữ số. `null` giữ `null`. */
-export function phanSoSangPhanTram(tyLe: number | null | undefined): number | null {
-  if (tyLe === null || tyLe === undefined || Number.isNaN(tyLe)) return null;
-  return Math.round(tyLe * 1000) / 10;
-}
-
-/** Phân số 0–1 → chuỗi phần trăm, ví dụ `0.907` → `90,7 %`. `null` → `—`. */
-export function dinhDangTuPhanSo(tyLe: number | null | undefined): string {
-  const phanTram = phanSoSangPhanTram(tyLe);
-  if (phanTram === null) return CHUA_CO;
-  return `${dinhDangSoHienThi(phanTram)} %`;
-}
-
-/**
- * Màu tỉ lệ chuyên cần — CHỈ để tô màu, không phải quy tắc cấm thi.
- * `< 80 %` → cảnh báo, `80–89,9 %` → thông tin, `≥ 90 %` → thành công.
- * `null` (chưa có buổi nào) → không tô màu.
- */
-export function mauChuyenCan(tyLePhanSo: number | null | undefined): BadgeSac | null {
-  const phanTram = phanSoSangPhanTram(tyLePhanSo);
-  if (phanTram === null) return null;
-  if (phanTram < 80) return 'warning';
-  if (phanTram < 90) return 'info';
-  return 'success';
-}
-
 export type SacThe = 'primary' | 'chart-1' | 'chart-2' | 'danger' | 'info';
 
 /**
@@ -79,7 +52,7 @@ const SAC_THE: Record<string, SacThe> = {
   hoc_phan: 'primary',
   tin_chi: 'chart-1',
   gpa_he_4: 'chart-2',
-  chuyen_can: 'info',
+  buoi_tuan: 'info',
 };
 
 const ICON_THE: Record<string, string> = {
@@ -94,7 +67,7 @@ const ICON_THE: Record<string, string> = {
   hoc_phan: 'menu_book',
   tin_chi: 'school',
   gpa_he_4: 'workspace_premium',
-  chuyen_can: 'fact_check',
+  buoi_tuan: 'calendar_month',
 };
 
 export function sacTheSoLieu(khoa: string): SacThe {
@@ -163,8 +136,8 @@ export interface LatBieuDo {
 }
 
 /**
- * Doughnut cho dashboard ADMIN: chỉ vẽ kỳ HIỆN TẠI (phần tử cuối) theo hai lát
- * đã đăng ký / còn trống.
+ * Doughnut lấp đầy của dashboard ADMIN: chỉ vẽ kỳ HIỆN TẠI (phần tử cuối) theo
+ * hai lát đã đăng ký / còn trống.
  *
  * Trả `null` khi mảng có < 2 phần tử (quy ước: một cột/lát duy nhất trông như
  * lỗi render) hoặc kỳ đó không có chỗ nào để so sánh.
@@ -184,25 +157,6 @@ export function latLapDay(
   return [
     { nhan: 'Đã đăng ký', gia_tri: daDangKy, mau: '--color-chart-1' },
     { nhan: 'Còn trống', gia_tri: conTrong, mau: '--color-chart-2' },
-  ];
-}
-
-/**
- * Doughnut chuyên cần của SINH_VIÊN: 4 lát có mặt / đi muộn / vắng / có phép.
- *
- * Bốn con số này đếm trên cùng một mẫu số; `co_phep` nằm ngoài mẫu số của công
- * thức tỉ lệ (FR-11.05) nhưng vẫn là một phần của "đã điểm danh", nên vẫn vẽ.
- */
-export function latChuyenCan(chuyenCan: ChuyenCan): LatBieuDo[] | null {
-  const tong =
-    chuyenCan.co_mat + chuyenCan.di_muon + chuyenCan.vang + chuyenCan.co_phep;
-  if (tong <= 0) return null;
-
-  return [
-    { nhan: 'Có mặt', gia_tri: chuyenCan.co_mat, mau: '--color-success' },
-    { nhan: 'Đi muộn', gia_tri: chuyenCan.di_muon, mau: '--color-warning' },
-    { nhan: 'Vắng', gia_tri: chuyenCan.vang, mau: '--color-danger' },
-    { nhan: 'Có phép', gia_tri: chuyenCan.co_phep, mau: '--color-info' },
   ];
 }
 

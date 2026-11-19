@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BuoiHocController;
 use App\Http\Controllers\Api\CauHinhController;
+use App\Http\Controllers\Api\ChuongTrinhDaoTaoController;
 use App\Http\Controllers\Api\DangKyHocPhanController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DiemController;
@@ -201,6 +202,8 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
     Route::prefix('me')->middleware('vai.tro:SINH_VIEN')->group(function () {
         Route::get('attendance', [DiemDanhController::class, 'cuaToi'])->name('api/me/attendance');
         Route::get('attendance-summary', [DiemDanhController::class, 'thongKeCuaToi'])->name('api/me/attendance-summary');
+        // Chương trình đào tạo của chính sinh viên — màn đăng ký dùng để biết môn theo kỳ.
+        Route::get('curriculum', [ChuongTrinhDaoTaoController::class, 'cuaToi'])->name('api/me/curriculum');
     });
 
     /*
@@ -223,6 +226,32 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::delete('{nganh}', [NganhController::class, 'destroy'])->middleware('vai.tro:ADMIN');
     });
 
+    /*
+    | Chương trình đào tạo — ADR-016 (bổ sung 2026-11-13). ADMIN ghi; cả ba vai trò
+    | đọc vì sinh viên cần biết môn theo kỳ khi đăng ký học phần.
+    */
+    Route::prefix('curriculums')->group(function () {
+        Route::get('/', [ChuongTrinhDaoTaoController::class, 'index'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::post('/', [ChuongTrinhDaoTaoController::class, 'store'])
+            ->middleware('vai.tro:ADMIN');
+        Route::get('{chuongTrinh}', [ChuongTrinhDaoTaoController::class, 'show'])
+            ->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
+        Route::put('{chuongTrinh}', [ChuongTrinhDaoTaoController::class, 'update'])
+            ->middleware('vai.tro:ADMIN');
+        Route::delete('{chuongTrinh}', [ChuongTrinhDaoTaoController::class, 'destroy'])
+            ->middleware('vai.tro:ADMIN');
+        Route::post('{chuongTrinh}/subjects', [ChuongTrinhDaoTaoController::class, 'themMon'])
+            ->middleware('vai.tro:ADMIN');
+        // `{mon}` là id của dòng `chuong_trinh_mon`, không phải id môn học.
+        Route::put('{chuongTrinh}/subjects/{mon}', [ChuongTrinhDaoTaoController::class, 'suaMon'])
+            ->middleware('vai.tro:ADMIN');
+        Route::delete('{chuongTrinh}/subjects/{mon}', [ChuongTrinhDaoTaoController::class, 'xoaMon'])
+            ->middleware('vai.tro:ADMIN');
+        Route::post('{chuongTrinh}/import', [ChuongTrinhDaoTaoController::class, 'import'])
+            ->middleware('vai.tro:ADMIN');
+    });
+
     Route::prefix('exams')->group(function () {
         Route::get('/', [LichThiController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::post('/', [LichThiController::class, 'store'])->middleware('vai.tro:ADMIN');
@@ -230,17 +259,22 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
         Route::delete('{lichThi}', [LichThiController::class, 'destroy'])->middleware('vai.tro:ADMIN');
     });
 
+    /*
+    | Buổi học — ADMIN là người xếp lịch và hủy buổi (như phòng đào tạo).
+    | GIANG_VIEN chỉ được XEM lịch lớp mình (route `sections/{id}/sessions`
+    | bên dưới) và ĐIỂM DANH — không tự sửa/hủy/xóa buổi.
+    */
     Route::prefix('sessions')->group(function () {
         Route::get('{buoiHoc}/attendance', [DiemDanhController::class, 'danhSach'])
             ->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::put('{buoiHoc}/attendance', [DiemDanhController::class, 'luu'])
             ->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::put('{buoiHoc}', [BuoiHocController::class, 'update'])
-            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+            ->middleware('vai.tro:ADMIN');
         Route::patch('{buoiHoc}/status', [BuoiHocController::class, 'capNhatTrangThai'])
-            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+            ->middleware('vai.tro:ADMIN');
         Route::delete('{buoiHoc}', [BuoiHocController::class, 'destroy'])
-            ->middleware('vai.tro:ADMIN,GIANG_VIEN');
+            ->middleware('vai.tro:ADMIN');
     });
 
     /*
@@ -250,14 +284,18 @@ Route::middleware(['auth:sanctum', 'doi.mat.khau'])->group(function () {
     Route::prefix('sections')->group(function () {
         Route::get('/', [LopHocPhanController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::post('/', [LopHocPhanController::class, 'store'])->middleware('vai.tro:ADMIN');
+        // Mở lớp hàng loạt theo chương trình + kỳ thứ (2026-11-13). Đặt trước
+        // `{lopHocPhan}` để không bị hiểu nhầm thành tham số đường dẫn.
+        Route::post('open-by-curriculum', [LopHocPhanController::class, 'moLopTheoChuongTrinh'])
+            ->middleware('vai.tro:ADMIN');
         Route::post('{lopHocPhan}/finalize', [LopHocPhanController::class, 'chotDiem'])->middleware('vai.tro:GIANG_VIEN');
         Route::post('{lopHocPhan}/unlock', [LopHocPhanController::class, 'moKhoaDiem'])->middleware('vai.tro:ADMIN');
         // Sinh viên xem roster lớp mình đã đăng ký (chỉ mã + tên, lọc ở controller);
         // Policy chặn sinh viên chưa đăng ký ACTIVE.
         Route::get('{lopHocPhan}/students', [LopHocPhanController::class, 'danhSachSinhVien'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
         Route::get('{lopHocPhan}/sessions', [BuoiHocController::class, 'index'])->middleware('vai.tro:ADMIN,GIANG_VIEN,SINH_VIEN');
-        Route::post('{lopHocPhan}/sessions/generate', [BuoiHocController::class, 'generate'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
-        Route::post('{lopHocPhan}/sessions', [BuoiHocController::class, 'store'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
+        Route::post('{lopHocPhan}/sessions/generate', [BuoiHocController::class, 'generate'])->middleware('vai.tro:ADMIN');
+        Route::post('{lopHocPhan}/sessions', [BuoiHocController::class, 'store'])->middleware('vai.tro:ADMIN');
         Route::get('{lopHocPhan}/grades', [LopHocPhanController::class, 'bangDiem'])->middleware('vai.tro:ADMIN,GIANG_VIEN');
         Route::put('{lopHocPhan}/grades', [LopHocPhanController::class, 'capNhatDiemHangLoat'])->middleware('vai.tro:GIANG_VIEN');
         Route::get('{lopHocPhan}/attendance-summary', [LopHocPhanController::class, 'thongKeChuyenCan'])->middleware('vai.tro:ADMIN,GIANG_VIEN');

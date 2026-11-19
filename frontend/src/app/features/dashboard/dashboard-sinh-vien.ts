@@ -12,45 +12,32 @@ import { LoadingState, SkeletonBlock } from '@shared/ui/loading';
 import { PageHeader } from '@shared/ui/page-header';
 import { BadgeSac, StatusBadge } from '@shared/ui/status-badge';
 import { NgayVnPipe } from '@shared/pipes/ngay-vn.pipe';
-import {
-  BuoiTrongTuan,
-  DashboardSinhVien,
-  HocPhanDaDangKy,
-  MonCanChuY,
-} from './dashboard.model';
+import { BuoiTrongTuan, DashboardSinhVien, HocPhanDaDangKy } from './dashboard.model';
 import { BieuDoCotDiem, DuLieuCotDiem } from './bieu-do-cot-diem';
 import { ChonHocKy, KyTrongODChon } from './chon-hoc-ky';
 import { TheSoLieuCard } from './the-so-lieu';
-import { BieuDoTron } from './bieu-do-tron';
 import { DiemService, DiemMonHoc } from '@features/hoc-vu/diem/diem.service';
 import {
-  CHUA_CO,
-  LatBieuDo,
-  dinhDangSoHienThi,
-  dinhDangTuPhanSo,
-  latChuyenCan,
   lopCaHoc,
-  mauChuyenCan,
   mauTrangThaiBuoi,
   nhanHinhThuc,
   nhanTrangThaiBuoi,
   nhanThu,
-  phanSoSangPhanTram,
   sapXepTuan,
 } from './dashboard-tinh-toan';
 
 /**
- * Dashboard SINH_VIEN (SCR-05) — `GET /api/dashboard/student` + `GET /api/me/grades`.
+ * Dashboard SINH_VIEN (SCR-05) — `GET /api/dashboard/student` + `GET /me/grades`.
  *
- * Hai thang tỉ lệ KHÔNG được lẫn (hợp đồng §14):
- * - `the_so_lieu[chuyen_can].gia_tri` là phần trăm 0–100 → hiện nguyên.
- * - `chuyen_can.ty_le` và `hoc_phan_da_dang_ky[].ty_le_chuyen_can` là phân số
- *   0–1 → nhân 100 khi hiện chữ, dùng trực tiếp khi vẽ thanh tiến trình.
+ * Dashboard KHÔNG còn phần chuyên cần (docs/11 V4): tỉ lệ chuyên cần chính là
+ * điểm danh, trùng tên với `diem_chuyen_can` (thành phần điểm 10%) và đã có màn
+ * riêng. Thẻ số liệu thứ tư là "Buổi học tuần này", tính sẵn trong
+ * `the_so_lieu[khoa='buoi_tuan']`.
  *
- * Vì sao khối điểm gọi thêm `/me/grades` thay vì đọc từ dashboard: hợp đồng
- * không trả `diem_tb_lop` trong dashboard — nó thuộc §14c của endpoint grades.
- * Hợp đồng §14 cho dashboard vẫn tính là "một lần gọi"; khối điểm là nguồn
- * riêng, một request phụ CÙNG kỳ nên không thành N+1.
+ * Vì sao khối điểm vẫn gọi thêm `/me/grades`: `/api/dashboard/student` không trả
+ * điểm từng môn (`diem_tong_ket`, `diem_tb_lop`) — chúng thuộc §14c của endpoint
+ * grades. Đây là nguồn riêng cho biểu đồ "Kết quả học tập", một request phụ CÙNG
+ * kỳ nên không thành N+1.
  */
 @Component({
   selector: 'app-dashboard-sinh-vien',
@@ -61,7 +48,6 @@ import {
     AppButton,
     AppCard,
     BieuDoCotDiem,
-    BieuDoTron,
     ChonHocKy,
     EmptyState,
     LoadingState,
@@ -98,18 +84,11 @@ export class DashboardSinhVienPage {
   readonly hocPhan = computed(() => this.duLieu()?.hoc_phan_da_dang_ky ?? []);
   readonly cacBuoi = computed(() => this.duLieu()?.thoi_khoa_bieu_tuan?.cac_buoi ?? []);
   readonly tuan = computed(() => this.duLieu()?.thoi_khoa_bieu_tuan ?? null);
-  readonly gpa = computed(() => this.duLieu()?.gpa ?? null);
-  readonly chuyenCan = computed(() => this.duLieu()?.chuyen_can ?? null);
 
   readonly hocKy = computed(() => this.duLieu()?.hoc_ky ?? null);
 
   /** Luôn đủ 7 ngày để lưới tuần không co giãn khác nhau giữa các tuần. */
   readonly tuanTheoThu = computed(() => sapXepTuan(this.cacBuoi()));
-
-  readonly latChuyenCan = computed<LatBieuDo[] | null>(() => {
-    const cc = this.chuyenCan();
-    return cc ? latChuyenCan(cc) : null;
-  });
 
   /**
    * Cột của biểu đồ "Kết quả học tập": mỗi môn một cột `diem_tong_ket` + đường
@@ -227,14 +206,15 @@ export class DashboardSinhVienPage {
       tin_chi: '/dang-ky-cua-toi',
       hoc_phan: '/dang-ky-cua-toi',
       gpa_he_4: '/diem-cua-toi',
-      chuyen_can: '/diem-danh-cua-toi',
+      // Số buổi trong tuần bấm vào mở lịch học — chính là nơi con số đó đến từ.
+      buoi_tuan: '/lich-hoc',
     };
     const url = dich[khoa];
     if (url) void this.router.navigate([url]);
   }
 
   theBamDuoc(khoa: string): boolean {
-    return khoa in { tin_chi: 1, hoc_phan: 1, gpa_he_4: 1, chuyen_can: 1 };
+    return khoa in { tin_chi: 1, hoc_phan: 1, gpa_he_4: 1, buoi_tuan: 1 };
   }
 
   moHocPhan(h: HocPhanDaDangKy): void {
@@ -243,51 +223,6 @@ export class DashboardSinhVienPage {
 
   moLich(): void {
     void this.router.navigate(['/lich-hoc']);
-  }
-
-  moDiem(): void {
-    const hocKyId = this.hocKy()?.id;
-    void this.router.navigate(['/diem-cua-toi'], {
-      queryParams: hocKyId ? { hoc_ky_id: hocKyId } : {},
-    });
-  }
-
-  moDiemDanh(): void {
-    void this.router.navigate(['/diem-danh-cua-toi']);
-  }
-
-  moMonCanChuY(m: MonCanChuY): void {
-    // Đặc tả: mở màn điểm danh cá nhân, lọc theo học kỳ đang xem.
-    const hocKyId = this.hocKy()?.id;
-    void this.router.navigate(['/diem-danh-cua-toi'], {
-      queryParams: hocKyId ? { hoc_ky_id: hocKyId } : {},
-    });
-  }
-
-  /** Phân số 0–1 → `90,7 %`; null → `—` (chưa có buổi nào được điểm danh). */
-  phanTramTuPhanSo(tyLe: number | null | undefined): string {
-    return dinhDangTuPhanSo(tyLe);
-  }
-
-  /** Độ dài thanh tiến trình nhận 0–1 trực tiếp; null → 0 (không có gì để vẽ). */
-  doDayThanh(tyLe: number | null | undefined): number {
-    if (tyLe === null || tyLe === undefined || Number.isNaN(tyLe)) return 0;
-    return Math.max(0, Math.min(1, tyLe));
-  }
-
-  sacChuyenCan(tyLe: number | null | undefined): string {
-    return mauChuyenCan(tyLe) ?? 'neutral';
-  }
-
-  dinhDangGpa(giaTri: number | null | undefined): string {
-    return giaTri === null || giaTri === undefined ? CHUA_CO : dinhDangSoHienThi(giaTri);
-  }
-
-  phanTramChuyenCanThanh(): string | null {
-    const cc = this.chuyenCan();
-    if (!cc) return null;
-    const phanTram = phanSoSangPhanTram(cc.ty_le);
-    return phanTram === null ? null : `${dinhDangSoHienThi(phanTram)} %`;
   }
 
   nhanTrangThai(b: BuoiTrongTuan): string {
@@ -312,10 +247,5 @@ export class DashboardSinhVienPage {
    */
   lopCua(b: BuoiTrongTuan): string {
     return lopCaHoc(b.hinh_thuc, b.trang_thai);
-  }
-
-  /** Nhãn điểm chữ; `null` hiện `—` chứ không phải ô trống. */
-  chuDiem(h: HocPhanDaDangKy): string {
-    return h.diem_chu ?? CHUA_CO;
   }
 }

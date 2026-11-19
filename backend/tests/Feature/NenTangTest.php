@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
 use App\Models\CauHinh;
+use App\Models\DangKyHocPhan;
+use App\Models\Diem;
 use App\Models\GiangVien;
 use App\Models\HocKy;
 use App\Models\LichThi;
@@ -16,6 +18,7 @@ use App\Models\PhongHoc;
 use App\Models\SinhVien;
 use App\Models\User;
 use Database\Seeders\CauHinhSeeder;
+use Database\Seeders\ChuongTrinhDaoTaoSeeder;
 use Database\Seeders\DanhMucSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\GiangVienSeeder;
@@ -163,23 +166,34 @@ class NenTangTest extends TestCase
         $this->seed(UserSeeder::class);
         $this->seed(KhoaNganhSeeder::class);
         $this->seed(DanhMucSeeder::class);
+        // Lớp sinh theo chương trình đào tạo (2026-11-13) nên phải seed CTĐT trước.
+        $this->seed(ChuongTrinhDaoTaoSeeder::class);
         $this->seed(GiangVienSeeder::class);
         $this->seed(LopHocPhanSeeder::class);
 
         $hocKy = HocKy::query()->where('ma_hoc_ky', '2026-2')->firstOrFail();
 
-        // 30 lớp, tất cả OPEN để nhận đăng ký.
-        $this->assertSame(30, LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->count());
+        // Số lớp khớp số môn kỳ 7–10 của chương trình K67 (thay vì 30 cố định).
+        $soLop = LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->count();
+        $this->assertGreaterThan(0, $soLop, 'Kỳ 2026-2 phải có lớp để đăng ký.');
+        $this->assertSame(0, LopHocPhan::query()
+            ->where('hoc_ky_id', $hocKy->id)
+            ->where('trang_thai', '!=', LopHocPhan::OPEN)
+            ->count());
         $this->assertSame(0, LopHocPhan::query()
             ->where('hoc_ky_id', $hocKy->id)
             ->where('trang_thai', '!=', LopHocPhan::OPEN)
             ->count());
 
-        // Mã lớp sinh tiếp từ LHP0121, không đụng 120 dòng cũ của 2026-1 và 2025-2.
+        // Mã lớp học phần dạng <mã lớp HC>-<mã môn> (docs/11 V1); 30 lớp mới
+        // không đụng 120 dòng cũ của 2026-1 và 2025-2.
         $maLop = LopHocPhan::query()->where('hoc_ky_id', $hocKy->id)->orderBy('id')->pluck('ma_lop_hp')->all();
-        $this->assertSame('LHP0121', $maLop[0]);
-        $this->assertSame('LHP0150', $maLop[29]);
-        $this->assertSame(150, LopHocPhan::query()->count());
+        $this->assertCount($soLop, $maLop);
+        foreach ($maLop as $ma) {
+            $this->assertMatchesRegularExpression('/^[0-9]{2}[A-Z]+[0-9]+-.+$/', $ma,
+                "Mã lớp '{$ma}' phải có dạng <mã lớp HC>-<mã môn>");
+        }
+        $this->assertCount($soLop, array_unique($maLop), 'Mã lớp học phần phải duy nhất trong một học kỳ');
 
         // Đợt đăng ký đang mở tại thời điểm 2026-11-09 (ngày chốt của brief).
         $this->assertTrue($hocKy->dangMoDangKy(), 'Kỳ 2026-2 phải đang trong đợt đăng ký để demo.');
@@ -207,11 +221,21 @@ class NenTangTest extends TestCase
         $user = User::query()->where('email', 'sinhvien@example.com')->firstOrFail();
         $hocKy = HocKy::query()->where('ma_hoc_ky', '2026-2')->firstOrFail();
 
-        // Lớp `nam_thu = null` để không vướng BR-23 (sai năm thứ) khi kiểm luồng đăng ký.
+        // Chọn lớp của môn mà sinh viên CHƯA đạt — luật mới chặn đăng ký lại
+        // môn đã đạt (SUBJECT_ALREADY_PASSED), nên lớp đầu tiên có thể không hợp lệ.
+        $sinhVien = $user->sinhVien;
+        $monDaDat = DangKyHocPhan::query()
+            ->where('dang_ky_hoc_phan.sinh_vien_id', $sinhVien->id)
+            ->where('dang_ky_hoc_phan.trang_thai', DangKyHocPhan::ACTIVE)
+            ->whereHas('diem', fn ($q) => $q->where('ket_qua', Diem::DAT))
+            ->join('lop_hoc_phan', 'lop_hoc_phan.id', '=', 'dang_ky_hoc_phan.lop_hoc_phan_id')
+            ->pluck('lop_hoc_phan.mon_hoc_id')
+            ->all();
+
         $lop = LopHocPhan::query()
             ->where('hoc_ky_id', $hocKy->id)
-            ->whereNull('nam_thu')
             ->where('trang_thai', LopHocPhan::OPEN)
+            ->whereNotIn('mon_hoc_id', $monDaDat)
             ->orderBy('id')
             ->firstOrFail();
 
@@ -224,16 +248,15 @@ class NenTangTest extends TestCase
 
     /**
      * Phụ thuộc chéo của khối seed: `BuoiHocSeeder` sinh 17 buổi cho MỌI lớp, kể cả
-     * lớp của kỳ UPCOMING — nên thêm 30 lớp 2026-2 làm số buổi tăng từ 2.040 lên
-     * 2.550. `LichThiSeeder` đã xử lý sẵn 3 kỳ (`CAC_HOC_KY`). Khoá lại để lần sau
-     * ai thêm kỳ/lớp biết ngay chỗ nào phải cập nhật.
+     * lớp của kỳ UPCOMING. Số lớp giờ suy từ chương trình đào tạo (mỗi kỳ có bao
+     * nhiêu môn thì bấy nhiêu lớp), nên test khoá QUAN HỆ thay vì con số cố định.
      */
     public function test_them_lop_2026_2_khong_lam_hong_buoi_hoc_va_lich_thi(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $soLop = LopHocPhan::query()->count();
-        $this->assertSame(150, $soLop);
+        $this->assertGreaterThan(0, $soLop);
         $this->assertSame($soLop * 17, BuoiHoc::query()->count());
 
         $hocKy2026_2 = HocKy::query()->where('ma_hoc_ky', '2026-2')->firstOrFail();

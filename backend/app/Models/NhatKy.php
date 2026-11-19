@@ -54,6 +54,7 @@ class NhatKy extends Model
         'phong_hoc' => 'Phòng học',
         'menu' => 'Menu',
         'cau_hinh' => 'Cấu hình',
+        'chuong_trinh_dao_tao' => 'Chương trình đào tạo',
     ];
 
     protected $fillable = [

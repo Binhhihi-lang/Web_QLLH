@@ -36,7 +36,7 @@ Phiên bản: **v0.4** — 2026-10-24 · Kế thừa v0.3, sửa 5 lỗi mâu th
 | Học lại môn | GPA cộng cả hai lần | Một lần/môn, lấy điểm cao nhất; thêm CPA (FR-12.08) | BR-28, ADR-018 |
 | Đăng ký lại sau hủy | Không nói dữ liệu cũ xử lý sao | Chặn nếu đã có điểm; chuyên cần chỉ tính buổi sau `dang_ky_luc` | BR-27 |
 | Hủy lớp đã chốt điểm | Không quy định | Chặn, phải mở khóa điểm trước | BR-29 |
-| Sửa điểm danh trên kỳ CLOSED | BR-14 cấm tuyệt đối, mâu thuẫn FR-11.03 | ADMIN được sửa, ghi `nhat_ky` | ADR-017 |
+| Sửa điểm danh trên kỳ CLOSED | BR-14 cấm tuyệt đối | Không ai sửa được, kể cả ADMIN (2026-11-12) | BR-14 |
 | Đăng ký hàng loạt | Chỉ đăng ký từng sinh viên | Thêm FR-09.07 theo lớp hành chính | 🆕 |
 | Mục 10 | Loại trừ "quy đổi điểm chữ/hệ 4" (trái FR-12.03/12.07) | Bỏ dòng đó; thêm §10.1 giới hạn đã biết | ✏️ |
 | `vai_tro` trong data model | `sinh_vien` (chữ thường) | `SINH_VIEN` (ADR-015) | ✏️ |
@@ -220,7 +220,7 @@ Chi tiết cột, kiểu dữ liệu, index và ràng buộc: [03-data-model.md]
 |---|---|---|---|
 | FR-06.01 | Tạo học kỳ | Mã, tên, **năm học** (`nam_hoc`), **kỳ thứ** (`ky_thu` 1–3), ngày bắt đầu/kết thúc, thời gian mở/đóng đăng ký. Kiểm tra `ngay_bat_dau < ngay_ket_thuc`, `mo_dang_ky < dong_dang_ky`; `mo_dang_ky` và `dong_dang_ky` nằm trong `[ngay_bat_dau, ngay_ket_thuc]`; không chồng lấn ngày với học kỳ khác (BR-25); `(nam_hoc, ky_thu)` chưa tồn tại. | Must |
 | FR-06.02 | Danh sách & cập nhật | Xem, tìm, cập nhật. Cập nhật không được vi phạm FR-06.01. | Must |
-| FR-06.03 | Trạng thái | ADMIN chuyển trạng thái **thủ công, chỉ tiến**: `UPCOMING → ONGOING → CLOSED` (BR-24). Không quay lại từ `CLOSED`. Chỉ một học kỳ `ONGOING` tại một thời điểm. Trạng thái không tự đổi theo ngày. Mọi lần chuyển ghi `nhat_ky`. Học kỳ CLOSED chỉ đọc toàn bộ: không tạo/sửa/xóa lớp học phần, buổi học, đăng ký, điểm, điểm danh — **trừ** ADMIN sửa điểm danh (BR-14, ADR-017). | Must |
+| FR-06.03 | Trạng thái | ADMIN chuyển trạng thái **thủ công, chỉ tiến**: `UPCOMING → ONGOING → CLOSED` (BR-24). Không quay lại từ `CLOSED`. Chỉ một học kỳ `ONGOING` tại một thời điểm. Trạng thái không tự đổi theo ngày. Mọi lần chuyển ghi `nhat_ky`. Học kỳ CLOSED chỉ đọc toàn bộ, không ngoại lệ: không tạo/sửa/xóa lớp học phần, buổi học, đăng ký, điểm, điểm danh — kể cả ADMIN (BR-14). | Must |
 | FR-06.04 | Xóa | Chỉ xóa mềm được học kỳ `UPCOMING` và **chưa có lớp học phần chưa xóa**. Học kỳ `ONGOING` và `CLOSED` **không được xóa**. | Must |
 
 ### FR-07. Quản lý Phòng học
@@ -236,19 +236,19 @@ Chi tiết cột, kiểu dữ liệu, index và ràng buộc: [03-data-model.md]
 
 | ID | Chức năng | Mô tả | Ưu tiên |
 |---|---|---|---|
-| FR-08.01 | Mở lớp học phần | Mã lớp, môn, học kỳ, giảng viên, sĩ số tối đa, **năm thứ** (`nam_thu`, tùy chọn — `null` = mọi năm), trạng thái. Chặn nếu môn/giảng viên INACTIVE hoặc học kỳ CLOSED. | Must |
+| FR-08.01 | Mở lớp học phần | Mã lớp (định dạng `<mã lớp hành chính>-<mã môn>`), môn, học kỳ, giảng viên, sĩ số tối đa, trạng thái. Chặn nếu môn/giảng viên INACTIVE hoặc học kỳ CLOSED. | Must |
 | FR-08.02 | Danh sách & chi tiết | ADMIN xem tất cả; TEACHER xem lớp mình; STUDENT xem lớp OPEN và lớp đã đăng ký. Hiển thị `si_so_hien_tai / si_so_toi_da`. | Must |
-| FR-08.03 | Cập nhật | ADMIN sửa thông tin, đổi giảng viên. Đổi giảng viên: kiểm tra trùng lịch của giảng viên mới trên buổi `SCHEDULED` (409 kèm danh sách xung đột). **Đổi học kỳ** hoặc **đổi môn**: chặn nếu lớp đã có bất kỳ đăng ký nào khác CANCELLED (409 `SUBJECT_CHANGE_BLOCKED`). Đổi `nam_thu` không bị chặn nhưng không ảnh hưởng đăng ký đã có. | Must |
+| FR-08.03 | Cập nhật | ADMIN sửa thông tin, đổi giảng viên. Đổi giảng viên: kiểm tra trùng lịch của giảng viên mới trên buổi `SCHEDULED` (409 kèm danh sách xung đột). **Đổi học kỳ** hoặc **đổi môn**: chặn nếu lớp đã có bất kỳ đăng ký nào khác CANCELLED (409 `SUBJECT_CHANGE_BLOCKED`). | Must |
 | FR-08.04 | Trạng thái | `OPEN` (nhận đăng ký), `CLOSED` (ngừng nhận), `CANCELLED` (hủy lớp). Chuyển sang CANCELLED: đăng ký ACTIVE → CANCELLED (ghi `huy_luc`, `huy_boi`, lý do), buổi `SCHEDULED` → CANCELLED. Không chấp nhận đăng ký mới. **Chặn hủy lớp đã chốt điểm** (409 `GRADE_LOCKED`) — phải mở khóa điểm trước (BR-29). | Must |
-| FR-08.05 | Kiểm tra hợp lệ | Mã lớp duy nhất trong học kỳ (kể cả bản ghi xóa mềm); không gán giảng viên/môn INACTIVE; không giảm `si_so_toi_da` dưới số đăng ký ACTIVE; `nam_thu` nếu có phải trong 1–6. | Must |
+| FR-08.05 | Kiểm tra hợp lệ | Mã lớp duy nhất trong học kỳ (kể cả bản ghi xóa mềm); không gán giảng viên/môn INACTIVE; không giảm `si_so_toi_da` dưới số đăng ký ACTIVE. | Must |
 | FR-08.06 | Xóa | Xóa mềm lớp + các buổi học. Chặn nếu còn đăng ký ACTIVE. Giữ đăng ký CANCELLED, điểm, điểm danh. | Must |
 
 ### FR-09. Đăng ký học phần
 
 | ID | Chức năng | Mô tả | Ưu tiên |
 |---|---|---|---|
-| FR-09.01 | ADMIN đăng ký hộ | Chọn sinh viên + lớp học phần. Không giới hạn đợt đăng ký và **được bỏ qua kiểm tra năm thứ** (BR-23, ghi `nhat_ky`), nhưng vẫn chịu BR-08, BR-09. | Must |
-| FR-09.02 | Sinh viên tự đăng ký | Trong đợt đăng ký **của học kỳ chứa lớp đó** (BR-26), xem lớp OPEN còn chỗ và tự đăng ký. Lớp có `nam_thu` phải khớp năm thứ hiện tại của sinh viên (BR-23). | Must |
+| FR-09.01 | ADMIN đăng ký hộ | Chọn sinh viên + lớp học phần. Không giới hạn đợt đăng ký, nhưng vẫn chịu BR-08, BR-09 và BR-33 (chặn môn đã đạt). | Must |
+| FR-09.02 | Sinh viên tự đăng ký | Trong đợt đăng ký **của học kỳ chứa lớp đó** (BR-26), xem lớp OPEN còn chỗ và tự đăng ký. Không còn ràng buộc năm thứ (BR-23 bãi bỏ); môn đã đạt thì bị chặn (BR-33). | Must |
 | FR-09.03 | Hủy đăng ký | ADMIN hủy bất kỳ lúc nào (trừ học kỳ CLOSED). STUDENT tự hủy trong đợt đăng ký **và** khi chưa có điểm/điểm danh. Bản ghi chuyển CANCELLED, ghi `huy_luc`, `huy_boi`. Đăng ký lại = kích hoạt lại bản ghi cũ (BR-20). | Must |
 | FR-09.04 | Xem danh sách | ADMIN xem theo sinh viên hoặc lớp; TEACHER xem sinh viên lớp mình; STUDENT xem của mình theo học kỳ. | Must |
 | FR-09.05 | Kiểm tra khi đăng ký | Sinh viên ACTIVE; lớp OPEN và thuộc học kỳ chưa CLOSED; chưa có đăng ký ACTIVE ở lớp này; không đăng ký 2 lớp cùng môn trong học kỳ; còn chỗ; không trùng lịch với các buổi `SCHEDULED` của lớp đã đăng ký; trong đợt đăng ký (chỉ với STUDENT tự đăng ký); **khớp năm thứ nếu lớp có `nam_thu`** (chỉ với STUDENT tự đăng ký). Trả 409 kèm mã lỗi cụ thể. | Must |
@@ -272,7 +272,7 @@ Chi tiết cột, kiểu dữ liệu, index và ràng buộc: [03-data-model.md]
 |---|---|---|---|
 | FR-11.01 | Điểm danh theo buổi | TEACHER mở danh sách sinh viên **có đăng ký ACTIVE tại thời điểm buổi học** (đăng ký trước hoặc trong ngày buổi học, và chưa hủy trước buổi). Đánh dấu trạng thái từng người. | Must |
 | FR-11.02 | Trạng thái | `PRESENT`, `LATE`, `ABSENT`, `EXCUSED`; có ghi chú. | Must |
-| FR-11.03 | Sửa điểm danh | TEACHER sửa trong 7 ngày kể từ thời điểm kết thúc buổi học; quá hạn chỉ ADMIN sửa. **ADMIN sửa được cả khi học kỳ đã CLOSED** (ngoại lệ duy nhất của BR-14, ADR-017). Mọi sửa đổi ghi `nhat_ky`. | Should |
+| FR-11.03 | Sửa điểm danh | TEACHER sửa trong 7 ngày kể từ thời điểm kết thúc buổi học; quá hạn chỉ ADMIN sửa. **Khi học kỳ đã CLOSED thì KHÔNG AI sửa được**, kể cả ADMIN (BR-14). Mọi sửa đổi ghi `nhat_ky`. | Should |
 | FR-11.04 | Lịch sử | TEACHER xem theo lớp/buổi; STUDENT xem của mình; ADMIN xem toàn bộ. | Must |
 | FR-11.05 | Thống kê chuyên cần | Tổng buổi đã điểm danh, có mặt, đi muộn, vắng có phép, vắng không phép, tỷ lệ chuyên cần. Công thức: `(PRESENT + LATE) / (tong_buoi_da_diem_danh − EXCUSED)`, chỉ tính buổi có `ngay_hoc >= dang_ky_luc` (BR-27). Nếu mẫu số = 0 trả `null`. | Must |
 
@@ -348,11 +348,11 @@ Chữ **D** trong CRUD luôn là xóa mềm.
 | BR-07 | Mọi thao tác xóa là xóa mềm; không xóa cứng qua giao diện. Trạng thái nghiệp vụ tách biệt với xóa mềm. |
 | BR-08 | Một sinh viên không đăng ký 2 lớp cùng môn trong cùng học kỳ, và không đăng ký lớp có buổi `SCHEDULED` trùng thời gian với lớp đã đăng ký. |
 | BR-09 | Số đăng ký ACTIVE của lớp không vượt `si_so_toi_da`. Đăng ký chỗ cuối phải an toàn khi đồng thời: transaction + `lockForUpdate` trên dòng lớp học phần. |
-| BR-10 | STUDENT chỉ tự đăng ký/hủy trong đợt đăng ký của học kỳ chứa lớp đó (BR-26). ADMIN không bị giới hạn đợt nhưng vẫn tuân BR-08, BR-09 — riêng BR-23 được bỏ qua (xem BR-23). |
+| BR-10 | STUDENT chỉ tự đăng ký/hủy trong đợt đăng ký của học kỳ chứa lớp đó (BR-26). ADMIN không bị giới hạn đợt nhưng vẫn tuân BR-08, BR-09, BR-33. |
 | BR-11 | STUDENT không tự hủy khi đăng ký đã có điểm hoặc điểm danh (bản ghi có ít nhất một giá trị khác null). Hủy chuyển CANCELLED, giữ lịch sử. |
 | BR-12 | Mỗi đăng ký lưu người thực hiện và thời điểm; mỗi hủy lưu người hủy và thời điểm. |
 | BR-13 | Điểm đã chốt bị khóa; chỉ ADMIN mở khóa kèm lý do. Mọi thay đổi điểm ghi lịch sử. |
-| BR-14 | Học kỳ CLOSED chỉ đọc toàn bộ: không sửa đăng ký, điểm danh, điểm, lớp học phần, buổi học. **Ngoại lệ duy nhất:** ADMIN được sửa điểm danh trên học kỳ CLOSED, có ghi `nhat_ky` (ADR-017). |
+| BR-14 | Học kỳ CLOSED chỉ đọc **toàn bộ, không có ngoại lệ nào**: không sửa đăng ký, điểm danh, điểm, lớp học phần, buổi học — **kể cả ADMIN**. Muốn sửa phải chốt xong trong kỳ. Đây là thay đổi 2026-11-12, bỏ ngoại lệ ADMIN của ADR-017 cũ (xem `docs/11`). |
 | BR-15 | Giảng viên, môn học, phòng học, sinh viên INACTIVE không dùng cho thao tác tạo mới, nhưng giữ nguyên dữ liệu đã phát sinh. |
 | BR-16 | Bảng 6.1 là nguồn duy nhất định nghĩa điều kiện chặn xóa. |
 | BR-17 | Xóa mềm không làm mất dữ liệu liên quan. Một số xóa kéo theo bản ghi con: sinh viên/giảng viên kèm tài khoản; lớp học phần kèm buổi học. |
@@ -361,7 +361,7 @@ Chữ **D** trong CRUD luôn là xóa mềm.
 | BR-20 | 🆕 Đăng ký lại sau khi hủy: kích hoạt lại bản ghi cũ (trạng thái ACTIVE, cập nhật `dang_ky_boi`, `dang_ky_luc`), không tạo dòng mới, sau khi kiểm tra lại toàn bộ FR-09.05. |
 | BR-21 | 🆕 Điểm danh chỉ áp dụng cho đăng ký ACTIVE tại thời điểm buổi học. Đăng ký hủy trước buổi không xuất hiện trong danh sách. |
 | BR-22 | 🆕 Chỉnh lịch sau khi đã có đăng ký phải kiểm tra lại trùng lịch sinh viên; nếu phát sinh xung đột, trả 409 kèm danh sách để ADMIN quyết định. |
-| BR-23 | 🆕 **Năm thứ.** `nam_thu` của sinh viên tính theo `03-data-model.md` §5.6. Lớp có `lop_hoc_phan.nam_thu` khác null: STUDENT tự đăng ký chỉ được khi `nam_thu` khớp, sai → 409 `WRONG_STUDY_YEAR`. ADMIN đăng ký hộ được bỏ qua kiểm tra này, ghi `nhat_ky`. Nếu không tính được `nam_thu` (thiếu lớp hành chính hoặc `nam_nhap_hoc`) thì **không chặn**. |
+| BR-23 | **Đã bãi bỏ 2026-11-12.** Trước đây `lop_hoc_phan.nam_thu` chặn sinh viên sai năm thứ (`WRONG_STUDY_YEAR`). Cột `nam_thu` đã bị xoá vì nó chặn luôn luồng học lại. Luật thay thế: **BR-33**. |
 | BR-24 | 🆕 **Vòng đời học kỳ.** Chỉ chuyển tiến `UPCOMING → ONGOING → CLOSED`; `CLOSED` là trạng thái cuối. Chỉ một học kỳ `ONGOING` tại một thời điểm. Mọi lần chuyển ghi `nhat_ky`. |
 | BR-25 | 🆕 **Thời gian học kỳ.** Hai học kỳ không chồng lấn `[ngay_bat_dau, ngay_ket_thuc]`; đợt đăng ký có thể mở trước ngày bắt đầu và phải đóng trước hoặc trong ngày bắt đầu; `ngay_hoc` của mọi buổi nằm trong khoảng ngày của kỳ. |
 | BR-32 | 🆕 **Cấu hình điểm theo học kỳ.** Mỗi học kỳ có tối đa một cấu hình; chỉ `UPCOMING` được tạo/sửa. Trước khi chuyển sang `ONGOING`, cấu hình phải được lưu; khi đã bắt đầu, cấu hình bị khóa. Điểm lịch sử tiếp tục tham chiếu cấu hình đã dùng. |
@@ -371,6 +371,8 @@ Chữ **D** trong CRUD luôn là xóa mềm.
 | BR-29 | 🆕 **Hủy lớp đã chốt điểm.** Không cho chuyển lớp sang `CANCELLED` khi `chot_diem_luc` khác null (409 `GRADE_LOCKED`). Phải mở khóa điểm trước. |
 | BR-30 | 🆕 **Khóa tài khoản thì thu hồi token.** Chuyển `users.trang_thai = false` phải xóa toàn bộ `personal_access_tokens` của người đó. Nếu không, token còn hạn 7 ngày vẫn dùng được và việc khóa trở nên vô nghĩa. Áp dụng cho khóa đơn lẻ lẫn hàng loạt. Ghi `nhat_ky`. |
 | BR-31 | 🆕 **Ngữ nghĩa thao tác hàng loạt.** Mọi endpoint `*/bulk-*` xử lý **từng bản ghi độc lập**: một dòng vi phạm điều kiện nghiệp vụ bị từ chối riêng, các dòng còn lại vẫn thành công. Response luôn 200 với `{thanh_cong, that_bai, chi_tiet[]}`, mỗi dòng có `ma_loi` nếu lỗi. Chỉ rollback khi lỗi hạ tầng (mất kết nối DB). Danh sách rỗng → 422. Tối đa 500 bản ghi mỗi lần. |
+| BR-33 | 🆕 **Học lại (2026-11-12).** Sinh viên được đăng ký học lại môn **chưa đạt** (`diem.ket_qua = KHONG_DAT` hoặc chưa có điểm), vào bất kỳ lớp OPEN cùng môn ở kỳ đang mở đợt — kể cả lớp mang mã khóa dưới. Bị chặn khi đã **đạt** môn đó ở bất kỳ kỳ trước (409 `SUBJECT_ALREADY_PASSED`). Học lại dùng CHUNG lớp, sĩ số tính gộp (BR-09). GPA lấy điểm cao nhất (BR-28). |
+| BR-34 | 🆕 **Kích hoạt lại đăng ký đã hủy (2026-11-12).** Chỉ áp cho đúng bản ghi `dang_ky_hoc_phan` cũ. Bị chặn khi bản ghi đó đã có điểm (409 `HAS_GRADE_OR_ATTENDANCE`) — bật lại sẽ treo điểm cũ. Học lại môn chưa đạt đi qua **lớp khác** nên tạo đăng ký mới, không chạm luật này. |
 
 ### 6.1. Điều kiện xóa mềm theo thực thể
 
@@ -572,7 +574,7 @@ Các mục dưới đây **cố ý** không làm ở bản 1. Đây là quyết 
 | 20 | Tên cột `khoa` | Đổi thành `khoa_hoc` để phân biệt **khóa** (cohort) với **khoa** (faculty) |
 | 21 | Học lại môn | GPA tính một lần/môn, lấy điểm cao nhất (BR-28, ADR-018) |
 | 22 | Vòng đời học kỳ | Chỉ tiến, một kỳ ONGOING tại một thời điểm, CLOSED không quay lại (BR-24, ADR-017) |
-| 23 | Sửa điểm danh trên kỳ CLOSED | Chỉ ADMIN, có ghi `nhat_ky` — ngoại lệ duy nhất của BR-14 |
+| 23 | Sửa điểm danh trên kỳ CLOSED | **Không ai được sửa**, kể cả ADMIN — BR-14 không còn ngoại lệ (2026-11-12) |
 | 24 | Buổi quá hạn không điểm danh | Giữ `SCHEDULED`, không chạy job tự động; dashboard có bộ lọc "chờ điểm danh" |
 | 25 | Ảnh đại diện | Một cột `users.avatar_url` cho cả 3 vai trò, lưu trên Cloudinary (ADR-019) |
 | 26 | Khóa tài khoản | Phải thu hồi token ngay, nếu không token 7 ngày vẫn dùng được (BR-30) |

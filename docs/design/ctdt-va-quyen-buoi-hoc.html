@@ -1,0 +1,2907 @@
+<title>Chương trình đào tạo &amp; quyền buổi học</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Mockup duyệt nghiệp vụ — KHÔNG phải code thật.
+   Mọi màu chép từ frontend/src/_tokens.scss, không có giá trị bịa.
+   Mỗi màn là một khối .screen: thanh trên ghi route thật + vai trò,
+   thân dưới là giao diện đề xuất với dữ liệu seed thật của dự án.
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  --color-primary: #366ef2;
+  --color-primary-hover: #0f51eb;
+  --color-primary-soft: #d0ddfb;
+  --color-on-primary: #ffffff;
+  --color-on-primary-soft: #2558d0;
+
+  --color-danger: #e90f50;
+  --color-danger-hover: #bd0c41;
+  --color-danger-soft: #fbd0dd;
+  --color-on-danger-soft: #b8214e;
+
+  --color-success: #2e8609;
+  --color-success-soft: #ddfbd0;
+  --color-on-success-soft: #357e16;
+
+  --color-warning: #a36b0a;
+  --color-warning-soft: #fbebd0;
+  --color-on-warning-soft: #8d6219;
+
+  --color-info: #0b7eb4;
+  --color-info-soft: #d0edfb;
+  --color-on-info-soft: #1b7098;
+
+  --color-chart-1: #7c3aed;
+  --color-chart-1-soft: #ede9fe;
+  --color-on-chart-1-soft: #5b21b6;
+
+  /* Biểu đồ cột điểm — chép từ _tokens.scss. Cột cam và đường xanh thương hiệu
+     KHÔNG dùng chart-1 vì đường chồng lên cột sẽ chìm (1.15:1). Quầng trắng
+     vẽ dưới nét là thứ tách đường khỏi thân cột. */
+  --color-diem-cot: #c2410c;
+  --color-diem-duong: #366ef2;
+  --color-diem-quang: #ffffff;
+
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9;
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-ink-subtle: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-soft: #f1f5f9;
+
+  --color-dark: #1e293b;
+  --color-dark-2: #0f172a;
+  --color-dark-line: #334155;
+  --color-on-dark: #ffffff;
+  --color-on-dark-muted: #cbd5e1;
+
+  --lich-ly-thuyet-bg: var(--color-surface-alt);
+  --lich-ly-thuyet-fg: var(--color-ink);
+  --lich-ly-thuyet-vien: var(--color-border);
+  --lich-thuc-hanh-bg: var(--color-success-soft);
+  --lich-thuc-hanh-fg: var(--color-on-success-soft);
+  --lich-thuc-hanh-vien: var(--color-success);
+  --lich-truc-tuyen-bg: var(--color-info-soft);
+  --lich-truc-tuyen-fg: var(--color-on-info-soft);
+  --lich-truc-tuyen-vien: var(--color-info);
+  --lich-thi-bg: var(--color-warning-soft);
+  --lich-thi-fg: var(--color-on-warning-soft);
+  --lich-thi-vien: var(--color-warning);
+  --lich-huy-bg: var(--color-danger);
+  --lich-huy-fg: #ffffff;
+  --lich-huy-vien: var(--color-danger-hover);
+  /* Buổi đã hủy: nền đỏ nhưng ở dạng nhạt để không tranh với nút xóa.
+     Chữ dùng --color-on-danger-soft (4.51:1 trên nền nhạt). */
+  --lich-huy-nhat-bg: var(--color-danger-soft);
+  --lich-huy-nhat-fg: var(--color-on-danger-soft);
+
+  --font-heading: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  --text-display: 2rem;
+  --text-h1: 1.5rem;
+  --text-h2: 1.1875rem;
+  --text-h3: 1rem;
+  --text-body: 0.9375rem;
+  --text-small: 0.8125rem;
+  --text-caption: 0.6875rem;
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 4px 16px rgba(15, 23, 42, 0.1);
+
+  --dur: 200ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-primary: #477af0;
+    --color-primary-hover: #6690f5;
+    --color-primary-soft: #1e3a6b;
+    --color-on-primary: #0f172a;
+    --color-on-primary-soft: #b3cafc;
+    --color-danger: #ee326a;
+    --color-danger-hover: #f2587f;
+    --color-danger-soft: #4a1a29;
+    --color-on-danger-soft: #fca3bb;
+    --color-success: #43bd0f;
+    --color-success-soft: #1e3a12;
+    --color-on-success-soft: #9ae87a;
+    --color-warning: #bd7d0f;
+    --color-warning-soft: #3d3015;
+    --color-on-warning-soft: #e8bd6a;
+    --color-info: #1089c1;
+    --color-info-soft: #103344;
+    --color-on-info-soft: #7ec9ec;
+    --color-chart-1: #a78bfa;
+    --color-chart-1-soft: #2e1065;
+    --color-on-chart-1-soft: #c4b5fd;
+    --color-diem-cot: #fb923c;
+    --color-diem-duong: #477af0;
+    --color-diem-quang: #111827;
+    --color-bg: #0b1120;
+    --color-surface: #111827;
+    --color-surface-alt: #1a2334;
+    --color-ink: #e2e8f0;
+    --color-ink-muted: #94a3b8;
+    --color-ink-subtle: #7c8ba1;
+    --color-border: #273449;
+    --color-border-soft: #1e293b;
+    --color-dark: #0b1120;
+    --color-dark-2: #111827;
+    --color-dark-line: #273449;
+    --color-on-dark: #e2e8f0;
+    --color-on-dark-muted: #94a3b8;
+    --lich-huy-bg: #a8123f;
+    --lich-huy-vien: #ee326a;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-primary: #477af0;
+  --color-primary-hover: #6690f5;
+  --color-primary-soft: #1e3a6b;
+  --color-on-primary: #0f172a;
+  --color-on-primary-soft: #b3cafc;
+  --color-danger: #ee326a;
+  --color-danger-hover: #f2587f;
+  --color-danger-soft: #4a1a29;
+  --color-on-danger-soft: #fca3bb;
+  --color-success: #43bd0f;
+  --color-success-soft: #1e3a12;
+  --color-on-success-soft: #9ae87a;
+  --color-warning: #bd7d0f;
+  --color-warning-soft: #3d3015;
+  --color-on-warning-soft: #e8bd6a;
+  --color-info: #1089c1;
+  --color-info-soft: #103344;
+  --color-on-info-soft: #7ec9ec;
+  --color-chart-1: #a78bfa;
+  --color-chart-1-soft: #2e1065;
+  --color-on-chart-1-soft: #c4b5fd;
+  --color-diem-cot: #fb923c;
+  --color-diem-duong: #477af0;
+  --color-diem-quang: #111827;
+  --color-bg: #0b1120;
+  --color-surface: #111827;
+  --color-surface-alt: #1a2334;
+  --color-ink: #e2e8f0;
+  --color-ink-muted: #94a3b8;
+  --color-ink-subtle: #7c8ba1;
+  --color-border: #273449;
+  --color-border-soft: #1e293b;
+  --color-dark: #0b1120;
+  --color-dark-2: #111827;
+  --color-dark-line: #273449;
+  --color-on-dark: #e2e8f0;
+  --color-on-dark-muted: #94a3b8;
+  --lich-huy-bg: #a8123f;
+  --lich-huy-vien: #ee326a;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 72px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--color-surface);
+}
+
+.wrap { max-width: 1120px; margin: 0 auto; }
+
+/* ---------- masthead ---------- */
+.mast {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+}
+.mast > .wrap { padding-block: 34px 26px; }
+.eyebrow {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 10px;
+}
+h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(26px, 4.5vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -.02em;
+  font-weight: 700;
+  text-wrap: balance;
+  margin: 0 0 12px;
+}
+.lede { margin: 0; max-width: 68ch; color: var(--color-ink-muted); font-size: 16px; }
+
+/* ---------- nav ---------- */
+nav.phan {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+}
+nav.phan ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+nav.phan a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+}
+nav.phan a:hover { background: var(--color-surface-alt); color: var(--color-ink); }
+nav.phan a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
+/* ---------- section ---------- */
+section { padding-top: 40px; scroll-margin-top: 56px; }
+section > h2 {
+  font-family: var(--font-heading);
+  font-size: var(--text-h2);
+  letter-spacing: -.01em;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+section > h2 .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  /* Chữ trên nền primary-soft phải dùng on-primary-soft, không dùng
+     primary: #366EF2 trên #D0DDFB chỉ đạt 3.30:1 (trượt AA 4.5:1).
+     #2558D0 là cặp có sẵn trong _tokens.scss, đo được 4.55:1. */
+  color: var(--color-on-primary-soft);
+  border: 1px solid var(--color-primary-soft);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+}
+.sub { margin: 0 0 18px; color: var(--color-ink-muted); max-width: 74ch; font-size: 14.5px; }
+
+/* ---------- note ---------- */
+.note {
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 15px;
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--color-ink);
+  max-width: 82ch;
+}
+.note strong { font-weight: 600; }
+.note ul { margin: 6px 0 0; padding-left: 18px; }
+.note li { margin: 3px 0; }
+.note--warn { border-left-color: var(--color-warning); background: var(--color-warning-soft); }
+.note--danger { border-left-color: var(--color-danger); background: var(--color-danger-soft); }
+
+/* ---------- screen frame ---------- */
+.screen {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+.screen-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+.route {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-ink-muted);
+  overflow-wrap: anywhere;
+}
+.route b { color: var(--color-ink); font-weight: 600; }
+.role {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+/* Chữ trên huy hiệu lấy --color-surface để tự đảo: nền sáng → chữ trắng,
+   nền tối → chữ gần đen. Hardcode #fff sẽ trượt AA ở chế độ tối vì
+   --color-success/--color-warning ở đó là tông sáng (4.64:1 → 2.3:1). */
+.role--admin { background: var(--color-primary); color: var(--color-on-primary); }
+.role--gv { background: var(--color-success); color: var(--color-surface); }
+.role--sv { background: var(--color-warning); color: var(--color-surface); }
+.screen-body { padding: 18px 16px 20px; }
+
+/* ---------- page head inside a screen ---------- */
+.ph {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ph h3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-h3);
+  margin: 0 0 3px;
+  font-weight: 600;
+}
+.ph p { margin: 0; font-size: 12.5px; color: var(--color-ink-muted); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: default;
+  white-space: nowrap;
+}
+.btn--primary { background: var(--color-primary); color: var(--color-on-primary); }
+.btn--ghost { border-color: var(--color-border); color: var(--color-ink-muted); background: var(--color-surface); }
+.btn--danger { border-color: var(--color-danger); color: var(--color-danger); background: var(--color-surface); }
+.btn--sm { padding: 5px 9px; font-size: 11.5px; }
+.btn--link { background: none; border: 0; color: var(--color-primary); padding: 4px 6px; text-decoration: underline; }
+/* Nút thao tác trong bảng: một nút duy nhất mở menu. Chữ và viền cùng
+   lấy màu chính; hover đổ nền nhạt để thấy rõ là bấm được. */
+.btn--action {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-surface);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn--action:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-on-primary-soft);
+}
+.btn--action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+.acts { display: flex; gap: 4px; flex-wrap: wrap; }
+/* Menu xổ ra từ nút Thao tác */
+.menu-demo {
+  display: grid;
+  gap: 0;
+  min-width: 190px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+  font-size: 12.5px;
+}
+.menu-demo span {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-ink);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+.menu-demo span:last-child { border-bottom: 0; }
+.menu-demo span:hover { background: var(--color-surface-alt); }
+.menu-demo .danger { color: var(--color-danger); }
+.menu-demo .danger:hover { background: var(--color-danger-soft); }
+.menu-demo .icon { color: var(--color-ink-muted); width: 14px; text-align: center; }
+.menu-demo .sep { border-bottom: 1px solid var(--color-border); }
+
+/* ---------- Danh sách môn dạng gọn (SCR-32) ----------
+   Đúng như ảnh mẫu: một cột mã+tên môn bên trái, số tín chỉ căn phải.
+   Không có cột lớp/giảng viên/lịch — những thứ đó chỉ hiện khi bấm vào dòng. */
+table.mono-list { min-width: 0; }
+table.mono-list th {
+  background: transparent;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12.5px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  padding: 10px 4px;
+}
+table.mono-list td { padding: 9px 4px; border-bottom: 1px solid var(--color-border-soft); }
+.ma-mon {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-primary);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.ten-mon { display: block; font-size: 13.5px; color: var(--color-ink); line-height: 1.35; }
+tr.dong-mo { cursor: pointer; }
+tr.dong-mo:hover td { background: var(--color-surface-alt); }
+tr.dong-mo:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+tr.dong-chon td { background: var(--color-primary-soft); }
+tr.dong-chon .ma-mon { color: var(--color-on-primary-soft); }
+/* Chữ phụ trên hàng đang chọn phải theo cặp on-primary-soft. Dùng ink-muted
+   ở đây chỉ đạt 4.37:1 trên nền primary-soft của chế độ tối. */
+tr.dong-chon .muted,
+tr.dong-chon td { color: var(--color-on-primary-soft); }
+
+/* ---------- Panel mở ra khi chọn môn ---------- */
+.panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+.panel-head b { font-family: var(--font-heading); font-size: 14.5px; }
+.panel-head .mono { font-size: 11.5px; margin-left: 8px; }
+.panel-body { padding: 14px; display: grid; gap: 4px; }
+.mini-head {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 14px 0 8px;
+  color: var(--color-ink);
+}
+.mini-head:first-of-type { margin-top: 4px; }
+.tabs-demo {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+  overflow-x: auto;
+}
+.tabs-demo span {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.tabs-demo span.on { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+/* ---------- Khối biểu đồ kết quả học tập ---------- */
+.chart-box {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 14px 16px 12px;
+}
+.chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.chart-wrap { width: 100%; overflow-x: auto; }
+.chart-wrap svg { display: block; width: 100%; min-width: 420px; height: auto; }
+
+/* ---------- form fields ---------- */
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  letter-spacing: .02em;
+}
+.ctl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-ink);
+  min-width: 0;
+}
+.ctl > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctl .caret { color: var(--color-ink-subtle); font-size: 10px; flex: none; }
+.ctl--mono { font-family: var(--font-mono); font-size: 12.5px; }
+.hint { font-size: 11.5px; color: var(--color-ink-muted); }
+
+/* ---------- chips / pills ---------- */
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pill--ok { background: var(--color-success-soft); color: var(--color-on-success-soft); }
+.pill--warn { background: var(--color-warning-soft); color: var(--color-on-warning-soft); }
+.pill--danger { background: var(--color-danger-soft); color: var(--color-on-danger-soft); }
+.pill--info { background: var(--color-info-soft); color: var(--color-on-info-soft); }
+.pill--off { background: var(--color-surface-alt); color: var(--color-ink-muted); }
+.pill--primary { background: var(--color-primary-soft); color: var(--color-on-primary-soft); }
+
+/* ---------- tables ---------- */
+.table-x { overflow-x: auto; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+  min-width: 540px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-soft);
+  vertical-align: middle;
+}
+thead th {
+  font-size: 11px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  /* Nền thead là surface-alt nên ink-subtle chỉ đạt 4.44:1 — dùng ink-muted */
+  color: var(--color-ink-muted);
+  font-weight: 700;
+  background: var(--color-surface-alt);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border);
+}
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, .mono { font-family: var(--font-mono); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+/* Chữ phụ. Mặc định dùng ink-muted (7.5:1 trên nền trắng).
+   Không dùng ink-subtle: #64748B chỉ đạt 4.34:1 trên nền #F1F5F9
+   (panel-head, hàng xen kẽ) — trượt AA cho chữ thường. */
+.muted { color: var(--color-ink-muted); }
+/* Hàng đã hủy dùng ink-muted, không dùng ink-subtle: #64748B trên nền
+   surface-alt chỉ đạt 4.34:1, trượt AA cho chữ thường. */
+tr.row-cancel td { color: var(--color-ink-muted); }
+tr.row-cancel td:first-child { text-decoration: line-through; }
+tr.row-new td { background: var(--color-primary-soft); }
+/* Hàng mới thêm nằm trên nền primary-soft nên chữ phụ phải dùng cặp
+   on-primary-soft; ink-muted chỉ đạt 4.37:1 trên nền đó ở chế độ tối. */
+tr.row-new .muted,
+tr.row-new td { color: var(--color-on-primary-soft); }
+
+/* ---------- checkbox ---------- */
+.chk {
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 3px;
+  display: inline-block;
+  vertical-align: middle;
+  background: var(--color-surface);
+}
+
+/* ---------- calendar ---------- */
+.cal-scroll { overflow-x: auto; }
+.cal { min-width: 620px; border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; }
+.cal-head, .cal-row { display: grid; grid-template-columns: 54px repeat(7, minmax(0, 1fr)); }
+.cal-head { background: var(--color-surface-alt); }
+.cal-head > div {
+  padding: 7px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  text-align: center;
+  border-right: 1px solid var(--color-border-soft);
+}
+.cal-head > div:last-child { border-right: 0; }
+.cal-cell {
+  min-height: 74px;
+  padding: 4px;
+  border-top: 1px solid var(--color-border-soft);
+  border-right: 1px solid var(--color-border-soft);
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+}
+.cal-cell:last-child { border-right: 0; }
+.cal-corner {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  border-right: 1px solid var(--color-border-soft);
+  border-top: 1px solid var(--color-border-soft);
+  font-family: var(--font-mono);
+}
+.slot {
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  border-left: 3px solid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.slot b { display: block; font-weight: 600; font-size: 11px; }
+.slot span { display: block; opacity: .85; }
+.slot--ly-thuyet { background: var(--lich-ly-thuyet-bg); color: var(--lich-ly-thuyet-fg); border-color: var(--lich-ly-thuyet-vien); }
+.slot--thuc-hanh { background: var(--lich-thuc-hanh-bg); color: var(--lich-thuc-hanh-fg); border-color: var(--lich-thuc-hanh-vien); }
+.slot--truc-tuyen { background: var(--lich-truc-tuyen-bg); color: var(--lich-truc-tuyen-fg); border-color: var(--lich-truc-tuyen-vien); }
+.slot--thi { background: var(--lich-thi-bg); color: var(--lich-thi-fg); border-color: var(--lich-thi-vien); }
+.slot--huy { background: var(--lich-huy-nhat-bg); color: var(--lich-huy-nhat-fg); border-color: var(--color-danger); text-decoration: line-through; }
+.slot--trung { outline: 2px solid var(--color-danger); outline-offset: 1px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 11.5px; color: var(--color-ink-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 2px; border: 1px solid; flex: none; }
+.dot--ly-thuyet { background: var(--lich-ly-thuyet-bg); border-color: var(--lich-ly-thuyet-vien); }
+.dot--thuc-hanh { background: var(--lich-thuc-hanh-bg); border-color: var(--lich-thuc-hanh-vien); }
+.dot--truc-tuyen { background: var(--lich-truc-tuyen-bg); border-color: var(--lich-truc-tuyen-vien); }
+.dot--huy { background: var(--lich-huy-nhat-bg); border-color: var(--color-danger); }
+
+/* ---------- dialog mock ---------- */
+.dialog {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-surface);
+  max-width: 600px;
+  overflow: hidden;
+}
+.dialog-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+.dialog-head h4 {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  margin: 0 0 3px;
+  font-weight: 600;
+}
+.dialog-head p { margin: 0; font-size: 12px; color: var(--color-ink-muted); }
+.dialog-body { padding: 16px; display: grid; gap: 14px; }
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border-soft);
+  background: var(--color-surface-alt);
+  flex-wrap: wrap;
+}
+
+/* ---------- tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tile {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 13px;
+  background: var(--color-surface);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.tile .k { font-size: 11px; color: var(--color-ink-muted); font-weight: 500; }
+.tile .v {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.tile .d { font-size: 11px; color: var(--color-ink-subtle); }
+
+/* ---------- steps ---------- */
+.steps { display: grid; gap: 0; }
+.step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 20px;
+  position: relative;
+}
+.step:last-child { padding-bottom: 0; }
+.step::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 30px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border);
+}
+.step:last-child::before { display: none; }
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  flex: none;
+  z-index: 1;
+}
+.step-body { min-width: 0; display: grid; gap: 10px; }
+.step-body > h4 {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+/* ---------- info grid ---------- */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.info { display: grid; gap: 2px; min-width: 0; }
+.info dt {
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  font-weight: 700;
+}
+.info dd { margin: 0; font-size: 13.5px; font-weight: 500; overflow-wrap: anywhere; }
+.info--new dt { color: var(--color-primary); }
+.info--new dd { color: var(--color-primary); }
+
+/* ---------- compare ---------- */
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.compare > div { min-width: 0; }
+.compare h5 {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  margin: 0 0 8px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ---------- alert banner ---------- */
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  border: 1px solid;
+}
+.alert--danger { background: var(--color-danger-soft); color: var(--color-on-danger-soft); border-color: var(--color-danger); }
+.alert--warn { background: var(--color-warning-soft); color: var(--color-on-warning-soft); border-color: var(--color-warning); }
+.alert--info { background: var(--color-info-soft); color: var(--color-on-info-soft); border-color: var(--color-info); }
+.alert b { font-weight: 700; }
+.alert ul { margin: 4px 0 0; padding-left: 16px; }
+
+/* ---------- matrix ---------- */
+.matrix td:first-child { font-weight: 500; color: var(--color-ink); }
+.matrix .yes { color: var(--color-success); font-weight: 700; }
+.matrix .no { color: var(--color-ink-subtle); }
+/* Ô "đề xuất" trong bảng so sánh nằm trên nền primary-soft của hàng,
+   nên chữ phải dùng cặp on-primary-soft: #366EF2 trên #D0DDFB chỉ
+   đạt 3.30:1 (trượt AA), còn #2558D0 đạt 4.55:1. */
+.matrix .chg { color: var(--color-on-primary-soft); font-weight: 700; }
+
+/* ---------- misc ---------- */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.toolbar .grow { flex: 1 1 180px; min-width: 0; }
+.seg {
+  display: flex;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg span {
+  /* Chia đều bề ngang: ba lựa chọn rộng bằng nhau bất kể chữ dài ngắn.
+     `flex: 1 1 0` + `min-width: 0` để ô hẹp nhất vẫn co được thay vì
+     đẩy tràn khung ở màn 390px. */
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding: 7px 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.seg span:last-child { border-right: 0; }
+.seg span.on { background: var(--color-primary); color: var(--color-on-primary); }
+.divider { height: 1px; background: var(--color-border); margin: 18px 0; border: 0; }
+.kv-inline { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--color-ink-muted); }
+.kv-inline b { color: var(--color-ink); font-weight: 600; }
+h4.block {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--color-ink-muted);
+  margin: 18px 0 8px;
+  font-weight: 700;
+}
+h4.block:first-child { margin-top: 0; }
+.footer-note {
+  margin-top: 36px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-ink-muted);
+  max-width: 88ch;
+}
+
+@media (max-width: 640px) {
+  .screen-body { padding: 14px 12px 16px; }
+  section { padding-top: 30px; }
+  .cal { min-width: 560px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="eyebrow">QLLH · Duyệt giao diện trước khi code</p>
+    <h1>Chương trình đào tạo &amp; quyền buổi học</h1>
+    <p class="lede">
+      Sáu thay đổi đã chốt nghiệp vụ, dựng thành màn hình để duyệt. Dữ liệu trong các màn
+      là dữ liệu seed thật của dự án: khoa CNTT, ngành KTPM, học kỳ 2026-1 đang chạy,
+      lớp 68PM2 đã đầy 70/70. Không có số liệu bịa.
+    </p>
+  </div>
+</header>
+
+<nav class="phan" aria-label="Các phần">
+  <div class="wrap">
+    <ul>
+      <li><a href="#tom-tat">Tóm tắt</a></li>
+      <li><a href="#buoi-hoc">ADMIN sửa buổi</a></li>
+      <li><a href="#giang-vien">Giảng viên</a></li>
+      <li><a href="#ctdt">Danh sách CTĐT</a></li>
+      <li><a href="#ctdt-mons">Môn trong CTĐT</a></li>
+      <li><a href="#dang-ky">SV đăng ký + học lại</a></li>
+      <li><a href="#ho-so">Hồ sơ SV</a></li>
+      <li><a href="#dashboard">Dashboard SV</a></li>
+      <li><a href="#khoa-diem">Khóa điểm</a></li>
+      <li><a href="#phan-quyen">Phân quyền</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ================= 1. TÓM TẮT ================= -->
+  <section id="tom-tat">
+    <h2><span class="num">01</span>Tóm tắt sáu thay đổi</h2>
+    <p class="sub">
+      Cột “Đổi thành” là phần cần duyệt. Màn nào đã có thì chỉ sửa, màn nào chưa có thì làm mới.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>Phạm vi đợt này</b> · 6 thay đổi · 2 màn mới</span>
+        <span class="role role--admin">Kế hoạch</span>
+      </div>
+      <div class="screen-body">
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Màn</th>
+                <th>Hiện tại</th>
+                <th>Đổi thành</th>
+                <th class="nowrap">Loại</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Lịch học lớp <span class="mono">/lop-hoc-phan/:id/lich-hoc</span></td>
+                <td>Giảng viên thấy nút Hủy; không có nút Sửa; đổi phòng phải gọi API</td>
+                <td>ADMIN có nút <b>Sửa</b>, <b>Hủy</b>, <b>Thêm bù</b>, <b>Xóa</b>. Giảng viên chỉ còn liên kết Điểm danh</td>
+                <td><span class="pill pill--warn">Sửa màn</span></td>
+              </tr>
+              <tr>
+                <td>Hộp thoại sửa buổi</td>
+                <td>Chưa có giao diện</td>
+                <td>Đổi ngày, tiết, phòng, hình thức; cảnh báo trùng lịch ngay trong hộp thoại</td>
+                <td><span class="pill pill--danger">Màn mới</span></td>
+              </tr>
+              <tr>
+                <td>Chương trình đào tạo <span class="mono">/chuong-trinh-dao-tao</span></td>
+                <td>Không tồn tại</td>
+                <td>Danh sách CTĐT theo ngành × khóa, tạo/sửa/xóa, xem sĩ số áp dụng</td>
+                <td><span class="pill pill--danger">Màn mới</span></td>
+              </tr>
+              <tr>
+                <td>Môn trong CTĐT <span class="mono">/chuong-trinh-dao-tao/:id</span></td>
+                <td>Không tồn tại</td>
+                <td>Bảng 48 môn nhóm theo kỳ thứ, thêm/sửa/xóa từng dòng tại chỗ</td>
+                <td><span class="pill pill--danger">Màn mới</span></td>
+              </tr>
+              <tr>
+                <td>Đăng ký học phần <span class="mono">/dang-ky-hoc-phan</span> (SCR-32)</td>
+                <td>Đổ mọi lớp OPEN toàn trường, không lọc ngành/khóa/kỳ; bảng nhiều cột, không xem lịch trước khi đăng ký</td>
+                <td>Danh sách gọn chỉ mã + tên môn + số tín chỉ; bấm dòng mới mở lớp, sinh viên, lịch. Ô chọn học kỳ chỉ gồm kỳ sinh viên đã học</td>
+                <td><span class="pill pill--warn">Sửa màn</span></td>
+              </tr>
+              <tr>
+                <td>Hồ sơ sinh viên <span class="mono">/tai-khoan</span></td>
+                <td>Chỉ có mã SV, họ tên, email, lớp hành chính, SĐT, địa chỉ</td>
+                <td>Thêm khoa, ngành, khóa, năm nhập học — đủ để biết sinh viên thuộc chương trình nào</td>
+                <td><span class="pill pill--ok">Thêm field</span></td>
+              </tr>
+              <tr>
+                <td>Dashboard sinh viên (SCR-05)</td>
+                <td>Bảng điểm + tỷ lệ chuyên cần lặp 2 lần + gọi thêm <span class="mono">/me/grades</span></td>
+                <td>4 thẻ tổng quan + thời khóa biểu tuần + <b>giữ biểu đồ kết quả học tập</b> + 2 liên kết sang màn Điểm và Điểm danh</td>
+                <td><span class="pill pill--warn">Bỏ bớt</span></td>
+              </tr>
+              <tr>
+                <td>Mã lớp hành chính và lớp học phần</td>
+                <td>Lớp HC <span class="mono">KTPM-K68-01</span>, lớp HP <span class="mono">LHP0112</span></td>
+                <td>Lớp HC <span class="mono">68PM2</span>, lớp HP <span class="mono">68PM2-396602</span> — lớp HP = lớp HC + mã môn</td>
+                <td><span class="pill pill--danger">Đổi dữ liệu</span></td>
+              </tr>
+              <tr>
+                <td>Điểm danh &amp; nhập điểm khi kỳ đã đóng</td>
+                <td>ADMIN ghi được vào kỳ CLOSED; không chặn kỳ UPCOMING</td>
+                <td><b>Không ai ghi được</b>, kể cả ADMIN. Chốt xong trong kỳ; đóng kỳ là khóa vĩnh viễn</td>
+                <td><span class="pill pill--danger">Luật mới</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 2. ADMIN SỬA BUỔI ================= -->
+  <section id="buoi-hoc">
+    <h2><span class="num">02</span>ADMIN sửa buổi học</h2>
+    <p class="sub">
+      Backend đã có <span class="mono">PUT /api/sessions/{id}</span> nhận ngày, tiết, phòng, hình thức,
+      tự kiểm trùng lịch và ghi nhật ký. Thiếu đúng giao diện.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/lop-hoc-phan/12/lich-hoc</b> · 68PM2-396601 · Giải tích 1 · HK 2026-1</span>
+        <span class="role role--admin">ADMIN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Lịch học lớp 68PM2-396601</h3>
+            <p>17 buổi · 2 buổi đã hủy · phòng B201</p>
+          </div>
+          <div class="acts">
+            <button class="btn btn--ghost btn--sm" type="button">Sinh lịch hàng tuần</button>
+            <button class="btn btn--primary btn--sm" type="button">+ Thêm buổi</button>
+          </div>
+        </div>
+
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Tiết</th>
+                <th>Giờ</th>
+                <th>Phòng</th>
+                <th>Hình thức</th>
+                <th>Trạng thái</th>
+                <th>Điểm danh</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono nowrap">02/11/2026</td>
+                <td class="num">1–3</td>
+                <td class="mono nowrap">06:30–09:10</td>
+                <td class="mono">B201</td>
+                <td><span class="pill pill--off">Lý thuyết</span></td>
+                <td><span class="pill pill--ok">Đã dạy</span></td>
+                <td class="num">68 SV</td>
+                <td>
+                  <div class="acts">
+                    <button class="btn btn--action btn--sm" type="button">Thao tác ▾</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="mono nowrap">09/11/2026</td>
+                <td class="num">1–3</td>
+                <td class="mono nowrap">06:30–09:10</td>
+                <td class="mono">Phòng máy 2</td>
+                <td><span class="pill pill--ok">Thực hành</span></td>
+                <td><span class="pill pill--ok">Đã dạy</span></td>
+                <td class="num">65 SV</td>
+                <td>
+                  <div class="acts">
+                    <button class="btn btn--action btn--sm" type="button">Thao tác ▾</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="mono nowrap">16/11/2026</td>
+                <td class="num">1–3</td>
+                <td class="mono nowrap">06:30–09:10</td>
+                <td class="mono">B201</td>
+                <td><span class="pill pill--off">Lý thuyết</span></td>
+                <td><span class="pill pill--info">Chưa dạy</span></td>
+                <td class="muted">—</td>
+                <td>
+                  <div class="acts">
+                    <button class="btn btn--action btn--sm" type="button">Thao tác ▾</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="row-cancel">
+                <td class="mono nowrap">23/11/2026</td>
+                <td class="num">1–3</td>
+                <td class="mono nowrap">06:30–09:10</td>
+                <td class="mono">B201</td>
+                <td><span class="pill pill--off">Lý thuyết</span></td>
+                <td><span class="pill pill--danger">Đã hủy</span></td>
+                <td class="muted">—</td>
+                <td>
+                  <div class="acts">
+                    <button class="btn btn--action btn--sm" type="button">Thao tác ▾</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="mono nowrap">24/11/2026</td>
+                <td class="num">7–9</td>
+                <td class="mono nowrap">12:30–15:10</td>
+                <td class="mono">B201</td>
+                <td><span class="pill pill--off">Lý thuyết</span></td>
+                <td>
+                  <span class="pill pill--info">Chưa dạy</span>
+                  <span class="pill pill--primary">Buổi bù</span>
+                </td>
+                <td class="muted">—</td>
+                <td>
+                  <div class="acts">
+                    <button class="btn btn--action btn--sm" type="button">Thao tác ▾</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin-top:10px">
+          “Thêm buổi” có ô chọn buổi gốc đã hủy để ghi nhận buổi bù. Xóa buổi chỉ hiện với buổi
+          chưa có điểm danh; buổi đã điểm danh phải hủy để giữ vết.
+        </p>
+
+        <h4 class="block">Menu mở ra từ nút Thao tác</h4>
+        <div class="compare">
+          <div>
+            <p class="hint" style="margin:0 0 8px">Buổi chưa dạy</p>
+            <div class="menu-demo">
+              <span><i class="icon">✎</i>Sửa buổi</span>
+              <span><i class="icon">＋</i>Thêm buổi bù</span>
+              <span class="sep danger"><i class="icon">⊘</i>Hủy buổi</span>
+            </div>
+          </div>
+          <div>
+            <p class="hint" style="margin:0 0 8px">Buổi đã hủy</p>
+            <div class="menu-demo">
+              <span>↺ Mở lại buổi</span>
+            </div>
+          </div>
+          <div>
+            <p class="hint" style="margin:0 0 8px">Buổi chưa có điểm danh</p>
+            <div class="menu-demo">
+              <span><i class="icon">✎</i>Sửa buổi</span>
+              <span class="sep danger"><i class="icon">🗑</i>Xóa buổi</span>
+            </div>
+          </div>
+          <div>
+            <p class="hint" style="margin:0 0 8px">Bảng chương trình đào tạo</p>
+            <div class="menu-demo">
+              <span><i class="icon">☰</i>Xem môn trong chương trình</span>
+              <span><i class="icon">✎</i>Sửa chương trình</span>
+              <span class="sep danger"><i class="icon">🗑</i>Xóa chương trình</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="block">Hộp thoại sửa buổi</h4>
+
+    <div class="dialog">
+      <div class="dialog-head">
+        <h4>Sửa buổi học — 16/11/2026</h4>
+        <p>Lớp 68PM2-396601 · Giải tích 1 · HK 2026-1</p>
+      </div>
+      <div class="dialog-body">
+        <div class="fields">
+          <div class="field">
+            <label for="sua-ngay">Ngày học</label>
+            <div class="ctl ctl--mono" id="sua-ngay"><span>2026-11-16</span><span class="caret">▾</span></div>
+          </div>
+          <div class="field">
+            <label for="sua-phong">Phòng học</label>
+            <div class="ctl" id="sua-phong"><span>B201 · 80 chỗ</span><span class="caret">▾</span></div>
+          </div>
+          <div class="field">
+            <label for="sua-tu-tiet">Từ tiết</label>
+            <div class="ctl" id="sua-tu-tiet"><span>1</span><span class="caret">▾</span></div>
+          </div>
+          <div class="field">
+            <label for="sua-den-tiet">Đến tiết</label>
+            <div class="ctl" id="sua-den-tiet"><span>3</span><span class="caret">▾</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Hình thức học</label>
+          <div class="seg">
+            <span class="on">Lý thuyết</span>
+            <span>Thực hành</span>
+            <span>Trực tuyến</span>
+          </div>
+        </div>
+
+        <div class="kv-inline">
+          <span>Khung giờ suy ra: <b class="mono">06:30 – 09:10</b></span>
+          <span>Học kỳ: <b>2026-1</b></span>
+          <span>Sinh viên trong lớp: <b class="num">70</b></span>
+        </div>
+
+        <div class="alert alert--danger">
+          <div>
+            <b>Đổi phòng sẽ trùng lịch phòng.</b>
+            <ul>
+              <li>Phòng B201 đã có buổi 67PM1-VLDC (Vật lý đại cương) thứ 2, tiết 1–3, cùng ngày</li>
+              <li>Giảng viên phụ trách rảnh — không xung đột</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="hint">
+          Cảnh báo trùng lịch tính lại ngay khi đổi phòng hoặc tiết, trước khi bấm Lưu.
+          Buổi đã có điểm danh sẽ hỏi thêm một lần xác nhận.
+        </p>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn--ghost" type="button">Hủy bỏ</button>
+        <button class="btn btn--primary" type="button">Lưu thay đổi</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. GIẢNG VIÊN ================= -->
+  <section id="giang-vien">
+    <h2><span class="num">03</span>Giảng viên nhìn cùng màn, khác quyền</h2>
+    <p class="sub">
+      Cùng một lớp, cùng một bảng. Khác biệt duy nhất là cột Thao tác — và đó là thứ
+      phải thấy rõ khi duyệt, vì hiện tại giảng viên đang có quyền ngang ADMIN.
+    </p>
+
+    <div class="compare">
+      <div>
+        <h5><span class="role role--admin">ADMIN</span> Sửa, hủy, thêm bù, xóa</h5>
+        <div class="screen" style="margin:0">
+          <div class="screen-body" style="padding:12px">
+            <div class="table-x">
+              <table style="min-width:0;font-size:11.5px">
+                <thead>
+                  <tr><th>Ngày</th><th>Trạng thái</th><th>Thao tác</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono nowrap">16/11</td>
+                    <td><span class="pill pill--info">Chưa dạy</span></td>
+                    <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+                  </tr>
+                  <tr>
+                    <td class="mono nowrap">23/11</td>
+                    <td><span class="pill pill--danger">Đã hủy</span></td>
+                    <td><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h5><span class="role role--gv">GIẢNG VIÊN</span> Chỉ điểm danh</h5>
+        <div class="screen" style="margin:0">
+          <div class="screen-body" style="padding:12px">
+            <div class="table-x">
+              <table style="min-width:0;font-size:11.5px">
+                <thead>
+                  <tr><th>Ngày</th><th>Trạng thái</th><th>Thao tác</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono nowrap">16/11</td>
+                    <td><span class="pill pill--info">Chưa dạy</span></td>
+                    <td><button class="btn btn--action btn--sm" type="button">Điểm danh</button></td>
+                  </tr>
+                  <tr>
+                    <td class="mono nowrap">23/11</td>
+                    <td><span class="pill pill--danger">Đã hủy</span></td>
+                    <td class="muted">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note" style="margin-top:16px">
+      <strong>Vì sao bỏ nút và chặn ở backend, không chỉ ẩn nút:</strong> ẩn nút chỉ là giao diện.
+      Hiện tại <span class="mono">LopHocPhanPolicy::quanLyBuoiHoc</span> trả đúng cho cả giảng viên
+      phụ trách, nên gọi thẳng API vẫn sửa được. Sửa thành: chỉ ADMIN giữ
+      <span class="mono">quanLyBuoiHoc</span>; giảng viên chỉ giữ
+      <span class="mono">xemBuoiHoc</span> và <span class="mono">diemDanh</span>. Sinh lịch,
+      thêm buổi, sửa, hủy, xóa — tất cả về ADMIN, như phòng đào tạo.
+    </p>
+  </section>
+
+  <!-- ================= 4. CTĐT DANH SÁCH ================= -->
+  <section id="ctdt">
+    <h2><span class="num">04</span>Chương trình đào tạo — danh sách</h2>
+    <p class="sub">
+      Một CTĐT là <b>một ngành, một khóa</b>. Ngành KTPM khóa K67 và K68 là hai CTĐT riêng:
+      trường đổi chương trình cho khóa mới thì tạo bản mới, khóa cũ giữ nguyên.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/chuong-trinh-dao-tao</b></span>
+        <span class="role role--admin">ADMIN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Chương trình đào tạo</h3>
+            <p>8 chương trình · 5 ngành · 4 khóa đang áp dụng</p>
+          </div>
+          <button class="btn btn--primary btn--sm" type="button">+ Tạo chương trình</button>
+        </div>
+
+        <div class="toolbar">
+          <div class="ctl grow" style="max-width:240px"><span>Tìm mã hoặc tên ngành</span></div>
+          <div class="ctl" style="min-width:150px"><span>Ngành: Tất cả</span><span class="caret">▾</span></div>
+          <div class="ctl" style="min-width:130px"><span>Khóa: Tất cả</span><span class="caret">▾</span></div>
+          <div class="ctl" style="min-width:140px"><span>Trạng thái: Đang áp dụng</span><span class="caret">▾</span></div>
+        </div>
+
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap"><span class="chk"></span></th>
+                <th>Mã</th>
+                <th>Ngành</th>
+                <th>Khoa</th>
+                <th>Khóa</th>
+                <th class="num">Số môn</th>
+                <th class="num">Tín chỉ</th>
+                <th class="num">SV áp dụng</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="chk"></span></td>
+                <td class="mono">CT-KTPM-K67</td>
+                <td>KTPM</td>
+                <td class="muted">CNTT</td>
+                <td class="mono">K67</td>
+                <td class="num">48</td>
+                <td class="num">132</td>
+                <td class="num">126</td>
+                <td><span class="pill pill--ok">Đang áp dụng</span></td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td><span class="chk"></span></td>
+                <td class="mono">CT-KTPM-K68</td>
+                <td>KTPM</td>
+                <td class="muted">CNTT</td>
+                <td class="mono">K68</td>
+                <td class="num">50</td>
+                <td class="num">138</td>
+                <td class="num">131</td>
+                <td><span class="pill pill--ok">Đang áp dụng</span></td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td><span class="chk"></span></td>
+                <td class="mono">CT-ATTT-K68</td>
+                <td>ATTT</td>
+                <td class="muted">CNTT</td>
+                <td class="mono">K68</td>
+                <td class="num">50</td>
+                <td class="num">138</td>
+                <td class="num">87</td>
+                <td><span class="pill pill--ok">Đang áp dụng</span></td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td><span class="chk"></span></td>
+                <td class="mono">CT-NCKH-K69</td>
+                <td>NCKH</td>
+                <td class="muted">CNTT</td>
+                <td class="mono">K69</td>
+                <td class="num">0</td>
+                <td class="num">0</td>
+                <td class="num">0</td>
+                <td><span class="pill pill--warn">Chưa có môn</span></td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr class="row-cancel">
+                <td><span class="chk"></span></td>
+                <td class="mono">CT-KTPM-K66</td>
+                <td>KTPM</td>
+                <td class="muted">CNTT</td>
+                <td class="mono">K66</td>
+                <td class="num">46</td>
+                <td class="num">128</td>
+                <td class="num">0</td>
+                <td><span class="pill pill--off">Ngừng áp dụng</span></td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin-top:10px">
+          “SV áp dụng” đếm sinh viên đang học có lớp hành chính thuộc đúng ngành và khóa đó.
+          Xóa CTĐT là xóa mềm: sinh viên cũ không mất lịch sử, chỉ không còn thấy môn gợi ý.
+        </p>
+      </div>
+    </div>
+
+    <h4 class="block">Cách đặt mã lớp — lớp hành chính + mã môn</h4>
+    <p class="sub" style="margin-bottom:12px">
+      Hiện mã lớp học phần là dãy số vô nghĩa (<span class="mono">LHP0001</span>) nên nhìn vào
+      không biết lớp của ai. Đổi sang <b>mã lớp hành chính + mã môn</b>, đúng kiểu mã trên cổng
+      thông tin của trường (<span class="mono">68PM1-608807</span>). Một lớp hành chính học 5 môn
+      trong một kỳ thì sinh ra 5 lớp học phần, và <b>mã môn là thứ làm 5 mã đó khác nhau</b>.
+    </p>
+
+    <div class="screen">
+      <div class="screen-body">
+        <div class="table-x">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Loại</th>
+                <th>Hiện tại</th>
+                <th>Đề xuất</th>
+                <th>Đọc ra</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Lớp hành chính</td>
+                <td class="mono">KTPM-K68-01</td>
+                <td class="mono chg">68PM2</td>
+                <td>Khóa 68 · ngành Phần mềm · lớp 2</td>
+              </tr>
+              <tr>
+                <td>Lớp hành chính</td>
+                <td class="mono">ATTT-K68-01</td>
+                <td class="mono chg">68MHT1</td>
+                <td>Khóa 68 · ngành Mạng máy tính · lớp 1</td>
+              </tr>
+              <tr>
+                <td>Lớp học phần</td>
+                <td class="mono">LHP0112</td>
+                <td class="mono chg">68PM2-396602</td>
+                <td>Lớp 68PM2 học Giải tích 2</td>
+              </tr>
+              <tr>
+                <td>Lớp học phần</td>
+                <td class="mono">LHP0120</td>
+                <td class="mono chg">68PM2-250102</td>
+                <td>Lớp 68PM2 học Vật lý 2 — <b>cùng lớp hành chính, khác môn</b></td>
+              </tr>
+              <tr>
+                <td>Lớp học phần</td>
+                <td class="mono">LHP0113</td>
+                <td class="mono chg">68PM1-396602</td>
+                <td>Lớp 68PM1 học Giải tích 2 — cùng môn, khác lớp, khác lịch</td>
+              </tr>
+              <tr>
+                <td>Lớp học phần</td>
+                <td class="mono">LHP0114</td>
+                <td class="mono chg">68MHT1-396602</td>
+                <td>Lớp Mạng máy tính học Giải tích 2 — môn chung cho nhiều ngành</td>
+              </tr>
+              <tr class="row-new">
+                <td>Theo cổng trường</td>
+                <td class="mono">—</td>
+                <td class="mono chg">68PM1-608807</td>
+                <td>Đúng định dạng bạn tham khảo: lớp + mã môn</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert--info" style="margin-top:12px">
+          <div>
+            <b>Về con số <span class="mono">608807</span>:</b> đó là <b>mã học phần của trường</b>
+            (mã môn đứng riêng), còn <span class="mono">68PM1-608807</span> là mã trường ghép thêm
+            tên lớp để hiển thị. QLLH giữ đúng hai lớp thông tin đó nhưng tách rõ:
+            <span class="mono">mon_hoc.ma_mon</span> là mã môn (6 số, ví dụ
+            <span class="mono">396602</span>), còn <span class="mono">lop_hoc_phan.ma_lop_hp</span>
+            là mã lớp học phần ghép <span class="mono">&lt;mã lớp HC&gt;-&lt;mã môn&gt;</span>.
+            Không nhập lại mã môn, chỉ đổi cách sinh mã lớp.
+          </div>
+        </div>
+
+        <div class="alert alert--info" style="margin-top:12px">
+          <div>
+            <b>Mã duy nhất trong một học kỳ.</b>
+            Vì hậu tố môn nằm ngay trong mã, lớp 68PM2 học Giải tích 2 và lớp 68PM2 học Vật lý 2
+            có hai mã khác nhau (<span class="mono">68PM2-396602</span> ≠ <span class="mono">68PM2-250102</span>),
+            nên ràng buộc <span class="mono">unique(hoc_ky_id, ma_lop_hp)</span> giữ nguyên —
+            không phải đổi schema.
+          </div>
+        </div>
+
+        <div class="alert alert--warn" style="margin-top:12px">
+          <div>
+            <b>Điểm cần bạn chốt:</b> môn đại cương như Vật lý 2 có mở riêng từng lớp hành chính
+            (<span class="mono">68PM2-250102</span>, <span class="mono">68MHT1-250102</span>) hay mở một lớp
+            chung cho cả khóa (<span class="mono">VL2-2026-1-A</span>)?
+            <ul>
+              <li><b>Mở riêng:</b> mã đọc được ngay, lọc đơn giản, nhưng lớp đông và nhiều lớp cùng môn.</li>
+              <li><b>Mở chung:</b> đúng thực tế giảng đường, nhưng mã không thể hiện lớp hành chính — phải xem danh sách sinh viên mới biết.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Đổi mã lớp kéo theo:</strong> seeder, dữ liệu demo, Postman, ảnh chụp tài liệu và
+      giá trị <span class="mono">ma_lop_hp</span> trên các bản ghi cũ. Đây là thay đổi dữ liệu,
+      không chỉ giao diện — cần bạn duyệt riêng. Mã cũ vẫn giữ được nếu chỉ đổi cách sinh mã
+      cho lớp mới, không backfill lớp cũ.
+    </p>
+
+    <h4 class="block">Hộp thoại tạo chương trình</h4>
+
+    <div class="dialog">
+      <div class="dialog-head">
+        <h4>Tạo chương trình đào tạo</h4>
+        <p>Mỗi cặp ngành — khóa chỉ có một chương trình</p>
+      </div>
+      <div class="dialog-body">
+        <div class="fields">
+          <div class="field">
+            <label for="ct-nganh">Ngành</label>
+            <div class="ctl" id="ct-nganh"><span>KTPM · Kỹ thuật phần mềm</span><span class="caret">▾</span></div>
+            <span class="hint">Khoa CNTT — suy ra từ ngành</span>
+          </div>
+          <div class="field">
+            <label for="ct-khoa">Khóa</label>
+            <div class="ctl" id="ct-khoa"><span>K69</span><span class="caret">▾</span></div>
+            <span class="hint">Năm nhập học 2024</span>
+          </div>
+          <div class="field">
+            <label for="ct-ma">Mã chương trình</label>
+            <div class="ctl ctl--mono" id="ct-ma"><span>CT-KTPM-K69</span></div>
+            <span class="hint">Tự sinh từ ngành và khóa</span>
+          </div>
+        </div>
+        <div class="alert alert--info">
+          <div>Chương trình mới chưa có môn. Sau khi tạo, mở màn chi tiết để thêm môn và gán kỳ thứ.</div>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn--ghost" type="button">Hủy bỏ</button>
+        <button class="btn btn--primary" type="button">Tạo và thêm môn</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 5. CTĐT MÔN ================= -->
+  <section id="ctdt-mons">
+    <h2><span class="num">05</span>Môn trong chương trình</h2>
+    <p class="sub">
+      Phần lớn công sức nằm ở màn này: mỗi môn phải được gán <b>kỳ thứ</b> (1–10) và
+      <b>bắt buộc hay tự chọn</b>. Bảng nhóm theo kỳ để nhìn ra cả bốn năm trong một màn.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/chuong-trinh-dao-tao/3</b> · CT-KTPM-K67 · KTPM · K67</span>
+        <span class="role role--admin">ADMIN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Kỹ thuật phần mềm — Khóa K67</h3>
+            <p>48 môn · 132 tín chỉ · 40 bắt buộc · 8 tự chọn · 126 sinh viên áp dụng</p>
+          </div>
+          <div class="acts">
+            <button class="btn btn--ghost btn--sm" type="button">Import Excel</button>
+            <button class="btn btn--primary btn--sm" type="button">+ Thêm môn</button>
+          </div>
+        </div>
+
+        <div class="alert alert--warn" style="margin-bottom:14px">
+          <div>
+            <b>2 môn chưa gán kỳ thứ.</b>
+            Sinh viên không thấy các môn này khi đăng ký cho tới khi gán kỳ.
+          </div>
+        </div>
+
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Kỳ thứ</th>
+                <th>Mã môn</th>
+                <th>Tên môn</th>
+                <th class="num">TC</th>
+                <th>Loại</th>
+                <th>Lớp đang mở</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td rowspan="3" class="mono" style="vertical-align:top;font-weight:600">Kỳ 1</td>
+                <td class="mono">MATH101</td>
+                <td>Giải tích 1</td>
+                <td class="num">4</td>
+                <td><span class="pill pill--primary">Bắt buộc</span></td>
+                <td class="num">3 lớp</td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td class="mono">MATH102</td>
+                <td>Đại số tuyến tính</td>
+                <td class="num">3</td>
+                <td><span class="pill pill--primary">Bắt buộc</span></td>
+                <td class="num">2 lớp</td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td class="mono">ENG101</td>
+                <td>Tiếng Anh 1</td>
+                <td class="num">3</td>
+                <td><span class="pill pill--primary">Bắt buộc</span></td>
+                <td class="num">4 lớp</td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td rowspan="3" class="mono" style="vertical-align:top;font-weight:600">Kỳ 9</td>
+                <td class="mono">SE401</td>
+                <td>Kiến trúc phần mềm</td>
+                <td class="num">3</td>
+                <td><span class="pill pill--primary">Bắt buộc</span></td>
+                <td class="num">2 lớp</td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td class="mono">SE402</td>
+                <td>Phát triển ứng dụng di động</td>
+                <td class="num">3</td>
+                <td><span class="pill pill--primary">Bắt buộc</span></td>
+                <td class="num">2 lớp</td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr>
+                <td class="mono">SE403</td>
+                <td>Kiểm thử phần mềm nâng cao</td>
+                <td class="num">2</td>
+                <td><span class="pill pill--off">Tự chọn</span></td>
+                <td class="num">1 lớp</td>
+                <td><div class="acts"><button class="btn btn--action btn--sm" type="button">Thao tác ▾</button></div></td>
+              </tr>
+              <tr class="row-new">
+                <td>
+                  <div class="ctl ctl--mono" style="min-height:28px;padding:3px 6px"><span>10</span><span class="caret">▾</span></div>
+                </td>
+                <td>
+                  <div class="ctl ctl--mono" style="min-height:28px;padding:3px 6px"><span>SE499</span></div>
+                </td>
+                <td>
+                  <div class="ctl" style="min-height:28px;padding:3px 6px"><span>Chuyên đề tốt nghiệp</span></div>
+                </td>
+                <td>
+                  <div class="ctl" style="min-height:28px;padding:3px 6px"><span>4</span></div>
+                </td>
+                <td>
+                  <div class="ctl" style="min-height:28px;padding:3px 6px"><span>Bắt buộc</span><span class="caret">▾</span></div>
+                </td>
+                <td class="muted">—</td>
+                <td><div class="acts"><button class="btn btn--primary btn--sm" type="button">Lưu</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="kv-inline" style="margin-top:12px">
+          <span><b>1–2:</b> 14 môn</span>
+          <span><b>3–4:</b> 12 môn</span>
+          <span><b>5–6:</b> 12 môn</span>
+          <span><b>7–8:</b> 8 môn</span>
+          <span><b>9–10:</b> 2 môn</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="note note--warn">
+      <strong>Điều đáng cân nhắc trước khi duyệt:</strong> nhập tay 48 môn cho mỗi cặp ngành × khóa
+      là việc lớn — 5 ngành × 4 khóa đang áp dụng là khoảng 1.000 dòng. Nếu không có nút Import Excel,
+      màn đăng ký của sinh viên sẽ rỗng khi chấm. Tôi đề nghị làm kèm seeder mẫu ít nhất một ngành
+      đầy đủ, và mượn nút Import nhập theo mẫu CSV.
+    </p>
+  </section>
+
+  <!-- ================= 6. SV ĐĂNG KÝ ================= -->
+  <section id="dang-ky">
+    <h2><span class="num">06</span>Sinh viên đăng ký học phần — mới và học lại</h2>
+    <p class="sub">
+      Danh sách chỉ có mã môn và tên môn, đúng như ảnh bạn gửi. Bấm vào một dòng mới mở ra
+      thông tin lớp, sinh viên trong lớp và lịch học. Hai tab: <b>Đăng ký mới</b> lấy môn của
+      kỳ thứ hiện tại trong CTĐT, <b>Học lại</b> lấy môn chưa đạt của các kỳ trước.
+      Học kỳ trong ô chọn chỉ gồm kỳ sinh viên đã và đang học.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/dang-ky-hoc-phan</b> · SCR-32</span>
+        <span class="role role--sv">SINH VIÊN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Đăng ký học phần</h3>
+            <p>Nguyễn Văn A · SV001 · 68PM2 · KTPM · K68</p>
+          </div>
+          <div class="ctl" style="min-width:200px"><span>Học kỳ 2026-1</span><span class="caret">▾</span></div>
+        </div>
+
+        <div class="alert alert--info" style="margin-bottom:16px">
+          <div>
+            Bạn thuộc chương trình <b>KTPM khóa K68</b> — đang ở <b>học kỳ thứ 7</b> của chương trình.
+            Đợt đăng ký mở đến <b>15/11/2026</b>.
+          </div>
+        </div>
+
+        <h4 class="block">Môn của kỳ 7 — chọn môn để xem lớp</h4>
+        <div class="table-x">
+          <table class="mono-list">
+            <thead>
+              <tr>
+                <th>Môn học/học phần</th>
+                <th class="num" style="text-align:right">Số tín chỉ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="dong-mo">
+                <td>
+                  <span class="ma-mon">250102</span>
+                  <span class="ten-mon">Vật lý 2</span>
+                </td>
+                <td class="num" style="text-align:right">2</td>
+              </tr>
+              <tr class="dong-mo dong-chon">
+                <td>
+                  <span class="ma-mon">396602</span>
+                  <span class="ten-mon">Giải tích 2</span>
+                </td>
+                <td class="num" style="text-align:right">2</td>
+              </tr>
+              <tr class="dong-mo">
+                <td>
+                  <span class="ma-mon">406601</span>
+                  <span class="ten-mon">Toán học tính toán</span>
+                </td>
+                <td class="num" style="text-align:right">2</td>
+              </tr>
+              <tr class="dong-mo">
+                <td>
+                  <span class="ma-mon">440213</span>
+                  <span class="ten-mon">Tiếng Anh TOEIC 1</span>
+                </td>
+                <td class="num" style="text-align:right">2</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin-top:8px">
+          Dòng đang mở là <b>396602 — Giải tích 2</b>. Chỉ hiện môn thuộc chương trình KTPM khóa K68
+          ở kỳ thứ 7 mà bạn chưa đạt.
+        </p>
+
+        <hr class="divider">
+
+        <h4 class="block">Bấm vào môn 396602 — Giải tích 2</h4>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <b>Giải tích 2</b>
+              <span class="mono muted">396602 · 2 tín chỉ · bắt buộc</span>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button">Đóng</button>
+          </div>
+          <div class="panel-body">
+            <h5 class="mini-head">Các lớp của môn này trong HK 2026-1</h5>
+            <div class="table-x">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lớp</th>
+                    <th>Giảng viên</th>
+                    <th>Sĩ số</th>
+                    <th>Lịch</th>
+                    <th>Trùng</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono">68PM2-396602</td>
+                    <td>TS. Trần Minh</td>
+                    <td class="num">42/50</td>
+                    <td class="mono nowrap">T2 1–3 · T4 1–3</td>
+                    <td><span class="pill pill--ok">Không trùng</span></td>
+                    <td><button class="btn btn--primary btn--sm" type="button">Đăng ký</button></td>
+                  </tr>
+                  <tr>
+                    <td class="mono">68PM1-396602</td>
+                    <td>ThS. Lê Hà</td>
+                    <td class="num">38/45</td>
+                    <td class="mono nowrap">T2 1–3 · T5 7–9</td>
+                    <td><span class="pill pill--danger">Trùng T2 1–3</span></td>
+                    <td><button class="btn btn--ghost btn--sm" type="button" disabled style="opacity:.5">Đăng ký</button></td>
+                  </tr>
+                  <tr>
+                    <td class="mono">68MHT1-396602</td>
+                    <td>TS. Nguyễn Bình</td>
+                    <td class="num">45/45</td>
+                    <td class="mono nowrap">T3 1–3 · T5 1–3</td>
+                    <td><span class="pill pill--off">Đã đầy</span></td>
+                    <td><button class="btn btn--ghost btn--sm" type="button" disabled style="opacity:.5">Đăng ký</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="alert alert--danger" style="margin-top:10px">
+              <div>
+                <b>Lớp 68PM1-396602 trùng lịch với lớp bạn đã đăng ký.</b>
+                <ul>
+                  <li>Thứ 2, tiết 1–3 ngày 16/11 — trùng với lớp 68PM2-406601 (Cơ sở dữ liệu nâng cao)</li>
+                  <li>Thứ 2, tiết 1–3 ngày 23/11 — trùng với lớp 68PM2-406601 (Cơ sở dữ liệu nâng cao)</li>
+                </ul>
+              </div>
+            </div>
+
+            <p class="hint" style="margin-top:10px">
+              Màn này chỉ trả lời đúng hai câu hỏi khi đăng ký: <b>lớp còn chỗ không</b> và
+              <b>có trùng lịch với lớp đã đăng ký không</b>. Danh sách sinh viên trong lớp
+              xem ở dashboard, mục “Học phần đã đăng ký”.
+            </p>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <h4 class="block">Ô chọn học kỳ — chỉ kỳ sinh viên đã học</h4>
+        <div class="compare">
+          <div>
+            <p class="hint" style="margin:0 0 8px">Sinh viên K68 thấy</p>
+            <div class="menu-demo">
+              <span><b>2026-1</b> <span class="muted">· đang học</span></span>
+              <span>2025-2 <span class="muted">· đã học</span></span>
+              <span>2025-1 <span class="muted">· đã học</span></span>
+              <span>2024-2 <span class="muted">· đã học</span></span>
+            </div>
+          </div>
+          <div>
+            <p class="hint" style="margin:0 0 8px">Không hiện với K68</p>
+            <div class="menu-demo" style="opacity:.55">
+              <span>2026-2 <span class="muted">· kỳ sau, chưa tới</span></span>
+              <span>2027-1 <span class="muted">· khóa sau</span></span>
+            </div>
+            <p class="hint" style="margin:8px 0 0">
+              Kỳ chưa bắt đầu và kỳ trước lúc sinh viên nhập học đều bị ẩn.
+            </p>
+          </div>
+        </div>
+
+        <div class="alert alert--info" style="margin-top:14px">
+          <div>
+            <b>Cách tính:</b> học kỳ hiện trong ô chọn khi
+            <span class="mono">hoc_ky.ngay_bat_dau &gt;= lop_hanh_chinh.nam_nhap_hoc</span> —
+            tức từ kỳ đầu tiên sinh viên có mặt. Sinh viên K68 nhập học 2024 nên không thấy
+            kỳ năm 2023 trở về trước.
+          </div>
+        </div>
+
+        <h4 class="block">Trạng thái rỗng cần xử lý</h4>
+        <div class="compare">
+          <div class="alert alert--warn">
+            <div>
+              <b>Lớp chưa xếp lịch.</b>
+              68PM2-396602 chưa sinh buổi nên chưa kiểm tra được trùng lịch.
+              Hệ thống vẫn cho đăng ký nhưng ghi rõ: “Chưa kiểm tra trùng lịch”.
+            </div>
+          </div>
+          <div class="alert alert--info">
+            <div>
+              <b>Không còn môn nào để đăng ký.</b>
+              Bạn đã đạt hoặc đã đăng ký mọi môn kỳ 7. Muốn học lại môn chưa đạt của kỳ trước,
+              liên hệ phòng đào tạo để được đăng ký hộ.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <h4 class="block">Hai tab: Đăng ký mới và Học lại</h4>
+    <p class="sub" style="margin-bottom:12px">
+      Sinh viên rớt môn ở kỳ trước cần tự đăng ký lại — không phải nhờ phòng đào tạo.
+      Một màn, hai tab; mỗi tab lọc đúng tập môn, không trộn lẫn.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/dang-ky-hoc-phan</b> · SCR-32 · tab Học lại</span>
+        <span class="role role--sv">SINH VIÊN</span>
+      </div>
+      <div class="screen-body">
+        <div class="tabs-demo" style="margin-bottom:14px">
+          <span>Đăng ký mới <span class="muted">· 4 môn kỳ 7</span></span>
+          <span class="on">Học lại <span class="muted">· 2 môn chưa đạt</span></span>
+        </div>
+
+        <div class="alert alert--info" style="margin-bottom:14px">
+          <div>
+            <b>Học lại là gì:</b> môn bạn đã học nhưng <span class="mono">ket_qua = KHONG_DAT</span>.
+            Đăng ký học lại ở kỳ này, điểm cao nhất trong hai lần được tính vào GPA
+            (BR-28). Điểm lần cũ vẫn giữ trong lịch sử học tập, không bị ghi đè.
+          </div>
+        </div>
+
+        <div class="table-x">
+          <table class="mono-list">
+            <thead>
+              <tr>
+                <th>Môn học/học phần</th>
+                <th style="text-align:right">Số tín chỉ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="dong-mo">
+                <td>
+                  <span class="ma-mon">396602</span>
+                  <span class="ten-mon">Giải tích 2
+                    <span class="muted" style="font-size:12.5px">· đã học HK 2025-2 · 4.2 điểm · chưa đạt</span>
+                  </span>
+                </td>
+                <td style="text-align:right">2</td>
+              </tr>
+              <tr class="dong-mo">
+                <td>
+                  <span class="ma-mon">406601</span>
+                  <span class="ten-mon">Toán học tính toán
+                    <span class="muted" style="font-size:12.5px">· đã học HK 2025-1 · 3.8 điểm · chưa đạt</span>
+                  </span>
+                </td>
+                <td style="text-align:right">2</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin:10px 0 0">
+          Chỉ hiện môn <b>chưa đạt</b> và <b>chưa đăng ký lại ở kỳ này</b>. Bấm vào dòng để xem
+          các lớp đang mở của môn đó — giống hệt tab Đăng ký mới.
+        </p>
+
+        <h5 class="mini-head">Bấm vào 396602 — Giải tích 2</h5>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <b>Giải tích 2 — học lại</b>
+              <span class="mono muted">396602 · 2 tín chỉ · HK 2026-1</span>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button">Đóng</button>
+          </div>
+          <div class="panel-body">
+            <div class="alert alert--warn" style="margin:0 0 10px">
+              <div>
+                <b>Điểm cũ không bị xóa.</b>
+                Lần học HK 2025-2: 4.2 điểm · chữ F · không đạt. Khi có điểm lần này,
+                GPA dùng điểm cao hơn trong hai lần.
+              </div>
+            </div>
+            <div class="table-x">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lớp</th>
+                    <th>Giảng viên</th>
+                    <th>Sĩ số</th>
+                    <th>Lịch</th>
+                    <th>Trùng</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono">68PM2-396602</td>
+                    <td>TS. Trần Minh</td>
+                    <td class="num">42/50</td>
+                    <td class="mono nowrap">T2 1–3 · T4 1–3</td>
+                    <td><span class="pill pill--ok">Không trùng</span></td>
+                    <td><button class="btn btn--primary btn--sm" type="button">Đăng ký học lại</button></td>
+                  </tr>
+                  <tr>
+                    <td class="mono">68PM1-396602</td>
+                    <td>ThS. Lê Hà</td>
+                    <td class="num">38/45</td>
+                    <td class="mono nowrap">T2 1–3 · T5 7–9</td>
+                    <td><span class="pill pill--danger">Trùng T2 1–3</span></td>
+                    <td><button class="btn btn--ghost btn--sm" type="button" disabled style="opacity:.5">Đăng ký học lại</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="compare" style="margin-top:14px">
+          <div class="alert alert--info">
+            <div>
+              <b>Trạng thái rỗng — không có môn nào để học lại.</b>
+              “Bạn đã đạt toàn bộ môn của các kỳ trước.”
+            </div>
+          </div>
+          <div class="alert alert--warn">
+            <div>
+              <b>Ngoài đợt đăng ký.</b>
+              Nút Đăng ký bị ẩn và thay bằng: “Đợt đăng ký HK 2026-1 đã đóng ngày 15/11/2026.”
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-x">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Điều kiện</th>
+            <th>Đăng ký mới</th>
+            <th>Học lại</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Môn thuộc CTĐT của đúng ngành × khóa, đúng kỳ thứ</td>
+            <td>Bắt buộc</td>
+            <td>Không áp dụng — môn của kỳ trước</td>
+          </tr>
+          <tr>
+            <td>Chưa có điểm đạt cho môn đó</td>
+            <td>Bắt buộc</td>
+            <td>Bắt buộc — học lại chỉ dành cho môn <b>chưa đạt</b></td>
+          </tr>
+          <tr>
+            <td>Chưa đăng ký môn đó trong kỳ hiện tại</td>
+            <td>Bắt buộc (BR-08)</td>
+            <td>Bắt buộc (BR-08)</td>
+          </tr>
+          <tr>
+            <td>Trong đợt đăng ký của kỳ chứa lớp</td>
+            <td>Bắt buộc (BR-26)</td>
+            <td>Bắt buộc (BR-26)</td>
+          </tr>
+          <tr>
+            <td>Lớp còn chỗ, không trùng lịch</td>
+            <td>Bắt buộc (BR-09, BR-08)</td>
+            <td>Bắt buộc (BR-09, BR-08)</td>
+          </tr>
+          <tr>
+            <td>Cộng vào GPA</td>
+            <td>Tính bình thường</td>
+            <td>Chỉ tính <b>một lần</b>, lấy điểm cao nhất (BR-28)</td>
+          </tr>
+          <tr>
+            <td>Hiển thị trong lịch sử học tập</td>
+            <td>Có</td>
+            <td>Có — <b>cả hai lần</b>, kèm nhãn “học lại”</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note note--warn">
+      <strong>Một chỗ đang chặn chính luồng này:</strong> <span class="mono">DangKyHocPhanService</span>
+      đang chặn đăng ký lại khi đăng ký cũ <b>đã có điểm</b>
+      (<span class="mono">HAS_GRADE_OR_ATTENDANCE</span>, BR-27). Mà môn chưa đạt thì <i>luôn</i> có
+      điểm. Nếu giữ nguyên luật đó thì tab Học lại không bao giờ đăng ký được — phải tách luật:
+      chặn khi đã <b>đạt</b>, cho phép khi <b>chưa đạt</b>. Đây là thay đổi hành vi backend,
+      cần bạn duyệt riêng.
+    </p>
+
+    <p class="note">
+      <strong>Ghi nhận từ trạng thái cũ:</strong> trước đây màn này ghi “rớt môn thì liên hệ phòng
+      đào tạo để được đăng ký hộ”. Hai tab thay thế đúng chỗ đó — sinh viên tự làm được,
+      ADMIN vẫn giữ đường đăng ký hộ cho trường hợp ngoại lệ.
+    </p>
+
+    <hr class="divider">
+
+    <h4 class="block">Học lại — dùng chung lớp của khóa dưới</h4>
+    <p class="sub" style="margin-bottom:12px">
+      Sinh viên rớt môn ở kỳ trước <b>học lại cùng lớp với khóa dưới</b>: đăng ký vào chính lớp
+      <span class="mono">68PM2-396602</span> đang mở cho khóa 68. Không có suất riêng, không tách
+      con số — sĩ số là <b>một con số duy nhất</b> tính chung mọi người trong lớp.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/dang-ky-hoc-phan</b> · tab Học lại · lớp của khóa dưới</span>
+        <span class="role role--sv">SINH VIÊN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Giải tích 2 — học lại</h3>
+            <p>Nguyễn Văn A · SV001 · 67PM1 · đã học HK 2025-2 · 4.2 điểm · chưa đạt</p>
+          </div>
+        </div>
+
+        <div class="alert alert--info" style="margin-bottom:14px">
+          <div>
+            <b>Bạn đang xem lớp của khóa 68.</b>
+            Đây là lớp chính khóa của khóa dưới — bạn học cùng các bạn ấy. Sĩ số tính chung:
+            nếu lớp đầy thì bạn không vào được và phải chờ kỳ sau hoặc chờ ADMIN mở lớp học lại riêng.
+          </div>
+        </div>
+
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Lớp</th>
+                <th>Giảng viên</th>
+                <th>Sĩ số</th>
+                <th>Lịch</th>
+                <th>Trùng</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">68PM2-396602</td>
+                <td>TS. Trần Minh</td>
+                <td class="num">42/50</td>
+                <td class="mono nowrap">T2 1–3 · T4 1–3</td>
+                <td><span class="pill pill--ok">Không trùng</span></td>
+                <td><button class="btn btn--primary btn--sm" type="button">Đăng ký học lại</button></td>
+              </tr>
+              <tr>
+                <td class="mono">68PM1-396602</td>
+                <td>ThS. Lê Hà</td>
+                <td class="num">38/45</td>
+                <td class="mono nowrap">T2 1–3 · T5 7–9</td>
+                <td><span class="pill pill--danger">Trùng T2 1–3</span></td>
+                <td><button class="btn btn--ghost btn--sm" type="button" disabled style="opacity:.5">Đăng ký học lại</button></td>
+              </tr>
+              <tr>
+                <td class="mono">68MHT1-396602</td>
+                <td>TS. Nguyễn Bình</td>
+                <td class="num">45/45</td>
+                <td class="mono nowrap">T3 1–3 · T5 1–3</td>
+                <td><span class="pill pill--off">Đã đầy</span></td>
+                <td><button class="btn btn--ghost btn--sm" type="button" disabled style="opacity:.5">Đăng ký học lại</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin:10px 0 0">
+          Sĩ số <span class="mono">42/50</span> là tổng số sinh viên trong lớp — cả khóa 68 lẫn
+          sinh viên học lại. Không có ô “suất học lại” riêng.
+        </p>
+
+        <h5 class="mini-head">Trong lớp đó, bạn là ai</h5>
+        <div class="table-x">
+          <table>
+            <thead><tr><th>Mã SV</th><th>Họ tên</th><th>Lớp hành chính</th><th>Loại</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">680201</td><td>Trần Thị B</td><td class="mono">68PM2</td><td><span class="pill pill--off">Chính khóa</span></td></tr>
+              <tr><td class="mono">680214</td><td>Lê Văn C</td><td class="mono">68PM2</td><td><span class="pill pill--off">Chính khóa</span></td></tr>
+              <tr><td class="mono">670105</td><td>Nguyễn Văn A</td><td class="mono">67PM1</td><td><span class="pill pill--info">Học lại</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin:8px 0 0">
+          Nhãn “Học lại” chỉ để giảng viên biết ai cần chấm theo chương trình cũ, không ảnh hưởng
+          sĩ số hay điểm.
+        </p>
+      </div>
+    </div>
+
+    <h4 class="block">Khi nào ADMIN mở lớp học lại riêng</h4>
+    <p class="sub" style="margin-bottom:12px">
+      Chỉ mở khi <b>không còn cách nào khác</b>: lớp của khóa dưới đã đầy, hoặc số sinh viên
+      học lại quá đông không nhét vào lớp hiện có. Đây là ngoại lệ, không phải chế độ mặc định.
+    </p>
+
+    <div class="table-x">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Tình huống</th>
+            <th>Lớp dùng</th>
+            <th>Sĩ số</th>
+            <th>Ai quyết</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lớp khóa dưới còn chỗ</td>
+            <td class="mono">68PM2-396602</td>
+            <td class="num">42/50</td>
+            <td>Không cần ADMIN — sinh viên tự đăng ký tab Học lại</td>
+          </tr>
+          <tr>
+            <td>Lớp khóa dưới đầy, ít người học lại (1–10)</td>
+            <td class="mono">68PM2-396602</td>
+            <td class="num">50/50</td>
+            <td>Sinh viên chờ kỳ sau; ADMIN <b>có thể</b> nâng sĩ số nếu phòng còn chỗ</td>
+          </tr>
+          <tr class="row-new">
+            <td>Lớp khóa dưới đầy, nhiều người học lại (từ 15)</td>
+            <td class="mono">HL-396602-2026-1</td>
+            <td class="num">0/40</td>
+            <td>ADMIN mở lớp học lại riêng — mã trung tính, không thuộc lớp hành chính nào</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      <strong>Vì sao mã <span class="mono">HL-396602-2026-1</span> không có tên lớp:</strong>
+      lớp đó không phục vụ một lớp hành chính cụ thể nào — nó gom sinh viên nhiều khóa cùng rớt
+      một môn. Nếu đặt <span class="mono">68PM2-396602</span> cho nó thì mã nói dối: người học
+      không phải khóa 68, không phải lớp PM2.
+    </p>
+
+    <p class="note note--warn">
+      <strong>Không cần thêm cột vào schema:</strong> học lại dùng chung lớp nên sĩ số vẫn là
+      <span class="mono">COUNT(dang_ky_hoc_phan ACTIVE)</span> so với
+      <span class="mono">si_so_toi_da</span> — đúng như BR-09 hiện tại. Không có
+      <span class="mono">nhan_hoc_lai</span>, không có <span class="mono">si_so_hoc_lai_toi_da</span>.
+      Lớp học lại riêng chỉ là một dòng <span class="mono">lop_hoc_phan</span> bình thường với
+      <span class="mono">ma_lop_hp</span> khác.
+    </p>
+
+    <p class="note note--warn">
+      <strong>Chỗ đang chặn luồng này:</strong> <span class="mono">DangKyHocPhanService</span>
+      chặn đăng ký khi đăng ký cũ đã có điểm (<span class="mono">HAS_GRADE_OR_ATTENDANCE</span>,
+      BR-27). Môn chưa đạt <i>luôn</i> có điểm, nên phải tách luật: chặn khi đã <b>đạt</b>,
+      cho phép khi <b>chưa đạt</b>.
+    </p>
+  </section>
+
+  <!-- ================= 7. HỒ SƠ SV ================= -->
+  <section id="ho-so">
+    <h2><span class="num">07</span>Hồ sơ sinh viên — thêm khóa, ngành, năm nhập học</h2>
+    <p class="sub">
+      Ba field khoá/ngành/năm nhập học đã có trong dữ liệu và API đã trả về, chỉ giao diện bỏ sót.
+      Riêng <b>khoa</b> (faculty) cần thêm vào payload vì API hiện chưa nạp quan hệ
+      <span class="mono">nganh.khoa</span>.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/tai-khoan</b> · SCR-02C</span>
+        <span class="role role--sv">SINH VIÊN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Tài khoản của tôi</h3>
+            <p>Thông tin định danh chỉ đọc · chỉ sửa được số điện thoại và địa chỉ</p>
+          </div>
+          <button class="btn btn--primary btn--sm" type="button">Lưu thay đổi</button>
+        </div>
+
+        <h4 class="block">Định danh</h4>
+        <dl class="info-grid">
+          <div class="info"><dt>Mã sinh viên</dt><dd class="mono">SV001</dd></div>
+          <div class="info"><dt>Họ tên</dt><dd>Nguyễn Văn A</dd></div>
+          <div class="info"><dt>Ngày sinh</dt><dd>14/03/2004</dd></div>
+          <div class="info"><dt>Giới tính</dt><dd>Nam</dd></div>
+          <div class="info"><dt>Email</dt><dd>a.nguyen@sv.edu.vn</dd></div>
+        </dl>
+
+        <h4 class="block">Học vấn</h4>
+        <dl class="info-grid">
+          <div class="info info--new"><dt>Khoa</dt><dd>Khoa Công nghệ thông tin</dd></div>
+          <div class="info info--new"><dt>Ngành</dt><dd>Kỹ thuật phần mềm <span class="mono muted">(KTPM)</span></dd></div>
+          <div class="info"><dt>Lớp hành chính</dt><dd>68PM2</dd></div>
+          <div class="info info--new"><dt>Khóa</dt><dd class="mono">K68</dd></div>
+          <div class="info info--new"><dt>Năm nhập học</dt><dd class="num">2024</dd></div>
+        </dl>
+
+        <h4 class="block">Liên hệ</h4>
+        <div class="fields">
+          <div class="field">
+            <label for="hs-sdt">Số điện thoại</label>
+            <div class="ctl" id="hs-sdt"><span>0912 345 678</span></div>
+          </div>
+          <div class="field">
+            <label for="hs-dc">Địa chỉ</label>
+            <div class="ctl" id="hs-dc"><span>Quận 1, TP. Hồ Chí Minh</span></div>
+          </div>
+        </div>
+
+        <div class="alert alert--info" style="margin-top:14px">
+          <div>
+            <b>Không dùng “năm thứ”.</b> Chương trình đào tạo theo khóa đã đủ để biết sinh viên
+            phải học môn nào ở kỳ nào. “Học kỳ thứ 7” suy trực tiếp từ
+            <span class="mono">khoa_hoc</span> của lớp hành chính và học kỳ đang mở.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 8. DASHBOARD SV ================= -->
+  <section id="dashboard">
+    <h2><span class="num">08</span>Dashboard sinh viên — bỏ toàn bộ phần chuyên cần</h2>
+    <p class="sub">
+      Bỏ hẳn mọi thứ mang chữ “chuyên cần” (thẻ số liệu, card Chuyên cần &amp; GPA, thanh tỉ lệ
+      trong bảng học phần, cảnh báo “môn cần chú ý”), bỏ cột Điểm và request phụ
+      <span class="mono">/me/grades</span>. Thẻ số liệu thứ tư đổi thành
+      <b>“Buổi học tuần này”</b>. Bảng <b>“Học phần đã đăng ký”</b> chỉ còn hai cột như ảnh mẫu,
+      bấm vào dòng mới hiện chi tiết. <b>Giữ biểu đồ “Kết quả học tập”</b> đang có.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>/dashboard</b> · SCR-05</span>
+        <span class="role role--sv">SINH VIÊN</span>
+      </div>
+      <div class="screen-body">
+        <div class="ph">
+          <div>
+            <h3>Chào Nguyễn Văn A</h3>
+            <p>Học kỳ 2026-1 · tuần 12 · 68PM2</p>
+          </div>
+          <div class="ctl" style="min-width:170px"><span>Học kỳ 2026-1</span><span class="caret">▾</span></div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile">
+            <span class="k">Học phần đang học</span>
+            <span class="v">5</span>
+            <span class="d">2 môn bắt buộc còn lại</span>
+          </div>
+          <div class="tile">
+            <span class="k">Tín chỉ đăng ký</span>
+            <span class="v">14</span>
+            <span class="d">tối đa 24</span>
+          </div>
+          <div class="tile">
+            <span class="k">GPA học kỳ</span>
+            <span class="v">3.24</span>
+            <span class="d">hệ 4 · xem chi tiết</span>
+          </div>
+          <div class="tile">
+            <span class="k">Buổi học tuần này</span>
+            <span class="v">12</span>
+            <span class="d">1 buổi sáng nay</span>
+          </div>
+        </div>
+
+        <h4 class="block">Thời khóa biểu tuần</h4>
+        <div class="cal-scroll">
+          <div class="cal">
+            <div class="cal-head">
+              <div>Tiết</div><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div>
+            </div>
+            <div class="cal-row">
+              <div class="cal-corner">1–3</div>
+              <div class="cal-cell"><div class="slot slot--ly-thuyet"><b>SE401</b><span>B201 · T2</span></div></div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"><div class="slot slot--ly-thuyet"><b>SE401</b><span>B201 · T4</span></div></div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"><div class="slot slot--ly-thuyet"><b>CSDL nâng cao</b><span>B203</span></div></div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"></div>
+            </div>
+            <div class="cal-row">
+              <div class="cal-corner">7–9</div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"><div class="slot slot--thuc-hanh"><b>SE402</b><span>Phòng máy 2</span></div></div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"><div class="slot slot--truc-tuyen"><b>Tiếng Anh 3</b><span>trực tuyến</span></div></div>
+              <div class="cal-cell"></div>
+              <div class="cal-cell"></div>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="block">Học phần đã đăng ký — chỉ hai cột</h4>
+        <div class="screen" style="margin:0 0 16px">
+          <div class="screen-bar">
+            <span class="route">Card “Học phần đã đăng ký” · đúng ảnh mẫu</span>
+            <span class="role role--sv">SINH VIÊN</span>
+          </div>
+          <div class="screen-body">
+            <div class="table-x">
+              <table class="mono-list">
+                <thead>
+                  <tr>
+                    <th>Môn học/học phần</th>
+                    <th style="text-align:right">Số tín chỉ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="dong-mo">
+                    <td>
+                      <span class="ma-mon">250102</span>
+                      <span class="ten-mon">Vật lý 2</span>
+                    </td>
+                    <td style="text-align:right">2</td>
+                  </tr>
+                  <tr class="dong-mo">
+                    <td>
+                      <span class="ma-mon">396602</span>
+                      <span class="ten-mon">Giải tích 2</span>
+                    </td>
+                    <td style="text-align:right">2</td>
+                  </tr>
+                  <tr class="dong-mo">
+                    <td>
+                      <span class="ma-mon">406601</span>
+                      <span class="ten-mon">Toán học tính toán</span>
+                    </td>
+                    <td style="text-align:right">2</td>
+                  </tr>
+                  <tr class="dong-mo">
+                    <td>
+                      <span class="ma-mon">440213</span>
+                      <span class="ten-mon">Tiếng Anh TOEIC 1</span>
+                    </td>
+                    <td style="text-align:right">2</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="hint" style="margin:10px 0 0">
+              Bấm vào một dòng để mở chi tiết học phần đó. Danh sách sinh viên cùng lớp nằm ở đây,
+              <b>không</b> nằm ở màn đăng ký học phần.
+            </p>
+          </div>
+        </div>
+
+        <h4 class="block">Bấm dòng 396602 — chi tiết mở ngay dưới dòng</h4>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head">
+            <div>
+              <b>Giải tích 2</b>
+              <span class="mono muted">68PM2-396602 · 2 tín chỉ · TS. Trần Minh</span>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button">Đóng</button>
+          </div>
+          <div class="panel-body">
+            <div class="kv-inline" style="margin-bottom:12px">
+              <span>Lịch: <b class="mono">T2 1–3 · T4 1–3</b></span>
+              <span>Phòng: <b class="mono">B201</b></span>
+              <span>Sĩ số: <b class="num">42/50</b></span>
+            </div>
+
+            <h5 class="mini-head">Sinh viên cùng lớp</h5>
+            <div class="table-x">
+              <table>
+                <thead>
+                  <tr><th>Mã SV</th><th>Họ tên</th><th>Lớp hành chính</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="mono">SV001</td><td>Nguyễn Văn A</td><td class="mono">68PM2</td></tr>
+                  <tr><td class="mono">SV014</td><td>Trần Thị B</td><td class="mono">68PM2</td></tr>
+                  <tr><td class="mono">SV027</td><td>Lê Văn C</td><td class="mono">68PM1</td></tr>
+                  <tr><td class="mono">SV033</td><td>Phạm Thị D</td><td class="mono">68MHT2</td></tr>
+                  <tr class="row-new">
+                    <td class="mono">SV201</td>
+                    <td>Hoàng Văn E</td>
+                    <td class="mono">67PM1 <span class="muted">· học lại</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="hint" style="margin:8px 0 0">
+              Sinh viên chỉ thấy mã và họ tên bạn cùng lớp, không thấy điểm hay thông tin liên hệ.
+              Dòng tô xanh là sinh viên khóa trước vào học lại.
+            </p>
+          </div>
+        </div>
+
+        <h4 class="block">Kết quả học tập — điểm tổng kết từng môn</h4>
+        <div class="chart-box">
+          <div class="chart-head">
+            <div>
+              <b style="font-size:13.5px">Kết quả học tập</b>
+              <p class="hint" style="margin:2px 0 0">Điểm tổng kết từng môn · thang 10 · HK 2026-1</p>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button">Xem chi tiết →</button>
+          </div>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 560 200" role="img" aria-label="Điểm tổng kết từng môn học kỳ 2026-1, kèm điểm trung bình lớp: Kiến trúc phần mềm 8.2 so với 7.4; CSDL nâng cao 7.5 so với 7.0; Phát triển ứng dụng di động 8.6 so với 7.8; Tiếng Anh 3 7.0 so với 7.2; Kiểm thử phần mềm 6.8 so với 7.0">
+              <g style="stroke:var(--color-border-soft)" stroke-width="1">
+                <line x1="46" y1="24" x2="524" y2="24"></line>
+                <line x1="46" y1="62" x2="524" y2="62"></line>
+                <line x1="46" y1="100" x2="524" y2="100"></line>
+                <line x1="46" y1="138" x2="524" y2="138"></line>
+                <line x1="46" y1="172" x2="524" y2="172"></line>
+              </g>
+              <g style="fill:var(--color-ink-muted)" font-size="10.5" font-family="var(--font-body)">
+                <text x="38" y="28" text-anchor="end">10</text>
+                <text x="38" y="66" text-anchor="end">7.5</text>
+                <text x="38" y="104" text-anchor="end">5.0</text>
+                <text x="38" y="142" text-anchor="end">2.5</text>
+                <text x="38" y="176" text-anchor="end">0</text>
+              </g>
+              <!-- cột: điểm của bạn -->
+              <g style="fill:var(--color-diem-cot)">
+                <rect x="66" y="43" width="44" height="129" rx="3"></rect>
+                <rect x="158" y="64" width="44" height="108" rx="3"></rect>
+                <rect x="250" y="36" width="44" height="136" rx="3"></rect>
+                <rect x="342" y="78" width="44" height="94" rx="3"></rect>
+                <rect x="434" y="85" width="44" height="87" rx="3"></rect>
+              </g>
+              <!-- đường điểm TB lớp, nối tâm các cột -->
+              <polyline points="88,54 180,68 272,49 364,64 456,64" fill="none"
+                        style="stroke:var(--color-diem-quang)" stroke-width="5" stroke-linejoin="round"></polyline>
+              <polyline points="88,54 180,68 272,49 364,64 456,64" fill="none"
+                        style="stroke:var(--color-diem-duong)" stroke-width="2" stroke-linejoin="round"></polyline>
+              <!-- điểm TB lớp ở từng môn -->
+              <!-- Nhãn TB lớp đặt LỆCH PHẢI mỗi cột, ngang mức đường, để không
+                   chồng lên thân cột và không đè lên nhãn của cột bên cạnh. -->
+              <g style="fill:var(--color-diem-duong)" text-anchor="start" font-size="9.5" font-weight="600" font-family="var(--font-body)">
+                <text x="114" y="57">7.4</text>
+                <text x="206" y="71">7.0</text>
+                <text x="298" y="52">7.8</text>
+                <text x="390" y="67">7.2</text>
+                <text x="482" y="67">7.0</text>
+              </g>
+              <!-- Nhãn môn: rút gọn để 5 nhãn không chạm nhau ở 560px -->
+              <g style="fill:var(--color-ink)" text-anchor="middle" font-size="10" font-weight="600" font-family="var(--font-body)">
+                <text x="88" y="192">KT PM</text>
+                <text x="180" y="192">CSDL</text>
+                <text x="272" y="192">ƯD di động</text>
+                <text x="364" y="192">TA 3</text>
+                <text x="456" y="192">Kiểm thử</text>
+              </g>
+            </svg>
+          </div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--color-diem-cot);border-color:var(--color-diem-cot)"></i>Điểm của bạn</span>
+            <span><i class="dot" style="background:var(--color-diem-duong);border-color:var(--color-diem-duong)"></i>Điểm TB lớp học phần</span>
+          </div>
+          <p class="hint" style="margin:6px 0 0">Rê chuột vào cột để xem chi tiết điểm của bạn và điểm TB lớp.</p>
+        </div>
+
+        <div class="compare" style="margin-top:16px">
+          <div class="screen" style="margin:0">
+            <div class="screen-body" style="padding:14px 16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div>
+                  <b style="font-size:13.5px">Điểm chi tiết</b>
+                  <p class="hint" style="margin:2px 0 0">Bảng điểm từng môn, điểm chữ, GPA tích lũy</p>
+                </div>
+                <button class="btn btn--ghost btn--sm" type="button">Xem điểm →</button>
+              </div>
+            </div>
+          </div>
+          <div class="screen" style="margin:0">
+            <div class="screen-body" style="padding:14px 16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div>
+                  <b style="font-size:13.5px">Điểm danh</b>
+                  <p class="hint" style="margin:2px 0 0">Số buổi có mặt, đi muộn, vắng theo môn</p>
+                </div>
+                <button class="btn btn--ghost btn--sm" type="button">Xem điểm danh →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare">
+      <div class="alert alert--danger" style="display:block">
+        <b>Bỏ khỏi dashboard</b>
+        <ul>
+          <li>Thẻ số liệu “Tỷ lệ chuyên cần” — thay bằng thẻ “Buổi học tuần này”</li>
+          <li>Card “Chuyên cần &amp; GPA” (biểu đồ tròn chuyên cần + khối GPA tích luỹ)</li>
+          <li>Thanh tỉ lệ và cột “Chuyên cần” trong bảng học phần</li>
+          <li>Cảnh báo “Môn cần chú ý” (đọc từ <span class="mono">chuyen_can.ty_le_thap_nhat</span>)</li>
+          <li>Cột “Điểm” và cột “Giảng viên” trong bảng học phần</li>
+          <li>Request phụ <span class="mono">GET /me/grades</span> khi mở trang</li>
+        </ul>
+      </div>
+      <div class="alert alert--info" style="display:block">
+        <b>Giữ lại</b>
+        <ul>
+          <li>4 thẻ tổng quan — thẻ thứ tư là số buổi học trong tuần</li>
+          <li>Thời khoá biểu tuần</li>
+          <li>Bảng <b>“Học phần đã đăng ký”</b> hai cột: mã + tên môn | số tín chỉ, bấm dòng để xem chi tiết</li>
+          <li><b>Biểu đồ “Kết quả học tập”</b> — giữ nguyên cái đang có, không thêm khối mới</li>
+          <li>Liên kết sang màn Điểm (SCR-42) và Điểm danh (SCR-38b)</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Vì sao bỏ hẳn chữ “chuyên cần” khỏi dashboard:</strong> “tỷ lệ chuyên cần” ở đây tính bằng
+      <span class="mono">(có mặt + đi muộn) / (có mặt + đi muộn + vắng)</span> — chính là điểm danh.
+      Trong khi <span class="mono">diem_chuyen_can</span> là một thành phần điểm 10% trong công thức
+      tổng kết. Hai khái niệm khác nhau dùng chung một từ. Màn Điểm danh riêng đã gọi đúng tên,
+      nên dashboard bỏ hẳn để không còn hai nghĩa. Thẻ thứ tư đổi thành “Buổi học tuần này”
+      vì tuần hiện tại đã có đủ dữ liệu từ <span class="mono">thoi_khoa_bieu_tuan.cac_buoi</span> —
+      không cần thêm truy vấn nào.
+    </p>
+  </section>
+
+  <!-- ================= 9. KHÓA ĐIỂM ================= -->
+  <section id="khoa-diem">
+    <h2><span class="num">09</span>Khóa điểm danh và nhập điểm</h2>
+    <p class="sub">
+      Bốn trạng thái khóa. ADMIN muốn sửa dữ liệu đã qua thì phải mở khóa và ghi lý do —
+      hành động đó vào nhật ký hệ thống.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>Quy tắc khóa</b> · áp cho điểm danh và nhập điểm</span>
+        <span class="role role--admin">Hệ thống</span>
+      </div>
+      <div class="screen-body">
+        <div class="table-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Tình trạng</th>
+                <th>Điểm danh</th>
+                <th>Nhập điểm</th>
+                <th>ADMIN được làm gì</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill pill--warn">Kỳ UPCOMING</span> <span class="muted">chưa bắt đầu</span></td>
+                <td class="no">Khóa</td>
+                <td class="no">Khóa</td>
+                <td>Không ghi. Đây là lỗ đang có: hiện tại ghi được.</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill--ok">Kỳ ONGOING</span> <span class="muted">đang chạy</span></td>
+                <td class="yes">Cho ghi</td>
+                <td class="yes">Cho ghi</td>
+                <td>Ghi bình thường. Điểm danh quá hạn <b class="num">7</b> ngày cần mở khóa.</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill--off">Kỳ CLOSED</span> <span class="muted">đã đóng</span></td>
+                <td class="no">Khóa</td>
+                <td class="no">Khóa</td>
+                <td><b>Không ai ghi được, kể cả ADMIN.</b> Muốn sửa thì phải chốt xong trong kỳ. Giảng viên báo sai sau khi đóng kỳ thì không còn đường sửa — nên cảnh báo rõ ở hộp thoại chuyển kỳ sang CLOSED.</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill--danger">Lớp CANCELLED</span></td>
+                <td class="no">Khóa</td>
+                <td class="no">Khóa</td>
+                <td>Không ghi. Hiện tại không nơi nào kiểm tra trạng thái lớp.</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill--primary">Đã chốt điểm</span> <span class="mono">chot_diem_luc</span></td>
+                <td class="yes">Cho ghi</td>
+                <td class="no">Khóa</td>
+                <td>Mở khóa điểm có lý do, ghi nhật ký <span class="mono">MO_KHOA</span>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="block">Hộp thoại mở khóa</h4>
+
+    <div class="dialog">
+      <div class="dialog-head">
+        <h4>Mở khóa ghi điểm</h4>
+        <p>68PM2-396601 · Giải tích 1 · HK 2025-2 (đã đóng)</p>
+      </div>
+      <div class="dialog-body">
+        <div class="fields">
+          <div class="field">
+            <label for="mk-pham-vi">Phạm vi</label>
+            <div class="ctl" id="mk-pham-vi"><span>Cả lớp, trong 3 ngày</span><span class="caret">▾</span></div>
+          </div>
+          <div class="field">
+            <label for="mk-den-ngay">Mở đến ngày</label>
+            <div class="ctl ctl--mono" id="mk-den-ngay"><span>2026-11-14</span><span class="caret">▾</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="mk-ly-do">Lý do <span style="color:var(--color-danger)">*</span></label>
+          <div class="ctl" id="mk-ly-do" style="min-height:64px;align-items:flex-start">
+            <span>Giảng viên báo sai điểm danh buổi 12/10, cần sửa 3 sinh viên.</span>
+          </div>
+          <span class="hint">Bắt buộc, 10–255 ký tự. Nội dung này vào nhật ký và hiện ở màn Lịch sử sửa điểm.</span>
+        </div>
+
+        <div class="alert alert--warn">
+          <div>
+            Mở khóa sẽ cho phép ghi vào học kỳ đã đóng. Mọi thay đổi vẫn ghi
+            <span class="mono">nhat_ky</span> kèm người thực hiện. Khóa tự đóng lại sau ngày đã chọn.
+          </div>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn--ghost" type="button">Hủy bỏ</button>
+        <button class="btn btn--danger" type="button">Mở khóa</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 10. PHÂN QUYỀN ================= -->
+  <section id="phan-quyen">
+    <h2><span class="num">10</span>Ma trận phân quyền sau khi sửa</h2>
+    <p class="sub">
+      Chỉ ghi những dòng có thay đổi hoặc có tranh chấp. Ô <span class="chg">đổi</span> là chỗ
+      backend phải sửa, không chỉ giao diện.
+    </p>
+
+    <div class="screen">
+      <div class="screen-bar">
+        <span class="route"><b>LopHocPhanPolicy</b> · tách quyền quản lý buổi khỏi quyền điểm danh</span>
+        <span class="role role--admin">Đối chiếu</span>
+      </div>
+      <div class="screen-body">
+        <div class="table-x">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Thao tác</th>
+                <th>ADMIN</th>
+                <th>GIẢNG VIÊN</th>
+                <th>SINH VIÊN</th>
+                <th>Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Sửa buổi (phòng, ngày, tiết, hình thức)</td>
+                <td class="yes">Có</td>
+                <td class="chg">Mất quyền</td>
+                <td class="no">Không</td>
+                <td>Hiện GV có quyền ngang ADMIN</td>
+              </tr>
+              <tr>
+                <td>Hủy / mở lại buổi</td>
+                <td class="yes">Có</td>
+                <td class="chg">Mất quyền</td>
+                <td class="no">Không</td>
+                <td>Đúng yêu cầu của bạn</td>
+              </tr>
+              <tr>
+                <td>Thêm buổi / sinh lịch tuần</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td class="no">Không</td>
+                <td>Chỉ ADMIN, như phòng đào tạo. Giảng viên vẫn xem được lịch lớp mình nhưng không tự xếp</td>
+              </tr>
+              <tr>
+                <td>Điểm danh buổi của lớp mình</td>
+                <td class="yes">Có</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td>Giữ nguyên</td>
+              </tr>
+              <tr>
+                <td>Đánh dấu buổi đã dạy</td>
+                <td class="yes">Có</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td>Giữ nguyên</td>
+              </tr>
+              <tr>
+                <td>Nhập điểm</td>
+                <td class="chg">Chỉ sau khi mở khóa</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td>Thay đổi lớn nhất ở cột ADMIN</td>
+              </tr>
+              <tr>
+                <td>Chốt điểm</td>
+                <td class="no">Không</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td>Giữ BR-03, ADMIN không chốt hộ</td>
+              </tr>
+              <tr>
+                <td>Mở khóa điểm</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td class="no">Không</td>
+                <td>Bắt buộc lý do</td>
+              </tr>
+              <tr>
+                <td>Quản lý chương trình đào tạo</td>
+                <td class="yes">Có</td>
+                <td class="no">Không</td>
+                <td class="no">Không</td>
+                <td>Màn mới</td>
+              </tr>
+              <tr>
+                <td>Xem lịch lớp khi chưa đăng ký</td>
+                <td class="yes">Có</td>
+                <td class="yes">Có</td>
+                <td class="chg">Có, bản rút gọn</td>
+                <td>Chỉ thứ, tiết, giờ, phòng — không mã SV</td>
+              </tr>
+              <tr>
+                <td>Đăng ký học phần</td>
+                <td class="yes">Hộ</td>
+                <td class="no">Không</td>
+                <td class="chg">Chỉ môn CTĐT kỳ hiện tại</td>
+                <td>ADMIN bỏ qua kiểm tra CTĐT</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <h4 class="block">Ba điều cần bạn xác nhận trước khi tôi code</h4>
+    <div class="screen">
+      <div class="screen-body">
+        <ol style="margin:0;padding-left:20px;display:grid;gap:10px;font-size:13.5px">
+          <li>
+            <b>Giảng viên mất quyền hủy hoàn toàn.</b> Nếu giảng viên ốm đột xuất, họ gọi ADMIN
+            hủy hộ. Nếu muốn giảng viên tự đề xuất hủy, phải làm thêm luồng yêu cầu — việc đó
+            chưa nằm trong đợt này.
+          </li>
+          <li>
+            <b>Đổi mã lỗi và hành vi API <span class="mono">/api/sections</span>.</b>
+            Sinh viên sẽ không còn thấy lớp ngoài chương trình. Postman và test cũ phải cập nhật.
+            Cần bạn duyệt vì FE/Postman đang phụ thuộc.
+          </li>
+          <li>
+            <b>Môn đại cương mở riêng từng lớp hành chính hay mở chung cả khóa.</b>
+            Điều này quyết định mã lớp học phần trông thế nào và cách đếm sĩ số — xem bảng ở phần 04.
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <p class="footer-note">
+      Đã chốt trong lượt này: giữ biểu đồ kết quả học tập; danh sách đăng ký chỉ hiện mã môn,
+      tên môn và số tín chỉ; đặt mã lớp theo khóa; lọc học kỳ theo sinh viên; <b>có</b> seeder mẫu
+      và Import CSV cho chương trình đào tạo. Trang chưa có migration, route hay component nào —
+      sau khi bạn duyệt nốt câu 3, tôi chia việc backend và frontend chạy song song
+      trên nhánh <span class="mono">feature/ctdt-va-quyen-buoi-hoc</span>.
+    </p>
+  </section>
+
+</div>

@@ -35,8 +35,6 @@ export interface LopSapMo {
   /** Tỷ lệ lấp đầy 0–100, để vẽ thanh tiến trình. */
   ty_le: number;
   trang_thai: 'OPEN' | 'CLOSED' | 'CANCELLED';
-  /** null = lớp phục vụ mọi năm (BR-23). */
-  nam_thu: number | null;
 }
 
 export interface DangKyGanDay {
@@ -108,7 +106,6 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       si_so: '38/45',
       ty_le: 84,
       trang_thai: 'OPEN',
-      nam_thu: 4,
     },
     {
       id: 32,
@@ -118,7 +115,6 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       si_so: '45/45',
       ty_le: 100,
       trang_thai: 'CLOSED',
-      nam_thu: 2,
     },
     {
       id: 33,
@@ -128,7 +124,6 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       si_so: '22/40',
       ty_le: 55,
       trang_thai: 'OPEN',
-      nam_thu: 4,
     },
     {
       id: 34,
@@ -138,7 +133,6 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       si_so: '41/45',
       ty_le: 91,
       trang_thai: 'OPEN',
-      nam_thu: 1,
     },
     {
       id: 35,
@@ -148,7 +142,6 @@ export const DASHBOARD_ADMIN_MOCK: DashboardAdmin = {
       si_so: '12/50',
       ty_le: 24,
       trang_thai: 'OPEN',
-      nam_thu: 1,
     },
   ],
 

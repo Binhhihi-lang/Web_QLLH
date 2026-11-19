@@ -22,11 +22,11 @@ describe('TheSoLieuCard', () => {
   };
 
   const thePhanTram: TheSoLieu = {
-    khoa: 'chuyen_can',
-    label: 'Tỷ lệ chuyên cần',
-    gia_tri: 90.7,
-    don_vi: '%',
-    phu_chu: '39/43 buổi có mặt hoặc đi muộn',
+    khoa: 'buoi_tuan',
+    label: 'Buổi học tuần này',
+    gia_tri: 12,
+    don_vi: 'buổi',
+    phu_chu: '1 buổi hôm nay',
     xu_huong: 'bang',
   };
 
@@ -108,9 +108,10 @@ describe('TheSoLieuCard', () => {
   });
 
   it('giá trị 1 chữ số thập phân giữ đúng 1 chữ số (90,7 không thành 90,70)', async () => {
-    const fixture = tao(thePhanTram);
+    // GPA hệ 4 có thể là 2,5 — vẫn phải giữ đúng số lẻ của dữ liệu.
+    const fixture = tao({ ...theGpa, gia_tri: 2.5 });
     await chayHetAnimation(fixture);
-    expect(soDangHien(fixture)).toBe('90,7');
+    expect(soDangHien(fixture)).toBe('2,5');
   });
 
   it('số nguyên lớn có dấu chấm ngăn nghìn', async () => {
@@ -156,7 +157,7 @@ describe('TheSoLieuCard', () => {
   it('đơn vị nằm trong <small>, tách khỏi số đang đếm', () => {
     const fixture = tao(thePhanTram);
     const donVi = fixture.nativeElement.querySelector('.the-so-lieu small') as HTMLElement;
-    expect(donVi.textContent?.trim()).toBe('%');
+    expect(donVi.textContent?.trim()).toBe('buổi');
   });
 
   it('số cuối cũng có trong .sr-only cho trình đọc màn hình', () => {
@@ -175,7 +176,7 @@ describe('TheSoLieuCard', () => {
     nut.click();
 
     expect(phat).toHaveLength(1);
-    expect(phat[0].khoa).toBe('chuyen_can');
+    expect(phat[0].khoa).toBe('buoi_tuan');
   });
 
   it('thẻ không bấm được thì không render <button>', () => {

@@ -24,7 +24,7 @@ export type KhoaTheSoLieu =
   | 'hoc_phan'
   | 'tin_chi'
   | 'gpa_he_4'
-  | 'chuyen_can';
+  | 'buoi_tuan';
 
 export interface TheSoLieu {
   /** Khoá định danh — FE gắn icon và màu, không hiển thị. */
@@ -61,8 +61,6 @@ export interface LopPhuTrach {
   si_so: string;
   /** Tỷ lệ lấp đầy 0–100, dùng làm độ dài thanh tiến trình. */
   ty_le: number;
-  /** null = lớp phục vụ mọi năm (BR-23). */
-  nam_thu: number | null;
   trang_thai: 'OPEN' | 'CLOSED' | 'CANCELLED';
   da_chot_diem: boolean;
   /**
@@ -145,12 +143,13 @@ export interface DashboardGiangVien {
 // SCR-05 — Dashboard SINH_VIEN
 // =====================================================================
 
-export interface GiangVienTomTat {
-  id: number;
-  ma_gv: string;
-  ho_ten: string;
-}
-
+/**
+ * Một dòng bảng "Học phần đã đăng ký" — chỉ mã + tên môn + số tín chỉ.
+ *
+ * Chuyên cần, điểm, giảng viên đã bỏ khỏi dashboard (docs/11 V4): chúng thuộc
+ * hai màn riêng Điểm (SCR-42) và Điểm danh (SCR-38b), nơi chúng có đủ ngữ
+ * cảnh để đọc đúng. Bảng ở dashboard chỉ để chọn dòng mở chi tiết.
+ */
 export interface HocPhanDaDangKy {
   dang_ky_hoc_phan_id: number;
   lop_hoc_phan_id: number;
@@ -158,15 +157,6 @@ export interface HocPhanDaDangKy {
   ma_mon: string;
   ten_mon: string;
   so_tin_chi: number;
-  giang_vien: GiangVienTomTat | null;
-  /**
-   * Phân số 0–1, 4 chữ số (KHÔNG phải %). null = chưa điểm danh buổi nào.
-   * Khác `the_so_lieu[chuyen_can].gia_tri` (phần trăm 0–100).
-   */
-  ty_le_chuyen_can: number | null;
-  diem_tong_ket: number | null;
-  diem_chu: string | null;
-  ket_qua: string | null;
 }
 
 export interface BuoiTrongTuan {
@@ -217,30 +207,10 @@ export interface GpaCaNhan {
   tich_luy: GpaTichLuy;
 }
 
-export interface MonCanChuY {
-  ma_mon: string;
-  ten_mon: string;
-  ty_le: number;
-}
-
-export interface ChuyenCan {
-  /** Phân số 0–1, 4 chữ số. null = chưa có buổi nào được điểm danh. */
-  ty_le: number | null;
-  tong_buoi_da_diem_danh: number;
-  /** Mẫu số thật của công thức (đã trừ có phép); 0 → `ty_le = null`. */
-  mau_so: number;
-  co_mat: number;
-  di_muon: number;
-  vang: number;
-  co_phep: number;
-  ty_le_thap_nhat: MonCanChuY | null;
-}
-
 export interface DashboardSinhVien {
   hoc_ky: HocKyTomTat | null;
   the_so_lieu: TheSoLieu[];
   hoc_phan_da_dang_ky: HocPhanDaDangKy[];
   thoi_khoa_bieu_tuan: ThoiKhoaBieuTuan;
   gpa: GpaCaNhan;
-  chuyen_can: ChuyenCan;
 }

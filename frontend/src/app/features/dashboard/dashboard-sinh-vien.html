@@ -58,7 +58,7 @@
       <app-empty-state
         icon="menu_book"
         title="Chưa có dữ liệu cho học kỳ này"
-        description="Bạn chưa đăng ký học phần nào. Đăng ký để xem thời khoá biểu, điểm và tỉ lệ chuyên cần."
+        description="Bạn chưa đăng ký học phần nào. Đăng ký để xem thời khoá biểu và điểm."
       >
         <a routerLink="/dang-ky-hoc-phan">
           <app-button variant="primary">Đăng ký ngay</app-button>
@@ -144,7 +144,7 @@
       </app-card>
 
       <div class="luoi-hai">
-        <!-- ---- 4. Học phần đã đăng ký ---- -->
+        <!-- ---- 4. Học phần đã đăng ký: ĐÚNG hai cột như ảnh mẫu ---- -->
         <app-card title="Học phần đã đăng ký" subtitle="Trong học kỳ này">
           <a cardActions class="xem-tat-ca" routerLink="/dang-ky-cua-toi">
             Xem tất cả
@@ -155,7 +155,7 @@
             <app-empty-state
               icon="menu_book"
               title="Chưa đăng ký học phần nào trong học kỳ này"
-              description="Đăng ký học phần để theo dõi lịch học, điểm và chuyên cần."
+              description="Đăng ký học phần để theo dõi lịch học và điểm."
             >
               <a routerLink="/dang-ky-hoc-phan">
                 <app-button variant="primary">Đăng ký ngay</app-button>
@@ -163,38 +163,21 @@
             </app-empty-state>
           } @else {
             <div class="bang-cuon">
-              <table>
+              <table class="bang-hoc-phan">
                 <thead>
                   <tr>
-                    <th>Môn học</th>
-                    <th>Giảng viên</th>
-                    <th>TC</th>
-                    <th>Chuyên cần</th>
-                    <th>Điểm</th>
+                    <th>Môn học/học phần</th>
+                    <th class="cot-tin-chi">Số tín chỉ</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (h of hocPhan(); track h.dang_ky_hoc_phan_id) {
                     <tr class="hang-bam" (click)="moHocPhan(h)" [title]="h.ten_mon">
-                      <td class="cat-dong">
-                        <strong>{{ h.ma_mon }}</strong>
-                        <div class="ten-mon cat-dong">{{ h.ten_mon }}</div>
-                      </td>
-                      <td class="cat-dong">{{ h.giang_vien?.ho_ten ?? '—' }}</td>
-                      <td class="ma">{{ h.so_tin_chi }}</td>
                       <td>
-                        <div class="o-chuyen-can">
-                          <span class="thanh-nen nho">
-                            <span
-                              class="thanh-day"
-                              [class]="'sac-' + sacChuyenCan(h.ty_le_chuyen_can)"
-                              [style.width.%]="doDayThanh(h.ty_le_chuyen_can) * 100"
-                            ></span>
-                          </span>
-                          <span class="so-nho">{{ phanTramTuPhanSo(h.ty_le_chuyen_can) }}</span>
-                        </div>
+                        <span class="ma-mon">{{ h.ma_mon }}</span>
+                        <span class="ten-mon">{{ h.ten_mon }}</span>
                       </td>
-                      <td class="ma">{{ chuDiem(h) }}</td>
+                      <td class="cot-tin-chi">{{ h.so_tin_chi }}</td>
                     </tr>
                   }
                 </tbody>
@@ -238,91 +221,6 @@
           }
         </app-card>
       </div>
-
-      <!-- ---- 5b. GPA + chuyên cần (có doughnut) ---- -->
-      <app-card title="Chuyên cần & GPA" subtitle="Tích luỹ toàn khoá và chuyên cần học kỳ này">
-        <div class="ket-qua">
-          <button type="button" class="o-ket-qua" (click)="moDiem()">
-            <span class="o-kq-nhan">
-              <span class="material-icons" aria-hidden="true">workspace_premium</span>
-              GPA tích luỹ
-            </span>
-            <span class="o-kq-so">
-              {{ dinhDangGpa(gpa()?.tich_luy?.gpa_he_4) }}
-              <small>/ 4</small>
-            </span>
-            <span class="o-kq-phu">
-              Hệ 10: {{ dinhDangGpa(gpa()?.tich_luy?.gpa_he_10) }} ·
-              {{ gpa()?.tich_luy?.tin_chi_dat ?? 0 }}/{{ gpa()?.tich_luy?.tong_tin_chi ?? 0 }} tín
-              chỉ đạt
-            </span>
-            <span class="o-kq-them">
-              Học kỳ này:
-              {{ dinhDangGpa(gpa()?.hoc_ky_hien_tai?.gpa_he_4) }} ·
-              {{ gpa()?.hoc_ky_hien_tai?.tong_tin_chi ?? 0 }} tín chỉ
-            </span>
-          </button>
-
-          <button type="button" class="o-ket-qua" (click)="moDiemDanh()">
-            <span class="o-kq-nhan">
-              <span class="material-icons" aria-hidden="true">fact_check</span>
-              Tỷ lệ chuyên cần
-            </span>
-
-            @if (latChuyenCan(); as lat) {
-              <div class="kq-tron">
-                <app-bieu-do-tron
-                  [lat]="lat"
-                  [nhanGiua]="phanTramChuyenCanThanh() ?? '—'"
-                  phuGiua="có mặt + đi muộn"
-                  chieuCao="150px"
-                  [moTa]="
-                    'Biểu đồ tròn chuyên cần: ' +
-                    (chuyenCan()?.co_mat ?? 0) +
-                    ' có mặt, ' +
-                    (chuyenCan()?.di_muon ?? 0) +
-                    ' đi muộn, ' +
-                    (chuyenCan()?.vang ?? 0) +
-                    ' vắng, ' +
-                    (chuyenCan()?.co_phep ?? 0) +
-                    ' có phép'
-                  "
-                />
-              </div>
-            }
-
-            <span class="o-kq-so" [class]="'mau-' + sacChuyenCan(chuyenCan()?.ty_le)">
-              {{ phanTramTuPhanSo(chuyenCan()?.ty_le) }}
-            </span>
-            <span class="o-kq-phu">
-              @if (chuyenCan()?.ty_le === null) {
-                Chưa có buổi nào được điểm danh
-              } @else {
-                {{ (chuyenCan()?.co_mat ?? 0) + (chuyenCan()?.di_muon ?? 0) }}/{{
-                  chuyenCan()?.mau_so ?? 0
-                }}
-                buổi có mặt hoặc đi muộn
-              }
-            </span>
-          </button>
-        </div>
-
-        <!-- Cảnh báo "Môn cần chú ý" (ẩn khi null) -->
-        @if (chuyenCan()?.ty_le_thap_nhat; as mon) {
-          <div class="canh-bao-wrap">
-            <button type="button" class="canh-bao" (click)="moMonCanChuY(mon)">
-              <span class="material-icons canh-bao-icon" aria-hidden="true">warning</span>
-              <span class="canh-bao-noi-dung">
-                <strong>Môn cần chú ý: {{ mon.ten_mon }}</strong>
-                <small>
-                  Tỉ lệ chuyên cần {{ phanTramTuPhanSo(mon.ty_le) }} — thấp nhất trong học kỳ này.
-                </small>
-              </span>
-              <span class="material-icons viec-mui">chevron_right</span>
-            </button>
-          </div>
-        }
-      </app-card>
     </div>
   }
 </div>

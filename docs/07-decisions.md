@@ -280,7 +280,7 @@ Thực tế, chặn "sinh viên năm 1 không học môn năm 4" cần **chươn
 
 ## ADR-017 — Vòng đời học kỳ chỉ tiến, một kỳ ONGOING tại một thời điểm
 
-**Ngày:** 2026-10-24 · **Trạng thái:** Đã chấp nhận
+**Ngày:** 2026-10-24 · **Trạng thái:** Đã chấp nhận, **sửa đổi 2026-11-12** (xem ADR-021)
 
 **Bối cảnh:** FR-06.03 chỉ nói ADMIN "chuyển thủ công" giữa ba trạng thái, không nói được phép chuyển nào. Hệ quả: có thể mở lại kỳ `CLOSED` (trái BR-14 "lưu trữ vĩnh viễn"), có thể có nhiều kỳ `ONGOING` cùng lúc (làm "học kỳ hiện tại" trở nên nhập nhằng), có thể bỏ qua `ONGOING`. Ngoài ra không chặn hai học kỳ chồng lấn ngày.
 
@@ -454,3 +454,89 @@ ADR-016 đã kết luận "chương trình đào tạo ngoài phạm vi" và ch�
 - (−) Cần lưu cấu hình cho mỗi học kỳ trước khi bắt đầu kỳ.
 
 **Phương án bị loại:** tạo phiên bản kế tiếp hoặc bắt buộc tạo học kỳ mới chỉ để đổi cấu hình.
+
+---
+
+## ADR-023 — Học kỳ CLOSED là khóa vĩnh viễn, không còn ngoại lệ ADMIN
+
+**Ngày:** 2026-11-12 · **Trạng thái:** Đã chấp nhận. **Thay thế:** mục 7 của ADR-017.
+
+**Bối cảnh:** ADR-017 cho ADMIN một ngoại lệ — được sửa điểm danh trên học kỳ `CLOSED` để xử lý
+điểm danh sót. Thực tế ngoại lệ này có ba vấn đề:
+
+1. **Không đối xứng:** ADMIN sửa được điểm danh nhưng không sửa được điểm. Cùng một học kỳ lại
+   có hai mức khóa khác nhau tuỳ bảng — người dùng không đoán được mình sẽ bị chặn ở đâu.
+2. **Không có dấu vết đủ mạnh:** code ghi `nhat_ky` nhưng không buộc nhập lý do, nên nhật ký chỉ
+   nói "đã sửa" mà không nói vì sao.
+3. **Che mất quy trình sai:** nếu luôn có đường sửa về sau, áp lực chốt đúng trong kỳ biến mất.
+
+**Quyết định:**
+
+1. Học kỳ `CLOSED` khóa **toàn bộ**: điểm danh, điểm, đăng ký, lớp học phần, buổi học.
+2. **Không có ngoại lệ nào, kể cả ADMIN.** `QuanLyDiemDanhService` và `QuanLyDiemService` đều
+   chặn trước khi xét vai trò.
+3. Hệ quả vận hành: giảng viên phát hiện sai sau khi kỳ đã đóng thì không còn đường sửa. Phải
+   phát hiện và sửa **trước** khi chuyển kỳ sang `CLOSED`.
+4. Hộp thoại chuyển kỳ sang `CLOSED` phải cảnh báo rõ điều này trước khi xác nhận.
+
+**Hệ quả:**
+
+- (+) Một luật duy nhất cho mọi bảng: đóng kỳ là đóng hết. Không phải nhớ ngoại lệ.
+- (+) Áp lực chốt đúng trong kỳ, không dựa vào khả năng sửa sau.
+- (+) Bỏ được nhánh `&& ! laAdmin()` ở `QuanLyDiemDanhService`, giảm một đường rẽ.
+- (−) Sai sót phát hiện muộn là vĩnh viễn. Bù lại bằng cảnh báo ở bước chuyển trạng thái.
+- (−) Nếu về sau cần sửa thật, phải mở lại kỳ — mà ADR-017 cấm. Cách duy nhất là thêm cơ chế
+  "mở khóa có thời hạn + lý do bắt buộc" như `chot_diem_luc` đang làm, chứ không nới BR-14.
+
+**Phương án bị loại:**
+
+- *Giữ ngoại lệ nhưng buộc nhập lý do:* vẫn giữ sự bất đối xứng giữa điểm danh và điểm, và vẫn
+  cần nhớ "bảng nào có ngoại lệ".
+- *Cho ADMIN mở lại kỳ `CLOSED`:* phá vỡ tính bất biến của dữ liệu lịch sử, trái ADR-017 mục 1.
+
+---
+
+## ADR-024 — Chương trình đào tạo: ngành × khóa, mở lớp hàng loạt
+
+**Ngày:** 2026-11-13 · **Trạng thái:** Đã chấp nhận. **Bổ sung:** ADR-016 (từng loại CTĐT khỏi phạm vi).
+
+**Bối cảnh:** ADR-016 kết luận "không làm chương trình đào tạo", chỉ dựa vào
+`lop_hoc_phan.nam_thu` làm ràng buộc thô. Hai việc sau đó cho thấy kết luận này không đứng được:
+
+1. **Học lại bị chặn chính bởi `nam_thu`** — sinh viên khóa trước muốn học lại môn đã rớt phải
+   vào lớp khóa dưới, mà lớp đó mang `nam_thu` khác nên bị từ chối `WRONG_STUDY_YEAR`. Đã bỏ
+   `nam_thu` (BR-23) và thay bằng luật "chặn môn đã đạt" (BR-33).
+2. **Màn đăng ký của sinh viên không biết lọc môn nào** — không có cách nào trả lời "K68 ngành
+   KTPM học môn gì ở kỳ 7" nếu không có chương trình khung. Hệ quả là ADMIN phải mở lẻ từng lớp
+   bằng tay, và sinh viên thấy toàn bộ lớp của trường thay vì môn của mình.
+
+**Quyết định:**
+
+1. Thêm hai bảng: `chuong_trinh_dao_tao` (một ngành × một khóa, unique `(nganh_id, khoa_hoc)`)
+   và `chuong_trinh_mon` (môn + `ky_thu` 1–10 + `bat_buoc`, unique `(chuong_trinh_id, mon_hoc_id)`).
+2. `ky_thu` cho phép `null` = chưa gán kỳ. Môn chưa gán không hiện ở màn đăng ký; màn chi tiết
+   CTĐT cảnh báo số môn chưa gán.
+3. **Mở lớp theo chương trình là thao tác chính**: ADMIN chọn chương trình + kỳ thứ, hệ thống
+   mở lớp cho toàn bộ môn của kỳ đó với mã `<mã lớp hành chính>-<mã môn>`. Mở lẻ từng môn chỉ
+   còn dùng cho học lại / lớp nguyện vọng.
+4. Sinh viên đọc chương trình của mình qua `GET /api/me/curriculum`, suy từ
+   `sinh_vien.lop_hanh_chinh.(nganh_id, khoa_hoc)`.
+5. Không thêm cột nối `lop_hoc_phan` với CTĐT — quan hệ suy qua `(nganh_id, khoa_hoc)`.
+
+**Hệ quả:**
+
+- (+) Trả lời được "môn nào thuộc kỳ nào cho ngành nào" — màn đăng ký lọc đúng, ADMIN mở lớp
+  một lần thay vì N lần.
+- (+) Đổi chương trình cho khóa mới là tạo bản mới, khóa cũ giữ nguyên.
+- (−) Phải nhập tay hoặc import CSV ~30–48 môn mỗi chương trình × 5 ngành × 5 khóa.
+  Có seeder mẫu + Import CSV để bù.
+- (−) Không phân biệt được hai bản CTĐT của cùng (ngành, khóa) — nếu sau này cần phiên bản hóa
+  chương trình thì phải thêm `hieu_luc_tu` và nới unique key.
+- (−) `chuong_trinh_mon` không có xóa mềm; lịch sử gỡ môn chỉ nằm ở `nhat_ky`.
+
+**Phương án bị loại:**
+
+- *Giữ ADR-016, không làm CTĐT:* màn đăng ký không lọc được, ADMIN mở lớp bằng tay — đã là
+  tình trạng hiện tại và không dùng được.
+- *Gắn `chuong_trinh_id` vào `lop_hoc_phan`:* mỗi môn chỉ thuộc một CTĐT, nhưng lớp học phần
+  có thể phục vụ nhiều ngành (môn đại cương) — sẽ khoá cứng sai.

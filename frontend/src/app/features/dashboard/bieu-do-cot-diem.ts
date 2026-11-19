@@ -140,6 +140,7 @@ export interface DuLieuCotDiem extends CotDiemMon {
     }
 
     .bieu-do {
+      --cao-vung: 210px;
       --cao-vung: 175px;
       margin-top: 4px;
     }
@@ -164,17 +165,13 @@ export interface DuLieuCotDiem extends CotDiemMon {
     }
 
     /* Quá 8 cột thì cuộn ngang TRONG khối, không đẩy cả trang tràn.
-       overflow-y: visible KHÔNG có tác dụng khi trục x là auto — trình duyệt
-       ép nó thành auto, biến khung thành vùng cắt cả hai trục. Tooltip vì thế
-       phải tự chặn toạ độ dọc, xem .khoi-tooltip bên dưới. */
+       Chừa padding-top cho tooltip khi hover cột điểm cao không bị cắt. */
     .khung-cuon {
       overflow-x: auto;
-      overflow-y: clip;
+      overflow-y: visible;
       min-width: 0;
-      /* Đệm trên giữ nhãn số của cột cao 100% (nằm ở toạ độ -20px so với đỉnh
-         vùng vẽ) không bị cắt; đệm dưới giữ nhãn môn 2 dòng. */
-      padding-top: 24px;
-      padding-bottom: 44px;
+      padding-top: 32px;
+      padding-bottom: 40px;
     }
 
     .khung-cot {
@@ -228,6 +225,7 @@ export interface DuLieuCotDiem extends CotDiemMon {
 
     .duong-tb .net {
       stroke: var(--color-diem-duong);
+      stroke-width: 2;
       stroke-width: 2.5;
     }
 
@@ -259,6 +257,8 @@ export interface DuLieuCotDiem extends CotDiemMon {
       display: flex;
       align-items: flex-end;
       justify-content: space-around;
+      gap: 8px;
+      padding: 0 6px;
       gap: 0;
       padding: 0;
     }
@@ -285,37 +285,18 @@ export interface DuLieuCotDiem extends CotDiemMon {
     }
 
     /* ---- Tooltip con trỏ trỏ tới điểm ---- */
-    /*
-     * '.khung-cuon' buộc phải cuộn ngang khi > 8 cột, và trình duyệt biến nó
-     * thành vùng CẮT cả hai trục. Tooltip neo theo 'bottom' của cột nên cột
-     * cao (điểm 10) đẩy nó lên trên mép khung và bị cắt (đo 2026-11-11: mất
-     * 11px, cột cao hơn mất nhiều hơn).
-     *
-     * Cách chữa: chặn 'bottom' bằng 'min(...)'. '100%' là chiều cao '.nhom-cot'
-     * (175px, hoặc 160px ở ≤ 640px); trừ đi '--tt-cao' (chiều cao dự phòng lớn
-     * nhất của khối) để mép TRÊN của tooltip không bao giờ vượt mép trên cột.
-     * Nhờ vậy tooltip luôn nằm trọn trong khung, không phụ thuộc số dòng.
-     */
     .khoi-tooltip {
-      /* Chiều cao LỚN NHẤT đo được của khối (tên 2 dòng + 2 dòng số, 2026-11-11)
-         là 88px; lấy 92px để chừa 4px. Tên môn bị kẹp 2 dòng qua tt-ten-mon
-         nên đây là chặn trên thật, không phải ước lượng. */
-      --tt-cao: 92px;
-      --tt-x: translateX(-50%);
       position: absolute;
-      bottom: min(
-        calc(var(--cao-nhan, var(--cao)) + 24px),
-        calc(100% - var(--tt-cao))
-      );
+      bottom: calc(var(--cao) + 26px);
+      bottom: calc(var(--cao-nhan, var(--cao)) + 24px);
       left: 50%;
-      transform: var(--tt-x) translateY(4px);
+      transform: translateX(-50%) translateY(4px);
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
       padding: 8px 12px;
       min-width: 175px;
-      max-width: 210px;
       white-space: nowrap;
       z-index: 50;
       pointer-events: none;
@@ -324,58 +305,11 @@ export interface DuLieuCotDiem extends CotDiemMon {
       transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
     }
 
-    /*
-     * Hai cột SÁT MÉP và hai cột KỀ MÉP: dán tooltip vào mép cột thay vì căn
-     * giữa. Căn giữa đẩy nửa tooltip (~105px) ra ngoài khung: ở 390px đó là
-     * tràn viewport, ở 1440px nó làm 'scrollWidth' của khung-cuon lớn hơn
-     * 'clientWidth' → sinh thanh cuộn ngang vô nghĩa dù không có cột nào bị
-     * che. Cột giữa có hàng xóm hai bên nên căn giữa vẫn nằm trọn trong khung.
-     * Thứ tự quan trọng: quy tắc mép PHẢI đặt sau mép TRÁI để thắng khi lưới
-     * chỉ có 1–2 cột.
-     */
-    .nhom-cot:first-child .khoi-tooltip,
-    .nhom-cot:nth-child(2) .khoi-tooltip {
-      left: 0;
-      right: auto;
-      --tt-x: translateX(0);
-    }
-
-    .nhom-cot:last-child .khoi-tooltip,
-    .nhom-cot:nth-last-child(2) .khoi-tooltip {
-      left: auto;
-      right: 0;
-      --tt-x: translateX(0);
-    }
-
-    /* Chỉ một cột: không mép nào để bám, căn giữa vẫn vừa khung. */
-    .nhom-cot:only-child .khoi-tooltip {
-      left: 50%;
-      right: auto;
-      --tt-x: translateX(-50%);
-    }
-
-    /* Đuôi nhọn trỏ về đúng tâm cột khi tooltip đã dán mép. */
-    .nhom-cot:first-child .tt-tam-giac,
-    .nhom-cot:nth-child(2) .tt-tam-giac {
-      left: 30px;
-    }
-
-    .nhom-cot:last-child .tt-tam-giac,
-    .nhom-cot:nth-last-child(2) .tt-tam-giac {
-      left: auto;
-      right: 30px;
-    }
-
-    .nhom-cot:only-child .tt-tam-giac {
-      left: 50%;
-      right: auto;
-    }
-
     .nhom-cot:hover .khoi-tooltip,
     .nhom-cot:focus-visible .khoi-tooltip {
       opacity: 1;
       visibility: visible;
-      transform: var(--tt-x) translateY(0);
+      transform: translateX(-50%) translateY(0);
     }
 
     .tt-ten-mon {
@@ -386,12 +320,8 @@ export interface DuLieuCotDiem extends CotDiemMon {
       padding-bottom: 4px;
       border-bottom: 1px solid var(--color-border-soft);
       white-space: normal;
-      max-width: 186px;
+      max-width: 190px;
       line-height: 1.3;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
     }
 
     .tt-dong {
@@ -439,8 +369,10 @@ export interface DuLieuCotDiem extends CotDiemMon {
       border-style: solid;
       border-color: var(--color-border) transparent transparent transparent;
     }
+
     .diem-tren {
       position: absolute;
+      top: calc((100% - var(--cao)) - 20px);
       top: calc((100% - var(--cao-nhan, var(--cao))) - 20px);
       z-index: 5;
       padding: 0 3px;
@@ -455,6 +387,8 @@ export interface DuLieuCotDiem extends CotDiemMon {
     }
 
     .thanh-cot {
+      width: 100%;
+      max-width: 60px;
       position: relative;
       z-index: 1;
       width: calc(100% - 14px);
@@ -486,6 +420,7 @@ export interface DuLieuCotDiem extends CotDiemMon {
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
+      width: 100%;
       width: calc(100% - 6px);
       max-width: 96px;
       margin-top: 7px;
@@ -523,6 +458,7 @@ export interface DuLieuCotDiem extends CotDiemMon {
 
     @media (max-width: 640px) {
       .bieu-do {
+        --cao-vung: 170px;
         --cao-vung: 160px;
       }
     }
@@ -588,6 +524,8 @@ export class BieuDoCotDiem {
   }
 
   nhanTb(diem: number | null | undefined): string {
+    if (diem === null || diem === undefined) return '—';
+    return Number.isInteger(diem) ? `${diem}.0` : diem.toFixed(1);
     return nhanDiemTrenCot(diem);
   }
 

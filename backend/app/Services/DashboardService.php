@@ -6,7 +6,6 @@ use App\Exceptions\LoiNghiepVu;
 use App\Models\BuoiHoc;
 use App\Models\CauHinh;
 use App\Models\DangKyHocPhan;
-use App\Models\DiemDanh;
 use App\Models\HocKy;
 use App\Models\LopHocPhan;
 use App\Models\QuyDoiDiem;
@@ -149,7 +148,6 @@ class DashboardService
                 'si_so' => "{$siSo}/{$lop->si_so_toi_da}",
                 'ty_le' => $tyLe,
                 'trang_thai' => $lop->trang_thai,
-                'nam_thu' => $lop->nam_thu,
             ];
         })->values()->all();
 
@@ -211,7 +209,6 @@ class DashboardService
                 'lop_hoc_phan.id',
                 'lop_hoc_phan.ma_lop_hp',
                 'lop_hoc_phan.si_so_toi_da',
-                'lop_hoc_phan.nam_thu',
                 'lop_hoc_phan.trang_thai',
                 'lop_hoc_phan.chot_diem_luc',
                 'mon_hoc.ma_mon',
@@ -245,7 +242,6 @@ class DashboardService
                 'so_tin_chi' => (int) $lop->so_tin_chi,
                 'si_so' => "{$siSo}/{$lop->si_so_toi_da}",
                 'ty_le' => min(100, (int) round(($siSo / $siSoToiDa) * 100)),
-                'nam_thu' => $lop->nam_thu !== null ? (int) $lop->nam_thu : null,
                 'trang_thai' => $lop->trang_thai,
                 'da_chot_diem' => $lop->chot_diem_luc !== null,
                 // `null` = chưa ai được chấm điểm (không phải 0) — §14.
@@ -427,15 +423,13 @@ class DashboardService
 
         $lopIds = $dangKys->pluck('lopHocPhan')->filter()->pluck('id')->unique()->values()->all();
 
-        // 1 truy vấn gộp: toàn bộ điểm danh của các đăng ký trong kỳ + ngày buổi học.
-        $thongKeChuyenCan = $this->thongKeChuyenCanTheoDangKy($dangKys);
-
         $hocPhanDaDangKy = [];
         foreach ($dangKys as $dangKy) {
             $lop = $dangKy->lopHocPhan;
-            $diem = $dangKy->diem;
-            $soLieu = $thongKeChuyenCan[$dangKy->id] ?? ['co_mat' => 0, 'di_muon' => 0, 'vang' => 0, 'co_phep' => 0, 'mau_so' => 0];
 
+            // Dashboard sinh viên chỉ cần mã + tên + số tín chỉ (bảng hai cột).
+            // Chuyên cần, điểm, giảng viên đã bỏ khỏi dashboard — màn Điểm và
+            // Điểm danh riêng đã có. Xem docs/11 V4.
             $hocPhanDaDangKy[] = [
                 'dang_ky_hoc_phan_id' => $dangKy->id,
                 'lop_hoc_phan_id' => $lop?->id,
@@ -443,29 +437,8 @@ class DashboardService
                 'ma_mon' => $lop?->monHoc?->ma_mon ?? '',
                 'ten_mon' => $lop?->monHoc?->ten_mon ?? '',
                 'so_tin_chi' => (int) ($lop?->monHoc?->so_tin_chi ?? 0),
-                'giang_vien' => $lop?->giangVien !== null ? [
-                    'id' => $lop->giangVien->id,
-                    'ma_gv' => $lop->giangVien->ma_gv,
-                    'ho_ten' => $lop->giangVien->ho_ten,
-                ] : null,
-                'ty_le_chuyen_can' => $soLieu['mau_so'] === 0
-                    ? null
-                    : round(($soLieu['co_mat'] + $soLieu['di_muon']) / $soLieu['mau_so'], 4),
-                'diem_tong_ket' => $diem?->diem_tong_ket !== null ? (float) $diem->diem_tong_ket : null,
-                'diem_chu' => $diem?->diem_chu,
-                'ket_qua' => $diem?->ket_qua,
             ];
         }
-
-        $tongTheoMau = [
-            'co_mat' => array_sum(array_column($thongKeChuyenCan, 'co_mat')),
-            'di_muon' => array_sum(array_column($thongKeChuyenCan, 'di_muon')),
-            'vang' => array_sum(array_column($thongKeChuyenCan, 'vang')),
-            'co_phep' => array_sum(array_column($thongKeChuyenCan, 'co_phep')),
-            'mau_so' => array_sum(array_column($thongKeChuyenCan, 'mau_so')),
-        ];
-
-        $chuyenCan = $this->tongHopChuyenCan($tongTheoMau, $hocPhanDaDangKy);
 
         $tuNgay = now()->startOfWeek(CarbonInterface::MONDAY)->startOfDay();
         $denNgay = $tuNgay->copy()->addDays(6);
@@ -506,13 +479,14 @@ class DashboardService
                 'xu_huong' => 'bang',
             ],
             [
-                'khoa' => 'chuyen_can',
-                'label' => 'Tỷ lệ chuyên cần',
-                'gia_tri' => $chuyenCan['ty_le'] === null ? 0 : round($chuyenCan['ty_le'] * 100, 1),
-                'don_vi' => '%',
-                'phu_chu' => $chuyenCan['ty_le'] === null
-                    ? 'Chưa có buổi nào được điểm danh'
-                    : ($chuyenCan['co_mat'] + $chuyenCan['di_muon']).'/'.$chuyenCan['mau_so'].' buổi có mặt hoặc đi muộn',
+                // Thay thẻ "Tỷ lệ chuyên cần" cũ: con số đó chính là điểm danh,
+                // trùng tên với `diem_chuyen_can` (thành phần điểm 10%) nên gây
+                // nhầm. Số buổi trong tuần lấy từ dữ liệu đã nạp, không thêm query.
+                'khoa' => 'buoi_tuan',
+                'label' => 'Buổi học tuần này',
+                'gia_tri' => count($cacBuoi),
+                'don_vi' => 'buổi',
+                'phu_chu' => $this->phuChuBuoiTuan($cacBuoi),
                 'xu_huong' => 'bang',
             ],
         ];
@@ -527,7 +501,6 @@ class DashboardService
                 'cac_buoi' => $cacBuoi,
             ],
             'gpa' => $gpa,
-            'chuyen_can' => $chuyenCan,
         ];
     }
 
@@ -709,6 +682,25 @@ class DashboardService
     }
 
     /**
+     * Phụ chú cho thẻ "Buổi học tuần này": nêu hôm nay có buổi hay không.
+     *
+     * @param  array<int, array<string, mixed>>  $cacBuoi
+     */
+    private function phuChuBuoiTuan(array $cacBuoi): string
+    {
+        if ($cacBuoi === []) {
+            return 'Tuần này không có buổi';
+        }
+
+        $homNay = now()->toDateString();
+        $soHomNay = count(array_filter($cacBuoi, fn ($buoi) => ($buoi['ngay_hoc'] ?? null) === $homNay));
+
+        return $soHomNay > 0
+            ? "{$soHomNay} buổi hôm nay"
+            : 'Hôm nay không có buổi';
+    }
+
+    /**
      * @param  Collection<int, DangKyHocPhan>  $dangKys
      * @return array<string, mixed>
      */
@@ -733,103 +725,6 @@ class DashboardService
             'ten_mon' => $lop?->monHoc?->ten_mon ?? '',
             'ma_phong' => $buoi->ma_phong,
             'ten_phong' => $buoi->ten_phong,
-        ];
-    }
-
-    /**
-     * Đếm điểm danh của mọi đăng ký trong kỳ bằng MỘT truy vấn gộp
-     * (không lặp truy vấn theo từng đăng ký như QuanLyDiemDanhService::thongKeCuaToi).
-     * BR-27: chỉ tính buổi có `ngay_hoc >= dang_ky_luc` của chính đăng ký đó.
-     *
-     * @param  Collection<int, DangKyHocPhan>  $dangKys
-     * @return array<int, array{co_mat: int, di_muon: int, vang: int, co_phep: int, mau_so: int}>
-     */
-    private function thongKeChuyenCanTheoDangKy(Collection $dangKys): array
-    {
-        if ($dangKys->isEmpty()) {
-            return [];
-        }
-
-        $dangKyTheoId = $dangKys->keyBy('id');
-
-        $banGhi = DiemDanh::query()
-            ->join('buoi_hoc', 'buoi_hoc.id', '=', 'diem_danh.buoi_hoc_id')
-            ->whereIn('diem_danh.dang_ky_hoc_phan_id', $dangKys->modelKeys())
-            ->whereNull('buoi_hoc.deleted_at')
-            ->select(['diem_danh.dang_ky_hoc_phan_id', 'diem_danh.trang_thai', 'buoi_hoc.ngay_hoc'])
-            ->toBase()
-            ->get();
-
-        $ketQua = [];
-
-        foreach ($banGhi as $dong) {
-            $dangKy = $dangKyTheoId->get($dong->dang_ky_hoc_phan_id);
-
-            if ($dangKy === null) {
-                continue;
-            }
-
-            // BR-27: so theo NGÀY đăng ký, không theo giờ.
-            if ($dangKy->dang_ky_luc !== null
-                && Carbon::parse($dong->ngay_hoc)->lt($dangKy->dang_ky_luc->copy()->startOfDay())) {
-                continue;
-            }
-
-            $ketQua[$dangKy->id] ??= ['co_mat' => 0, 'di_muon' => 0, 'vang' => 0, 'co_phep' => 0, 'mau_so' => 0];
-
-            match ($dong->trang_thai) {
-                DiemDanh::PRESENT => $ketQua[$dangKy->id]['co_mat']++,
-                DiemDanh::LATE => $ketQua[$dangKy->id]['di_muon']++,
-                DiemDanh::ABSENT => $ketQua[$dangKy->id]['vang']++,
-                DiemDanh::EXCUSED => $ketQua[$dangKy->id]['co_phep']++,
-                default => null,
-            };
-        }
-
-        foreach ($ketQua as $id => $soLieu) {
-            $ketQua[$id]['mau_so'] = $soLieu['co_mat'] + $soLieu['di_muon'] + $soLieu['vang'];
-        }
-
-        return $ketQua;
-    }
-
-    /**
-     * @param  array{co_mat: int, di_muon: int, vang: int, co_phep: int, mau_so: int}  $tong
-     * @param  array<int, array<string, mixed>>  $hocPhanDaDangKy
-     * @return array<string, mixed>
-     */
-    private function tongHopChuyenCan(array $tong, array $hocPhanDaDangKy): array
-    {
-        $tyLe = $tong['mau_so'] === 0
-            ? null
-            : round(($tong['co_mat'] + $tong['di_muon']) / $tong['mau_so'], 4);
-
-        $tyLeThapNhat = null;
-        foreach ($hocPhanDaDangKy as $hocPhan) {
-            $tyLeMon = $hocPhan['ty_le_chuyen_can'];
-
-            if ($tyLeMon === null) {
-                continue;
-            }
-
-            if ($tyLeThapNhat === null || $tyLeMon < $tyLeThapNhat['ty_le']) {
-                $tyLeThapNhat = [
-                    'ma_mon' => $hocPhan['ma_mon'],
-                    'ten_mon' => $hocPhan['ten_mon'],
-                    'ty_le' => $tyLeMon,
-                ];
-            }
-        }
-
-        return [
-            'ty_le' => $tyLe,
-            'tong_buoi_da_diem_danh' => $tong['co_mat'] + $tong['di_muon'] + $tong['vang'] + $tong['co_phep'],
-            'mau_so' => $tong['mau_so'],
-            'co_mat' => $tong['co_mat'],
-            'di_muon' => $tong['di_muon'],
-            'vang' => $tong['vang'],
-            'co_phep' => $tong['co_phep'],
-            'ty_le_thap_nhat' => $tyLeThapNhat,
         ];
     }
 
@@ -967,16 +862,6 @@ class DashboardService
                 'cac_buoi' => [],
             ],
             'gpa' => $gpa,
-            'chuyen_can' => [
-                'ty_le' => null,
-                'tong_buoi_da_diem_danh' => 0,
-                'mau_so' => 0,
-                'co_mat' => 0,
-                'di_muon' => 0,
-                'vang' => 0,
-                'co_phep' => 0,
-                'ty_le_thap_nhat' => null,
-            ],
         ];
     }
 }
